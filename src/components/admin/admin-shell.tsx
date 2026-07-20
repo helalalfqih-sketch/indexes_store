@@ -37,14 +37,17 @@ export function AdminShell() {
 
 function AdminGate({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
-  
-  const [status, setStatus] = useState<"checking" | "unauth" | "no-role" | "ok">(
-    "checking"
-  );
+
+  const [status, setStatus] = useState<"checking" | "unauth" | "no-role" | "ok">("checking");
   const [queryError, setQueryError] = useState<string | null>(null);
   const fetchSessionUser = useServerFn(getSessionUser);
 
-  const { data: sessionUser, isLoading, isError, error } = useQuery({
+  const {
+    data: sessionUser,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["session-user"],
     queryFn: () => fetchSessionUser(),
     retry: false,
@@ -87,13 +90,22 @@ function AdminGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#000209] text-[#EEEEEE] flex items-center justify-center" dir="rtl">
+    <div
+      className="min-h-screen bg-[#000209] text-[#EEEEEE] flex items-center justify-center"
+      dir="rtl"
+    >
       <Loader2 className="h-6 w-6 animate-spin text-white/60" />
     </div>
   );
 }
 
-function NoRoleScreen({ onClaimed, errorMsg }: { onClaimed: () => void; errorMsg?: string | null }) {
+function NoRoleScreen({
+  onClaimed,
+  errorMsg,
+}: {
+  onClaimed: () => void;
+  errorMsg?: string | null;
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const claim = useServerFn(claimFirstAdmin);
@@ -127,14 +139,18 @@ function NoRoleScreen({ onClaimed, errorMsg }: { onClaimed: () => void; errorMsg
   };
 
   return (
-    <div className="min-h-screen bg-[#000209] text-[#EEEEEE] flex items-center justify-center px-4" dir="rtl">
+    <div
+      className="min-h-screen bg-[#000209] text-[#EEEEEE] flex items-center justify-center px-4"
+      dir="rtl"
+    >
       <div className="max-w-md text-center">
         <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-red-500/10">
           <ShieldAlert className="h-7 w-7 text-red-400" />
         </div>
         <h1 className="text-xl font-bold">صلاحية الوصول مرفوضة</h1>
         <p className="mt-2 text-sm text-white/60">
-          حسابك لا يملك صلاحية دخول لوحة الإدارة. إن كنت مالك المتجر ولم يتم تعيين مدير بعد، يمكنك المطالبة بصلاحية المدير الأول.
+          حسابك لا يملك صلاحية دخول لوحة الإدارة. إن كنت مالك المتجر ولم يتم تعيين مدير بعد، يمكنك
+          المطالبة بصلاحية المدير الأول.
         </p>
         {notice && <p className="mt-3 text-xs text-amber-300">{notice}</p>}
         {error && <p className="mt-3 text-xs text-red-300">{error}</p>}
@@ -146,7 +162,10 @@ function NoRoleScreen({ onClaimed, errorMsg }: { onClaimed: () => void; errorMsg
           >
             {busy ? "جارٍ..." : "المطالبة بصلاحية المدير الأول"}
           </button>
-          <Link to="/" className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15">
+          <Link
+            to="/"
+            className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15"
+          >
             العودة للمتجر
           </Link>
           <button
@@ -188,16 +207,18 @@ function ShellInner() {
     setOpen(false);
   }, [pathname]);
 
-  const items: Array<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }> = [
-    { to: "/admin", label: t("nav.dashboard"), icon: LayoutDashboard, exact: true },
-    { to: "/admin/studio", label: t("nav.studio"), icon: Sparkles },
-    { to: "/admin/products", label: t("nav.products"), icon: Package },
-    { to: "/admin/categories", label: "التصنيفات", icon: FolderTree },
-    { to: "/admin/inventory", label: "المخزون", icon: Boxes },
-    { to: "/admin/platform", label: "Platform (SaaS)", icon: Building2 },
-    { to: "/admin/sessions", label: t("nav.sessions"), icon: Activity },
-    { to: "/admin/settings", label: t("nav.settings"), icon: Settings },
-  ];
+  const items: Array<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }> =
+    [
+      { to: "/admin", label: t("nav.dashboard"), icon: LayoutDashboard, exact: true },
+      { to: "/admin/studio", label: t("nav.studio"), icon: Sparkles },
+      { to: "/admin/products", label: t("nav.products"), icon: Package },
+      { to: "/admin/categories", label: "التصنيفات", icon: FolderTree },
+      { to: "/admin/inventory", label: "المخزون", icon: Boxes },
+      { to: "/admin/branches", label: "الفروع", icon: Building2 },
+      { to: "/admin/platform", label: "Platform (SaaS)", icon: Store },
+      { to: "/admin/sessions", label: t("nav.sessions"), icon: Activity },
+      { to: "/admin/settings", label: t("nav.settings"), icon: Settings },
+    ];
 
   const isActive = (to: string, exact?: boolean) =>
     exact ? pathname === to : pathname === to || pathname.startsWith(to + "/");
@@ -259,9 +280,7 @@ function ShellInner() {
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   }`}
                 >
-                  {active && (
-                    <span className="absolute inset-0 rounded-xl animate-pulse-glow" />
-                  )}
+                  {active && <span className="absolute inset-0 rounded-xl animate-pulse-glow" />}
                   <Icon className="h-5 w-5 shrink-0" />
                   <span className="truncate">{it.label}</span>
                 </Link>
@@ -278,7 +297,9 @@ function ShellInner() {
                 <Languages className="h-4 w-4" />
                 {lang === "ar" ? "العربية" : "English"}
               </span>
-              <span className="text-xs text-muted-foreground">{lang === "ar" ? "AR → EN" : "EN → AR"}</span>
+              <span className="text-xs text-muted-foreground">
+                {lang === "ar" ? "AR → EN" : "EN → AR"}
+              </span>
             </button>
             <Link
               to="/"
