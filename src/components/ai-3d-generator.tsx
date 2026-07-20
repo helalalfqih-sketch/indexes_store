@@ -13,8 +13,6 @@ import { Product3DViewerCard } from "@/components/product-3d-viewer-card";
 import { useServerFn } from "@tanstack/react-start";
 import { generate3DModel } from "@/lib/ai-3d.functions";
 
-
-
 type Props = {
   images: string[];
   currentModelUrl?: string;
@@ -31,7 +29,7 @@ export function Ai3dGeneratorPanel({
   onGenerated,
 }: Props) {
   const [status, setStatus] = useState<string>(
-    currentModelStatus || (currentModelUrl ? "completed" : "pending")
+    currentModelStatus || (currentModelUrl ? "completed" : "pending"),
   );
   const [modelUrl, setModelUrl] = useState<string | undefined>(currentModelUrl);
   const [progress, setProgress] = useState(0);
@@ -43,7 +41,9 @@ export function Ai3dGeneratorPanel({
     setStatus("processing");
     onGenerated?.("", "", "processing");
     setProgress(5);
-    toast.info("يقوم الذكاء الاصطناعي حالياً بتوليد المجسم ثلاثي الأبعاد. يستغرق ذلك دقيقة تقريباً...");
+    toast.info(
+      "يقوم الذكاء الاصطناعي حالياً بتوليد المجسم ثلاثي الأبعاد. يستغرق ذلك دقيقة تقريباً...",
+    );
     const timer = setInterval(() => {
       setProgress((p) => (p < 90 ? p + 5 : p));
     }, 200);
@@ -65,19 +65,19 @@ export function Ai3dGeneratorPanel({
   };
 
   return (
-    <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 to-fuchsia-500/5 p-5">
+    <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 to-primary-light/5 p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-black">AI 3D Generator</h2>
         </div>
         {status === "completed" && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+          <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success">
             <CheckCircle2 className="h-3 w-3" /> جاهز
           </span>
         )}
         {status === "processing" && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600 animate-pulse">
+          <span className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-bold text-warning animate-pulse">
             <Loader2 className="h-3 w-3 animate-spin" /> جاري التحميل...
           </span>
         )}
@@ -91,7 +91,7 @@ export function Ai3dGeneratorPanel({
         type="button"
         onClick={run}
         disabled={!canGenerate}
-        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-fuchsia-500 px-4 py-2.5 text-sm font-bold text-white shadow-brand transition disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-brand transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {status === "processing" ? (
           <>
@@ -119,10 +119,7 @@ export function Ai3dGeneratorPanel({
           <div className="p-4">
             <div className="aspect-square w-full animate-pulse rounded-lg bg-gradient-to-br from-muted via-muted/60 to-muted" />
             <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-fuchsia-500 transition-all"
-                style={{ width: `${progress}%` }}
-              />
+              <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
             </div>
             <p className="mt-2 text-center text-[11px] font-bold text-muted-foreground">
               تخليق الشبكة ثلاثية الأبعاد (Mesh Generation) · {progress}%
@@ -146,9 +143,7 @@ export function Ai3dGeneratorPanel({
           <div className="grid aspect-square place-items-center p-6 text-center">
             <div>
               <Sparkles className="mx-auto h-8 w-8 text-primary/40" />
-              <p className="mt-2 text-xs font-bold text-muted-foreground">
-                لم يتم توليد مجسم بعد
-              </p>
+              <p className="mt-2 text-xs font-bold text-muted-foreground">لم يتم توليد مجسم بعد</p>
             </div>
           </div>
         )}

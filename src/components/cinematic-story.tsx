@@ -3,8 +3,7 @@ import { motion, useScroll, useTransform, type Variants } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 
 // Public, muted, looping ambient video — CDN hosted, safe for autoplay.
-const VIDEO_SRC =
-  "https://cdn.coverr.co/videos/coverr-a-luxury-modern-living-room-4568/1080p.mp4";
+const VIDEO_SRC = "https://cdn.coverr.co/videos/coverr-a-luxury-modern-living-room-4568/1080p.mp4";
 const VIDEO_POSTER =
   "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=70";
 
@@ -58,11 +57,7 @@ export function CinematicStory() {
   // Slow parallax for the video (zooms subtly during the pin)
   const videoScale = useTransform(scrollYProgress, [0, 1], [1.05, 1.25]);
   const videoY = useTransform(scrollYProgress, [0, 1], ["0%", "-8%"]);
-  const overlayOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.4, 1],
-    [0.55, 0.7, 0.85],
-  );
+  const overlayOpacity = useTransform(scrollYProgress, [0, 0.4, 1], [0.55, 0.7, 0.85]);
   // Background editorial typography drift
   const bgTypoX = useTransform(scrollYProgress, [0, 1], ["-4%", "4%"]);
 
@@ -79,7 +74,7 @@ export function CinematicStory() {
       }}
     >
       {/* Sticky pinned stage */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#000209]">
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-showcase">
         {/* Video background */}
         <motion.div
           style={{ scale: videoScale, y: videoY }}
@@ -98,16 +93,12 @@ export function CinematicStory() {
         </motion.div>
 
         {/* Dark gradient overlay for readability */}
-        <motion.div
-          style={{ opacity: overlayOpacity }}
-          className="absolute inset-0"
-          aria-hidden
-        >
+        <motion.div style={{ opacity: overlayOpacity }} className="absolute inset-0" aria-hidden>
           <div
             className="h-full w-full"
             style={{
               background:
-                "linear-gradient(180deg, rgba(0,2,9,0.9) 0%, rgba(0,2,9,0.35) 40%, rgba(0,2,9,0.55) 70%, rgba(0,2,9,0.95) 100%)",
+                "linear-gradient(180deg, color-mix(in oklab, var(--showcase) 90%, transparent) 0%, color-mix(in oklab, var(--showcase) 35%, transparent) 40%, color-mix(in oklab, var(--showcase) 55%, transparent) 70%, color-mix(in oklab, var(--showcase) 95%, transparent) 100%)",
             }}
           />
         </motion.div>
@@ -119,7 +110,7 @@ export function CinematicStory() {
           className="pointer-events-none absolute inset-0 flex items-center justify-center"
         >
           <span
-            className="select-none font-black tracking-tight text-white/25 mix-blend-overlay whitespace-nowrap"
+            className="select-none font-black tracking-tight text-showcase-foreground/25 mix-blend-overlay whitespace-nowrap"
             style={{
               fontSize: "clamp(8rem, 26vw, 26rem)",
               lineHeight: 0.85,
@@ -130,7 +121,7 @@ export function CinematicStory() {
         </motion.div>
 
         {/* Foreground scroll-telling content */}
-        <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-6 text-center text-white">
+        <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-6 text-center text-showcase-foreground">
           {/* Headline — split into words, staggered entry */}
           <motion.h2
             initial="hidden"
@@ -163,15 +154,15 @@ export function CinematicStory() {
                   delay: i * 0.08,
                   ease: [0.22, 1, 0.36, 1],
                 }}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm"
+                className="rounded-2xl border border-showcase-border bg-showcase-foreground/[0.03] p-5 backdrop-blur-sm"
               >
-                <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/60">
+                <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-showcase-muted">
                   {b.kicker}
                 </p>
-                <h3 className="mt-1.5 text-lg font-black text-white text-[clamp(1.1rem,2.4vw,1.6rem)]">
+                <h3 className="mt-1.5 text-lg font-black text-showcase-foreground text-[clamp(1.1rem,2.4vw,1.6rem)]">
                   {b.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/80 text-[clamp(0.9rem,1.6vw,1.05rem)]">
+                <p className="mt-2 text-sm leading-relaxed text-showcase-foreground/80 text-[clamp(0.9rem,1.6vw,1.05rem)]">
                   {b.body}
                 </p>
               </motion.div>
@@ -189,7 +180,7 @@ export function CinematicStory() {
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
-            className="mt-8 inline-flex items-center gap-2.5 rounded-full border border-white/25 bg-white/10 px-7 py-3.5 text-sm font-black text-white shadow-2xl backdrop-blur-xl transition hover:bg-white/20"
+            className="mt-8 inline-flex items-center gap-2.5 rounded-full border border-showcase-foreground/25 bg-showcase-foreground/10 px-7 py-3.5 text-sm font-black text-showcase-foreground shadow-2xl backdrop-blur-xl transition hover:bg-showcase-foreground/20"
           >
             <MessageCircle className="h-4 w-4" />
             <span>ابدأ رحلتك معنا عبر واتساب</span>
@@ -201,8 +192,7 @@ export function CinematicStory() {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-40"
           style={{
-            background:
-              "linear-gradient(to top, #000209 0%, transparent 100%)",
+            background: "linear-gradient(to top, var(--showcase) 0%, transparent 100%)",
           }}
         />
       </div>

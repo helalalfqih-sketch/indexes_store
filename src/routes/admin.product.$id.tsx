@@ -145,13 +145,7 @@ const DESC_MAX = 4000;
 const SEO_TITLE_MAX = 60;
 const SEO_DESC_MAX = 160;
 
-const TAG_SUGGESTIONS = [
-  "جديد",
-  "عرض",
-  "الأكثر مبيعاً",
-  "حصري",
-  "توصيل مجاني",
-];
+const TAG_SUGGESTIONS = ["جديد", "عرض", "الأكثر مبيعاً", "حصري", "توصيل مجاني"];
 
 function ProductDetailPage() {
   const { id } = Route.useParams();
@@ -305,7 +299,7 @@ function ProductDetailPage() {
       pattern,
       google_product_category,
       fb_product_category,
-      meta_sync_status: (p as any).meta_sync_status ?? "not_synced",
+      meta_sync_status: (p as { meta_sync_status?: string }).meta_sync_status ?? "not_synced",
     };
     setForm(next);
     setInitial(next);
@@ -319,10 +313,7 @@ function ProductDetailPage() {
     setForm((f) => ({ ...f, slug: slugify(f.name) }));
   }, [form.name, slugTouched]);
 
-  const dirty = useMemo(
-    () => JSON.stringify(form) !== JSON.stringify(initial),
-    [form, initial],
-  );
+  const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(initial), [form, initial]);
 
   // Warn on unload with unsaved changes
   useEffect(() => {
@@ -343,16 +334,17 @@ function ProductDetailPage() {
     if (form.material.trim()) finalTags.push(`_material:${form.material.trim()}`);
     if (form.age_group.trim()) finalTags.push(`_age:${form.age_group.trim()}`);
     if (form.pattern.trim()) finalTags.push(`_pattern:${form.pattern.trim()}`);
-    if (form.google_product_category.trim()) finalTags.push(`_gcat:${form.google_product_category.trim()}`);
-    if (form.fb_product_category.trim()) finalTags.push(`_fbcat:${form.fb_product_category.trim()}`);
+    if (form.google_product_category.trim())
+      finalTags.push(`_gcat:${form.google_product_category.trim()}`);
+    if (form.fb_product_category.trim())
+      finalTags.push(`_fbcat:${form.fb_product_category.trim()}`);
 
     return {
       slug: form.slug.trim(),
       name: form.name.trim(),
       description: form.description,
       price: Number(form.price),
-      old_price:
-        form.old_price != null && form.old_price > 0 ? Number(form.old_price) : null,
+      old_price: form.old_price != null && form.old_price > 0 ? Number(form.old_price) : null,
       currency: form.currency,
       category_id: form.category_id || undefined,
       brand: form.brand || undefined,
@@ -369,8 +361,7 @@ function ProductDetailPage() {
         form.compare_at_price != null && form.compare_at_price > 0
           ? Number(form.compare_at_price)
           : null,
-      cost_price:
-        form.cost_price != null && form.cost_price > 0 ? Number(form.cost_price) : null,
+      cost_price: form.cost_price != null && form.cost_price > 0 ? Number(form.cost_price) : null,
       availability: form.availability || null,
       condition: form.condition || null,
       source_url: form.source_url.trim() || null,
@@ -385,7 +376,7 @@ function ProductDetailPage() {
   const validate = (): string | null => {
     if (!form.name.trim()) return "اسم المنتج مطلوب";
     if (!form.slug.trim()) return "الرابط (slug) مطلوب";
-    if (!/^[\p{L}\p{N}-]+$/ui.test(form.slug)) return "الرابط يجب أن يحوي أحرف وأرقام و - فقط";
+    if (!/^[\p{L}\p{N}-]+$/iu.test(form.slug)) return "الرابط يجب أن يحوي أحرف وأرقام و - فقط";
     if (!(form.price >= 0)) return "السعر غير صالح";
     if (form.images.length === 0) return "يجب إضافة صورة واحدة على الأقل";
     return null;
@@ -447,7 +438,7 @@ function ProductDetailPage() {
     onSuccess: (rawResponse) => {
       const parsed: Record<string, string> = {};
       const regExp = RegExp(
-        /===(TITLE|DESCRIPTION|BRAND|COLOR|SIZE|G_CAT|FB_CAT|CONDITION|HOOK|BODY|FEATURES|PRICE|SAR)===\s*([\s\S]*?)(?=\s*===(?:TITLE|DESCRIPTION|BRAND|COLOR|SIZE|G_CAT|FB_CAT|CONDITION|HOOK|BODY|FEATURES|PRICE|SAR)===|$)/g
+        /===(TITLE|DESCRIPTION|BRAND|COLOR|SIZE|G_CAT|FB_CAT|CONDITION|HOOK|BODY|FEATURES|PRICE|SAR)===\s*([\s\S]*?)(?=\s*===(?:TITLE|DESCRIPTION|BRAND|COLOR|SIZE|G_CAT|FB_CAT|CONDITION|HOOK|BODY|FEATURES|PRICE|SAR)===|$)/g,
       );
       let match;
       while ((match = regExp.exec(rawResponse)) !== null) {
@@ -484,28 +475,61 @@ function ProductDetailPage() {
 
       // اليمن الطبية / تنظيف محتويات
       const medicalKeywords = [
-        'جهاز طبي', 'medical device', 'ضغط الدم', 'blood pressure',
-        'جلوكوز', 'glucose', 'ecg', 'نبض القلب',
-        'oximeter', 'أكسجين الدم', 'oxygen', 'مستشفى', 'hospital',
-        'تشخيص طبي', 'diagnosis', 'علاج طبي', 'دواء طبي', 'medicine',
-        'أشعة x', 'x-ray', 'موجات فوق صوتية', 'ultrasound', 'منظار طبي', 'endoscope',
-        'عملية جراحية', 'surgery', 'عيادة طبية', 'مريض طبي',
-        'مختبر طبي', 'laboratory test', 'فحص طبي', 'ترمومتر طبي',
-        'stethoscope', 'سماعة طبية', 'حقنة طبية', 'syringe', 'medical needle',
-        'إبرة طبية', 'insulin', 'أنسولين', 'كولسترول', 'cholesterol',
+        "جهاز طبي",
+        "medical device",
+        "ضغط الدم",
+        "blood pressure",
+        "جلوكوز",
+        "glucose",
+        "ecg",
+        "نبض القلب",
+        "oximeter",
+        "أكسجين الدم",
+        "oxygen",
+        "مستشفى",
+        "hospital",
+        "تشخيص طبي",
+        "diagnosis",
+        "علاج طبي",
+        "دواء طبي",
+        "medicine",
+        "أشعة x",
+        "x-ray",
+        "موجات فوق صوتية",
+        "ultrasound",
+        "منظار طبي",
+        "endoscope",
+        "عملية جراحية",
+        "surgery",
+        "عيادة طبية",
+        "مريض طبي",
+        "مختبر طبي",
+        "laboratory test",
+        "فحص طبي",
+        "ترمومتر طبي",
+        "stethoscope",
+        "سماعة طبية",
+        "حقنة طبية",
+        "syringe",
+        "medical needle",
+        "إبرة طبية",
+        "insulin",
+        "أنسولين",
+        "كولسترول",
+        "cholesterol",
       ];
       const lower = text.toLowerCase();
-      const isMedical = medicalKeywords.some(kw => lower.includes(kw));
+      const isMedical = medicalKeywords.some((kw) => lower.includes(kw));
       if (isMedical) {
         throw new Error("تحذير: تم اكتشاف كلمات تشير إلى جهاز أو مستحضر طبي محظور في Meta!");
       }
 
       // Clean contact info
-      let cleaned = text
-        .replace(/(\+?967|00967)?[\s\-]?(7\d{8}|\d{3}[\s\-]?\d{3}[\s\-]?\d{4})/g, '')
-        .replace(/اندكس\s*ستور|index\s*store|متجر\s*اندكس|للتواصل|للاستفسار|واتساب|whatsapp/gi, '')
-        .replace(/(للطلب|للتواصل|للاستفسار|تواصل معنا|اتصل بنا|راسلنا)[^\n]*\n?/gi, '')
-        .replace(/\n{3,}/g, '\n\n')
+      const cleaned = text
+        .replace(/(\+?967|00967)?[\s-]?(7\d{8}|\d{3}[\s-]?\d{3}[\s-]?\d{4})/g, "")
+        .replace(/اندكس\s*ستور|index\s*store|متجر\s*اندكس|للتواصل|للاستفسار|واتساب|whatsapp/gi, "")
+        .replace(/(للطلب|للتواصل|للاستفسار|تواصل معنا|اتصل بنا|راسلنا)[^\n]*\n?/gi, "")
+        .replace(/\n{3,}/g, "\n\n")
         .trim();
 
       const res = await optimizeDescription({ data: { text: cleaned } });
@@ -514,7 +538,7 @@ function ProductDetailPage() {
     onSuccess: (rawResponse) => {
       const parsed: Record<string, string> = {};
       const regExp = RegExp(
-        /===(TITLE|DESCRIPTION|BRAND|COLOR|SIZE|G_CAT|FB_CAT|CONDITION|HOOK|BODY|FEATURES|PRICE|SAR)===\s*([\s\S]*?)(?=\s*===(?:TITLE|DESCRIPTION|BRAND|COLOR|SIZE|G_CAT|FB_CAT|CONDITION|HOOK|BODY|FEATURES|PRICE|SAR)===|$)/g
+        /===(TITLE|DESCRIPTION|BRAND|COLOR|SIZE|G_CAT|FB_CAT|CONDITION|HOOK|BODY|FEATURES|PRICE|SAR)===\s*([\s\S]*?)(?=\s*===(?:TITLE|DESCRIPTION|BRAND|COLOR|SIZE|G_CAT|FB_CAT|CONDITION|HOOK|BODY|FEATURES|PRICE|SAR)===|$)/g,
       );
       let match;
       while ((match = regExp.exec(rawResponse)) !== null) {
@@ -525,27 +549,27 @@ function ProductDetailPage() {
         }
       }
 
-      const titleStr = parsed.TITLE || '';
-      const hookStr = parsed.HOOK || '';
-      const rephrasedBody = parsed.BODY || '';
-      const featuresText = parsed.FEATURES || '';
-      const priceYer = parsed.PRICE || '';
-      const priceSar = parsed.SAR || '';
+      const titleStr = parsed.TITLE || "";
+      const hookStr = parsed.HOOK || "";
+      const rephrasedBody = parsed.BODY || "";
+      const featuresText = parsed.FEATURES || "";
+      const priceYer = parsed.PRICE || "";
+      const priceSar = parsed.SAR || "";
 
-      let formattedDesc = '';
+      let formattedDesc = "";
       if (titleStr) formattedDesc += `${titleStr}\n`;
       if (hookStr) formattedDesc += `${hookStr}\n`;
-      if (formattedDesc) formattedDesc += '\n';
+      if (formattedDesc) formattedDesc += "\n";
       if (rephrasedBody) formattedDesc += `${rephrasedBody}\n\n`;
 
       if (featuresText) {
-        featuresText.split('\n').forEach(fl => {
+        featuresText.split("\n").forEach((fl) => {
           const line = fl.trim();
           if (line) {
-            formattedDesc += `✅ ${line.replace('✅', '').trim()}\n`;
+            formattedDesc += `✅ ${line.replace("✅", "").trim()}\n`;
           }
         });
-        formattedDesc += '\n';
+        formattedDesc += "\n";
       }
 
       if (priceYer) formattedDesc += `السعر: ${priceYer} ريال يمني\n`;
@@ -570,48 +594,48 @@ function ProductDetailPage() {
     },
   });
 
-const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
+  const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
 
-        if (width > height) {
-          if (width > maxW) {
-            height = Math.round((height * maxW) / width);
-            width = maxW;
+          if (width > height) {
+            if (width > maxW) {
+              height = Math.round((height * maxW) / width);
+              width = maxW;
+            }
+          } else {
+            if (height > maxH) {
+              width = Math.round((width * maxH) / height);
+              height = maxH;
+            }
           }
-        } else {
-          if (height > maxH) {
-            width = Math.round((width * maxH) / height);
-            height = maxH;
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(e.target?.result as string);
+            return;
           }
-        }
 
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          resolve(e.target?.result as string);
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
-        resolve(dataUrl);
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          resolve(dataUrl);
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target?.result as string;
       };
-      img.onerror = () => reject(new Error("Failed to load image"));
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-};
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -673,18 +697,23 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
 
   const shareWhatsApp = () => {
     const text = encodeURIComponent(
-      `🛍️ *${form.name}*\n\n${form.description}\n\n💰 السعر: ${form.price} ${form.currency}\n\nللطلب والاستفسار تواصل معنا 👇`
+      `🛍️ *${form.name}*\n\n${form.description}\n\n💰 السعر: ${form.price} ${form.currency}\n\nللطلب والاستفسار تواصل معنا 👇`,
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 
   const shareFacebook = () => {
     const url = `${window.location.origin}/product/${form.slug}`;
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank");
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      "_blank",
+    );
   };
 
   const shareInstagram = () => {
-    const text = encodeURIComponent(`🛍️ ${form.name}\n\n${form.description}\n\n💰 السعر: ${form.price} ${form.currency}`);
+    const text = encodeURIComponent(
+      `🛍️ ${form.name}\n\n${form.description}\n\n💰 السعر: ${form.price} ${form.currency}`,
+    );
     toast.info("تم نسخ النص لمشاركته يدوياً");
     navigator.clipboard.writeText(decodeURIComponent(text));
   };
@@ -695,9 +724,7 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
 
   const categories = categoriesQ.data ?? [];
   const filteredCategories = categorySearch
-    ? categories.filter((c) =>
-        c.name.toLowerCase().includes(categorySearch.toLowerCase()),
-      )
+    ? categories.filter((c) => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
     : categories;
 
   const discountPct =
@@ -789,8 +816,9 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
                   onChange={(next) => setForm({ ...form, images: next })}
                 />
                 {form.images.length === 0 && (
-                  <p className="text-[11px] text-amber-500 flex items-center gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5" /> أضف صورة رئيسية للمنتج على الأقل ليتم قبوله ومزامنته
+                  <p className="flex items-center gap-1 text-[11px] text-warning">
+                    <AlertTriangle className="h-3.5 w-3.5" /> أضف صورة رئيسية للمنتج على الأقل ليتم
+                    قبوله ومزامنته
                   </p>
                 )}
               </div>
@@ -819,13 +847,19 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
                   {uploadingVideo ? (
                     <div className="space-y-2">
                       <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
-                      <p className="text-xs font-bold text-muted-foreground">جاري رفع ومعالجة الفيديو...</p>
+                      <p className="text-xs font-bold text-muted-foreground">
+                        جاري رفع ومعالجة الفيديو...
+                      </p>
                     </div>
                   ) : form.video_playback_id ? (
                     <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
-                      <div className="mx-auto max-w-xs overflow-hidden rounded-xl border border-border aspect-video bg-black flex items-center justify-center relative">
+                      <div className="relative mx-auto flex aspect-video max-w-xs items-center justify-center overflow-hidden rounded-xl border border-border bg-showcase">
                         {localVideoUrl ? (
-                          <video src={localVideoUrl} controls className="h-full w-full object-cover" />
+                          <video
+                            src={localVideoUrl}
+                            controls
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           <div className="text-center text-xs text-muted-foreground p-3">
                             <Video className="mx-auto h-5 w-5 mb-1 text-primary" />
@@ -872,7 +906,8 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
                 <h3 className="font-bold text-sm text-primary">توليد وصف بالذكاء الاصطناعي</h3>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                ارفع صورة المنتج بالسحب والإفلات هنا، أو انقر للاختيار لتوليد العنوان والوصف والتصنيف والأسعار تلقائياً!
+                ارفع صورة المنتج بالسحب والإفلات هنا، أو انقر للاختيار لتوليد العنوان والوصف
+                والتصنيف والأسعار تلقائياً!
               </p>
               <div className="flex gap-2">
                 <input
@@ -940,7 +975,9 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
                 <FormField label="" hint="ادخل تفاصيل المنتج والسعر هنا ثم اضغط تحسين ذكي">
                   <textarea
                     value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value.slice(0, DESC_MAX) })}
+                    onChange={(e) =>
+                      setForm({ ...form, description: e.target.value.slice(0, DESC_MAX) })
+                    }
                     rows={6}
                     placeholder="اكتب وصفاً واضحاً للمنتج..."
                     className={inputCls}
@@ -1037,7 +1074,9 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
                   <FormField label="فئة منتج Google">
                     <input
                       value={form.google_product_category}
-                      onChange={(e) => setForm({ ...form, google_product_category: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, google_product_category: e.target.value })
+                      }
                       placeholder="Apparel & Accessories > Clothing"
                       className={inputCls}
                     />
@@ -1094,7 +1133,7 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
                   <button
                     type="button"
                     onClick={shareWhatsApp}
-                    className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#25D366]/30 bg-[#25D366]/5 text-[#25D366] hover:bg-[#25D366]/10 transition"
+                    className="flex flex-col items-center justify-center rounded-xl border border-success/30 bg-success/5 p-3 text-success transition hover:bg-success/10"
                   >
                     <MessageCircle className="h-5 w-5 mb-1" />
                     <span className="text-[11px] font-bold">واتساب</span>
@@ -1102,7 +1141,7 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
                   <button
                     type="button"
                     onClick={shareFacebook}
-                    className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#1877F2]/30 bg-[#1877F2]/5 text-[#1877F2] hover:bg-[#1877F2]/10 transition"
+                    className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/5 p-3 text-primary transition hover:bg-primary/10"
                   >
                     <Share2 className="h-5 w-5 mb-1" />
                     <span className="text-[11px] font-bold">فيسبوك</span>
@@ -1110,7 +1149,7 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
                   <button
                     type="button"
                     onClick={shareInstagram}
-                    className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E1306C]/30 bg-[#E1306C]/5 text-[#E1306C] hover:bg-[#E1306C]/10 transition"
+                    className="flex flex-col items-center justify-center rounded-xl border border-primary-light/30 bg-primary-light/5 p-3 text-primary transition hover:bg-primary-light/10"
                   >
                     <Copy className="h-5 w-5 mb-1" />
                     <span className="text-[11px] font-bold">انستقرام</span>
@@ -1200,20 +1239,24 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
                     type="button"
                     onClick={() => setForm({ ...form, is_published: true })}
                     className={`rounded-xl border p-3 text-start transition ${
-                      form.is_published ? "border-success bg-success/10" : "border-border bg-surface"
+                      form.is_published
+                        ? "border-success bg-success/10"
+                        : "border-border bg-surface"
                     }`}
                   >
-                    <span className="block text-xs font-black text-white">منشور</span>
+                    <span className="block text-xs font-black text-foreground">منشور</span>
                     <span className="block text-[11px] text-muted-foreground">يظهر بالمتجر</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, is_published: false })}
                     className={`rounded-xl border p-3 text-start transition ${
-                      !form.is_published ? "border-warning bg-warning/10" : "border-border bg-surface"
+                      !form.is_published
+                        ? "border-warning bg-warning/10"
+                        : "border-border bg-surface"
                     }`}
                   >
-                    <span className="block text-xs font-black text-white">مسودة</span>
+                    <span className="block text-xs font-black text-foreground">مسودة</span>
                     <span className="block text-[11px] text-muted-foreground">مخفي بالمتجر</span>
                   </button>
                 </div>
@@ -1277,7 +1320,7 @@ const compressAndResizeImage = (file: File, maxW = 800, maxH = 800): Promise<str
               type="button"
               onClick={() => saveMut.mutate()}
               disabled={saveMut.isPending || (!dirty && !isNew)}
-              className="inline-flex items-center gap-2 rounded-xl gradient-brand px-5 py-2 text-sm font-bold text-primary-foreground shadow-brand disabled:opacity-60 transition"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground shadow-brand disabled:opacity-60 transition"
             >
               {saveMut.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1346,7 +1389,7 @@ function ProductPreviewView({
   categories,
 }: {
   form: FormState;
-  categories: any[];
+  categories: Array<{ id: string; name: string }>;
 }) {
   return (
     <div className="rounded-2xl border border-border bg-surface/30 p-6 space-y-6">
@@ -1357,12 +1400,12 @@ function ProductPreviewView({
           </div>
         )}
         <div className="space-y-4">
-          <h2 className="text-2xl font-black text-white">{form.name || "بدون اسم"}</h2>
+          <h2 className="text-2xl font-black text-foreground">{form.name || "بدون اسم"}</h2>
           <div className="flex gap-2">
             <span className="rounded bg-primary/10 border border-primary/20 px-2 py-0.5 text-xs text-primary font-bold">
               {form.price} {form.currency}
             </span>
-            <span className="rounded bg-white/10 px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               {categories.find((c) => c.id === form.category_id)?.name || "بدون تصنيف"}
             </span>
           </div>

@@ -58,8 +58,7 @@ export const Route = createFileRoute("/checkout")({
    */
   loader: async ({ location }) => {
     const rawSearch = location.search as Record<string, unknown>;
-    const productsParam =
-      typeof rawSearch.products === "string" ? rawSearch.products : undefined;
+    const productsParam = typeof rawSearch.products === "string" ? rawSearch.products : undefined;
 
     const parsed = parseProductsParam(productsParam);
     if (parsed.length === 0) {
@@ -89,9 +88,7 @@ function CheckoutBridgePage() {
   // Products not found in the DB are silently ignored (their id won't be in resolvedProducts).
   const resolvedItems: Array<{ product: LegacyProductShape; qty: number }> = resolvedProducts
     .map((product) => {
-      const requested = parsedItems.find(
-        (p) => p.id === product.id || p.id === product.slug,
-      );
+      const requested = parsedItems.find((p) => p.id === product.id || p.id === product.slug);
       return { product, qty: requested?.qty ?? 1 };
     })
     .filter((item) => item.product != null);
@@ -127,7 +124,7 @@ function CheckoutBridgePage() {
         </p>
         <Link
           to="/"
-          className="mt-2 inline-flex items-center gap-2 rounded-xl gradient-brand px-5 py-2.5 text-sm font-bold text-white shadow-brand"
+          className="mt-2 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
         >
           <span>تصفح المنتجات</span>
         </Link>
@@ -149,7 +146,7 @@ function CheckoutBridgePage() {
         </p>
         <Link
           to="/"
-          className="mt-2 inline-flex items-center gap-2 rounded-xl gradient-brand px-5 py-2.5 text-sm font-bold text-white shadow-brand"
+          className="mt-2 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
         >
           <span>العودة للمتجر</span>
         </Link>
@@ -177,7 +174,8 @@ function CheckoutBridgePage() {
           <h1 className="text-md font-black">تم تجهيز طلبك بنجاح!</h1>
         </div>
         <p className="text-xs text-muted-foreground">
-          لقد قمنا باستيراد المنتجات المحددة من Meta. يرجى مراجعة تفاصيل طلبك أدناه للمتابعة إلى صفحة الدفع.
+          لقد قمنا باستيراد المنتجات المحددة من Meta. يرجى مراجعة تفاصيل طلبك أدناه للمتابعة إلى
+          صفحة الدفع.
         </p>
       </section>
 
@@ -187,9 +185,15 @@ function CheckoutBridgePage() {
         <ul className="flex flex-col gap-3">
           {resolvedItems.map(({ product, qty }) => (
             <li key={product.id} className="flex gap-3">
-              <img src={product.image} alt={product.name} className="h-16 w-16 rounded-xl object-cover border border-border/50" />
+              <img
+                src={product.image}
+                alt={product.name}
+                className="h-16 w-16 rounded-xl object-cover border border-border/50"
+              />
               <div className="flex flex-1 flex-col justify-between py-0.5">
-                <h3 className="line-clamp-2 text-xs font-bold leading-tight text-foreground">{product.name}</h3>
+                <h3 className="line-clamp-2 text-xs font-bold leading-tight text-foreground">
+                  {product.name}
+                </h3>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>الكمية: {qty}</span>
                   <span className="font-bold text-primary">{formatPrice(product.price * qty)}</span>
@@ -202,14 +206,14 @@ function CheckoutBridgePage() {
 
       {/* Coupon Banner — display only, no discount calculation here */}
       {couponParam && (
-        <section className="flex items-center justify-between gap-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-emerald-500">
+        <section className="flex items-center justify-between gap-3 rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-success">
           <div className="flex items-center gap-2">
             <Tag className="h-4 w-4" />
             <span className="text-xs font-bold">
               كوبون الخصم مُفعَّل: <span className="font-mono">{couponParam}</span>
             </span>
           </div>
-          <span className="text-xs text-emerald-400/70">يُطبَّق في صفحة السلة</span>
+          <span className="text-xs text-success/70">يُطبَّق في صفحة السلة</span>
         </section>
       )}
 
@@ -222,7 +226,7 @@ function CheckoutBridgePage() {
             <span>{formatPrice(subtotal)}</span>
           </div>
           {couponParam && (
-            <div className="flex items-center justify-between text-xs text-emerald-500 font-medium">
+            <div className="flex items-center justify-between text-xs text-success font-medium">
               <span>كوبون الخصم ({couponParam})</span>
               <span>يُحسب في السلة</span>
             </div>
@@ -242,7 +246,7 @@ function CheckoutBridgePage() {
       <div className="flex flex-col gap-2 mt-2">
         <button
           onClick={handleContinue}
-          className="flex items-center justify-center gap-2 rounded-2xl gradient-brand py-4 text-sm font-black text-white shadow-brand transition-transform hover:scale-[1.01]"
+          className="flex items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-black text-primary-foreground shadow-brand transition-transform hover:scale-[1.01]"
         >
           <ShoppingBag className="h-5 w-5" />
           متابعة إتمام الطلب

@@ -8,20 +8,28 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
     <footer
       dir="rtl"
       className={`mt-8 border-t px-5 pb-6 pt-6 transition-colors duration-300 ${
-        isHome 
-          ? "border-white/10 bg-gradient-to-br from-[#000209] to-[#0d1435] text-white/90" 
-          : "border-border/60 bg-gradient-to-br from-white to-primary-soft/20 text-foreground"
+        isHome
+          ? "border-showcase-border bg-showcase text-showcase-foreground"
+          : "border-border/60 bg-surface text-foreground"
       }`}
       style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
-          <div className="grid h-9 w-9 place-items-center rounded-xl gradient-brand text-white shadow-brand">
+          <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-brand">
             <ShoppingBag className="h-4.5 w-4.5" />
           </div>
           <div className="leading-tight">
-            <div className="text-sm font-black text-primary">اندكس ستور</div>
-            <div className="text-[11px] text-muted-foreground">اختيارك الأفضل</div>
+            <div
+              className={`text-sm font-black ${isHome ? "text-showcase-foreground" : "text-primary"}`}
+            >
+              اندكس ستور
+            </div>
+            <div
+              className={`text-[11px] ${isHome ? "text-showcase-muted" : "text-muted-foreground"}`}
+            >
+              اختيارك الأفضل
+            </div>
           </div>
         </div>
 
@@ -42,9 +50,7 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
           </li>
           <li className="flex items-start gap-2">
             <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-            <span>
-              العنوان: صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية
-            </span>
+            <span>العنوان: صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية</span>
           </li>
           <li className="flex items-start gap-2">
             <Truck className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
@@ -62,7 +68,9 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
           تواصل معنا الآن
         </a>
 
-        <p className="pt-2 text-center text-[10px] text-muted-foreground">
+        <p
+          className={`pt-2 text-center text-[10px] ${isHome ? "text-showcase-muted" : "text-muted-foreground"}`}
+        >
           © اندكس ستور {new Date().getFullYear()} — جميع الحقوق محفوظة
         </p>
       </div>

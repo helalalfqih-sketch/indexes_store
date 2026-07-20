@@ -65,15 +65,30 @@ const ACTIONS: {
   needsImages?: boolean;
   needsText?: boolean;
 }[] = [
-  { key: "title", label: "توليد اسم", description: "اسم منتج جذاب من الصور" , needsImages: true },
-  { key: "improveTitle", label: "تحسين الاسم", description: "إعادة صياغة الاسم الحالي", needsText: true },
+  { key: "title", label: "توليد اسم", description: "اسم منتج جذاب من الصور", needsImages: true },
+  {
+    key: "improveTitle",
+    label: "تحسين الاسم",
+    description: "إعادة صياغة الاسم الحالي",
+    needsText: true,
+  },
   { key: "description", label: "توليد وصف", description: "وصف تسويقي كامل" },
-  { key: "improveDescription", label: "تحسين الوصف", description: "تنقيح الوصف الحالي", needsText: true },
+  {
+    key: "improveDescription",
+    label: "تحسين الوصف",
+    description: "تنقيح الوصف الحالي",
+    needsText: true,
+  },
   { key: "tags", label: "توليد وسوم", description: "كلمات مفتاحية للبحث" },
   { key: "seoTitle", label: "عنوان SEO", description: "عنوان محرك بحث محسّن" },
   { key: "seoDescription", label: "وصف SEO", description: "وصف Meta للمتاجر" },
   { key: "category", label: "اقتراح تصنيف", description: "أنسب تصنيف من الصور" },
-  { key: "brand", label: "اقتراح ماركة", description: "استخراج الماركة من الصور", needsImages: true },
+  {
+    key: "brand",
+    label: "اقتراح ماركة",
+    description: "استخراج الماركة من الصور",
+    needsImages: true,
+  },
   { key: "price", label: "اقتراح سعر", description: "سعر بيع تقديري" },
   { key: "features", label: "استخراج مزايا", description: "قائمة مزايا رئيسية" },
   { key: "highlights", label: "نقاط تسويقية", description: "3 نقاط بيع قوية" },
@@ -107,16 +122,24 @@ function buildHint(action: AiAction, ctx: AiContext): string {
       parts.push("المطلوب: مواصفات تقنية بصيغة قائمة (المفتاح: القيمة).");
       break;
     case "fbAd":
-      parts.push("المطلوب: إنشاء نص إعلان ترويجي احترافي ومقنع للفيسبوك لزيادة المبيعات، مع استخدام رموز تعبيرية (Emojis) ودعوة واضحة لاتخاذ إجراء (CTA).");
+      parts.push(
+        "المطلوب: إنشاء نص إعلان ترويجي احترافي ومقنع للفيسبوك لزيادة المبيعات، مع استخدام رموز تعبيرية (Emojis) ودعوة واضحة لاتخاذ إجراء (CTA).",
+      );
       break;
     case "tiktokAd":
-      parts.push("المطلوب: كتابة سيناريو فيديو إعلاني قصير وتفاعلي لـ TikTok (مشهد وصوت) مع الهاشتاغات الرائجة.");
+      parts.push(
+        "المطلوب: كتابة سيناريو فيديو إعلاني قصير وتفاعلي لـ TikTok (مشهد وصوت) مع الهاشتاغات الرائجة.",
+      );
       break;
     case "instaCaption":
-      parts.push("المطلوب: كتابة كابشن (Caption) تفاعلي وجذاب لمنشور انستقرام لهذا المنتج مع هاشتاغات مستهدفة.");
+      parts.push(
+        "المطلوب: كتابة كابشن (Caption) تفاعلي وجذاب لمنشور انستقرام لهذا المنتج مع هاشتاغات مستهدفة.",
+      );
       break;
     case "translate":
-      parts.push("المطلوب: ترجمة اسم ووصف المنتج بدقة واحترافية للغة الإنجليزية (أو العكس إذا كان بالإنجليزية).");
+      parts.push(
+        "المطلوب: ترجمة اسم ووصف المنتج بدقة واحترافية للغة الإنجليزية (أو العكس إذا كان بالإنجليزية).",
+      );
       break;
     case "rewrite":
       parts.push("المطلوب: إعادة صياغة محتوى بطاقة المنتج الحالي بأسلوب لغوي راقٍ وأكثر إقناعاً.");
@@ -161,9 +184,7 @@ function extractValue(
       return data.tags[0] ?? ctx.brand ?? "";
     case "price": {
       const currency = data.priceEstimate?.currency || ctx.currency || "YER";
-      const mid = Math.round(
-        ((data.priceEstimate?.min ?? 0) + (data.priceEstimate?.max ?? 0)) / 2,
-      );
+      const mid = Math.round(((data.priceEstimate?.min ?? 0) + (data.priceEstimate?.max ?? 0)) / 2);
       // Return numeric mid as price suggestion; UI will format
       return mid || 0;
     }
@@ -172,13 +193,7 @@ function extractValue(
   }
 }
 
-export function AiAssistantPanel({
-  context,
-  onApply,
-}: {
-  context: AiContext;
-  onApply: AiApply;
-}) {
+export function AiAssistantPanel({ context, onApply }: { context: AiContext; onApply: AiApply }) {
   const [busy, setBusy] = useState<AiAction | null>(null);
   const [done, setDone] = useState<Record<string, number>>({});
 
@@ -209,12 +224,10 @@ export function AiAssistantPanel({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl bg-gradient-to-br from-primary/10 to-fuchsia-500/10 p-3">
+      <div className="rounded-xl bg-gradient-to-br from-primary/10 to-primary-light/10 p-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
-          <p className="text-xs font-bold">
-            المساعد الذكي يولّد المحتوى من الصور والاسم الحالي
-          </p>
+          <p className="text-xs font-bold">المساعد الذكي يولّد المحتوى من الصور والاسم الحالي</p>
         </div>
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

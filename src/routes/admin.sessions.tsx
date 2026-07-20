@@ -17,11 +17,11 @@ function SessionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-black lg:text-4xl">
-          <span className="neon-text">{t("sessions.title")}</span>
-        </h1>
+        <h1 className="text-3xl font-black lg:text-4xl text-foreground">{t("sessions.title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {lang === "ar" ? "تتبع خط إنتاج الذكاء الاصطناعي للمنتجات." : "AI product pipeline tracking."}
+          {lang === "ar"
+            ? "تتبع خط إنتاج الذكاء الاصطناعي للمنتجات."
+            : "AI product pipeline tracking."}
         </p>
       </div>
 
@@ -61,7 +61,7 @@ function SessionsPage() {
                           done
                             ? "border-primary/40 bg-primary/10 text-primary"
                             : "border-border/60 text-muted-foreground hover:bg-accent"
-                        } ${current ? "neon-ring" : ""}`}
+                        } ${current ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-surface" : ""}`}
                       >
                         <Icon className="h-4 w-4" />
                         <span className="truncate">{t(`sessions.step.${step}`)}</span>
@@ -71,7 +71,7 @@ function SessionsPage() {
                 </div>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full gradient-brand transition-all"
+                    className="h-full bg-primary transition-all"
                     style={{ width: `${((idx + 1) / steps.length) * 100}%` }}
                   />
                 </div>

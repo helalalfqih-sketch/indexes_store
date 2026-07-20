@@ -16,6 +16,9 @@ export const Route = createFileRoute("/admin/categories")({
   component: CategoriesPage,
 });
 
+type AdminCategory = Awaited<ReturnType<typeof listAdminCategories>>[number];
+type AdminProduct = Awaited<ReturnType<typeof listAdminProducts>>[number];
+
 type Draft = {
   slug: string;
   name: string;
@@ -57,7 +60,7 @@ function CategoriesPage() {
     queryFn: () => listAdminProducts(),
   });
 
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
 
   useEffect(() => {
     if (q.data) {
@@ -121,7 +124,7 @@ function CategoriesPage() {
   });
 
   const saveOrderMut = useMutation({
-    mutationFn: async (ordered: any[]) => {
+    mutationFn: async (ordered: AdminCategory[]) => {
       for (let i = 0; i < ordered.length; i++) {
         const cat = ordered[i];
         if (cat.sort !== i) {
@@ -145,15 +148,13 @@ function CategoriesPage() {
     onError: (e: Error) => toast.error(`تعذّر الحذف: ${e.message} (قد يحتوي التصنيف على منتجات)`),
   });
 
-  const products = productsQ.data ?? [];
+  const products: AdminProduct[] = productsQ.data ?? [];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-black lg:text-4xl">
-            <span className="neon-text">التصنيفات</span>
-          </h1>
+          <h1 className="text-3xl font-black lg:text-4xl text-foreground">التصنيفات</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {q.isLoading ? "جارٍ التحميل..." : `${categories.length} تصنيف`}
           </p>
@@ -163,7 +164,7 @@ function CategoriesPage() {
             setCreating((v) => !v);
             setDraft(emptyDraft);
           }}
-          className="inline-flex items-center gap-2 rounded-xl gradient-brand px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-brand hover:bg-primary/90 transition"
         >
           <Plus className="h-4 w-4" />
           تصنيف جديد
@@ -171,7 +172,7 @@ function CategoriesPage() {
       </div>
 
       {creating && (
-        <div className="rounded-2xl glass p-5 space-y-3">
+        <div className="rounded-2xl border border-border bg-surface p-5 space-y-3">
           <h2 className="text-sm font-black">إنشاء تصنيف</h2>
           <DraftForm draft={draft} setDraft={setDraft} categories={categories} />
           <div className="flex justify-end gap-2">
@@ -184,9 +185,13 @@ function CategoriesPage() {
             <button
               onClick={() => createMut.mutate()}
               disabled={createMut.isPending || !draft.name || !draft.slug}
-              className="inline-flex items-center gap-1.5 rounded-lg gradient-brand px-3 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-60 transition hover:bg-primary/90"
             >
-              {createMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              {createMut.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Save className="h-3.5 w-3.5" />
+              )}
               حفظ
             </button>
           </div>
@@ -194,23 +199,23 @@ function CategoriesPage() {
       )}
 
       {q.isError ? (
-        <div className="rounded-2xl glass p-8 text-center text-destructive">
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-8 text-center text-destructive">
           <p className="text-sm">{(q.error as Error).message}</p>
         </div>
       ) : q.isLoading ? (
-        <div className="rounded-2xl glass p-12 text-center">
+        <div className="rounded-2xl border border-border bg-surface p-12 text-center">
           <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
         </div>
       ) : categories.length === 0 ? (
-        <div className="rounded-2xl glass p-12 text-center">
+        <div className="rounded-2xl border border-border bg-surface p-12 text-center">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-primary/10">
             <FolderTree className="h-7 w-7 text-primary" />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">لا توجد تصنيفات</p>
         </div>
       ) : (
-        <div className="rounded-2xl glass overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+          <table className="min-w-[720px] w-full text-sm">
             <thead className="text-xs text-muted-foreground border-b border-border">
               <tr>
                 <th className="w-8"></th>
@@ -231,19 +236,34 @@ function CategoriesPage() {
             >
               {categories.map((c) => {
                 const editing = editingId === c.id;
-                const productCount = products.filter((p: any) => p.category_id === c.id).length;
+                const productCount = products.filter(
+                  (product) => product.category_id === c.id,
+                ).length;
                 return editing ? (
                   <tr key={c.id} className="border-b border-border/40 align-top bg-surface/30">
                     <td colSpan={6} className="p-4">
-                      <DraftForm draft={editDraft} setDraft={setEditDraft} categories={categories.filter((k) => k.id !== c.id)} />
+                      <DraftForm
+                        draft={editDraft}
+                        setDraft={setEditDraft}
+                        categories={categories.filter((k) => k.id !== c.id)}
+                      />
                       <div className="flex justify-end gap-2 mt-3">
-                        <button onClick={() => setEditingId(null)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold">إلغاء</button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold"
+                        >
+                          إلغاء
+                        </button>
                         <button
                           onClick={() => updateMut.mutate(c.id)}
                           disabled={updateMut.isPending}
-                          className="inline-flex items-center gap-1.5 rounded-lg gradient-brand px-3 py-1.5 text-xs font-bold text-primary-foreground"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition"
                         >
-                          {updateMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                          {updateMut.isPending ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Save className="h-3.5 w-3.5" />
+                          )}
                           حفظ
                         </button>
                       </div>
@@ -266,7 +286,9 @@ function CategoriesPage() {
                             src={c.image_url}
                             alt=""
                             className="h-7 w-7 rounded-lg object-cover border border-border"
-                            onError={(e) => { e.currentTarget.style.display = "none"; }}
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
                           />
                         )}
                         <div>
@@ -277,10 +299,16 @@ function CategoriesPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="p-3 font-mono text-xs text-muted-foreground align-middle">{c.slug}</td>
-                    <td className="p-3 text-xs align-middle">{categories.find((k) => k.id === c.parent_id)?.name ?? "—"}</td>
+                    <td className="p-3 font-mono text-xs text-muted-foreground align-middle">
+                      {c.slug}
+                    </td>
+                    <td className="p-3 text-xs align-middle">
+                      {categories.find((k) => k.id === c.parent_id)?.name ?? "—"}
+                    </td>
                     <td className="p-3 align-middle">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${c.is_active ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"}`}>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${c.is_active ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"}`}
+                      >
                         {c.is_active ? "مفعّل" : "معطّل"}
                       </span>
                     </td>
@@ -291,7 +319,11 @@ function CategoriesPage() {
                           className="grid h-7 w-7 place-items-center rounded-lg hover:bg-accent"
                           title={c.is_active ? "تعطيل" : "تفعيل"}
                         >
-                          {c.is_active ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          {c.is_active ? (
+                            <EyeOff className="h-3.5 w-3.5" />
+                          ) : (
+                            <Eye className="h-3.5 w-3.5" />
+                          )}
                         </button>
                         <button
                           onClick={() => {
@@ -333,7 +365,8 @@ function CategoriesPage() {
   );
 }
 
-const inputCls = "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary";
+const inputCls =
+  "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary";
 
 function DraftForm({
   draft,
@@ -348,43 +381,84 @@ function DraftForm({
     <div className="grid gap-3 sm:grid-cols-2">
       <label className="block">
         <span className="text-xs font-bold text-muted-foreground">الاسم</span>
-        <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={`${inputCls} mt-1`} />
+        <input
+          value={draft.name}
+          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          className={`${inputCls} mt-1`}
+        />
       </label>
       <label className="block">
         <span className="text-xs font-bold text-muted-foreground">Slug</span>
-        <input value={draft.slug} onChange={(e) => setDraft({ ...draft, slug: e.target.value })} className={`${inputCls} mt-1 font-mono`} />
+        <input
+          value={draft.slug}
+          onChange={(e) => setDraft({ ...draft, slug: e.target.value })}
+          className={`${inputCls} mt-1 font-mono`}
+        />
       </label>
       <label className="block sm:col-span-2">
         <span className="text-xs font-bold text-muted-foreground">رابط صورة الفئة (Image URL)</span>
-        <input value={draft.image_url} onChange={(e) => setDraft({ ...draft, image_url: e.target.value })} className={`${inputCls} mt-1`} placeholder="https://example.com/image.jpg" />
+        <input
+          value={draft.image_url}
+          onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
+          className={`${inputCls} mt-1`}
+          placeholder="https://example.com/image.jpg"
+        />
       </label>
       <label className="block sm:col-span-2">
         <span className="text-xs font-bold text-muted-foreground">الوصف</span>
-        <input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} className={`${inputCls} mt-1`} />
+        <input
+          value={draft.description}
+          onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+          className={`${inputCls} mt-1`}
+        />
       </label>
       <label className="block">
         <span className="text-xs font-bold text-muted-foreground">الأب</span>
-        <select value={draft.parent_id} onChange={(e) => setDraft({ ...draft, parent_id: e.target.value })} className={`${inputCls} mt-1`}>
+        <select
+          value={draft.parent_id}
+          onChange={(e) => setDraft({ ...draft, parent_id: e.target.value })}
+          className={`${inputCls} mt-1`}
+        >
           <option value="">— لا يوجد —</option>
           {categories.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
           ))}
         </select>
       </label>
       <label className="block">
         <span className="text-xs font-bold text-muted-foreground">ترتيب العرض</span>
-        <input type="number" value={draft.sort} onChange={(e) => setDraft({ ...draft, sort: Number(e.target.value) })} className={`${inputCls} mt-1`} />
+        <input
+          type="number"
+          value={draft.sort}
+          onChange={(e) => setDraft({ ...draft, sort: Number(e.target.value) })}
+          className={`${inputCls} mt-1`}
+        />
       </label>
       <label className="block">
         <span className="text-xs font-bold text-muted-foreground">أيقونة</span>
-        <input value={draft.icon} onChange={(e) => setDraft({ ...draft, icon: e.target.value })} className={`${inputCls} mt-1`} />
+        <input
+          value={draft.icon}
+          onChange={(e) => setDraft({ ...draft, icon: e.target.value })}
+          className={`${inputCls} mt-1`}
+        />
       </label>
       <label className="block">
         <span className="text-xs font-bold text-muted-foreground">لون</span>
-        <input value={draft.color} onChange={(e) => setDraft({ ...draft, color: e.target.value })} className={`${inputCls} mt-1`} />
+        <input
+          value={draft.color}
+          onChange={(e) => setDraft({ ...draft, color: e.target.value })}
+          className={`${inputCls} mt-1`}
+        />
       </label>
       <label className="flex items-center gap-2 sm:col-span-2 rounded-xl bg-surface p-3">
-        <input type="checkbox" checked={draft.is_active} onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })} className="h-4 w-4" />
+        <input
+          type="checkbox"
+          checked={draft.is_active}
+          onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })}
+          className="h-4 w-4"
+        />
         <span className="text-sm font-bold">مفعّل</span>
       </label>
     </div>

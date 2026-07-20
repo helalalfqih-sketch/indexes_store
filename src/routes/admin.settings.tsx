@@ -46,11 +46,9 @@ function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-black lg:text-4xl">
-        <span className="neon-text">{t("settings.title")}</span>
-      </h1>
+      <h1 className="text-3xl font-black lg:text-4xl text-foreground">{t("settings.title")}</h1>
 
-      <div className="rounded-2xl glass p-5">
+      <div className="rounded-2xl border border-border bg-surface p-5">
         <h2 className="text-sm font-black">{t("settings.theme")}</h2>
         <div className="mt-3 grid grid-cols-3 gap-3">
           {themes.map((th) => {
@@ -62,7 +60,7 @@ function SettingsPage() {
                 onClick={() => setTheme(th.id)}
                 className={`flex flex-col items-center gap-2 rounded-xl border p-4 text-sm font-bold transition ${
                   active
-                    ? "border-primary bg-primary/10 text-primary neon-ring"
+                    ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20 ring-offset-2 ring-offset-surface"
                     : "border-border hover:bg-accent"
                 }`}
               >
@@ -74,7 +72,7 @@ function SettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl glass p-5">
+      <div className="rounded-2xl border border-border bg-surface p-5">
         <h2 className="text-sm font-black">{t("settings.lang")}</h2>
         <div className="mt-3 grid grid-cols-2 gap-3">
           {(["ar", "en"] as Lang[]).map((l) => (
@@ -82,7 +80,9 @@ function SettingsPage() {
               key={l}
               onClick={() => setLang(l)}
               className={`rounded-xl border p-4 text-sm font-bold transition ${
-                lang === l ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-accent"
+                lang === l
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border hover:bg-accent"
               }`}
             >
               {l === "ar" ? "العربية" : "English"}
@@ -91,7 +91,7 @@ function SettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl glass p-5">
+      <div className="rounded-2xl border border-border bg-surface p-5">
         <h2 className="text-sm font-black">{t("settings.api")}</h2>
         <input
           value={api}
@@ -104,7 +104,7 @@ function SettingsPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={save}
-          className="inline-flex items-center gap-2 rounded-xl gradient-brand px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand hover:bg-primary/90 transition"
         >
           {t("settings.save")}
         </button>

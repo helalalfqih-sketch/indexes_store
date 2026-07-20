@@ -29,7 +29,7 @@ function NotFoundComponent() {
         <div className="mt-6">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-xl gradient-brand px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
           >
             العودة للرئيسية
           </Link>
@@ -50,9 +50,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-bold text-foreground">حدث خطأ غير متوقع</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          حاول مرة أخرى أو ارجع للصفحة الرئيسية.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">حاول مرة أخرى أو ارجع للصفحة الرئيسية.</p>
         {error && (
           <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-mono text-left overflow-auto max-h-40 whitespace-pre-wrap">
             <strong>Error:</strong> {error.message || String(error)}
@@ -64,7 +62,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-xl gradient-brand px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
           >
             إعادة المحاولة
           </button>
@@ -87,16 +85,36 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
       { name: "theme-color", content: "#1F5EFF" },
       { title: "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن" },
-      { name: "description", content: "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد." },
+      {
+        name: "description",
+        content:
+          "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.",
+      },
       { property: "og:title", content: "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن" },
-      { property: "og:description", content: "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد." },
+      {
+        property: "og:description",
+        content:
+          "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.",
+      },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Indexes Store — اندكس ستور" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن" },
-      { name: "twitter:description", content: "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png" },
+      {
+        name: "twitter:description",
+        content:
+          "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

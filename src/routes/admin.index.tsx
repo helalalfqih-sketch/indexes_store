@@ -17,6 +17,8 @@ export const Route = createFileRoute("/admin/")({
   component: DashboardPage,
 });
 
+type AdminProduct = Awaited<ReturnType<typeof listAdminProducts>>[number];
+
 function DashboardPage() {
   const { t, lang } = useI18n();
   const sessions = useAdmin((s) => s.sessions);
@@ -25,20 +27,40 @@ function DashboardPage() {
     queryKey: ["admin-products"],
     queryFn: () => listAdminProducts(),
   });
-  const products = productsQ.data ?? [];
+  const products: AdminProduct[] = productsQ.data ?? [];
 
   const stats = [
-    { k: "dash.revenue", value: "$48,290", delta: "+12.4%", icon: DollarSign, tint: "from-emerald-500/20 to-emerald-500/5" },
-    { k: "dash.orders", value: "1,284", delta: "+8.1%", icon: ShoppingBag, tint: "from-blue-500/20 to-blue-500/5" },
-    { k: "dash.products", value: String(products.length || 24), delta: "+3", icon: Package, tint: "from-fuchsia-500/20 to-fuchsia-500/5" },
-    { k: "dash.customers", value: "9,340", delta: "+5.6%", icon: Users, tint: "from-cyan-500/20 to-cyan-500/5" },
+    {
+      k: "dash.revenue",
+      value: "$48,290",
+      delta: "+12.4%",
+      icon: DollarSign,
+    },
+    {
+      k: "dash.orders",
+      value: "1,284",
+      delta: "+8.1%",
+      icon: ShoppingBag,
+    },
+    {
+      k: "dash.products",
+      value: String(products.length || 24),
+      delta: "+3",
+      icon: Package,
+    },
+    {
+      k: "dash.customers",
+      value: "9,340",
+      delta: "+5.6%",
+      icon: Users,
+    },
   ];
 
   return (
     <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-3xl glass-strong p-6 lg:p-10">
-        <div className="absolute -top-24 -end-24 h-72 w-72 rounded-full bg-primary/30 blur-3xl" />
-        <div className="absolute -bottom-24 -start-24 h-72 w-72 rounded-full bg-fuchsia-500/25 blur-3xl" />
+      <section className="relative overflow-hidden rounded-3xl border border-border bg-surface p-6 lg:p-10">
+        <div className="absolute -top-24 -end-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -bottom-24 -start-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
@@ -57,7 +79,7 @@ function DashboardPage() {
             <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 to="/admin/studio"
-                className="inline-flex items-center gap-2 rounded-xl gradient-brand px-5 py-3 text-sm font-bold text-primary-foreground shadow-brand hover:opacity-95"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-brand hover:bg-primary/90 transition"
               >
                 <Sparkles className="h-4 w-4" />
                 {t("nav.studio")}
@@ -65,7 +87,7 @@ function DashboardPage() {
               </Link>
               <Link
                 to="/admin/products"
-                className="inline-flex items-center gap-2 rounded-xl border border-border/70 bg-surface px-5 py-3 text-sm font-bold hover:bg-accent"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-5 py-3 text-sm font-bold hover:bg-accent transition"
               >
                 <Package className="h-4 w-4" />
                 {t("nav.products")}
@@ -73,9 +95,9 @@ function DashboardPage() {
             </div>
           </div>
           <div className="relative">
-            <div className="animate-float rounded-2xl glass p-6 neon-ring">
+            <div className="animate-float rounded-2xl border border-border bg-surface p-6 neon-ring">
               <div className="flex items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-xl gradient-brand">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary">
                   <TrendingUp className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <div>
@@ -94,8 +116,10 @@ function DashboardPage() {
         {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <div key={s.k} className={`tilt-3d relative overflow-hidden rounded-2xl glass p-5`}>
-              <div className={`absolute inset-0 bg-gradient-to-br ${s.tint}`} />
+            <div
+              key={s.k}
+              className="relative overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card transition hover:border-primary/30"
+            >
               <div className="relative flex items-start justify-between">
                 <div>
                   <div className="text-xs font-semibold text-muted-foreground">{t(s.k)}</div>
@@ -113,14 +137,14 @@ function DashboardPage() {
 
       {/* Grid */}
       <section className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl glass p-5 lg:col-span-2">
+        <div className="rounded-2xl border border-border bg-surface p-5 lg:col-span-2">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black">{t("dash.performance")}</h2>
             <span className="text-xs text-muted-foreground">Last 30 days</span>
           </div>
           <BigChart />
         </div>
-        <div className="rounded-2xl glass p-5">
+        <div className="rounded-2xl border border-border bg-surface p-5">
           <h2 className="text-lg font-black">{t("dash.aiInsights")}</h2>
           <ul className="mt-4 space-y-3 text-sm">
             {(lang === "ar"
@@ -135,7 +159,7 @@ function DashboardPage() {
                   "Best posting window: 8–10pm based on audience analytics.",
                 ]
             ).map((tip, i) => (
-              <li key={i} className="flex items-start gap-3 rounded-xl bg-accent/60 p-3">
+              <li key={i} className="flex items-start gap-3 rounded-xl bg-accent/50 p-3">
                 <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span>{tip}</span>
               </li>
@@ -145,17 +169,24 @@ function DashboardPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl glass p-5">
+        <div className="rounded-2xl border border-border bg-surface p-5">
           <h2 className="text-lg font-black">{t("dash.topProducts")}</h2>
           <div className="mt-4 space-y-3">
-            {(products.length ? products.slice(0, 4) : []).map((p: any, i) => (
-              <div key={i} className="flex items-center justify-between rounded-xl border border-border/60 p-3">
+            {(products.length ? products.slice(0, 4) : []).map((p, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-xl border border-border/60 p-3"
+              >
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
-                    {p?.images?.[0] && <img src={p.images[0]} alt="" className="h-full w-full object-cover" />}
+                    {p?.images?.[0] && (
+                      <img src={p.images[0]} alt="" className="h-full w-full object-cover" />
+                    )}
                   </div>
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-bold">{p?.name || (lang === "ar" ? "منتج تجريبي" : "Sample product")}</div>
+                    <div className="truncate text-sm font-bold">
+                      {p?.name || (lang === "ar" ? "منتج تجريبي" : "Sample product")}
+                    </div>
                     <div className="text-xs text-muted-foreground">{p?.brand || "—"}</div>
                   </div>
                 </div>
@@ -167,7 +198,7 @@ function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl glass p-5">
+        <div className="rounded-2xl border border-border bg-surface p-5">
           <h2 className="text-lg font-black">{t("dash.recentSessions")}</h2>
           <div className="mt-4 space-y-3">
             {sessions.length === 0 && (
@@ -176,10 +207,15 @@ function DashboardPage() {
               </div>
             )}
             {sessions.slice(0, 5).map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-xl border border-border/60 p-3">
+              <div
+                key={s.id}
+                className="flex items-center justify-between rounded-xl border border-border/60 p-3"
+              >
                 <div className="min-w-0">
                   <div className="truncate text-sm font-bold">{s.title}</div>
-                  <div className="text-xs text-muted-foreground">{new Date(s.createdAt).toLocaleString()}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(s.createdAt).toLocaleString()}
+                  </div>
                 </div>
                 <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary">
                   {s.step}
@@ -206,12 +242,12 @@ function Sparkline() {
     <svg viewBox={`0 0 ${w} ${h}`} className="mt-4 h-16 w-full">
       <defs>
         <linearGradient id="sl" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#2F7BFF" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="#2F7BFF" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--primary-light)" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="var(--primary-light)" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path d={`${d} L ${w},${h} L 0,${h} Z`} fill="url(#sl)" />
-      <path d={d} stroke="#1F5EFF" strokeWidth={2} fill="none" strokeLinecap="round" />
+      <path d={d} stroke="var(--primary)" strokeWidth={2} fill="none" strokeLinecap="round" />
     </svg>
   );
 }

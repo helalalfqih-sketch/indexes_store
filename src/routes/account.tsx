@@ -1,5 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { MessageCircle, Package, MapPin, Heart, HelpCircle, ShieldCheck, LogIn } from "lucide-react";
+import {
+  MessageCircle,
+  Package,
+  MapPin,
+  Heart,
+  HelpCircle,
+  ShieldCheck,
+  LogIn,
+} from "lucide-react";
 import { STORE_CONTACT } from "@/lib/store-data";
 import { whatsappLink } from "@/lib/whatsapp";
 
@@ -19,15 +27,15 @@ function AccountPage() {
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-4">
-      <section className="flex items-center gap-3 rounded-3xl gradient-brand p-4 text-white shadow-brand">
-        <div className="grid h-14 w-14 place-items-center rounded-full bg-white/20 text-xl font-black">
+      <section className="flex items-center gap-3 rounded-3xl bg-primary p-4 text-primary-foreground shadow-brand">
+        <div className="grid h-14 w-14 place-items-center rounded-full bg-primary-foreground/20 text-xl font-black">
           ز
         </div>
         <div className="flex-1">
           <p className="text-sm font-bold">مرحباً بك في اندكس ستور</p>
-          <p className="text-xs text-white/85">سجّل دخولك لمتابعة طلباتك</p>
+          <p className="text-xs text-primary-foreground/85">سجّل دخولك لمتابعة طلباتك</p>
         </div>
-        <button className="flex items-center gap-1 rounded-xl bg-white/20 px-3 py-1.5 text-xs font-bold">
+        <button className="flex items-center gap-1 rounded-xl bg-primary-foreground/20 px-3 py-1.5 text-xs font-bold transition hover:bg-primary-foreground/30">
           <LogIn className="h-3.5 w-3.5" />
           دخول
         </button>

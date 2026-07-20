@@ -91,10 +91,10 @@ function AdminGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="min-h-screen bg-[#000209] text-[#EEEEEE] flex items-center justify-center"
+      className="min-h-screen bg-background text-foreground flex items-center justify-center"
       dir="rtl"
     >
-      <Loader2 className="h-6 w-6 animate-spin text-white/60" />
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
     </div>
   );
 }
@@ -140,31 +140,31 @@ function NoRoleScreen({
 
   return (
     <div
-      className="min-h-screen bg-[#000209] text-[#EEEEEE] flex items-center justify-center px-4"
+      className="min-h-screen bg-background text-foreground flex items-center justify-center px-4"
       dir="rtl"
     >
       <div className="max-w-md text-center">
-        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-red-500/10">
-          <ShieldAlert className="h-7 w-7 text-red-400" />
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-destructive/10">
+          <ShieldAlert className="h-7 w-7 text-destructive" />
         </div>
-        <h1 className="text-xl font-bold">صلاحية الوصول مرفوضة</h1>
-        <p className="mt-2 text-sm text-white/60">
+        <h1 className="text-xl font-bold tracking-tight">صلاحية الوصول مرفوضة</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
           حسابك لا يملك صلاحية دخول لوحة الإدارة. إن كنت مالك المتجر ولم يتم تعيين مدير بعد، يمكنك
           المطالبة بصلاحية المدير الأول.
         </p>
-        {notice && <p className="mt-3 text-xs text-amber-300">{notice}</p>}
-        {error && <p className="mt-3 text-xs text-red-300">{error}</p>}
+        {notice && <p className="mt-3 text-xs text-warning">{notice}</p>}
+        {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={handleClaim}
             disabled={busy}
-            className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-black disabled:opacity-60"
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-60 transition hover:bg-primary/90"
           >
             {busy ? "جارٍ..." : "المطالبة بصلاحية المدير الأول"}
           </button>
           <Link
             to="/"
-            className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15"
+            className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold hover:bg-accent/80 transition"
           >
             العودة للمتجر
           </Link>
@@ -173,7 +173,7 @@ function NoRoleScreen({
               await supabase.auth.signOut();
               navigate({ to: "/auth", replace: true });
             }}
-            className="rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold hover:bg-white/5"
+            className="rounded-xl border border-border px-4 py-2 text-sm font-semibold hover:bg-accent transition"
           >
             تسجيل الخروج
           </button>
@@ -232,11 +232,8 @@ function ShellInner() {
 
   return (
     <div dir={dir} className="relative min-h-screen bg-background text-foreground">
-      <div className="pointer-events-none fixed inset-0 aurora-bg opacity-70" />
-      <div className="pointer-events-none fixed inset-0 [background-image:radial-gradient(circle_at_1px_1px,color-mix(in_oklab,var(--foreground)_10%,transparent)_1px,transparent_0)] [background-size:28px_28px] opacity-30" />
-
       <aside
-        className={`fixed inset-y-0 z-50 w-72 transform glass-strong transition-transform duration-300 ${
+        className={`fixed inset-y-0 z-50 w-64 transform border-e border-border bg-surface transition-transform duration-300 ${
           dir === "rtl" ? "right-0" : "left-0"
         } ${
           open
@@ -266,7 +263,7 @@ function ShellInner() {
             </button>
           </div>
 
-          <nav className="mt-8 flex flex-1 flex-col gap-1.5">
+          <nav className="mt-8 flex flex-1 flex-col gap-0.5">
             {items.map((it) => {
               const active = isActive(it.to, it.exact);
               const Icon = it.icon;
@@ -274,13 +271,12 @@ function ShellInner() {
                 <Link
                   key={it.to}
                   to={it.to as string}
-                  className={`group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-all ${
+                  className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     active
-                      ? "gradient-brand text-primary-foreground shadow-brand"
+                      ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   }`}
                 >
-                  {active && <span className="absolute inset-0 rounded-xl animate-pulse-glow" />}
                   <Icon className="h-5 w-5 shrink-0" />
                   <span className="truncate">{it.label}</span>
                 </Link>
@@ -310,7 +306,7 @@ function ShellInner() {
             </Link>
             <button
               onClick={handleSignOut}
-              className="flex w-full items-center gap-2 rounded-xl border border-border/60 px-3.5 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/10"
+              className="flex w-full items-center gap-2 rounded-xl border border-destructive/30 px-3.5 py-2.5 text-sm font-semibold text-destructive hover:bg-destructive/10 transition"
             >
               <LogOut className="h-4 w-4" />
               تسجيل الخروج
@@ -322,12 +318,12 @@ function ShellInner() {
       {open && (
         <div
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-showcase/40 backdrop-blur-sm lg:hidden"
         />
       )}
 
-      <div className={dir === "rtl" ? "lg:pr-72" : "lg:pl-72"}>
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 glass px-4 py-3 lg:px-8">
+      <div className={dir === "rtl" ? "lg:pr-64" : "lg:pl-64"}>
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-surface border-b border-border px-4 py-3 lg:px-8">
           <button
             onClick={() => setOpen(true)}
             className="rounded-lg p-2 text-muted-foreground hover:bg-accent lg:hidden"

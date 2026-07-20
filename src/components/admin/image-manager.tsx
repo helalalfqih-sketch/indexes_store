@@ -63,13 +63,13 @@ export function ImageManager({ value, onChange }: Props) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
-    
+
     const imageFiles = files.filter((f) => f.type.startsWith("image/"));
     if (imageFiles.length === 0) {
       toast.error("يرجى اختيار ملفات صور فقط");
       return;
     }
-    
+
     const loaders = imageFiles.map((file) => {
       return new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -78,10 +78,10 @@ export function ImageManager({ value, onChange }: Props) {
         reader.readAsDataURL(file);
       });
     });
-    
+
     try {
       const base64Urls = await Promise.all(loaders);
-      const uniqueNewUrls = base64Urls.filter(u => !value.includes(u));
+      const uniqueNewUrls = base64Urls.filter((u) => !value.includes(u));
       if (uniqueNewUrls.length > 0) {
         onChange([...value, ...uniqueNewUrls]);
         toast.success(`تمت إضافة ${uniqueNewUrls.length} صورة من الجهاز`);
@@ -94,7 +94,7 @@ export function ImageManager({ value, onChange }: Props) {
 
   const onFileDrop = async (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    
+
     // 1. Check for files
     const files = Array.from(e.dataTransfer.files ?? []);
     if (files.length > 0) {
@@ -103,7 +103,7 @@ export function ImageManager({ value, onChange }: Props) {
         toast.error("يرجى سحب ملفات صور فقط");
         return;
       }
-      
+
       const loaders = imageFiles.map((file) => {
         return new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -112,10 +112,10 @@ export function ImageManager({ value, onChange }: Props) {
           reader.readAsDataURL(file);
         });
       });
-      
+
       try {
         const base64Urls = await Promise.all(loaders);
-        const uniqueNewUrls = base64Urls.filter(u => !value.includes(u));
+        const uniqueNewUrls = base64Urls.filter((u) => !value.includes(u));
         if (uniqueNewUrls.length > 0) {
           onChange([...value, ...uniqueNewUrls]);
           toast.success(`تمت إضافة ${uniqueNewUrls.length} صورة من الجهاز`);
@@ -211,13 +211,13 @@ export function ImageManager({ value, onChange }: Props) {
                   <Star className="h-3 w-3" /> رئيسية
                 </span>
               )}
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 transition group-hover:opacity-100">
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-showcase/70 to-transparent p-2 opacity-0 transition group-hover:opacity-100">
                 <div className="flex gap-1">
                   <button
                     type="button"
                     onClick={() => move(i, i - 1)}
                     disabled={i === 0}
-                    className="grid h-7 w-7 place-items-center rounded-md bg-black/50 text-white disabled:opacity-30"
+                    className="grid h-7 w-7 place-items-center rounded-md bg-showcase/50 text-showcase-foreground disabled:opacity-30"
                     aria-label="تحريك للأعلى"
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
@@ -226,7 +226,7 @@ export function ImageManager({ value, onChange }: Props) {
                     type="button"
                     onClick={() => move(i, i + 1)}
                     disabled={i === value.length - 1}
-                    className="grid h-7 w-7 place-items-center rounded-md bg-black/50 text-white disabled:opacity-30"
+                    className="grid h-7 w-7 place-items-center rounded-md bg-showcase/50 text-showcase-foreground disabled:opacity-30"
                     aria-label="تحريك للأسفل"
                   >
                     <ArrowDown className="h-3.5 w-3.5" />
@@ -235,7 +235,7 @@ export function ImageManager({ value, onChange }: Props) {
                     <button
                       type="button"
                       onClick={() => setFeatured(i)}
-                      className="grid h-7 w-7 place-items-center rounded-md bg-black/50 text-white"
+                      className="grid h-7 w-7 place-items-center rounded-md bg-showcase/50 text-showcase-foreground"
                       aria-label="تعيين كصورة رئيسية"
                     >
                       <Star className="h-3.5 w-3.5" />

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Star } from "lucide-react";
-import { useRef } from "react";
+import { useRef, type CSSProperties } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import type { Product } from "@/lib/store-data";
 import { formatPrice } from "@/lib/store-data";
@@ -27,7 +27,7 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <motion.div
-      style={{ scale, opacity } as any}
+      style={{ scale, opacity }}
       transition={{ type: "spring", stiffness: 120, damping: 20 }}
       data-product-id={product.id}
       data-product-slug={product.slug}
@@ -41,22 +41,21 @@ export function ProductCard({ product }: { product: Product }) {
         params={{ slug: product.slug }}
         className="group flex flex-col overflow-hidden rounded-2xl bg-surface shadow-card transition active:scale-[0.98]"
       >
-        <motion.div
-          style={{ filter } as any}
-          className="relative aspect-square overflow-hidden bg-white"
-        >
+        <motion.div style={{ filter }} className="relative aspect-square overflow-hidden bg-muted">
           {product.videoPlaybackId ? (
             <MuxPlayer
               playbackId={product.videoPlaybackId}
               autoPlay="muted"
               loop={true}
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              } as any}
+              style={
+                {
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                } satisfies CSSProperties
+              }
             />
           ) : (
             <Product3DTile
@@ -76,21 +75,19 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           )}
         </motion.div>
-        <div className="flex flex-1 flex-col gap-1.5 p-2.5 text-slate-900">
-          <h3 className="line-clamp-2 min-h-10 text-xs font-bold leading-tight text-slate-900">
+        <div className="flex flex-1 flex-col gap-1.5 p-2.5 text-foreground">
+          <h3 className="line-clamp-2 min-h-10 text-xs font-bold leading-tight text-foreground">
             {product.name}
           </h3>
-          <div className="flex items-center gap-1 text-[10px] text-slate-600">
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <Star className="h-3 w-3 fill-warning stroke-warning" />
-            <span className="font-semibold text-slate-900">{product.rating}</span>
+            <span className="font-semibold text-foreground">{product.rating}</span>
             <span>({product.reviews})</span>
           </div>
           <div className="mt-auto flex items-baseline gap-1.5">
-            <span className="text-sm font-black text-primary">
-              {formatPrice(product.price)}
-            </span>
+            <span className="text-sm font-black text-primary">{formatPrice(product.price)}</span>
             {product.oldPrice && (
-              <span className="text-[10px] text-slate-500 line-through">
+              <span className="text-[10px] text-muted-foreground line-through">
                 {formatPrice(product.oldPrice)}
               </span>
             )}

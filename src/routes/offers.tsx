@@ -18,15 +18,17 @@ function OffersPage() {
   const deals = Route.useLoaderData();
   return (
     <div className="flex flex-col gap-4 px-4 pt-4">
-      <section className="flex items-center gap-3 rounded-3xl gradient-brand p-4 text-white shadow-brand">
+      <section className="flex items-center gap-3 rounded-3xl bg-primary p-4 text-primary-foreground shadow-brand">
         <Flame className="h-8 w-8" />
         <div>
           <h1 className="text-lg font-black">عروض حصرية</h1>
-          <p className="text-xs text-white/85">خصومات تصل إلى 40% لفترة محدودة</p>
+          <p className="text-xs text-primary-foreground/85">خصومات تصل إلى 40% لفترة محدودة</p>
         </div>
       </section>
       {deals.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">لا توجد عروض متاحة حالياً.</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">
+          لا توجد عروض متاحة حالياً.
+        </p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {deals.map((p: LegacyProductShape) => (

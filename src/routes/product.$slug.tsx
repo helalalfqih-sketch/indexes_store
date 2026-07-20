@@ -21,8 +21,10 @@ import { useCart } from "@/lib/cart-store";
 import { buildOrderMessage, quickOrderLink } from "@/lib/whatsapp";
 import { Product3DTile, modelFor, useModelViewer, useMounted } from "@/lib/model-viewer";
 
-const DARK = "#000209";
-const LIGHT = "#EEEEEE";
+const DARK = "var(--showcase)";
+const LIGHT = "var(--showcase-foreground)";
+const LIGHT_MUTED = "var(--showcase-muted)";
+const LIGHT_BORDER = "var(--showcase-border)";
 const TAJAWAL = "Tajawal, system-ui, sans-serif";
 
 export const Route = createFileRoute("/product/$slug")({
@@ -92,10 +94,9 @@ function ProductPage() {
   useEffect(() => {
     const el = heroRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setShowStickyBar(!entry.isIntersecting),
-      { rootMargin: "-40% 0px 0px 0px" },
-    );
+    const io = new IntersectionObserver(([entry]) => setShowStickyBar(!entry.isIntersecting), {
+      rootMargin: "-40% 0px 0px 0px",
+    });
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -128,7 +129,7 @@ function ProductPage() {
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(circle at 50% 55%, rgba(238,238,238,0.18) 0%, rgba(238,238,238,0.05) 30%, transparent 60%)",
+              "radial-gradient(circle at 50% 55%, color-mix(in oklab, var(--showcase-foreground) 18%, transparent) 0%, color-mix(in oklab, var(--showcase-foreground) 5%, transparent) 30%, transparent 60%)",
           }}
         />
         {/* Grain / vignette */}
@@ -136,14 +137,14 @@ function ProductPage() {
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.9), transparent 60%)",
+              "radial-gradient(ellipse at 50% 100%, color-mix(in oklab, var(--showcase) 90%, transparent), transparent 60%)",
           }}
         />
 
         {/* Back button */}
         <Link
           to="/"
-          className="absolute end-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/5 backdrop-blur-xl transition hover:bg-white/10"
+          className="absolute end-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-showcase-border bg-showcase-foreground/5 backdrop-blur-xl transition hover:bg-showcase-foreground/10"
           style={{ color: LIGHT }}
         >
           <ArrowRight className="h-4 w-4" />
@@ -152,7 +153,7 @@ function ProductPage() {
         {/* Category chip */}
         <div className="absolute start-4 top-4 z-20">
           <span
-            className="inline-block rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[10px] font-bold tracking-[0.3em] backdrop-blur-xl"
+            className="inline-block rounded-full border border-showcase-border bg-showcase-foreground/5 px-3 py-1 text-[10px] font-bold tracking-[0.3em] backdrop-blur-xl"
             style={{ color: LIGHT }}
           >
             INDEXES · PREMIUM
@@ -173,11 +174,7 @@ function ProductPage() {
               />
             </div>
           ) : (
-            <img
-              src={product.image}
-              alt={product.name}
-              className="h-full w-full object-contain"
-            />
+            <img src={product.image} alt={product.name} className="h-full w-full object-contain" />
           )}
         </motion.div>
 
@@ -197,7 +194,7 @@ function ProductPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.35 }}
             className="mt-4 flex items-center justify-center gap-3 text-sm"
-            style={{ color: "rgba(238,238,238,0.7)" }}
+            style={{ color: "color-mix(in oklab, var(--showcase-foreground) 70%, transparent)" }}
           >
             <span className="text-2xl font-black" style={{ color: LIGHT }}>
               {formatPrice(product.price)}
@@ -213,11 +210,21 @@ function ProductPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2, duration: 1.2 }}
             className="mt-8 flex items-center justify-center gap-2 text-[10px] tracking-[0.4em]"
-            style={{ color: "rgba(238,238,238,0.4)" }}
+            style={{ color: "color-mix(in oklab, var(--showcase-foreground) 40%, transparent)" }}
           >
-            <span className="h-px w-8" style={{ background: "rgba(238,238,238,0.4)" }} />
+            <span
+              className="h-px w-8"
+              style={{
+                background: "color-mix(in oklab, var(--showcase-foreground) 40%, transparent)",
+              }}
+            />
             SCROLL
-            <span className="h-px w-8" style={{ background: "rgba(238,238,238,0.4)" }} />
+            <span
+              className="h-px w-8"
+              style={{
+                background: "color-mix(in oklab, var(--showcase-foreground) 40%, transparent)",
+              }}
+            />
           </motion.div>
         </div>
       </section>
@@ -227,7 +234,7 @@ function ProductPage() {
         <Reveal>
           <p
             className="text-[10px] font-bold tracking-[0.4em]"
-            style={{ color: "rgba(238,238,238,0.5)" }}
+            style={{ color: "color-mix(in oklab, var(--showcase-foreground) 50%, transparent)" }}
           >
             — نبذة
           </p>
@@ -245,7 +252,7 @@ function ProductPage() {
         <Reveal delay={0.2}>
           <p
             className="mt-8 text-base leading-loose"
-            style={{ color: "rgba(238,238,238,0.65)" }}
+            style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
           >
             {product.description}
           </p>
@@ -279,15 +286,17 @@ function ProductPage() {
               <div
                 className="grid h-14 w-14 place-items-center rounded-2xl border"
                 style={{
-                  borderColor: "rgba(238,238,238,0.15)",
-                  background: "rgba(238,238,238,0.03)",
+                  borderColor: "color-mix(in oklab, var(--showcase-foreground) 15%, transparent)",
+                  background: "color-mix(in oklab, var(--showcase-foreground) 3%, transparent)",
                 }}
               >
                 <f.icon className="h-6 w-6" style={{ color: LIGHT }} />
               </div>
               <span
                 className="text-[10px] font-bold tracking-[0.4em]"
-                style={{ color: "rgba(238,238,238,0.5)" }}
+                style={{
+                  color: "color-mix(in oklab, var(--showcase-foreground) 50%, transparent)",
+                }}
               >
                 — {f.tag}
               </span>
@@ -299,7 +308,9 @@ function ProductPage() {
               </h3>
               <p
                 className="text-base leading-loose"
-                style={{ color: "rgba(238,238,238,0.6)" }}
+                style={{
+                  color: "color-mix(in oklab, var(--showcase-foreground) 60%, transparent)",
+                }}
               >
                 {f.body}
               </p>
@@ -313,14 +324,11 @@ function ProductPage() {
         <Reveal>
           <p
             className="text-[10px] font-bold tracking-[0.4em]"
-            style={{ color: "rgba(238,238,238,0.5)" }}
+            style={{ color: "color-mix(in oklab, var(--showcase-foreground) 50%, transparent)" }}
           >
             — المواصفات
           </p>
-          <h3
-            className="mt-6 text-3xl font-black sm:text-4xl"
-            style={{ color: LIGHT }}
-          >
+          <h3 className="mt-6 text-3xl font-black sm:text-4xl" style={{ color: LIGHT }}>
             كل ما تحتاج معرفته.
           </h3>
         </Reveal>
@@ -335,7 +343,7 @@ function ProductPage() {
             </div>
             <p
               className="mt-2 text-xs"
-              style={{ color: "rgba(238,238,238,0.5)" }}
+              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 50%, transparent)" }}
             >
               من {product.reviews} تقييم
             </p>
@@ -346,13 +354,18 @@ function ProductPage() {
               <span className="text-4xl font-black" style={{ color: LIGHT }}>
                 {product.stock}
               </span>
-              <span className="text-xs" style={{ color: "rgba(238,238,238,0.5)" }}>
+              <span
+                className="text-xs"
+                style={{
+                  color: "color-mix(in oklab, var(--showcase-foreground) 50%, transparent)",
+                }}
+              >
                 قطعة
               </span>
             </div>
             <p
               className="mt-2 text-xs"
-              style={{ color: "rgba(238,238,238,0.5)" }}
+              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 50%, transparent)" }}
             >
               متوفر الآن للشحن
             </p>
@@ -365,7 +378,9 @@ function ProductPage() {
             {product.oldPrice && (
               <p
                 className="mt-2 text-xs line-through"
-                style={{ color: "rgba(238,238,238,0.4)" }}
+                style={{
+                  color: "color-mix(in oklab, var(--showcase-foreground) 40%, transparent)",
+                }}
               >
                 {formatPrice(product.oldPrice)}
               </p>
@@ -383,7 +398,9 @@ function ProductPage() {
                   <s.icon className="h-5 w-5" style={{ color: LIGHT }} />
                   <span
                     className="text-[11px] font-semibold"
-                    style={{ color: "rgba(238,238,238,0.75)" }}
+                    style={{
+                      color: "color-mix(in oklab, var(--showcase-foreground) 75%, transparent)",
+                    }}
                   >
                     {s.label}
                   </span>
@@ -394,11 +411,13 @@ function ProductPage() {
 
           <BentoCell className="col-span-2" label="الفئة">
             <div className="flex items-center gap-3">
-              <Package className="h-5 w-5" style={{ color: "rgba(238,238,238,0.6)" }} />
-              <span
-                className="text-lg font-bold"
-                style={{ color: LIGHT }}
-              >
+              <Package
+                className="h-5 w-5"
+                style={{
+                  color: "color-mix(in oklab, var(--showcase-foreground) 60%, transparent)",
+                }}
+              />
+              <span className="text-lg font-bold" style={{ color: LIGHT }}>
                 {product.categoryId}
               </span>
             </div>
@@ -412,8 +431,8 @@ function ProductPage() {
           <div
             className="flex items-center justify-between rounded-2xl border p-4"
             style={{
-              borderColor: "rgba(238,238,238,0.12)",
-              background: "rgba(238,238,238,0.03)",
+              borderColor: "var(--showcase-border)",
+              background: "color-mix(in oklab, var(--showcase-foreground) 3%, transparent)",
             }}
           >
             <span className="text-sm font-bold" style={{ color: LIGHT }}>
@@ -422,16 +441,16 @@ function ProductPage() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setQty(Math.max(1, qty - 1))}
-                className="grid h-9 w-9 place-items-center rounded-full border transition hover:bg-white/10"
-                style={{ borderColor: "rgba(238,238,238,0.2)", color: LIGHT }}
+                className="grid h-9 w-9 place-items-center rounded-full border transition hover:bg-showcase-foreground/10"
+                style={{
+                  borderColor: "color-mix(in oklab, var(--showcase-foreground) 20%, transparent)",
+                  color: LIGHT,
+                }}
                 aria-label="نقصان"
               >
                 <Minus className="h-4 w-4" />
               </button>
-              <span
-                className="w-6 text-center text-lg font-black"
-                style={{ color: LIGHT }}
-              >
+              <span className="w-6 text-center text-lg font-black" style={{ color: LIGHT }}>
                 {qty}
               </span>
               <button
@@ -450,8 +469,11 @@ function ProductPage() {
           <div className="mt-3 grid grid-cols-[auto_1fr] gap-2">
             <button
               onClick={handleAdd}
-              className="flex items-center justify-center gap-1.5 rounded-2xl border px-4 py-4 text-xs font-bold transition hover:bg-white/10"
-              style={{ borderColor: "rgba(238,238,238,0.2)", color: LIGHT }}
+              className="flex items-center justify-center gap-1.5 rounded-2xl border px-4 py-4 text-xs font-bold transition hover:bg-showcase-foreground/10"
+              style={{
+                borderColor: "color-mix(in oklab, var(--showcase-foreground) 20%, transparent)",
+                color: LIGHT,
+              }}
             >
               <ShoppingCart className="h-4 w-4" />
               {added ? "تمت الإضافة" : "السلة"}
@@ -484,21 +506,18 @@ function ProductPage() {
         <div
           className="flex items-center justify-between gap-3 rounded-2xl border p-2.5 shadow-2xl"
           style={{
-            borderColor: "rgba(238,238,238,0.12)",
-            background: "rgba(0,2,9,0.72)",
+            borderColor: "var(--showcase-border)",
+            background: "color-mix(in oklab, var(--showcase) 72%, transparent)",
             backdropFilter: "blur(24px) saturate(160%)",
           }}
         >
           <div className="min-w-0 flex-1 ps-2">
-            <p
-              className="truncate text-xs font-bold"
-              style={{ color: LIGHT }}
-            >
+            <p className="truncate text-xs font-bold" style={{ color: LIGHT }}>
               {product.name}
             </p>
             <p
               className="text-[11px] font-black"
-              style={{ color: "rgba(238,238,238,0.7)" }}
+              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 70%, transparent)" }}
             >
               {formatPrice(product.price)}
             </p>
@@ -532,20 +551,20 @@ function BentoCell({
     <div
       className={`group relative overflow-hidden rounded-2xl border p-5 transition ${className}`}
       style={{
-        borderColor: "rgba(238,238,238,0.1)",
-        background: "rgba(238,238,238,0.02)",
+        borderColor: "color-mix(in oklab, var(--showcase-foreground) 10%, transparent)",
+        background: "color-mix(in oklab, var(--showcase-foreground) 2%, transparent)",
       }}
     >
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100"
         style={{
           background:
-            "radial-gradient(circle at 50% 0%, rgba(238,238,238,0.08), transparent 70%)",
+            "radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--showcase-foreground) 8%, transparent), transparent 70%)",
         }}
       />
       <p
         className="mb-3 text-[10px] font-bold tracking-[0.3em]"
-        style={{ color: "rgba(238,238,238,0.4)" }}
+        style={{ color: "color-mix(in oklab, var(--showcase-foreground) 40%, transparent)" }}
       >
         {label.toUpperCase()}
       </p>

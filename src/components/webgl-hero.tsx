@@ -58,12 +58,7 @@ function WaveGrid() {
     pos.needsUpdate = true;
   });
   return (
-    <mesh
-      ref={ref}
-      geometry={geo}
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -2.2, 0]}
-    >
+    <mesh ref={ref} geometry={geo} rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.2, 0]}>
       <meshStandardMaterial
         color={LIGHT}
         emissive={LIGHT}
@@ -104,8 +99,8 @@ function Scene({ progress }: { progress: ReturnType<typeof useSpring> }) {
 function CanvasFallback() {
   return (
     <div className="absolute inset-0 grid place-items-center">
-      <div className="flex items-center gap-2 text-[11px] font-medium tracking-widest text-white/40">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white/60" />
+      <div className="flex items-center gap-2 text-[11px] font-medium tracking-widest text-showcase-foreground/40">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-showcase-foreground/60" />
         LOADING EXPERIENCE
       </div>
     </div>
@@ -153,8 +148,7 @@ export function WebGLHero() {
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background:
-            "radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(0,2,9,0.85) 100%)",
+          background: "radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(0,2,9,0.85) 100%)",
         }}
       />
 
@@ -169,10 +163,7 @@ export function WebGLHero() {
         >
           INDEXES · STORE
         </span>
-        <h1
-          className="text-3xl font-black leading-[1.15] sm:text-5xl"
-          style={{ color: LIGHT }}
-        >
+        <h1 className="text-3xl font-black leading-[1.15] sm:text-5xl" style={{ color: LIGHT }}>
           مرحباً بك في
           <br />
           <span
@@ -190,7 +181,10 @@ export function WebGLHero() {
         >
           اندكس ستور — تجربة تسوّق سينمائية، تفاعلية، ومصمّمة بعناية لعشّاق التميّز.
         </p>
-        <div className="mt-6 flex items-center gap-2 text-[10px] tracking-[0.4em]" style={{ color: "rgba(238,238,238,0.5)" }}>
+        <div
+          className="mt-6 flex items-center gap-2 text-[10px] tracking-[0.4em]"
+          style={{ color: "rgba(238,238,238,0.5)" }}
+        >
           <span className="h-px w-8" style={{ background: "rgba(238,238,238,0.5)" }} />
           SCROLL
           <span className="h-px w-8" style={{ background: "rgba(238,238,238,0.5)" }} />

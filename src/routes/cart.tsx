@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useCart } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/store-data";
 import { buildOrderMessage, whatsappLink } from "@/lib/whatsapp";
+import { submitOrder } from "@/lib/actions/order.actions";
+import type { CreateOrderInput } from "@/lib/actions/order.actions";
 
 export const Route = createFileRoute("/cart")({
   validateSearch: (search): { coupon?: string } => ({
@@ -27,6 +29,9 @@ function CartPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   if (items.length === 0) {
     return (
@@ -38,7 +43,7 @@ function CartPage() {
         <p className="text-sm text-muted-foreground">ابدأ التسوق وأضف المنتجات لسلتك</p>
         <Link
           to="/"
-          className="rounded-xl gradient-brand px-5 py-2.5 text-sm font-bold text-white shadow-brand"
+          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
         >
           تصفح المنتجات
         </Link>
@@ -46,7 +51,38 @@ function CartPage() {
     );
   }
 
-  const message = buildOrderMessage(items, finalTotal, { name, phone, address, notes }, coupon, discount);
+  const handleSubmitOrder = async () => {
+    setOrderError(null);
+    if (!phone || phone.trim().length < 5) {
+      setOrderError("الرجاء إدخال رقم هاتف صالح لإتمام الطلب.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const input: CreateOrderInput = {
+        items: items.map((it) => ({ productId: it.productId, quantity: it.qty })),
+        customerName: name || undefined,
+        customerPhone: phone,
+        customerAddress: address || undefined,
+        notes: notes || undefined,
+        couponCode: coupon || undefined,
+        discountAmount: discount || undefined,
+        paymentProvider: "cod",
+      };
+      const result = await submitOrder(input);
+      setOrderId(result.orderId);
+      // Build WhatsApp message with order ID
+      const orderMessage =
+        buildOrderMessage(items, finalTotal, { name, phone, address, notes }, coupon, discount) +
+        `\n🆔 رقم الطلب: ${result.orderId}`;
+      window.open(whatsappLink(orderMessage), "_blank");
+    } catch (err) {
+      console.error("Order submission failed:", err);
+      setOrderError("فشل في إنشاء الطلب. الرجاء المحاولة مرة أخرى.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-4">
@@ -54,7 +90,10 @@ function CartPage() {
 
       <ul className="flex flex-col gap-2">
         {items.map((it) => (
-          <li key={it.productId} className="flex gap-3 rounded-2xl bg-surface p-2.5 shadow-card">
+          <li
+            key={it.productId}
+            className="flex gap-3 rounded-2xl border border-border bg-surface p-2.5 shadow-card"
+          >
             <img src={it.image} alt={it.name} className="h-20 w-20 rounded-xl object-cover" />
             <div className="flex flex-1 flex-col justify-between">
               <div className="flex items-start justify-between gap-2">
@@ -75,7 +114,7 @@ function CartPage() {
                   <span className="w-5 text-center text-sm font-bold">{it.qty}</span>
                   <button
                     onClick={() => setQty(it.productId, it.qty + 1)}
-                    className="grid h-7 w-7 place-items-center rounded-full gradient-brand text-white"
+                    className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground"
                   >
                     <Plus className="h-3 w-3" />
                   </button>
@@ -86,39 +125,88 @@ function CartPage() {
         ))}
       </ul>
 
-      <section className="rounded-2xl bg-surface p-4 shadow-card">
+      <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
         <h3 className="mb-3 text-sm font-black">بيانات التسليم</h3>
-        <div className="flex flex-col gap-2">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="الاسم الكامل"
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-          />
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="رقم الهاتف"
-            inputMode="tel"
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-          />
-          <input
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="عنوان التسليم (المدينة، الحي)"
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-          />
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="ملاحظات إضافية (اختياري)"
-            rows={2}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-          />
+        <div className="flex flex-col gap-3">
+          <label
+            className="grid gap-1.5 text-xs font-bold text-muted-foreground"
+            htmlFor="customer-name"
+          >
+            الاسم الكامل
+            <input
+              id="customer-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="الاسم الكامل"
+              autoComplete="name"
+              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+          <label
+            className="grid gap-1.5 text-xs font-bold text-muted-foreground"
+            htmlFor="customer-phone"
+          >
+            رقم الهاتف <span className="text-destructive">*</span>
+            <input
+              id="customer-phone"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (orderError) setOrderError(null);
+              }}
+              placeholder="رقم الهاتف"
+              inputMode="tel"
+              autoComplete="tel"
+              aria-invalid={Boolean(orderError)}
+              aria-describedby={orderError ? "order-error" : undefined}
+              className={`w-full rounded-xl border bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:ring-2 focus:ring-primary/20 ${
+                orderError
+                  ? "border-destructive focus:border-destructive"
+                  : "border-input focus:border-primary"
+              }`}
+            />
+          </label>
+          <label
+            className="grid gap-1.5 text-xs font-bold text-muted-foreground"
+            htmlFor="delivery-address"
+          >
+            عنوان التسليم
+            <input
+              id="delivery-address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="المدينة، الحي"
+              autoComplete="street-address"
+              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+          <label
+            className="grid gap-1.5 text-xs font-bold text-muted-foreground"
+            htmlFor="order-notes"
+          >
+            ملاحظات إضافية <span className="font-normal">(اختياري)</span>
+            <textarea
+              id="order-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="أضف أي تفاصيل مهمة للتسليم"
+              rows={2}
+              className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
         </div>
+        {orderError && (
+          <p
+            id="order-error"
+            role="alert"
+            className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive"
+          >
+            {orderError}
+          </p>
+        )}
       </section>
 
-      <section className="rounded-2xl bg-surface p-4 shadow-card">
+      <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">المجموع الفرعي</span>
           <span className="font-bold">{formatPrice(total)}</span>
@@ -139,15 +227,17 @@ function CartPage() {
         </div>
       </section>
 
-      <a
-        href={whatsappLink(message)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mb-2 flex items-center justify-center gap-2 rounded-2xl bg-success py-3.5 text-sm font-black text-success-foreground shadow-brand"
+      <button
+        onClick={handleSubmitOrder}
+        disabled={isSubmitting}
+        className="mb-2 flex items-center justify-center gap-2 rounded-2xl bg-success py-3.5 text-sm font-black text-success-foreground shadow-brand transition-colors hover:bg-success/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/40 disabled:opacity-60"
       >
         <MessageCircle className="h-5 w-5" />
-        إتمام الطلب عبر واتساب
-      </a>
+        {isSubmitting ? "جاري إنشاء الطلب..." : "إتمام الطلب عبر واتساب"}
+      </button>
+      {orderId && (
+        <p className="pb-1 text-center text-xs text-success">✅ تم إنشاء الطلب رقم {orderId}</p>
+      )}
       <p className="pb-2 text-center text-[11px] text-muted-foreground">
         الدفع عند الاستلام متاح • تأكيد الطلب مباشرة مع الإدارة
       </p>

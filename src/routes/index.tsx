@@ -15,7 +15,11 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن" },
-      { name: "description", content: "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد." },
+      {
+        name: "description",
+        content:
+          "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.",
+      },
     ],
   }),
   loader: async () => {
@@ -38,8 +42,10 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-const DARK = "#000209";
-const LIGHT = "#EEEEEE";
+const DARK = "var(--showcase)";
+const LIGHT = "var(--showcase-foreground)";
+const LIGHT_MUTED = "var(--showcase-muted)";
+const LIGHT_BORDER = "var(--showcase-border)";
 
 const revealProps = {
   initial: { opacity: 0, y: 50 },
@@ -96,7 +102,7 @@ function HomePage() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, []);
+  }, [allProducts]);
 
   return (
     <div
@@ -108,18 +114,14 @@ function HomePage() {
       {/* ============= PARALLAX BACKGROUND LAYERS ============= */}
       <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
         {/* Deep grid layer — slow */}
-        <motion.div
-          style={{ y: bgYSlow }}
-          className="absolute inset-0 opacity-[0.12]"
-        >
+        <motion.div style={{ y: bgYSlow }} className="absolute inset-0 opacity-[0.12]">
           <div
             className="absolute inset-0"
             style={{
               backgroundImage:
-                "linear-gradient(rgba(238,238,238,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(238,238,238,0.4) 1px, transparent 1px)",
+                "linear-gradient(color-mix(in oklab, var(--showcase-foreground) 40%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklab, var(--showcase-foreground) 40%, transparent) 1px, transparent 1px)",
               backgroundSize: "42px 42px",
-              maskImage:
-                "radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)",
+              maskImage: "radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)",
             }}
           />
         </motion.div>
@@ -132,7 +134,7 @@ function HomePage() {
             className="h-full w-full"
             style={{
               background:
-                "radial-gradient(circle, rgba(31,94,255,0.55) 0%, transparent 65%)",
+                "radial-gradient(circle, color-mix(in oklab, var(--primary) 55%, transparent) 0%, transparent 65%)",
             }}
           />
         </motion.div>
@@ -145,7 +147,7 @@ function HomePage() {
             className="h-full w-full"
             style={{
               background:
-                "radial-gradient(circle, rgba(102,166,255,0.45) 0%, transparent 65%)",
+                "radial-gradient(circle, color-mix(in oklab, var(--primary-light) 45%, transparent) 0%, transparent 65%)",
             }}
           />
         </motion.div>
@@ -162,7 +164,7 @@ function HomePage() {
           <div>
             <span
               className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em]"
-              style={{ color: "rgba(238,238,238,0.55)" }}
+              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 55%, transparent)" }}
             >
               NEW ARRIVALS
             </span>
@@ -170,7 +172,11 @@ function HomePage() {
               أحدث المنتجات
             </h2>
           </div>
-          <Link to="/search" className="text-xs font-bold" style={{ color: "rgba(238,238,238,0.65)" }}>
+          <Link
+            to="/search"
+            className="text-xs font-bold"
+            style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
+          >
             استكشف الكل
           </Link>
         </div>
@@ -181,28 +187,33 @@ function HomePage() {
         </div>
       </motion.section>
 
-
       {/* ============= IMMERSIVE SHOWROOM ENTRY ============= */}
       <motion.section {...revealProps} className="relative z-10 px-4">
         <Link
           to="/immersive-store"
           className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-3xl border p-4 shadow-2xl"
           style={{
-            borderColor: "rgba(238,238,238,0.12)",
+            borderColor: LIGHT_BORDER,
             background:
-              "linear-gradient(120deg, rgba(11,18,32,0.9) 0%, rgba(31,94,255,0.55) 55%, rgba(102,166,255,0.4) 100%)",
+              "linear-gradient(120deg, color-mix(in oklab, var(--showcase) 90%, transparent) 0%, color-mix(in oklab, var(--primary) 55%, transparent) 55%, color-mix(in oklab, var(--primary-light) 40%, transparent) 100%)",
             color: LIGHT,
           }}
         >
-          <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.6),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(102,166,255,0.7),transparent_45%)]" />
+          <div
+            className="absolute inset-0 opacity-40 mix-blend-overlay"
+            style={{
+              background:
+                "radial-gradient(circle at 20% 20%, color-mix(in oklab, var(--showcase-foreground) 60%, transparent), transparent 40%), radial-gradient(circle at 80% 80%, color-mix(in oklab, var(--primary-light) 70%, transparent), transparent 45%)",
+            }}
+          />
           <div className="relative">
-            <span className="inline-block rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold">
+            <span className="inline-block rounded-full bg-showcase-foreground/20 px-2.5 py-0.5 text-[10px] font-bold">
               جديد · تجربة ثلاثية الأبعاد
             </span>
             <h3 className="mt-1.5 text-lg font-black leading-tight">المعرض الافتراضي</h3>
-            <p className="text-[11px] text-white/85">تجوّل داخل اندكس ستور الفاخر</p>
+            <p className="text-[11px] text-showcase-foreground/85">تجوّل داخل اندكس ستور الفاخر</p>
           </div>
-          <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/30 backdrop-blur-md transition group-hover:scale-110">
+          <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-showcase-foreground/15 ring-1 ring-showcase-foreground/30 backdrop-blur-md transition group-hover:scale-110">
             <Icons.Sparkles className="h-5 w-5" />
           </div>
         </Link>
@@ -211,8 +222,14 @@ function HomePage() {
       {/* ============= CATEGORIES ============= */}
       <motion.section {...revealProps} className="relative z-10 px-4">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-black" style={{ color: LIGHT }}>التصنيفات</h3>
-          <Link to="/search" className="text-xs font-bold" style={{ color: "rgba(238,238,238,0.65)" }}>
+          <h3 className="text-base font-black" style={{ color: LIGHT }}>
+            التصنيفات
+          </h3>
+          <Link
+            to="/search"
+            className="text-xs font-bold"
+            style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
+          >
             الكل
           </Link>
         </div>
@@ -227,13 +244,18 @@ function HomePage() {
           className="grid grid-cols-4 gap-3"
         >
           {categories.slice(0, 8).map((c) => {
-            const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[c.icon] ?? Icons.Package;
+            const Icon =
+              (Icons as unknown as Record<string, Icons.LucideIcon>)[c.icon] ?? Icons.Package;
             return (
               <motion.div
                 key={c.id}
                 variants={{
                   hidden: { opacity: 0, y: 30 },
-                  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+                  show: {
+                    opacity: 1,
+                    y: 0,
+                    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+                  },
                 }}
               >
                 <Link
@@ -241,10 +263,15 @@ function HomePage() {
                   params={{ id: c.id }}
                   className="flex flex-col items-center gap-1.5"
                 >
-                  <div className={`grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br ${c.color} text-white shadow-lg`}>
+                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20 shadow-card transition group-hover:bg-primary/25">
                     <Icon className="h-6 w-6" />
                   </div>
-                  <span className="text-center text-[10px] font-semibold leading-tight" style={{ color: "rgba(238,238,238,0.85)" }}>
+                  <span
+                    className="text-center text-[10px] font-semibold leading-tight"
+                    style={{
+                      color: "color-mix(in oklab, var(--showcase-foreground) 85%, transparent)",
+                    }}
+                  >
                     {c.name}
                   </span>
                 </Link>
@@ -257,8 +284,14 @@ function HomePage() {
       {/* ============= DAILY DEALS ============= */}
       <motion.section {...revealProps} className="relative z-10 px-4">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-black" style={{ color: LIGHT }}>عروض اليوم 🔥</h3>
-          <Link to="/offers" className="text-xs font-bold" style={{ color: "rgba(238,238,238,0.65)" }}>
+          <h3 className="text-base font-black" style={{ color: LIGHT }}>
+            عروض اليوم 🔥
+          </h3>
+          <Link
+            to="/offers"
+            className="text-xs font-bold"
+            style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
+          >
             الكل
           </Link>
         </div>
@@ -274,13 +307,17 @@ function HomePage() {
         <CinematicStory />
       </section>
 
-
-
       {/* ============= RECOMMENDED ============= */}
       <motion.section {...revealProps} className="relative z-10 px-4">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-black" style={{ color: LIGHT }}>الأكثر مبيعاً</h3>
-          <Link to="/search" className="text-xs font-bold" style={{ color: "rgba(238,238,238,0.65)" }}>
+          <h3 className="text-base font-black" style={{ color: LIGHT }}>
+            الأكثر مبيعاً
+          </h3>
+          <Link
+            to="/search"
+            className="text-xs font-bold"
+            style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
+          >
             الكل
           </Link>
         </div>
@@ -308,15 +345,20 @@ function HomePage() {
             rel="noopener noreferrer"
             className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl border p-2.5 shadow-2xl"
             style={{
-              borderColor: "rgba(238,238,238,0.12)",
-              background: "rgba(0,2,9,0.72)",
+              borderColor: LIGHT_BORDER,
+              background: "color-mix(in oklab, var(--showcase) 72%, transparent)",
               backdropFilter: "blur(24px) saturate(160%)",
               color: LIGHT,
             }}
           >
             <div className="min-w-0 flex-1 ps-2 text-start">
               <p className="truncate text-xs font-bold">{focusedProduct.name}</p>
-              <p className="text-[11px] font-black" style={{ color: "rgba(238,238,238,0.7)" }}>
+              <p
+                className="text-[11px] font-black"
+                style={{
+                  color: "color-mix(in oklab, var(--showcase-foreground) 70%, transparent)",
+                }}
+              >
                 {formatPrice(focusedProduct.price)}
               </p>
             </div>

@@ -15,6 +15,7 @@ export function modelFor(id: string) {
 }
 
 // React 19 type shim for the <model-viewer> web component.
+/* eslint-disable @typescript-eslint/no-namespace -- React's JSX module augmentation requires this namespace shape. */
 declare module "react" {
   namespace JSX {
     interface IntrinsicElements {
@@ -25,6 +26,7 @@ declare module "react" {
     }
   }
 }
+/* eslint-enable @typescript-eslint/no-namespace */
 
 let scriptInjected = false;
 export function useModelViewer() {

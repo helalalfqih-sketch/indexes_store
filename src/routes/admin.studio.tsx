@@ -121,8 +121,8 @@ function StudioPage() {
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
           <Sparkles className="h-3.5 w-3.5" /> AI Studio
         </div>
-        <h1 className="mt-3 text-3xl font-black lg:text-4xl">
-          <span className="neon-text">{t("studio.title")}</span>
+        <h1 className="mt-3 text-3xl font-black lg:text-4xl text-foreground">
+          {t("studio.title")}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("studio.subtitle")}</p>
       </div>
@@ -139,7 +139,7 @@ function StudioPage() {
             }}
             className="group cursor-pointer rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 p-8 text-center transition hover:bg-primary/10"
           >
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl gradient-brand shadow-brand">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary shadow-brand">
               <Upload className="h-6 w-6 text-primary-foreground" />
             </div>
             <div className="mt-3 text-sm font-bold">{t("studio.drop")}</div>
@@ -157,11 +157,14 @@ function StudioPage() {
           {images.length > 0 && (
             <div className="mt-4 grid grid-cols-3 gap-2">
               {images.map((src, i) => (
-                <div key={i} className="group relative aspect-square overflow-hidden rounded-xl border border-border/60">
+                <div
+                  key={i}
+                  className="group relative aspect-square overflow-hidden rounded-xl border border-border/60"
+                >
                   <img src={src} alt="" className="h-full w-full object-cover" />
                   <button
                     onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
-                    className="absolute end-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/70 text-white opacity-0 transition group-hover:opacity-100"
+                    className="absolute end-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-showcase/70 text-showcase-foreground opacity-0 transition group-hover:opacity-100"
                     aria-label="remove"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -186,9 +189,13 @@ function StudioPage() {
             <button
               onClick={analyze}
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-xl gradient-brand px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand disabled:opacity-60 transition hover:bg-primary/90"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Wand2 className="h-4 w-4" />
+              )}
               {loading ? t("studio.analyzing") : t("studio.analyze")}
             </button>
             <button
@@ -224,7 +231,7 @@ function StudioPage() {
 
           {loading && (
             <div className="mt-6 space-y-3">
-              <div className="mx-auto grid h-20 w-20 place-items-center rounded-full gradient-brand animate-pulse-glow">
+              <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-primary animate-pulse-glow">
                 <Sparkles className="h-8 w-8 text-primary-foreground animate-pulse" />
               </div>
               <p className="text-center text-sm text-muted-foreground">
@@ -232,7 +239,11 @@ function StudioPage() {
               </p>
               <div className="space-y-2">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-4 animate-pulse rounded-lg bg-muted" style={{ width: `${90 - i * 12}%` }} />
+                  <div
+                    key={i}
+                    className="h-4 animate-pulse rounded-lg bg-muted"
+                    style={{ width: `${90 - i * 12}%` }}
+                  />
                 ))}
               </div>
             </div>
@@ -258,7 +269,10 @@ function StudioPage() {
                 <div className="text-xs font-bold text-muted-foreground">{t("studio.tags")}</div>
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {result.tags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                    <span
+                      key={tag}
+                      className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary"
+                    >
                       #{tag}
                     </span>
                   ))}
@@ -269,10 +283,11 @@ function StudioPage() {
                 <div className="mt-1 text-sm font-bold">{result.seoTitle}</div>
                 <div className="text-xs text-muted-foreground">{result.seoDescription}</div>
               </div>
-              <div className="rounded-xl bg-gradient-to-br from-primary/15 to-fuchsia-500/10 p-4">
+              <div className="rounded-xl bg-primary/10 border border-primary/20 p-4">
                 <div className="text-xs font-bold text-muted-foreground">{t("studio.price")}</div>
-                <div className="mt-1 text-2xl font-black neon-text">
-                  {result.priceEstimate.min} – {result.priceEstimate.max} {result.priceEstimate.currency}
+                <div className="mt-1 text-2xl font-black text-primary">
+                  {result.priceEstimate.min} – {result.priceEstimate.max}{" "}
+                  {result.priceEstimate.currency}
                 </div>
               </div>
             </div>
@@ -283,7 +298,17 @@ function StudioPage() {
   );
 }
 
-function Field({ label, value, multiline, mono }: { label: string; value: string; multiline?: boolean; mono?: boolean }) {
+function Field({
+  label,
+  value,
+  multiline,
+  mono,
+}: {
+  label: string;
+  value: string;
+  multiline?: boolean;
+  mono?: boolean;
+}) {
   return (
     <div>
       <div className="text-xs font-bold text-muted-foreground">{label}</div>

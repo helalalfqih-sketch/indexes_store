@@ -45,22 +45,30 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-surface: var(--surface);
+  --color-showcase: var(--showcase);
+  --color-showcase-foreground: var(--showcase-foreground);
+  --color-showcase-muted: var(--showcase-muted);
+  --color-showcase-border: var(--showcase-border);
 }
 
 :root {
   --radius: 0.875rem;
   /* Noqta brand */
-  --background: oklch(0.985 0.008 250);   /* #EEF4FC-ish soft */
-  --surface: oklch(1 0 0);                /* card white */
+  --background: oklch(0.985 0.008 250); /* #EEF4FC-ish soft */
+  --surface: oklch(1 0 0); /* card white */
+  --showcase: oklch(0.12 0.025 260);
+  --showcase-foreground: oklch(0.95 0.01 255);
+  --showcase-muted: oklch(0.75 0.025 258);
+  --showcase-border: oklch(0.95 0.01 255 / 14%);
   --foreground: oklch(0.18 0.03 260);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.18 0.03 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.03 260);
-  --primary: oklch(0.58 0.22 260);        /* #1F5EFF */
+  --primary: oklch(0.58 0.22 260); /* #1F5EFF */
   --primary-foreground: oklch(0.99 0 0);
-  --primary-light: oklch(0.66 0.19 260);  /* #2F7BFF */
-  --primary-soft: oklch(0.78 0.12 260);   /* #66A6FF */
+  --primary-light: oklch(0.66 0.19 260); /* #2F7BFF */
+  --primary-soft: oklch(0.78 0.12 260); /* #66A6FF */
   --secondary: oklch(0.95 0.02 255);
   --secondary-foreground: oklch(0.22 0.04 260);
   --muted: oklch(0.96 0.01 255);
@@ -80,6 +88,10 @@
 .dark {
   --background: oklch(0.16 0.02 260);
   --surface: oklch(0.21 0.03 260);
+  --showcase: oklch(0.12 0.025 260);
+  --showcase-foreground: oklch(0.97 0.01 255);
+  --showcase-muted: oklch(0.75 0.025 258);
+  --showcase-border: oklch(1 0 0 / 14%);
   --foreground: oklch(0.97 0.01 255);
   --card: oklch(0.21 0.03 260);
   --card-foreground: oklch(0.97 0.01 255);
@@ -120,7 +132,12 @@
 }
 
 @utility gradient-brand {
-  background-image: linear-gradient(135deg, oklch(0.58 0.22 260), oklch(0.66 0.19 260) 55%, oklch(0.78 0.12 260));
+  background-image: linear-gradient(
+    135deg,
+    var(--primary),
+    var(--primary-light) 55%,
+    var(--primary-soft)
+  );
 }
 
 @utility shadow-brand {
@@ -145,13 +162,18 @@
 
 @utility neon-ring {
   box-shadow:
-    0 0 0 1px color-mix(in oklab, #66A6FF 40%, transparent),
-    0 10px 40px -8px color-mix(in oklab, #1F5EFF 55%, transparent),
-    0 0 60px -10px color-mix(in oklab, #2F7BFF 40%, transparent);
+    0 0 0 1px color-mix(in oklab, var(--primary-soft) 40%, transparent),
+    0 10px 40px -8px color-mix(in oklab, var(--primary) 55%, transparent),
+    0 0 60px -10px color-mix(in oklab, var(--primary-light) 40%, transparent);
 }
 
 @utility neon-text {
-  background-image: linear-gradient(120deg, #66A6FF, #2F7BFF 45%, #A855F7);
+  background-image: linear-gradient(
+    120deg,
+    var(--primary-soft),
+    var(--primary-light) 45%,
+    var(--primary)
+  );
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
@@ -159,31 +181,60 @@
 
 @utility tilt-3d {
   transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s;
+  transition:
+    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.4s;
 }
 .tilt-3d:hover {
   transform: perspective(900px) rotateX(4deg) rotateY(-6deg) translateY(-4px);
-  box-shadow: 0 30px 60px -20px color-mix(in oklab, #1F5EFF 45%, transparent);
+  box-shadow: 0 30px 60px -20px color-mix(in oklab, var(--primary) 45%, transparent);
 }
 
 @utility aurora-bg {
   background:
-    radial-gradient(1200px 600px at 10% -10%, color-mix(in oklab, #1F5EFF 25%, transparent), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, color-mix(in oklab, #A855F7 22%, transparent), transparent 55%),
-    radial-gradient(800px 500px at 50% 120%, color-mix(in oklab, #06B6D4 20%, transparent), transparent 60%);
+    radial-gradient(
+      1200px 600px at 10% -10%,
+      color-mix(in oklab, var(--primary) 25%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at 100% 0%,
+      color-mix(in oklab, var(--primary-light) 22%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      800px 500px at 50% 120%,
+      color-mix(in oklab, var(--primary-soft) 20%, transparent),
+      transparent 60%
+    );
 }
 
 @keyframes float-slow {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, #2F7BFF 45%, transparent); }
-  50% { box-shadow: 0 0 0 12px color-mix(in oklab, #2F7BFF 0%, transparent); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary-light) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 12px color-mix(in oklab, var(--primary-light) 0%, transparent);
+  }
 }
 @keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 @utility animate-float {
   animation: float-slow 5s ease-in-out infinite;

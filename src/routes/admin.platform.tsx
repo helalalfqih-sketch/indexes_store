@@ -12,10 +12,7 @@ import { Building2, Plus, Pause, Play, Package as PackageIcon, Users } from "luc
 
 export const Route = createFileRoute("/admin/platform")({
   head: () => ({
-    meta: [
-      { title: "Platform — SaaS Tenants" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Platform — SaaS Tenants" }, { name: "robots", content: "noindex" }],
   }),
   component: PlatformPage,
 });
@@ -131,9 +128,7 @@ function PlatformPage() {
         </form>
       )}
 
-      {tenantsQ.isLoading && (
-        <p className="text-sm text-muted-foreground">Loading tenants…</p>
-      )}
+      {tenantsQ.isLoading && <p className="text-sm text-muted-foreground">Loading tenants…</p>}
       {tenantsQ.error && (
         <p className="text-sm text-destructive">
           Failed to load: {(tenantsQ.error as Error).message}
@@ -144,7 +139,7 @@ function PlatformPage() {
         {tenantsQ.data?.map((t) => (
           <article
             key={t.id}
-            className="glass grid gap-4 rounded-2xl p-4 md:grid-cols-[1fr_auto] md:items-center"
+            className="grid gap-4 rounded-2xl border border-border bg-surface p-4 md:grid-cols-[1fr_auto] md:items-center"
           >
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -162,8 +157,8 @@ function PlatformPage() {
                   <Users className="h-3 w-3" /> {t.usage.members} members
                 </span>
                 <span>
-                  · limit:{" "}
-                  {Number.isFinite(t.limits.maxProducts) ? t.limits.maxProducts : "∞"} products
+                  · limit: {Number.isFinite(t.limits.maxProducts) ? t.limits.maxProducts : "∞"}{" "}
+                  products
                 </span>
               </div>
             </div>
@@ -211,10 +206,10 @@ function PlatformPage() {
 function StatusBadge({ status }: { status: "active" | "suspended" | "pending" }) {
   const cls =
     status === "active"
-      ? "bg-emerald-500/15 text-emerald-500"
+      ? "bg-success/15 text-success"
       : status === "suspended"
-        ? "bg-red-500/15 text-red-500"
-        : "bg-amber-500/15 text-amber-500";
+        ? "bg-destructive/15 text-destructive"
+        : "bg-warning/15 text-warning";
   return (
     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${cls}`}>
       {status}
@@ -227,7 +222,7 @@ function PlanBadge({ plan }: { plan: "free" | "pro" | "enterprise" }) {
     plan === "enterprise"
       ? "bg-primary/15 text-primary"
       : plan === "pro"
-        ? "bg-sky-500/15 text-sky-500"
+        ? "bg-primary-light/15 text-primary"
         : "bg-muted text-muted-foreground";
   return (
     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${cls}`}>

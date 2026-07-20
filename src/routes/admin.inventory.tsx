@@ -39,7 +39,11 @@ function InventoryPage() {
   }, [productsQ.data, filter]);
 
   const recordMut = useMutation({
-    mutationFn: (v: { productId: string; delta: number; reason: "restock" | "adjustment" | "damage" | "return" }) =>
+    mutationFn: (v: {
+      productId: string;
+      delta: number;
+      reason: "restock" | "adjustment" | "damage" | "return";
+    }) =>
       recordInventoryMovement({
         product_id: v.productId,
         delta: v.delta,
@@ -57,9 +61,7 @@ function InventoryPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-black lg:text-4xl">
-            <span className="neon-text">المخزون</span>
-          </h1>
+          <h1 className="text-3xl font-black lg:text-4xl text-foreground">المخزون</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {productsQ.isLoading ? "جارٍ التحميل..." : `${products.length} منتج`}
           </p>
@@ -82,7 +84,9 @@ function InventoryPage() {
               key={f}
               onClick={() => setFilter(f)}
               className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
-                filter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                filter === f
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {f === "all" ? "الكل" : f === "low" ? "منخفض (≤5)" : "نفد"}
@@ -91,7 +95,10 @@ function InventoryPage() {
         </div>
         <div className="ms-auto flex items-center gap-2">
           <span className="text-xs text-muted-foreground">تعديل سريع:</span>
-          <button onClick={() => setDelta(Math.max(1, delta - 1))} className="grid h-8 w-8 place-items-center rounded-lg border border-border">
+          <button
+            onClick={() => setDelta(Math.max(1, delta - 1))}
+            className="grid h-8 w-8 place-items-center rounded-lg border border-border"
+          >
             <Minus className="h-3.5 w-3.5" />
           </button>
           <input
@@ -101,22 +108,25 @@ function InventoryPage() {
             onChange={(e) => setDelta(Math.max(1, Number(e.target.value)))}
             className="w-14 rounded-lg border border-border bg-surface px-2 py-1.5 text-center text-sm"
           />
-          <button onClick={() => setDelta(delta + 1)} className="grid h-8 w-8 place-items-center rounded-lg border border-border">
+          <button
+            onClick={() => setDelta(delta + 1)}
+            className="grid h-8 w-8 place-items-center rounded-lg border border-border"
+          >
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
       {productsQ.isError ? (
-        <div className="rounded-2xl glass p-8 text-center text-destructive">
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-8 text-center text-destructive">
           <p className="text-sm">{(productsQ.error as Error).message}</p>
         </div>
       ) : productsQ.isLoading ? (
-        <div className="rounded-2xl glass p-12 text-center">
+        <div className="rounded-2xl border border-border bg-surface p-12 text-center">
           <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
         </div>
       ) : products.length === 0 ? (
-        <div className="rounded-2xl glass p-12 text-center">
+        <div className="rounded-2xl border border-border bg-surface p-12 text-center">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-primary/10">
             <Boxes className="h-7 w-7 text-primary" />
           </div>
@@ -124,8 +134,8 @@ function InventoryPage() {
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-2xl glass overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="lg:col-span-2 overflow-x-auto rounded-2xl border border-border bg-surface">
+            <table className="min-w-[620px] w-full text-sm">
               <thead className="text-xs text-muted-foreground border-b border-border">
                 <tr>
                   <th className="text-start p-3">المنتج</th>
@@ -143,27 +153,37 @@ function InventoryPage() {
                     <td className="p-3">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 overflow-hidden rounded-lg bg-muted shrink-0">
-                          {p.images[0] && <img src={p.images[0]} alt="" className="h-full w-full object-cover" />}
+                          {p.images[0] && (
+                            <img src={p.images[0]} alt="" className="h-full w-full object-cover" />
+                          )}
                         </div>
                         <div className="min-w-0">
                           <div className="truncate font-bold">{p.name}</div>
-                          <div className="truncate text-xs text-muted-foreground font-mono">{p.slug}</div>
+                          <div className="truncate text-xs text-muted-foreground font-mono">
+                            {p.slug}
+                          </div>
                         </div>
                       </div>
                     </td>
                     <td className="p-3">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                        p.stock <= 0 ? "bg-destructive/20 text-destructive" :
-                        p.stock <= 5 ? "bg-warning/20 text-warning" :
-                        "bg-success/20 text-success"
-                      }`}>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                          p.stock <= 0
+                            ? "bg-destructive/20 text-destructive"
+                            : p.stock <= 5
+                              ? "bg-warning/20 text-warning"
+                              : "bg-success/20 text-success"
+                        }`}
+                      >
                         {p.stock}
                       </span>
                     </td>
                     <td className="p-3">
                       <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={() => recordMut.mutate({ productId: p.id, delta, reason: "restock" })}
+                          onClick={() =>
+                            recordMut.mutate({ productId: p.id, delta, reason: "restock" })
+                          }
                           disabled={recordMut.isPending}
                           className="inline-flex items-center gap-1 rounded-lg bg-success/15 px-2 py-1 text-xs font-bold text-success hover:bg-success/25"
                         >
@@ -175,7 +195,11 @@ function InventoryPage() {
                               toast.error("لا يمكن أن يصبح المخزون سالبًا");
                               return;
                             }
-                            recordMut.mutate({ productId: p.id, delta: -Math.abs(delta), reason: "adjustment" });
+                            recordMut.mutate({
+                              productId: p.id,
+                              delta: -Math.abs(delta),
+                              reason: "adjustment",
+                            });
                           }}
                           disabled={recordMut.isPending}
                           className="inline-flex items-center gap-1 rounded-lg bg-destructive/10 px-2 py-1 text-xs font-bold text-destructive hover:bg-destructive/20"
@@ -198,7 +222,7 @@ function InventoryPage() {
             </table>
           </div>
 
-          <div className="rounded-2xl glass p-5">
+          <div className="rounded-2xl border border-border bg-surface p-5">
             <h2 className="text-sm font-black mb-3">حركات المخزون</h2>
             {!selectedId ? (
               <p className="text-xs text-muted-foreground">اختر منتجًا لعرض حركاته.</p>
@@ -211,8 +235,11 @@ function InventoryPage() {
                 {(movementsQ.data ?? []).map((m) => (
                   <li key={m.id} className="rounded-lg bg-surface p-2">
                     <div className="flex items-center justify-between">
-                      <span className={`font-bold ${m.delta > 0 ? "text-success" : "text-destructive"}`}>
-                        {m.delta > 0 ? "+" : ""}{m.delta}
+                      <span
+                        className={`font-bold ${m.delta > 0 ? "text-success" : "text-destructive"}`}
+                      >
+                        {m.delta > 0 ? "+" : ""}
+                        {m.delta}
                       </span>
                       <span className="text-muted-foreground">{m.reason}</span>
                     </div>
