@@ -31,6 +31,7 @@ import { Route as AdminPlatformRouteImport } from './routes/admin.platform'
 import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminBranchesRouteImport } from './routes/admin.branches'
+import { Route as AdminAppearanceRouteImport } from './routes/admin.appearance'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
 import { Route as ApiAiAnalyzeProductRouteImport } from './routes/api/ai.analyze-product'
 import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
@@ -145,6 +146,11 @@ const AdminBranchesRoute = AdminBranchesRouteImport.update({
   path: '/branches',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAppearanceRoute = AdminAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiPublicImageProxyRoute = ApiPublicImageProxyRouteImport.update({
   id: '/api/public/image-proxy',
   path: '/api/public/image-proxy',
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
+  '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
+  '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
@@ -226,6 +234,7 @@ export interface FileRoutesById {
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
+  '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
@@ -255,6 +264,7 @@ export interface FileRouteTypes {
     | '/offers'
     | '/onboarding'
     | '/search'
+    | '/admin/appearance'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/offers'
     | '/onboarding'
     | '/search'
+    | '/admin/appearance'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/offers'
     | '/onboarding'
     | '/search'
+    | '/admin/appearance'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
@@ -499,6 +511,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBranchesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/appearance': {
+      id: '/admin/appearance'
+      path: '/appearance'
+      fullPath: '/admin/appearance'
+      preLoaderRoute: typeof AdminAppearanceRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/public/image-proxy': {
       id: '/api/public/image-proxy'
       path: '/api/public/image-proxy'
@@ -524,6 +543,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAppearanceRoute: typeof AdminAppearanceRoute
   AdminBranchesRoute: typeof AdminBranchesRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
@@ -537,6 +557,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAppearanceRoute: AdminAppearanceRoute,
   AdminBranchesRoute: AdminBranchesRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminInventoryRoute: AdminInventoryRoute,
