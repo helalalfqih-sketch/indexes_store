@@ -8,6 +8,6 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    base: "/app/",
+    base: process.env.VERCEL ? "/" : "/app/",
   },
 });
