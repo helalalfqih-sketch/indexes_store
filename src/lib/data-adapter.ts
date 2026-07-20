@@ -97,6 +97,7 @@ export type LegacyProductShape = {
   oldPrice?: number;
   stock: number;
   image: string;
+  images?: string[];
   rating: number;
   reviews: number;
   categoryId: string;
@@ -112,6 +113,7 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   price: p.price,
   stock: p.stock,
   image: p.images[0] ?? "",
+  images: p.images,
   rating: p.rating,
   reviews: p.reviews_count,
   categoryId: p.category_id ?? "",
