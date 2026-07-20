@@ -27,7 +27,7 @@ import {
   type NavigationConfig,
 } from "@/lib/domain/appearance";
 
-export const Route = createFileRoute("/admin/appearance" as any)({
+export const Route = createFileRoute("/admin/appearance")({
   head: () => ({ meta: [{ title: "مظهر المتجر — لوحة الإدارة" }] }),
   component: AdminAppearancePage,
 });
