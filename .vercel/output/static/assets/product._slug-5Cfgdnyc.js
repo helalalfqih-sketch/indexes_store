@@ -1,1 +1,0 @@
-import{t as e}from"./jsx-runtime-CZcjcDnw.js";import{t}from"./link-CgZewjgc.js";var n=e(),r=()=>(0,n.jsxs)(`div`,{className:`p-8 text-center`,children:[(0,n.jsx)(`p`,{className:`text-lg font-bold`,children:`المنتج غير موجود`}),(0,n.jsx)(t,{to:`/`,className:`mt-4 inline-block text-primary underline`,children:`العودة للرئيسية`})]});export{r as notFoundComponent};
