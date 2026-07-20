@@ -19,20 +19,36 @@ import { AppearanceProvider } from "@/components/appearance-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path.startsWith("/app/admin")) {
+        const target = path.replace(/^\/app\/admin/, "/admin") || "/admin";
+        window.location.replace(target);
+      }
+    }
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4" dir="rtl">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-black text-primary">404</h1>
         <h2 className="mt-4 text-xl font-bold text-foreground">الصفحة غير موجودة</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           الرابط الذي تحاول الوصول إليه غير متوفر.
         </p>
-        <div className="mt-6">
+        <div className="mt-6 flex items-center justify-center gap-3">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
           >
             العودة للرئيسية
+          </Link>
+          <Link
+            to="/admin"
+            className="inline-flex items-center justify-center rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-bold text-foreground shadow-card hover:bg-accent"
+          >
+            لوحة التحكم
           </Link>
         </div>
       </div>
