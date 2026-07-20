@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { TenantProvider } from "@/components/tenant-provider";
+import { AppearanceProvider } from "@/components/appearance-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -164,16 +165,18 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TenantProvider>
-        {isAdmin || isBare ? (
-          <Outlet />
-        ) : (
-          <AppShell>
+      <AppearanceProvider>
+        <TenantProvider>
+          {isAdmin || isBare ? (
             <Outlet />
-          </AppShell>
-        )}
-        <Toaster />
-      </TenantProvider>
+          ) : (
+            <AppShell>
+              <Outlet />
+            </AppShell>
+          )}
+          <Toaster />
+        </TenantProvider>
+      </AppearanceProvider>
     </QueryClientProvider>
   );
 }

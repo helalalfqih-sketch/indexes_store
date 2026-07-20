@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-CZcjcDnw.js";import{t}from"./link-CgZewjgc.js";var n=e(),r=()=>(0,n.jsxs)(`div`,{className:`p-8 text-center`,children:[(0,n.jsx)(`p`,{children:`التصنيف غير موجود`}),(0,n.jsx)(t,{to:`/`,className:`text-primary`,children:`الرئيسية`})]});export{r as notFoundComponent};

@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-CZcjcDnw.js";var t=e(),n=({error:e})=>(0,t.jsxs)(`div`,{className:`p-8 text-center text-destructive`,children:[`حدث خطأ: `,e.message]});export{n as errorComponent};

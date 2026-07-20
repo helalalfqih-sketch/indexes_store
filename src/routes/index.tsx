@@ -10,6 +10,7 @@ import { ProductCard } from "@/components/product-card";
 import { ProductSphereHero } from "@/components/product-sphere-hero";
 import { CinematicStory } from "@/components/cinematic-story";
 import { quickOrderLink } from "@/lib/whatsapp";
+import { useAppearance } from "@/components/appearance-provider";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -104,6 +105,8 @@ function HomePage() {
     };
   }, [allProducts]);
 
+  const { settings } = useAppearance();
+
   return (
     <div
       ref={pageRef}
@@ -153,10 +156,21 @@ function HomePage() {
         </motion.div>
       </div>
 
-      {/* ============= HERO — 3D PRODUCT SPHERE ============= */}
-      <div className="relative z-10 px-4">
-        <ProductSphereHero products={allProducts} />
-      </div>
+      {/* ============= HERO — DYNAMIC SHOWCASE ============= */}
+      {settings.hero.enabled && (
+        <div className="relative z-10 px-4">
+          {settings.hero.type === "cinematic" ? (
+            <CinematicStory />
+          ) : (
+            <ProductSphereHero
+              products={allProducts}
+              badgeText={settings.hero.badgeText}
+              title={settings.hero.title}
+              subtitle={settings.hero.subtitle}
+            />
+          )}
+        </div>
+      )}
 
       {/* ============= LATEST PRODUCTS ============= */}
       <motion.section {...revealProps} className="relative z-10 px-4 pt-8 sm:pt-12">

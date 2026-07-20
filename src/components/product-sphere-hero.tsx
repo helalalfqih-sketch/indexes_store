@@ -573,7 +573,17 @@ function StarField() {
 }
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
-export function ProductSphereHero({ products }: { products: LegacyProductShape[] }) {
+export function ProductSphereHero({
+  products,
+  badgeText = "INDEXES · LIVE SHOWCASE",
+  title = "معرض المنتجات الذكي",
+  subtitle = "اسحب الكرة — كل وجه منتج، اضغط لتفتحه",
+}: {
+  products: LegacyProductShape[];
+  badgeText?: string;
+  title?: string;
+  subtitle?: string;
+}) {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState<LegacyProductShape | null>(null);
@@ -697,7 +707,7 @@ export function ProductSphereHero({ products }: { products: LegacyProductShape[]
             className="text-[9px] font-bold tracking-[0.35em]"
             style={{ color: "rgba(200,220,255,0.85)" }}
           >
-            INDEXES · LIVE SHOWCASE
+            {badgeText}
           </span>
         </motion.div>
 
@@ -713,7 +723,7 @@ export function ProductSphereHero({ products }: { products: LegacyProductShape[]
             letterSpacing: "-0.01em",
           }}
         >
-          معرض المنتجات الذكي
+          {title}
         </motion.h1>
 
         <motion.p
@@ -723,7 +733,7 @@ export function ProductSphereHero({ products }: { products: LegacyProductShape[]
           className="mt-2 text-[11px] leading-relaxed sm:text-sm"
           style={{ color: "rgba(180,200,255,0.60)" }}
         >
-          اسحب الكرة — كل وجه منتج، اضغط لتفتحه
+          {subtitle}
         </motion.p>
       </div>
 
