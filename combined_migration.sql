@@ -756,18 +756,20 @@ ALTER TABLE public.products
   ADD COLUMN IF NOT EXISTS condition    text,
   ADD COLUMN IF NOT EXISTS source_url   text;
 
-CREATE UNIQUE INDEX IF NOT EXISTS products_tenant_external_id_key
-  ON public.products (tenant_id, external_id)
-  WHERE external_id IS NOT NULL;
-
-DROP INDEX IF EXISTS public.products_tenant_external_id_key;
-
 ALTER TABLE public.products
   DROP CONSTRAINT IF EXISTS products_tenant_external_id_key;
 
-ALTER TABLE public.products
-  ADD CONSTRAINT products_tenant_external_id_key
-  UNIQUE (tenant_id, external_id);
+DROP INDEX IF EXISTS public.products_tenant_external_id_key;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'products_tenant_external_id_key'
+  ) THEN
+    ALTER TABLE public.products ADD CONSTRAINT products_tenant_external_id_key UNIQUE (tenant_id, external_id);
+  END IF;
+END
+$$;
 
 ALTER TABLE public.products
   ADD COLUMN IF NOT EXISTS sku                text,
