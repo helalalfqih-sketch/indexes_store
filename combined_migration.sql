@@ -12,7 +12,7 @@ END
 $$;
 
 -- =============== profiles ===============
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT,
   phone TEXT,
@@ -27,17 +27,20 @@ GRANT ALL ON public.profiles TO service_role;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Authenticated can view profiles" ON public.profiles;
 CREATE POLICY "Authenticated can view profiles"
   ON public.profiles FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Users insert own profile" ON public.profiles;
 CREATE POLICY "Users insert own profile"
   ON public.profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
 CREATE POLICY "Users update own profile"
   ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
 -- =============== user_roles ===============
-CREATE TABLE public.user_roles (
+CREATE TABLE IF NOT EXISTS public.user_roles (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   role public.app_role NOT NULL,
@@ -45,7 +48,7 @@ CREATE TABLE public.user_roles (
   UNIQUE (user_id, role)
 );
 
-CREATE INDEX idx_user_roles_user_id ON public.user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
 
 GRANT SELECT ON public.user_roles TO authenticated;
 GRANT ALL ON public.user_roles TO service_role;
@@ -94,6 +97,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_profiles_updated_at ON public.profiles;
 CREATE TRIGGER trg_profiles_updated_at
 BEFORE UPDATE ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -123,6 +127,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -134,7 +139,7 @@ GRANT EXECUTE ON FUNCTION public.has_role(UUID, public.app_role) TO authenticate
 -- =========================================================
 -- CATEGORIES
 -- =========================================================
-CREATE TABLE public.categories (
+CREATE TABLE IF NOT EXISTS public.categories (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   slug text NOT NULL UNIQUE,
   name text NOT NULL,
@@ -155,27 +160,32 @@ GRANT ALL ON public.categories TO service_role;
 
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public can view active categories" ON public.categories;
 CREATE POLICY "Public can view active categories"
   ON public.categories FOR SELECT
   TO anon, authenticated
   USING (is_active = true OR public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins insert categories" ON public.categories;
 CREATE POLICY "Admins insert categories"
   ON public.categories FOR INSERT TO authenticated
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins update categories" ON public.categories;
 CREATE POLICY "Admins update categories"
   ON public.categories FOR UPDATE TO authenticated
   USING (public.has_role(auth.uid(), 'admin'))
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins delete categories" ON public.categories;
 CREATE POLICY "Admins delete categories"
   ON public.categories FOR DELETE TO authenticated
   USING (public.has_role(auth.uid(), 'admin'));
 
-CREATE INDEX idx_categories_parent ON public.categories(parent_id);
-CREATE INDEX idx_categories_sort ON public.categories(sort);
+CREATE INDEX IF NOT EXISTS idx_categories_parent ON public.categories(parent_id);
+CREATE INDEX IF NOT EXISTS idx_categories_sort ON public.categories(sort);
 
+DROP TRIGGER IF EXISTS trg_categories_updated ON public.categories;
 CREATE TRIGGER trg_categories_updated
   BEFORE UPDATE ON public.categories
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -183,7 +193,7 @@ CREATE TRIGGER trg_categories_updated
 -- =========================================================
 -- PRODUCTS
 -- =========================================================
-CREATE TABLE public.products (
+CREATE TABLE IF NOT EXISTS public.products (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   slug text NOT NULL UNIQUE,
   name text NOT NULL,
@@ -212,28 +222,33 @@ GRANT ALL ON public.products TO service_role;
 
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public can view published products" ON public.products;
 CREATE POLICY "Public can view published products"
   ON public.products FOR SELECT
   TO anon, authenticated
   USING (is_published = true OR public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins insert products" ON public.products;
 CREATE POLICY "Admins insert products"
   ON public.products FOR INSERT TO authenticated
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins update products" ON public.products;
 CREATE POLICY "Admins update products"
   ON public.products FOR UPDATE TO authenticated
   USING (public.has_role(auth.uid(), 'admin'))
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins delete products" ON public.products;
 CREATE POLICY "Admins delete products"
   ON public.products FOR DELETE TO authenticated
   USING (public.has_role(auth.uid(), 'admin'));
 
-CREATE INDEX idx_products_category ON public.products(category_id);
-CREATE INDEX idx_products_published ON public.products(is_published);
-CREATE INDEX idx_products_created ON public.products(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_products_category ON public.products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_published ON public.products(is_published);
+CREATE INDEX IF NOT EXISTS idx_products_created ON public.products(created_at DESC);
 
+DROP TRIGGER IF EXISTS trg_products_updated ON public.products;
 CREATE TRIGGER trg_products_updated
   BEFORE UPDATE ON public.products
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -241,7 +256,7 @@ CREATE TRIGGER trg_products_updated
 -- =========================================================
 -- INVENTORY MOVEMENTS
 -- =========================================================
-CREATE TABLE public.inventory_movements (
+CREATE TABLE IF NOT EXISTS public.inventory_movements (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id uuid NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
   delta integer NOT NULL,
@@ -257,16 +272,18 @@ GRANT ALL ON public.inventory_movements TO service_role;
 
 ALTER TABLE public.inventory_movements ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins view inventory" ON public.inventory_movements;
 CREATE POLICY "Admins view inventory"
   ON public.inventory_movements FOR SELECT TO authenticated
   USING (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins insert inventory" ON public.inventory_movements;
 CREATE POLICY "Admins insert inventory"
   ON public.inventory_movements FOR INSERT TO authenticated
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
-CREATE INDEX idx_inventory_product ON public.inventory_movements(product_id);
-CREATE INDEX idx_inventory_created ON public.inventory_movements(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_inventory_product ON public.inventory_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_created ON public.inventory_movements(created_at DESC);
 
 -- =========================================================
 -- STOCK APPLY TRIGGER
@@ -285,6 +302,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_inventory_apply ON public.inventory_movements;
 CREATE TRIGGER trg_inventory_apply
   AFTER INSERT ON public.inventory_movements
   FOR EACH ROW EXECUTE FUNCTION public.apply_inventory_movement();
@@ -309,7 +327,7 @@ $$;
 -- =========================================================
 -- 2. TENANTS TABLE
 -- =========================================================
-CREATE TABLE public.tenants (
+CREATE TABLE IF NOT EXISTS public.tenants (
   id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   slug           text NOT NULL UNIQUE,
   name           text NOT NULL,
@@ -327,9 +345,10 @@ GRANT ALL ON public.tenants TO service_role;
 
 ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX idx_tenants_owner  ON public.tenants(owner_user_id);
-CREATE INDEX idx_tenants_status ON public.tenants(status);
+CREATE INDEX IF NOT EXISTS idx_tenants_owner  ON public.tenants(owner_user_id);
+CREATE INDEX IF NOT EXISTS idx_tenants_status ON public.tenants(status);
 
+DROP TRIGGER IF EXISTS trg_tenants_updated ON public.tenants;
 CREATE TRIGGER trg_tenants_updated
   BEFORE UPDATE ON public.tenants
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -337,7 +356,7 @@ CREATE TRIGGER trg_tenants_updated
 -- =========================================================
 -- 3. TENANT MEMBERS
 -- =========================================================
-CREATE TABLE public.tenant_members (
+CREATE TABLE IF NOT EXISTS public.tenant_members (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id   uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   user_id     uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -351,8 +370,8 @@ GRANT ALL ON public.tenant_members TO service_role;
 
 ALTER TABLE public.tenant_members ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX idx_tenant_members_tenant ON public.tenant_members(tenant_id);
-CREATE INDEX idx_tenant_members_user   ON public.tenant_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_members_tenant ON public.tenant_members(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_members_user   ON public.tenant_members(user_id);
 
 -- =========================================================
 -- ORDERS & CHECKOUT SYSTEM
