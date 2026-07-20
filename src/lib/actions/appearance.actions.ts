@@ -19,7 +19,8 @@ export const getStorefrontAppearance = createServerFn({ method: "GET" })
     try {
       if (!supabase) return DEFAULT_STOREFRONT_SETTINGS;
 
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from("storefront_settings")
         .select("key, value");
 
@@ -62,7 +63,8 @@ export const updateStorefrontAppearance = createServerFn({ method: "POST" })
         return { success: false, message: "تعذر الاتصال بقاعدة البيانات" };
       }
 
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from("storefront_settings")
         .upsert(
           {
