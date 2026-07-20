@@ -76,18 +76,20 @@ CREATE TABLE IF NOT EXISTS public.branches (
 
 ALTER TABLE public.branches ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Tenant members view branches" ON public.branches;
 CREATE POLICY "Tenant members view branches"
   ON public.branches FOR SELECT TO authenticated
   USING (public.has_tenant_permission(tenant_id, auth.uid(), 'viewer'));
 
+DROP POLICY IF EXISTS "Staff manage branches" ON public.branches;
 CREATE POLICY "Staff manage branches"
   ON public.branches FOR ALL TO authenticated
   USING (public.has_tenant_permission(tenant_id, auth.uid(), 'staff'))
   WITH CHECK (public.has_tenant_permission(tenant_id, auth.uid(), 'staff'));
 
-CREATE INDEX idx_branches_tenant ON public.branches(tenant_id);
-CREATE INDEX idx_branches_slug ON public.branches(tenant_id, slug);
-CREATE INDEX idx_branches_location ON public.branches(latitude, longitude) WHERE latitude IS NOT NULL AND longitude IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_branches_tenant ON public.branches(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_branches_slug ON public.branches(tenant_id, slug);
+CREATE INDEX IF NOT EXISTS idx_branches_location ON public.branches(latitude, longitude) WHERE latitude IS NOT NULL AND longitude IS NOT NULL;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.branches TO authenticated;
 GRANT ALL ON public.branches TO service_role;
@@ -114,27 +116,31 @@ CREATE TABLE IF NOT EXISTS public.reviews (
 
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public view approved reviews" ON public.reviews;
 CREATE POLICY "Public view approved reviews"
   ON public.reviews FOR SELECT TO anon
   USING (is_approved = true);
 
+DROP POLICY IF EXISTS "Tenant members view all reviews" ON public.reviews;
 CREATE POLICY "Tenant members view all reviews"
   ON public.reviews FOR SELECT TO authenticated
   USING (public.has_tenant_permission(tenant_id, auth.uid(), 'viewer'));
 
+DROP POLICY IF EXISTS "Users create reviews" ON public.reviews;
 CREATE POLICY "Users create reviews"
   ON public.reviews FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Staff manage reviews" ON public.reviews;
 CREATE POLICY "Staff manage reviews"
   ON public.reviews FOR UPDATE TO authenticated
   USING (public.has_tenant_permission(tenant_id, auth.uid(), 'staff'));
 
-CREATE INDEX idx_reviews_product ON public.reviews(product_id, is_approved);
-CREATE INDEX idx_reviews_tenant ON public.reviews(tenant_id);
-CREATE INDEX idx_reviews_user ON public.reviews(user_id);
-CREATE INDEX idx_reviews_rating ON public.reviews(rating);
-CREATE INDEX idx_reviews_created ON public.reviews(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_product ON public.reviews(product_id, is_approved);
+CREATE INDEX IF NOT EXISTS idx_reviews_tenant ON public.reviews(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_user ON public.reviews(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_rating ON public.reviews(rating);
+CREATE INDEX IF NOT EXISTS idx_reviews_created ON public.reviews(created_at DESC);
 
 GRANT SELECT, INSERT, UPDATE ON public.reviews TO authenticated;
 GRANT ALL ON public.reviews TO service_role;
@@ -158,13 +164,19 @@ GROUP BY product_id, tenant_id;
 -- =========================================================
 -- 3. Notification System (نظام الإشعارات)
 -- =========================================================
-CREATE TYPE public.notification_type AS ENUM (
-  'order_new', 'order_status', 'order_cancelled',
-  'review_new', 'review_reply',
-  'inventory_low', 'inventory_out',
-  'product_published', 'product_updated',
-  'system', 'promotion', 'whatsapp_message'
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_type') THEN
+    CREATE TYPE public.notification_type AS ENUM (
+      'order_new', 'order_status', 'order_cancelled',
+      'review_new', 'review_reply',
+      'inventory_low', 'inventory_out',
+      'product_published', 'product_updated',
+      'system', 'promotion', 'whatsapp_message'
+    );
+  END IF;
+END
+$$;
 
 CREATE TABLE IF NOT EXISTS public.notifications (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -184,23 +196,26 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users view own notifications" ON public.notifications;
 CREATE POLICY "Users view own notifications"
   ON public.notifications FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Staff create notifications" ON public.notifications;
 CREATE POLICY "Staff create notifications"
   ON public.notifications FOR INSERT TO authenticated
   WITH CHECK (public.has_tenant_permission(tenant_id, auth.uid(), 'staff'));
 
+DROP POLICY IF EXISTS "Users mark notifications read" ON public.notifications;
 CREATE POLICY "Users mark notifications read"
   ON public.notifications FOR UPDATE TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
-CREATE INDEX idx_notifications_user ON public.notifications(user_id, created_at DESC);
-CREATE INDEX idx_notifications_user_unread ON public.notifications(user_id, is_read) WHERE is_read = false;
-CREATE INDEX idx_notifications_tenant ON public.notifications(tenant_id, created_at DESC);
-CREATE INDEX idx_notifications_type ON public.notifications(type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON public.notifications(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON public.notifications(user_id, is_read) WHERE is_read = false;
+CREATE INDEX IF NOT EXISTS idx_notifications_tenant ON public.notifications(tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_type ON public.notifications(type, created_at DESC);
 
 GRANT SELECT, INSERT, UPDATE ON public.notifications TO authenticated;
 GRANT ALL ON public.notifications TO service_role;
@@ -227,13 +242,14 @@ CREATE TABLE IF NOT EXISTS public.sales_analytics (
 
 ALTER TABLE public.sales_analytics ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Staff view analytics" ON public.sales_analytics;
 CREATE POLICY "Staff view analytics"
   ON public.sales_analytics FOR SELECT TO authenticated
   USING (public.has_tenant_permission(tenant_id, auth.uid(), 'staff'));
 
-CREATE INDEX idx_sales_tenant_date ON public.sales_analytics(tenant_id, sale_date DESC);
-CREATE INDEX idx_sales_product ON public.sales_analytics(product_id, sale_date DESC);
-CREATE INDEX idx_sales_branch ON public.sales_analytics(branch_id, sale_date DESC);
+CREATE INDEX IF NOT EXISTS idx_sales_tenant_date ON public.sales_analytics(tenant_id, sale_date DESC);
+CREATE INDEX IF NOT EXISTS idx_sales_product ON public.sales_analytics(product_id, sale_date DESC);
+CREATE INDEX IF NOT EXISTS idx_sales_branch ON public.sales_analytics(branch_id, sale_date DESC);
 
 GRANT SELECT ON public.sales_analytics TO authenticated;
 GRANT ALL ON public.sales_analytics TO service_role;
@@ -278,12 +294,13 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_configs (
 
 ALTER TABLE public.whatsapp_configs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Staff manage whatsapp configs" ON public.whatsapp_configs;
 CREATE POLICY "Staff manage whatsapp configs"
   ON public.whatsapp_configs FOR ALL TO authenticated
   USING (public.has_tenant_permission(tenant_id, auth.uid(), 'staff'))
   WITH CHECK (public.has_tenant_permission(tenant_id, auth.uid(), 'staff'));
 
-CREATE INDEX idx_whatsapp_tenant ON public.whatsapp_configs(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_tenant ON public.whatsapp_configs(tenant_id);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.whatsapp_configs TO authenticated;
 GRANT ALL ON public.whatsapp_configs TO service_role;
@@ -312,13 +329,14 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_messages (
 
 ALTER TABLE public.whatsapp_messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Staff view whatsapp messages" ON public.whatsapp_messages;
 CREATE POLICY "Staff view whatsapp messages"
   ON public.whatsapp_messages FOR SELECT TO authenticated
   USING (public.has_tenant_permission(tenant_id, auth.uid(), 'staff'));
 
-CREATE INDEX idx_whatsapp_messages_tenant ON public.whatsapp_messages(tenant_id, created_at DESC);
-CREATE INDEX idx_whatsapp_messages_order ON public.whatsapp_messages(order_id);
-CREATE INDEX idx_whatsapp_messages_status ON public.whatsapp_messages(status);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_tenant ON public.whatsapp_messages(tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_order ON public.whatsapp_messages(order_id);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_status ON public.whatsapp_messages(status);
 
 GRANT SELECT, INSERT, UPDATE ON public.whatsapp_messages TO authenticated;
 GRANT ALL ON public.whatsapp_messages TO service_role;
@@ -339,13 +357,14 @@ CREATE TABLE IF NOT EXISTS public.product_comparisons (
 
 ALTER TABLE public.product_comparisons ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users manage own comparisons" ON public.product_comparisons;
 CREATE POLICY "Users manage own comparisons"
   ON public.product_comparisons FOR ALL TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
-CREATE INDEX idx_comparisons_user ON public.product_comparisons(user_id);
-CREATE INDEX idx_comparisons_tenant ON public.product_comparisons(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_comparisons_user ON public.product_comparisons(user_id);
+CREATE INDEX IF NOT EXISTS idx_comparisons_tenant ON public.product_comparisons(tenant_id);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.product_comparisons TO authenticated;
 GRANT ALL ON public.product_comparisons TO service_role;
@@ -356,7 +375,7 @@ GRANT ALL ON public.product_comparisons TO service_role;
 ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS branch_id uuid REFERENCES public.branches(id) ON DELETE SET NULL;
 
-CREATE INDEX idx_orders_branch ON public.orders(branch_id) WHERE branch_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_orders_branch ON public.orders(branch_id) WHERE branch_id IS NOT NULL;
 
 -- =========================================================
 -- 9. Idempotent guard: ensure set_updated_at() exists
