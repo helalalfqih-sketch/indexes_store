@@ -53,7 +53,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">
           حاول مرة أخرى أو ارجع للصفحة الرئيسية.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        {error && (
+          <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-mono text-left overflow-auto max-h-40 whitespace-pre-wrap">
+            <strong>Error:</strong> {error.message || String(error)}
+          </div>
+        )}
+        <div className="mt-6 flex flex-wrap justify-center gap-2 animate-fade-in">
           <button
             onClick={() => {
               router.invalidate();
