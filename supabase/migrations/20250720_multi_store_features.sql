@@ -4,6 +4,52 @@
 -- =========================================================
 
 -- =========================================================
+-- 0. Permission Helper Function (دالة التحقق من الصلاحيات)
+-- =========================================================
+CREATE OR REPLACE FUNCTION public.has_tenant_permission(
+  _tenant_id uuid,
+  _user_id uuid,
+  _required_role public.tenant_role
+)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _user_role public.tenant_role;
+BEGIN
+  -- Platform admins have all permissions
+  IF public.has_role(_user_id, 'admin'::public.app_role) THEN
+    RETURN true;
+  END IF;
+
+  -- Get user's role in this tenant
+  SELECT role INTO _user_role
+  FROM public.tenant_members
+  WHERE tenant_id = _tenant_id AND user_id = _user_id;
+
+  IF _user_role IS NULL THEN
+    RETURN false;
+  END IF;
+
+  -- Check role hierarchy: owner > staff > viewer
+  IF _required_role = 'viewer'::public.tenant_role THEN
+    RETURN true;
+  ELSIF _required_role = 'staff'::public.tenant_role THEN
+    RETURN _user_role IN ('staff'::public.tenant_role, 'owner'::public.tenant_role);
+  ELSIF _required_role = 'owner'::public.tenant_role THEN
+    RETURN _user_role = 'owner'::public.tenant_role;
+  END IF;
+
+  RETURN false;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.has_tenant_permission(uuid, uuid, public.tenant_role) TO authenticated, service_role;
+
+-- =========================================================
 -- 1. Branches System (فروع المتجر)
 -- =========================================================
 CREATE TABLE IF NOT EXISTS public.branches (
