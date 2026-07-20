@@ -7,6 +7,8 @@ import {
   Users,
   Sparkles,
   TrendingUp,
+  Palette,
+  Settings2,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAdmin } from "@/lib/admin-store";
@@ -92,6 +94,14 @@ function DashboardPage() {
                 <Package className="h-4 w-4" />
                 {t("nav.products")}
               </Link>
+              <Link
+                to="/admin/appearance"
+                className="inline-flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-5 py-3 text-sm font-bold text-primary hover:bg-primary/20 transition"
+              >
+                <Palette className="h-4 w-4" />
+                {lang === "ar" ? "مظهر المتجر" : "Store Appearance"}
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
           <div className="relative">
@@ -166,6 +176,60 @@ function DashboardPage() {
             ))}
           </ul>
         </div>
+      </section>
+
+      {/* Quick Actions — Appearance & Settings */}
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          {
+            to: "/admin/appearance",
+            label: lang === "ar" ? "مظهر المتجر" : "Store Appearance",
+            desc: lang === "ar" ? "تخصيص الألوان، الخطوط، والهيكل البصري" : "Colors, fonts & visual identity",
+            icon: Palette,
+            accent: "text-violet-500 bg-violet-500/10",
+          },
+          {
+            to: "/admin/settings",
+            label: lang === "ar" ? "إعدادات المدير" : "Admin Settings",
+            desc: lang === "ar" ? "المظهر الشخصي للوحة التحكم واللغة" : "Dashboard theme & language",
+            icon: Settings2,
+            accent: "text-sky-500 bg-sky-500/10",
+          },
+          {
+            to: "/admin/products",
+            label: lang === "ar" ? "إدارة المنتجات" : "Products",
+            desc: lang === "ar" ? "إضافة، تعديل، وحذف المنتجات" : "Add, edit and delete products",
+            icon: Package,
+            accent: "text-emerald-500 bg-emerald-500/10",
+          },
+          {
+            to: "/admin/studio",
+            label: lang === "ar" ? "استوديو الذكاء" : "AI Studio",
+            desc: lang === "ar" ? "توليد منتجات بالذكاء الاصطناعي" : "Generate listings with AI",
+            icon: Sparkles,
+            accent: "text-amber-500 bg-amber-500/10",
+          },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="group flex items-start gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card hover:border-primary/40 hover:shadow-brand transition-all"
+            >
+              <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${item.accent}`}>
+                <Icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-sm font-black">
+                  {item.label}
+                  <ArrowUpRight className="h-3.5 w-3.5 opacity-0 -translate-y-0.5 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <div className="mt-0.5 truncate text-xs text-muted-foreground">{item.desc}</div>
+              </div>
+            </Link>
+          );
+        })}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">

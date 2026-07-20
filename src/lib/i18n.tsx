@@ -10,6 +10,7 @@ const dict: Dict = {
   "nav.products": { ar: "المنتجات", en: "Products" },
   "nav.sessions": { ar: "الجلسات", en: "Sessions" },
   "nav.settings": { ar: "الإعدادات", en: "Settings" },
+  "nav.appearance": { ar: "مظهر المتجر", en: "Store Appearance" },
   "nav.storefront": { ar: "المتجر", en: "Storefront" },
   "brand.tagline": { ar: "لوحة اندكس ستور الذكية", en: "Indexes Store Intelligence" },
   "dash.revenue": { ar: "الإيرادات", en: "Revenue" },
