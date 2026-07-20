@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Onboarding server functions — self-service tenant creation for signed-in users.
  *

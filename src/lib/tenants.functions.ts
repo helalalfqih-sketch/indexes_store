@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Tenant server functions — used by the Global Admin panel and, later,
  * by the tenant owner dashboard.

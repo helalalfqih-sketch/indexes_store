@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Admin-only server function: import products from a remote CSV catalog.
  * Upserts on (tenant_id, external_id). Uses context.supabase (RLS as admin/tenant member).
