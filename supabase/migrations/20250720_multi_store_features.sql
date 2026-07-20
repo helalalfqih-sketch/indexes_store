@@ -447,19 +447,23 @@ $$;
 GRANT EXECUTE ON FUNCTION public.update_order_branch(uuid, uuid) TO authenticated;
 
 -- Triggers for updated_at
-CREATE TRIGGER IF NOT EXISTS trg_branches_updated
+DROP TRIGGER IF EXISTS trg_branches_updated ON public.branches;
+CREATE TRIGGER trg_branches_updated
   BEFORE UPDATE ON public.branches
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
-CREATE TRIGGER IF NOT EXISTS trg_reviews_updated
+DROP TRIGGER IF EXISTS trg_reviews_updated ON public.reviews;
+CREATE TRIGGER trg_reviews_updated
   BEFORE UPDATE ON public.reviews
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
-CREATE TRIGGER IF NOT EXISTS trg_whatsapp_configs_updated
+DROP TRIGGER IF EXISTS trg_whatsapp_configs_updated ON public.whatsapp_configs;
+CREATE TRIGGER trg_whatsapp_configs_updated
   BEFORE UPDATE ON public.whatsapp_configs
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
-CREATE TRIGGER IF NOT EXISTS trg_product_comparisons_updated
+DROP TRIGGER IF EXISTS trg_product_comparisons_updated ON public.product_comparisons;
+CREATE TRIGGER trg_product_comparisons_updated
   BEFORE UPDATE ON public.product_comparisons
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
