@@ -350,11 +350,15 @@ function ProductSphere({
   onHoverAny,
   onSelect,
   hoveredId,
+  radius = 2.2,
+  tileScale = 0.8,
 }: {
   products: LegacyProductShape[];
   onHoverAny: (p: LegacyProductShape | null) => void;
   onSelect: (p: LegacyProductShape) => void;
   hoveredId: string | null;
+  radius?: number;
+  tileScale?: number;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const { isDragging, autoRotate, velocity } = useDragRotation(
@@ -362,7 +366,7 @@ function ProductSphere({
   );
 
   const tiles = useMemo<TileData[]>(() => {
-    const positions = fibonacciSphere(products.length, RADIUS);
+    const positions = fibonacciSphere(products.length, radius);
     const up = new THREE.Vector3(0, 1, 0);
     return products.map((p, i) => {
       const pos = positions[i];
@@ -376,7 +380,7 @@ function ProductSphere({
       }
       return { product: p, position: pos, quaternion: q };
     });
-  }, [products]);
+  }, [products, radius]);
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
@@ -449,11 +453,15 @@ function Scene({
   onHoverAny,
   onSelect,
   hoveredId,
+  radius = 2.2,
+  tileScale = 0.8,
 }: {
   products: LegacyProductShape[];
   onHoverAny: (p: LegacyProductShape | null) => void;
   onSelect: (p: LegacyProductShape) => void;
   hoveredId: string | null;
+  radius?: number;
+  tileScale?: number;
 }) {
   const { size, camera } = useThree();
 
@@ -502,6 +510,8 @@ function Scene({
           onHoverAny={onHoverAny}
           onSelect={onSelect}
           hoveredId={hoveredId}
+          radius={radius}
+          tileScale={tileScale}
         />,
       )}
     </>
@@ -578,11 +588,17 @@ export function ProductSphereHero({
   badgeText = "INDEXES · LIVE SHOWCASE",
   title = "معرض المنتجات الذكي",
   subtitle = "اسحب الكرة — كل وجه منتج، اضغط لتفتحه",
+  maxProducts = 28,
+  radius = 2.2,
+  tileScale = 0.8,
 }: {
   products: LegacyProductShape[];
   badgeText?: string;
   title?: string;
   subtitle?: string;
+  maxProducts?: number;
+  radius?: number;
+  tileScale?: number;
 }) {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
@@ -599,8 +615,8 @@ export function ProductSphereHero({
   const dismissHint = useCallback(() => setShowHint(false), []);
 
   const pool = useMemo(
-    () => products.filter((p) => !!p.image).slice(0, 28),
-    [products],
+    () => products.filter((p) => !!p.image).slice(0, maxProducts),
+    [products, maxProducts],
   );
 
   const hoveredId = hovered?.id ?? null;
@@ -655,6 +671,8 @@ export function ProductSphereHero({
                   onHoverAny={setHovered}
                   onSelect={handleSelect}
                   hoveredId={hoveredId}
+                  radius={radius}
+                  tileScale={tileScale}
                 />
               </Suspense>
             </Canvas>

@@ -167,6 +167,9 @@ function HomePage() {
               badgeText={settings.hero.badgeText}
               title={settings.hero.title}
               subtitle={settings.hero.subtitle}
+              maxProducts={settings.hero.sphereMaxProducts}
+              radius={settings.hero.sphereRadius}
+              tileScale={settings.hero.sphereTileScale}
             />
           )}
         </div>

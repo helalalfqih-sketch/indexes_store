@@ -367,6 +367,65 @@ function HeroTab({
             className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
         </label>
+
+        {config.type === "sphere_3d" && (
+          <div className="md:col-span-2 space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4 mt-2">
+            <h3 className="text-xs font-black text-primary">إعدادات معرض الكرة ثلاثية الأبعاد (3D Sphere Customization)</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="space-y-1 text-xs font-bold">
+                مصدر المنتجات المعروضة
+                <select
+                  value={config.sphereProductSource || "all"}
+                  onChange={(e) => onChange({ ...config, sphereProductSource: e.target.value as any })}
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  <option value="all">جميع المنتجات المتوفرة</option>
+                  <option value="bestsellers">الأكثر مبيعاً فقط</option>
+                  <option value="offers">العروض والخصومات فقط</option>
+                </select>
+              </label>
+
+              <label className="space-y-1 text-xs font-bold">
+                أقصى عدد للمنتجات في الكرة
+                <input
+                  type="number"
+                  min={6}
+                  max={40}
+                  value={config.sphereMaxProducts || 28}
+                  onChange={(e) => onChange({ ...config, sphereMaxProducts: Number(e.target.value) })}
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </label>
+
+              <label className="space-y-1 text-xs font-bold">
+                حجم قطر الكرة (Sphere Size)
+                <select
+                  value={config.sphereRadius || 2.2}
+                  onChange={(e) => onChange({ ...config, sphereRadius: Number(e.target.value) })}
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  <option value={1.8}>صغير (1.8)</option>
+                  <option value={2.2}>عادي (2.2 الافتراضي)</option>
+                  <option value={2.8}>كبير (2.8)</option>
+                </select>
+              </label>
+
+              <label className="space-y-1 text-xs font-bold">
+                حجم بطاقات المنتجات (Tile Size)
+                <select
+                  value={config.sphereTileScale || 0.8}
+                  onChange={(e) => onChange({ ...config, sphereTileScale: Number(e.target.value) })}
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  <option value={0.6}>صغيرة (0.6x)</option>
+                  <option value={0.8}>متوسطة (0.8x الافتراضي)</option>
+                  <option value={1.0}>كبيرة (1.0x)</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
