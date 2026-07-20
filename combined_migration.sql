@@ -1,4 +1,4 @@
-﻿-- =========================================================
+-- =========================================================
 -- Phase A: Foundation â€” profiles, roles, has_role, triggers
 -- =========================================================
 
@@ -353,6 +353,125 @@ ALTER TABLE public.tenant_members ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX idx_tenant_members_tenant ON public.tenant_members(tenant_id);
 CREATE INDEX idx_tenant_members_user   ON public.tenant_members(user_id);
+
+-- =========================================================
+-- ORDERS & CHECKOUT SYSTEM
+-- =========================================================
+
+-- Enums for orders
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'order_status') THEN
+    CREATE TYPE public.order_status AS ENUM (
+      'pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'
+    );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+    CREATE TYPE public.payment_status AS ENUM (
+      'pending', 'paid', 'failed', 'refunded', 'cod'
+    );
+  END IF;
+END
+$$;
+
+-- =============== orders ===============
+CREATE TABLE IF NOT EXISTS public.orders (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id         uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  customer_name     text,
+  customer_phone    text,
+  customer_address  text,
+  customer_email    text,
+  notes             text,
+  status            public.order_status NOT NULL DEFAULT 'pending',
+  payment_status    public.payment_status NOT NULL DEFAULT 'pending',
+  payment_provider  text,
+  total             numeric(12,2) NOT NULL CHECK (total >= 0),
+  currency          text NOT NULL DEFAULT 'YER',
+  coupon_code       text,
+  discount_amount   numeric(12,2) NOT NULL DEFAULT 0 CHECK (discount_amount >= 0),
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  updated_at        timestamptz NOT NULL DEFAULT now()
+);
+
+GRANT SELECT, INSERT, UPDATE ON public.orders TO anon, authenticated;
+GRANT ALL ON public.orders TO service_role;
+
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view orders"
+  ON public.orders FOR SELECT TO anon, authenticated
+  USING (true);
+
+CREATE POLICY "Public can insert orders"
+  ON public.orders FOR INSERT TO anon, authenticated
+  WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS idx_orders_tenant ON public.orders(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON public.orders(created_at DESC);
+
+DROP TRIGGER IF EXISTS trg_orders_updated ON public.orders;
+CREATE TRIGGER trg_orders_updated
+  BEFORE UPDATE ON public.orders
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- =============== order_items ===============
+CREATE TABLE IF NOT EXISTS public.order_items (
+  id                     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id               uuid NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+  tenant_id              uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  product_id             uuid NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+  quantity               integer NOT NULL CHECK (quantity > 0),
+  unit_price             numeric(12,2) NOT NULL CHECK (unit_price >= 0),
+  total_price            numeric(12,2) NOT NULL CHECK (total_price >= 0),
+  product_name_snapshot  text NOT NULL,
+  product_sku_snapshot   text,
+  created_at             timestamptz NOT NULL DEFAULT now()
+);
+
+GRANT SELECT, INSERT ON public.order_items TO anon, authenticated;
+GRANT ALL ON public.order_items TO service_role;
+
+ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view order items"
+  ON public.order_items FOR SELECT TO anon, authenticated
+  USING (true);
+
+CREATE POLICY "Public can insert order items"
+  ON public.order_items FOR INSERT TO anon, authenticated
+  WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON public.order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_tenant ON public.order_items(tenant_id);
+
+-- =============== order_status_history ===============
+CREATE TABLE IF NOT EXISTS public.order_status_history (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id     uuid NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+  tenant_id    uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  from_status  public.order_status,
+  to_status    public.order_status NOT NULL,
+  changed_by   uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  note         text,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+GRANT SELECT, INSERT ON public.order_status_history TO anon, authenticated;
+GRANT ALL ON public.order_status_history TO service_role;
+
+ALTER TABLE public.order_status_history ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view order status history"
+  ON public.order_status_history FOR SELECT TO anon, authenticated
+  USING (true);
+
+CREATE POLICY "Public can insert order status history"
+  ON public.order_status_history FOR INSERT TO anon, authenticated
+  WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS idx_order_status_history_order ON public.order_status_history(order_id);
 
 -- =========================================================
 -- 4. HELPER FUNCTIONS (SECURITY DEFINER to avoid RLS recursion)
