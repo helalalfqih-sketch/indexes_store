@@ -613,10 +613,8 @@ export function ProductSphereHero({
   return (
     <section
       dir="rtl"
-      className="relative -mx-4 overflow-hidden rounded-3xl"
+      className="relative -mx-4 overflow-hidden rounded-3xl h-[52vh] min-h-[380px] sm:h-[88vh] sm:min-h-[580px]"
       style={{
-        height: "88vh",
-        minHeight: "580px",
         background: `radial-gradient(ellipse at 50% 30%, #0d1435 0%, #06091f 55%, ${BG_BOT} 100%)`,
       }}
       onPointerDown={dismissHint}
@@ -637,7 +635,7 @@ export function ProductSphereHero({
       />
 
       {/* WebGL Canvas */}
-      <div className="absolute inset-0" style={{ touchAction: "none" }}>
+      <div className="absolute inset-0" style={{ touchAction: "pan-y" }}>
         <Suspense fallback={<Fallback />}>
           {mounted && pool.length > 0 ? (
             <Canvas
