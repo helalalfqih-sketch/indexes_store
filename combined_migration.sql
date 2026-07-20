@@ -69,18 +69,22 @@ AS $$
   )
 $$;
 
+DROP POLICY IF EXISTS "Authenticated can view roles" ON public.user_roles;
 CREATE POLICY "Authenticated can view roles"
   ON public.user_roles FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Admins insert roles" ON public.user_roles;
 CREATE POLICY "Admins insert roles"
   ON public.user_roles FOR INSERT TO authenticated
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins update roles" ON public.user_roles;
 CREATE POLICY "Admins update roles"
   ON public.user_roles FOR UPDATE TO authenticated
   USING (public.has_role(auth.uid(), 'admin'))
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Admins delete roles" ON public.user_roles;
 CREATE POLICY "Admins delete roles"
   ON public.user_roles FOR DELETE TO authenticated
   USING (public.has_role(auth.uid(), 'admin'));
@@ -418,10 +422,12 @@ GRANT ALL ON public.orders TO service_role;
 
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public can view orders" ON public.orders;
 CREATE POLICY "Public can view orders"
   ON public.orders FOR SELECT TO anon, authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Public can insert orders" ON public.orders;
 CREATE POLICY "Public can insert orders"
   ON public.orders FOR INSERT TO anon, authenticated
   WITH CHECK (true);
@@ -454,10 +460,12 @@ GRANT ALL ON public.order_items TO service_role;
 
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public can view order items" ON public.order_items;
 CREATE POLICY "Public can view order items"
   ON public.order_items FOR SELECT TO anon, authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Public can insert order items" ON public.order_items;
 CREATE POLICY "Public can insert order items"
   ON public.order_items FOR INSERT TO anon, authenticated
   WITH CHECK (true);
@@ -482,10 +490,12 @@ GRANT ALL ON public.order_status_history TO service_role;
 
 ALTER TABLE public.order_status_history ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public can view order status history" ON public.order_status_history;
 CREATE POLICY "Public can view order status history"
   ON public.order_status_history FOR SELECT TO anon, authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Public can insert order status history" ON public.order_status_history;
 CREATE POLICY "Public can insert order status history"
   ON public.order_status_history FOR INSERT TO anon, authenticated
   WITH CHECK (true);
@@ -539,27 +549,33 @@ $$;
 -- =========================================================
 -- 5. TENANTS / MEMBERS RLS POLICIES
 -- =========================================================
+DROP POLICY IF EXISTS "Members and admins can view their tenant" ON public.tenants;
 CREATE POLICY "Members and admins can view their tenant"
   ON public.tenants FOR SELECT TO authenticated
   USING (public.can_manage_tenant(id, auth.uid()));
 
+DROP POLICY IF EXISTS "Only platform admins insert tenants" ON public.tenants;
 CREATE POLICY "Only platform admins insert tenants"
   ON public.tenants FOR INSERT TO authenticated
   WITH CHECK (public.has_role(auth.uid(), 'admin'::public.app_role));
 
+DROP POLICY IF EXISTS "Owner or platform admin can update tenant" ON public.tenants;
 CREATE POLICY "Owner or platform admin can update tenant"
   ON public.tenants FOR UPDATE TO authenticated
   USING (owner_user_id = auth.uid() OR public.has_role(auth.uid(), 'admin'::public.app_role))
   WITH CHECK (owner_user_id = auth.uid() OR public.has_role(auth.uid(), 'admin'::public.app_role));
 
+DROP POLICY IF EXISTS "Only platform admins delete tenants" ON public.tenants;
 CREATE POLICY "Only platform admins delete tenants"
   ON public.tenants FOR DELETE TO authenticated
   USING (public.has_role(auth.uid(), 'admin'::public.app_role));
 
+DROP POLICY IF EXISTS "Members view their memberships" ON public.tenant_members;
 CREATE POLICY "Members view their memberships"
   ON public.tenant_members FOR SELECT TO authenticated
   USING (user_id = auth.uid() OR public.can_manage_tenant(tenant_id, auth.uid()));
 
+DROP POLICY IF EXISTS "Owners and admins add members" ON public.tenant_members;
 CREATE POLICY "Owners and admins add members"
   ON public.tenant_members FOR INSERT TO authenticated
   WITH CHECK (
@@ -567,6 +583,7 @@ CREATE POLICY "Owners and admins add members"
     OR public.has_tenant_role(tenant_id, auth.uid(), 'owner'::public.tenant_role)
   );
 
+DROP POLICY IF EXISTS "Owners and admins update members" ON public.tenant_members;
 CREATE POLICY "Owners and admins update members"
   ON public.tenant_members FOR UPDATE TO authenticated
   USING (
@@ -578,6 +595,7 @@ CREATE POLICY "Owners and admins update members"
     OR public.has_tenant_role(tenant_id, auth.uid(), 'owner'::public.tenant_role)
   );
 
+DROP POLICY IF EXISTS "Owners and admins remove members" ON public.tenant_members;
 CREATE POLICY "Owners and admins remove members"
   ON public.tenant_members FOR DELETE TO authenticated
   USING (
@@ -597,38 +615,40 @@ ON CONFLICT (slug) DO NOTHING;
 -- =========================================================
 -- categories
 ALTER TABLE public.categories
-  ADD COLUMN tenant_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
+  ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
 UPDATE public.categories
   SET tenant_id = (SELECT id FROM public.tenants WHERE slug = 'default')
   WHERE tenant_id IS NULL;
 ALTER TABLE public.categories ALTER COLUMN tenant_id SET NOT NULL;
-CREATE INDEX idx_categories_tenant ON public.categories(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_categories_tenant ON public.categories(tenant_id);
 
 -- Slug is scoped per-tenant. Drop global unique, add composite unique.
 ALTER TABLE public.categories DROP CONSTRAINT IF EXISTS categories_slug_key;
+ALTER TABLE public.categories DROP CONSTRAINT IF EXISTS categories_tenant_slug_key;
 ALTER TABLE public.categories ADD CONSTRAINT categories_tenant_slug_key UNIQUE (tenant_id, slug);
 
 -- products
 ALTER TABLE public.products
-  ADD COLUMN tenant_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
+  ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
 UPDATE public.products
   SET tenant_id = (SELECT id FROM public.tenants WHERE slug = 'default')
   WHERE tenant_id IS NULL;
 ALTER TABLE public.products ALTER COLUMN tenant_id SET NOT NULL;
-CREATE INDEX idx_products_tenant ON public.products(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_products_tenant ON public.products(tenant_id);
 
 ALTER TABLE public.products DROP CONSTRAINT IF EXISTS products_slug_key;
+ALTER TABLE public.products DROP CONSTRAINT IF EXISTS products_tenant_slug_key;
 ALTER TABLE public.products ADD CONSTRAINT products_tenant_slug_key UNIQUE (tenant_id, slug);
 
 -- inventory_movements
 ALTER TABLE public.inventory_movements
-  ADD COLUMN tenant_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
+  ADD COLUMN IF NOT EXISTS tenant_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
 UPDATE public.inventory_movements m
   SET tenant_id = p.tenant_id
   FROM public.products p
   WHERE p.id = m.product_id AND m.tenant_id IS NULL;
 ALTER TABLE public.inventory_movements ALTER COLUMN tenant_id SET NOT NULL;
-CREATE INDEX idx_inventory_tenant ON public.inventory_movements(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_tenant ON public.inventory_movements(tenant_id);
 
 -- =========================================================
 -- 8. TENANT-AWARE RLS ON EXISTING TABLES
@@ -639,6 +659,9 @@ CREATE INDEX idx_inventory_tenant ON public.inventory_movements(tenant_id);
 DROP POLICY IF EXISTS "Admins insert categories" ON public.categories;
 DROP POLICY IF EXISTS "Admins update categories" ON public.categories;
 DROP POLICY IF EXISTS "Admins delete categories" ON public.categories;
+DROP POLICY IF EXISTS "Tenant members insert categories" ON public.categories;
+DROP POLICY IF EXISTS "Tenant members update categories" ON public.categories;
+DROP POLICY IF EXISTS "Tenant members delete categories" ON public.categories;
 
 CREATE POLICY "Tenant members insert categories"
   ON public.categories FOR INSERT TO authenticated
@@ -657,6 +680,9 @@ CREATE POLICY "Tenant members delete categories"
 DROP POLICY IF EXISTS "Admins insert products" ON public.products;
 DROP POLICY IF EXISTS "Admins update products" ON public.products;
 DROP POLICY IF EXISTS "Admins delete products" ON public.products;
+DROP POLICY IF EXISTS "Tenant members insert products" ON public.products;
+DROP POLICY IF EXISTS "Tenant members update products" ON public.products;
+DROP POLICY IF EXISTS "Tenant members delete products" ON public.products;
 
 CREATE POLICY "Tenant members insert products"
   ON public.products FOR INSERT TO authenticated
@@ -674,6 +700,8 @@ CREATE POLICY "Tenant members delete products"
 -- --- INVENTORY ---
 DROP POLICY IF EXISTS "Admins view inventory"   ON public.inventory_movements;
 DROP POLICY IF EXISTS "Admins insert inventory" ON public.inventory_movements;
+DROP POLICY IF EXISTS "Tenant members view inventory" ON public.inventory_movements;
+DROP POLICY IF EXISTS "Tenant members insert inventory" ON public.inventory_movements;
 
 CREATE POLICY "Tenant members view inventory"
   ON public.inventory_movements FOR SELECT TO authenticated
@@ -684,7 +712,7 @@ CREATE POLICY "Tenant members insert inventory"
   WITH CHECK (public.can_manage_tenant(tenant_id, auth.uid()));
 
 -- =========================================================
--- 9. AUTO-MEMBERSHIP TRIGGER â€” tenant owner becomes owner-member
+-- 9. AUTO-MEMBERSHIP TRIGGER — tenant owner becomes owner-member
 -- =========================================================
 CREATE OR REPLACE FUNCTION public.attach_tenant_owner()
 RETURNS trigger
@@ -702,18 +730,21 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_tenants_owner_membership ON public.tenants;
 CREATE TRIGGER trg_tenants_owner_membership
   AFTER INSERT OR UPDATE OF owner_user_id ON public.tenants
   FOR EACH ROW EXECUTE FUNCTION public.attach_tenant_owner();
--- Storefront resolution needs anon SELECT on active tenants (public data: name/slug/plan/status).
-CREATE POLICY "Storefront resolution â€” active tenants are publicly visible"
+
+DROP POLICY IF EXISTS "Storefront resolution — active tenants are publicly visible" ON public.tenants;
+CREATE POLICY "Storefront resolution — active tenants are publicly visible"
   ON public.tenants FOR SELECT TO anon
   USING (status = 'active');
 
--- Also allow authenticated users to see active tenants (for onboarding slug checks, storefront browsing while signed in).
-CREATE POLICY "Storefront resolution â€” active tenants visible to authenticated"
+DROP POLICY IF EXISTS "Storefront resolution — active tenants visible to authenticated" ON public.tenants;
+CREATE POLICY "Storefront resolution — active tenants visible to authenticated"
   ON public.tenants FOR SELECT TO authenticated
   USING (status = 'active');
+
 GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.has_tenant_role(uuid, uuid, public.tenant_role) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.is_tenant_member(uuid, uuid) TO authenticated, service_role;
@@ -737,6 +768,7 @@ ALTER TABLE public.products
 ALTER TABLE public.products
   ADD CONSTRAINT products_tenant_external_id_key
   UNIQUE (tenant_id, external_id);
+
 ALTER TABLE public.products
   ADD COLUMN IF NOT EXISTS sku                text,
   ADD COLUMN IF NOT EXISTS barcode            text,
@@ -745,7 +777,9 @@ ALTER TABLE public.products
   ADD COLUMN IF NOT EXISTS model_3d_url        text,
   ADD COLUMN IF NOT EXISTS model_3d_thumbnail  text,
   ADD COLUMN IF NOT EXISTS model_3d_status     text DEFAULT 'pending';
+
 ALTER TABLE public.products 
-ADD COLUMN meta_sync_status text DEFAULT 'not_synced' CHECK (meta_sync_status IN ('not_synced', 'syncing', 'synced', 'failed'));
+  ADD COLUMN IF NOT EXISTS meta_sync_status text DEFAULT 'not_synced';
+
 ALTER TABLE public.products
   ADD COLUMN IF NOT EXISTS video_playback_id text;
