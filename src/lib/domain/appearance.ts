@@ -16,7 +16,7 @@ const HeroSlideSchema = z.object({
 
 export const HeroConfigSchema = z.object({
   enabled: z.boolean().catch(true),
-  type: z.enum(["sphere_3d", "banner_image", "video", "cinematic", "simple", "slideshow"]).catch("sphere_3d"),
+  type: z.enum(["sphere_3d", "cinematic", "banner_image", "video", "slideshow"]).catch("sphere_3d"),
   badgeText: z.string().catch("INDEXES · LIVE SHOWCASE"),
   title: z.string().catch("معرض المنتجات الذكي"),
   subtitle: z.string().catch("اسحب الكرة — كل وجه منتج، اضغط لتفتحه"),
@@ -117,7 +117,23 @@ export const CartConfigSchema = z.object({
 });
 export type CartConfig = z.infer<typeof CartConfigSchema>;
 
-// ── 6. Navigation & Footer Schema ─────────────────────────────────────────────
+// ── 6. Checkout Builder Schema ────────────────────────────────────────────────
+const ShippingRateSchema = z.object({
+  city: z.string().catch(""),
+  rate: z.number().catch(0),
+});
+
+export const CheckoutConfigSchema = z.object({
+  requirePhone: z.boolean().catch(true),
+  requireAddress: z.boolean().catch(true),
+  requireEmail: z.boolean().catch(false),
+  codEnabled: z.boolean().catch(true),
+  shippingRates: z.array(ShippingRateSchema).catch([]),
+});
+export type CheckoutConfig = z.infer<typeof CheckoutConfigSchema>;
+export type ShippingRate = z.infer<typeof ShippingRateSchema>;
+
+// ── 7. Navigation & Footer Schema ─────────────────────────────────────────────
 const HeaderLinkSchema = z.object({
   label: z.string().catch(""),
   to: z.string().catch("/"),
@@ -167,7 +183,46 @@ export const NavigationConfigSchema = z.object({
 });
 export type NavigationConfig = z.infer<typeof NavigationConfigSchema>;
 
-// ── 7. Sections Schema ───────────────────────────────────────────────────────
+// ── 8. Pages CMS Schema ──────────────────────────────────────────────────────
+const CustomPageSchema = z.object({
+  id: z.string().catch(""),
+  slug: z.string().catch(""),
+  title: z.string().catch(""),
+  content: z.string().catch(""),
+  isPublished: z.boolean().catch(true),
+});
+export type CustomPage = z.infer<typeof CustomPageSchema>;
+
+export const PagesConfigSchema = z.object({
+  pages: z.array(CustomPageSchema).catch([]),
+});
+export type PagesConfig = z.infer<typeof PagesConfigSchema>;
+
+// ── 9. Translation CMS Schema ────────────────────────────────────────────────
+export const TranslationConfigSchema = z.object({
+  addToCart: z.string().catch("أضف إلى السلة"),
+  checkout: z.string().catch("إتمام الطلب"),
+  quickOrder: z.string().catch("طلب سريع عبر واتساب"),
+  emptyCart: z.string().catch("سلتك فارغة"),
+  searchPlaceholder: z.string().catch("ابحث عن منتج..."),
+});
+export type TranslationConfig = z.infer<typeof TranslationConfigSchema>;
+
+// ── 10. Notification Center Schema ──────────────────────────────────────────
+export const NotificationsConfigSchema = z.object({
+  announcementEnabled: z.boolean().catch(false),
+  announcementText: z.string().catch("شحن مجاني للطلبات فوق 50,000 ريال يمني! 🚚"),
+  announcementBg: z.string().catch("#4f8cff"),
+  popupEnabled: z.boolean().catch(false),
+  popupTitle: z.string().catch("احصل على خصم 10%"),
+  popupText: z.string().catch("استخدم الكوبون FIRST10 عند إتمام طلبك الأول!"),
+  popupImage: z.string().catch(""),
+  popupCta: z.string().catch("احصل على الكوبون"),
+  popupLink: z.string().catch("/offers"),
+});
+export type NotificationsConfig = z.infer<typeof NotificationsConfigSchema>;
+
+// ── 11. Sections Schema ───────────────────────────────────────────────────────
 const SectionItemSchema = z.object({
   enabled: z.boolean().catch(true),
   title: z.string().catch(""),
@@ -229,7 +284,7 @@ export const SectionsConfigSchema = z.object({
 });
 export type SectionsConfig = z.infer<typeof SectionsConfigSchema>;
 
-// ── 8. SEO Schema ────────────────────────────────────────────────────────────
+// ── 12. SEO Schema ────────────────────────────────────────────────────────────
 export const SeoConfigSchema = z.object({
   metaTitle: z.string().catch("اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن"),
   metaDescription: z
@@ -247,7 +302,7 @@ export const SeoConfigSchema = z.object({
 });
 export type SeoConfig = z.infer<typeof SeoConfigSchema>;
 
-// ── 9. Advanced Config Schema ─────────────────────────────────────────────────
+// ── 13. Advanced Config Schema ─────────────────────────────────────────────────
 // NOTE: customJs injection is intentionally excluded for security.
 // customStylesJson allows only validated CSS variable key-value objects.
 export const AdvancedConfigSchema = z.object({
@@ -262,26 +317,34 @@ export const AdvancedConfigSchema = z.object({
 });
 export type AdvancedConfig = z.infer<typeof AdvancedConfigSchema>;
 
-// ── 10. Full Storefront Settings Shape ─────────────────────────────────────────
+// ── 14. Full Storefront Settings Shape ─────────────────────────────────────────
 export interface StorefrontSettingsShape {
   hero: HeroConfig;
   theme: ThemeConfig;
   products_layout: ProductsLayoutConfig;
   product_page: ProductPageConfig;
   cart_config: CartConfig;
+  checkout: CheckoutConfig;
   navigation: NavigationConfig;
+  pages: PagesConfig;
+  translation: TranslationConfig;
+  notifications: NotificationsConfig;
   sections: SectionsConfig;
   seo: SeoConfig;
   advanced: AdvancedConfig;
 }
 
-// ── 11. Safe Default Fallback Constants ────────────────────────────────────────
+// ── 15. Safe Default Fallback Constants ────────────────────────────────────────
 export const DEFAULT_HERO_CONFIG: HeroConfig = HeroConfigSchema.parse({});
 export const DEFAULT_THEME_CONFIG: ThemeConfig = ThemeConfigSchema.parse({});
 export const DEFAULT_PRODUCTS_LAYOUT_CONFIG: ProductsLayoutConfig = ProductsLayoutConfigSchema.parse({});
 export const DEFAULT_PRODUCT_PAGE_CONFIG: ProductPageConfig = ProductPageConfigSchema.parse({});
 export const DEFAULT_CART_CONFIG: CartConfig = CartConfigSchema.parse({});
+export const DEFAULT_CHECKOUT_CONFIG: CheckoutConfig = CheckoutConfigSchema.parse({});
 export const DEFAULT_NAVIGATION_CONFIG: NavigationConfig = NavigationConfigSchema.parse({});
+export const DEFAULT_PAGES_CONFIG: PagesConfig = PagesConfigSchema.parse({});
+export const DEFAULT_TRANSLATION_CONFIG: TranslationConfig = TranslationConfigSchema.parse({});
+export const DEFAULT_NOTIFICATIONS_CONFIG: NotificationsConfig = NotificationsConfigSchema.parse({});
 export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = SectionsConfigSchema.parse({});
 export const DEFAULT_SEO_CONFIG: SeoConfig = SeoConfigSchema.parse({});
 export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = AdvancedConfigSchema.parse({});
@@ -292,7 +355,11 @@ export const DEFAULT_STOREFRONT_SETTINGS: StorefrontSettingsShape = {
   products_layout: DEFAULT_PRODUCTS_LAYOUT_CONFIG,
   product_page: DEFAULT_PRODUCT_PAGE_CONFIG,
   cart_config: DEFAULT_CART_CONFIG,
+  checkout: DEFAULT_CHECKOUT_CONFIG,
   navigation: DEFAULT_NAVIGATION_CONFIG,
+  pages: DEFAULT_PAGES_CONFIG,
+  translation: DEFAULT_TRANSLATION_CONFIG,
+  notifications: DEFAULT_NOTIFICATIONS_CONFIG,
   sections: DEFAULT_SECTIONS_CONFIG,
   seo: DEFAULT_SEO_CONFIG,
   advanced: DEFAULT_ADVANCED_CONFIG,

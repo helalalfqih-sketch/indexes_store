@@ -15,7 +15,11 @@ import {
   ProductsLayoutConfigSchema,
   ProductPageConfigSchema,
   CartConfigSchema,
+  CheckoutConfigSchema,
   NavigationConfigSchema,
+  PagesConfigSchema,
+  TranslationConfigSchema,
+  NotificationsConfigSchema,
   SectionsConfigSchema,
   SeoConfigSchema,
   AdvancedConfigSchema,
@@ -33,7 +37,7 @@ function getSupabaseClient() {
   return createClient(url, key);
 }
 
-// ── Public read — no auth required ──────────────────────────────────────────
+// ── Public read — anyone can read storefront layout/theme ──────────────────
 export const getStorefrontSettings = createServerFn({ method: "GET" }).handler(
   async (): Promise<StorefrontSettingsShape> => {
     try {
@@ -69,9 +73,21 @@ export const getStorefrontSettings = createServerFn({ method: "GET" }).handler(
         cart_config: CartConfigSchema.catch(
           DEFAULT_STOREFRONT_SETTINGS.cart_config
         ).parse(map.get("cart_config") ?? {}),
+        checkout: CheckoutConfigSchema.catch(
+          DEFAULT_STOREFRONT_SETTINGS.checkout
+        ).parse(map.get("checkout") ?? {}),
         navigation: NavigationConfigSchema.catch(
           DEFAULT_STOREFRONT_SETTINGS.navigation
         ).parse(map.get("navigation") ?? {}),
+        pages: PagesConfigSchema.catch(
+          DEFAULT_STOREFRONT_SETTINGS.pages
+        ).parse(map.get("pages") ?? {}),
+        translation: TranslationConfigSchema.catch(
+          DEFAULT_STOREFRONT_SETTINGS.translation
+        ).parse(map.get("translation") ?? {}),
+        notifications: NotificationsConfigSchema.catch(
+          DEFAULT_STOREFRONT_SETTINGS.notifications
+        ).parse(map.get("notifications") ?? {}),
         sections: SectionsConfigSchema.catch(
           DEFAULT_STOREFRONT_SETTINGS.sections
         ).parse(map.get("sections") ?? {}),

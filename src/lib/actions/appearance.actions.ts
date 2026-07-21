@@ -9,7 +9,11 @@ import {
   ProductsLayoutConfigSchema,
   ProductPageConfigSchema,
   CartConfigSchema,
+  CheckoutConfigSchema,
   NavigationConfigSchema,
+  PagesConfigSchema,
+  TranslationConfigSchema,
+  NotificationsConfigSchema,
   SectionsConfigSchema,
   SeoConfigSchema,
   AdvancedConfigSchema,
@@ -46,8 +50,20 @@ function rowsToSettings(
     cart_config: CartConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.cart_config).parse(
       settingsMap.get("cart_config") ?? {}
     ),
+    checkout: CheckoutConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.checkout).parse(
+      settingsMap.get("checkout") ?? {}
+    ),
     navigation: NavigationConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.navigation).parse(
       settingsMap.get("navigation") ?? {}
+    ),
+    pages: PagesConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.pages).parse(
+      settingsMap.get("pages") ?? {}
+    ),
+    translation: TranslationConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.translation).parse(
+      settingsMap.get("translation") ?? {}
+    ),
+    notifications: NotificationsConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.notifications).parse(
+      settingsMap.get("notifications") ?? {}
     ),
     sections: SectionsConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.sections).parse(
       settingsMap.get("sections") ?? {}
