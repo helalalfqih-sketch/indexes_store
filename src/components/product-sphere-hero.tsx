@@ -17,6 +17,8 @@ import * as THREE from "three";
 import { useNavigate } from "@tanstack/react-router";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import { formatPrice } from "@/lib/store-data";
+import { Play, X } from "lucide-react";
+import MuxPlayer from "@mux/mux-player-react";
 
 // ─── Design Tokens ───────────────────────────────────────────────────────────
 const BG_TOP    = "#040818";   // deep navy top
@@ -630,6 +632,7 @@ export function ProductSphereHero({
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState<LegacyProductShape | null>(null);
   const [showHint, setShowHint] = useState(true);
+  const [showVideo, setShowVideo] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -820,63 +823,96 @@ export function ProductSphereHero({
             style={{ pointerEvents: "none" }}
           >
             <div
-              className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
+              className="flex flex-col gap-2 rounded-2xl p-3"
               style={{
-                background: "rgba(6,9,31,0.82)",
+                pointerEvents: "auto",
+                background: "rgba(6,9,31,0.88)",
                 border: "1px solid rgba(79,140,255,0.22)",
                 backdropFilter: "blur(24px)",
-                boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(79,140,255,0.08), inset 0 1px 0 rgba(255,255,255,0.05)`,
+                boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(79,140,255,0.08), inset 0 1px 0 rgba(255,255,255,0.05)`,
                 fontFamily: "Tajawal, system-ui, sans-serif",
               }}
             >
-              {/* Thumbnail */}
-              <div
-                className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl"
-                style={{ border: "1px solid rgba(79,140,255,0.25)" }}
-              >
-                <img
-                  src={proxiedTextureUrl(hovered.image)}
-                  alt={hovered.name}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
+              <div className="flex items-center gap-3">
+                {/* Thumbnail */}
+                <div
+                  className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl animate-fade-in"
+                  style={{ border: "1px solid rgba(79,140,255,0.25)" }}
+                >
+                  <img
+                    src={proxiedTextureUrl(hovered.image)}
+                    alt={hovered.name}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                </div>
+
+                {/* Info */}
+                {(showName || showPrice) && (
+                  <div className="min-w-0 flex-1 text-right">
+                    {showName && (
+                      <p
+                        className="truncate text-xs font-bold leading-snug"
+                        style={{ color: LIGHT }}
+                      >
+                        {hovered.name}
+                      </p>
+                    )}
+                    {showPrice && (
+                      <p
+                        className="mt-0.5 text-[11px] font-black"
+                        style={{ color: ACCENT }}
+                      >
+                        {formatPrice(hovered.price)}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Info */}
-              {(showName || showPrice) && (
-                <div className="min-w-0 flex-1 text-right">
-                  {showName && (
-                    <p
-                      className="truncate text-xs font-bold leading-snug"
-                      style={{ color: LIGHT }}
-                    >
-                      {hovered.name}
-                    </p>
-                  )}
-                  {showPrice && (
-                    <p
-                      className="mt-0.5 text-[11px] font-black"
-                      style={{ color: ACCENT }}
-                    >
-                      {formatPrice(hovered.price)}
-                    </p>
-                  )}
-                </div>
-              )}
+              {/* Action Buttons Row */}
+              <div className="flex gap-2 border-t border-white/5 pt-2">
+                {/* CTA "افتح" */}
+                <button
+                  type="button"
+                  onClick={() => handleSelect(hovered)}
+                  className="flex-1 flex items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-black tracking-wider transition hover:scale-[1.02] active:scale-95 text-white cursor-pointer"
+                  style={{
+                    background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`,
+                    boxShadow: `0 0 12px ${ACCENT}35`,
+                  }}
+                >
+                  افتح المنتج 🛍️
+                </button>
 
-              {/* CTA pill */}
-              <div
-                className="flex-shrink-0 rounded-xl px-3 py-1.5 text-[10px] font-black tracking-wider"
-                style={{
-                  background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`,
-                  color: "white",
-                  boxShadow: `0 0 16px ${ACCENT}55`,
-                }}
-              >
-                افتح
+                {/* Category Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate({
+                      to: "/category/$id",
+                      params: { id: hovered.categoryId || "other" },
+                    });
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1 rounded-xl bg-white/10 text-white border border-white/10 px-2 py-1.5 text-[10px] font-bold hover:bg-white/15 transition active:scale-95 cursor-pointer"
+                >
+                  <span>الفئة 📁</span>
+                </button>
+
+                {/* Video Play Button */}
+                {hovered.videoPlaybackId && (
+                  <button
+                    type="button"
+                    onClick={() => setShowVideo(true)}
+                    className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition active:scale-95 cursor-pointer"
+                    title="فيديو توضيحي"
+                  >
+                    <Play className="h-4 w-4 fill-white text-white" />
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>
@@ -907,6 +943,36 @@ export function ProductSphereHero({
           {pool.length} منتج
         </span>
       </motion.div>
+
+      {/* Video Modal Overlay */}
+      {showVideo && hovered && hovered.videoPlaybackId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-surface/90 shadow-2xl p-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowVideo(false);
+              }}
+              className="absolute top-4 end-4 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
+              <MuxPlayer
+                playbackId={hovered.videoPlaybackId}
+                autoPlay={true}
+                style={{ width: "100%", height: "100%" }}
+              />
+            </div>
+            <div className="p-4 text-start">
+              <h4 className="text-sm font-black text-foreground">{hovered.name}</h4>
+              <p className="text-xs text-muted-foreground mt-1">فيديو توضيحي للمنتج</p>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
