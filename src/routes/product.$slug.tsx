@@ -409,7 +409,7 @@ function ProductPage() {
             opacity: showStickyBar ? 1 : 0,
           }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-x-0 bottom-4 z-40 mx-auto w-full max-w-md px-3"
+          className="fixed inset-x-0 bottom-16 z-40 mx-auto w-full max-w-md px-3"
           style={{ pointerEvents: showStickyBar ? "auto" : "none" }}
         >
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-showcase-border bg-showcase/90 p-3 shadow-2xl backdrop-blur-2xl">
