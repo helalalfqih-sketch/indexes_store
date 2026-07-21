@@ -285,27 +285,43 @@ export const listProducts = createServerFn({ method: "GET" })
       .parse(raw ?? {}),
   )
   .handler(async ({ data }) => {
-    let list = await fetchCsvProducts();
+    const db = publicClient();
+    const tenantId = await resolvePublicTenant(db, data.tenantId ?? null);
     
-    if (data.categoryId) {
-      list = list.filter((p) => p.category_id === data.categoryId);
+    // Query database products table
+    let list = await productsRepo.list(db, {
+      tenantId,
+      categoryId: data.categoryId,
+      search: data.search,
+      limit: data.limit,
+      offset: data.offset,
+    });
+    
+    // If DB is empty, fall back to CSV catalog feed
+    if (list.length === 0) {
+      let csvList = await fetchCsvProducts();
+      if (data.categoryId) {
+        csvList = csvList.filter((p) => p.category_id === data.categoryId);
+      }
+      if (data.search) {
+        const s = data.search.toLowerCase();
+        csvList = csvList.filter(
+          (p) =>
+            p.name.toLowerCase().includes(s) ||
+            (p.description ?? "").toLowerCase().includes(s) ||
+            (p.sku ?? "").toLowerCase().includes(s) ||
+            (p.brand ?? "").toLowerCase().includes(s) ||
+            (p.category_name ?? "").toLowerCase().includes(s)
+        );
+      }
+      if (data.offset != null && data.limit) {
+        csvList = csvList.slice(data.offset, data.offset + data.limit);
+      } else if (data.limit) {
+        csvList = csvList.slice(0, data.limit);
+      }
+      return csvList as unknown as ProductDTO[];
     }
-    if (data.search) {
-      const s = data.search.toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(s) ||
-          (p.description ?? "").toLowerCase().includes(s) ||
-          (p.sku ?? "").toLowerCase().includes(s) ||
-          (p.brand ?? "").toLowerCase().includes(s) ||
-          (p.category_name ?? "").toLowerCase().includes(s)
-      );
-    }
-    if (data.offset != null && data.limit) {
-      list = list.slice(data.offset, data.offset + data.limit);
-    } else if (data.limit) {
-      list = list.slice(0, data.limit);
-    }
+    
     return list;
   });
 
@@ -314,8 +330,14 @@ export const getProductBySlug = createServerFn({ method: "GET" })
     z.object({ slug: z.string(), tenantId: z.string().uuid().optional() }).parse(raw),
   )
   .handler(async ({ data }) => {
+    const db = publicClient();
+    const tenantId = await resolvePublicTenant(db, data.tenantId ?? null);
+    const prod = await productsRepo.getBySlug(db, data.slug, tenantId);
+    if (prod) return prod as unknown as ProductDTO;
+    
+    // Fall back to CSV catalog
     const list = await fetchCsvProducts();
-    return list.find((p) => p.slug === data.slug) || null;
+    return (list.find((p) => p.slug === data.slug) || null) as unknown as ProductDTO | null;
   });
 
 /**
