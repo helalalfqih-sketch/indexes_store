@@ -49,7 +49,7 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
           <li className="flex items-start gap-2">
             <MessageCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" />
             <span>
-              للطلب والاستفسار (واتساب):{" 771370740"}
+              للطلب والاستفسار (واتساب):{" "}
               <a
                 href={waHref}
                 target="_blank"

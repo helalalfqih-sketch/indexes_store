@@ -187,7 +187,7 @@ function AccountPage() {
       </section>
 
       {/* Tabs Bar */}
-      <div className="flex border-b border-showcase-border/40 overflow-x-auto gap-2 pb-1">
+      <div className="flex w-full max-w-full border-b border-showcase-border/40 overflow-x-auto gap-2 pb-1">
         <button
           onClick={() => setActiveTab("overview")}
           className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
@@ -534,10 +534,6 @@ function AccountPage() {
           </div>
         </div>
       )}
-
-      <p className="pb-2 text-center text-[11px] text-muted-foreground">
-        © {storeName} {new Date().getFullYear()} — جميع الحقوق محفوظة
-      </p>
     </div>
   );
 }
