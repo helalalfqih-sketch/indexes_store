@@ -14,9 +14,10 @@ import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { Environment, Float } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link } from "@tanstack/react-router";
 import type { LegacyProductShape } from "@/lib/data-adapter";
-import { formatPrice } from "@/lib/store-data";
+import { formatPrice, STORE_CONTACT } from "@/lib/store-data";
+import { toast } from "sonner";
 import { Play, X } from "lucide-react";
 import MuxPlayer from "@mux/mux-player-react";
 
@@ -266,11 +267,9 @@ function ProductTile({
         onPointerOver={(e: { stopPropagation: () => void }) => {
           e.stopPropagation();
           document.body.style.cursor = "pointer";
-          onHover(data.product);
         }}
         onPointerOut={() => {
           document.body.style.cursor = "";
-          onLeave();
         }}
         onClick={(e: { stopPropagation: () => void }) => {
           e.stopPropagation();
@@ -379,6 +378,8 @@ function ProductSphere({
     groupRef as React.RefObject<THREE.Group>,
   );
 
+  const rotationPausedUntil = useRef<number>(0);
+
   const tiles = useMemo<TileData[]>(() => {
     const positions = fibonacciSphere(products.length, radius);
     const up = new THREE.Vector3(0, 1, 0);
@@ -398,7 +399,8 @@ function ProductSphere({
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
-    if (!isDragging.current && autoRotate.current) {
+    const isPaused = Date.now() < rotationPausedUntil.current;
+    if (!isDragging.current && autoRotate.current && !isPaused) {
       // Gentle, slow auto-rotation — never dizzying
       groupRef.current.rotation.y += delta * (hoveredId ? 0.015 : 0.09);
       groupRef.current.rotation.x += delta * 0.012;
@@ -454,9 +456,12 @@ function ProductSphere({
                 data={t}
                 isHovered={hoveredId === t.product.id}
                 cardShape={cardShape}
-                onHover={(p) => onHoverAny(p)}
-                onLeave={() => onHoverAny(null)}
-                onSelect={onSelect}
+                onHover={() => {}}
+                onLeave={() => {}}
+                onSelect={(p) => {
+                  onHoverAny(p);
+                  rotationPausedUntil.current = Date.now() + 5000;
+                }}
               />
             </Suspense>
           </TileErrorBoundary>
@@ -633,6 +638,7 @@ export function ProductSphereHero({
   const [hovered, setHovered] = useState<LegacyProductShape | null>(null);
   const [showHint, setShowHint] = useState(true);
   const [showVideo, setShowVideo] = useState(false);
+  const [activeSpecsProduct, setActiveSpecsProduct] = useState<LegacyProductShape | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -878,7 +884,7 @@ export function ProductSphereHero({
                 {/* CTA "افتح" */}
                 <button
                   type="button"
-                  onClick={() => handleSelect(hovered)}
+                  onClick={() => setActiveSpecsProduct(hovered)}
                   className="flex-1 flex items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-black tracking-wider transition hover:scale-[1.02] active:scale-95 text-white cursor-pointer"
                   style={{
                     background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`,
@@ -973,6 +979,142 @@ export function ProductSphereHero({
           </div>
         </div>
       )}
+
+      {/* Product Specs & Details Modal */}
+      <AnimatePresence>
+        {activeSpecsProduct && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+            onClick={() => setActiveSpecsProduct(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="relative w-full max-w-lg overflow-y-auto max-h-[85vh] rounded-3xl border border-white/10 bg-[#0d1435]/95 p-6 shadow-2xl space-y-6 text-start"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="text-right">
+                  <span className="text-[10px] font-bold text-primary tracking-widest uppercase">تفاصيل ومواصفات المنتج</span>
+                  <h3 className="text-base font-black text-white mt-0.5">{activeSpecsProduct.name}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveSpecsProduct(null)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white hover:bg-white/10 transition cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Media Preview */}
+              <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center">
+                <img
+                  src={proxiedTextureUrl(activeSpecsProduct.image)}
+                  alt={activeSpecsProduct.name}
+                  className="h-full w-full object-contain p-2"
+                />
+                {activeSpecsProduct.badge && (
+                  <span className="absolute end-3 top-3 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg">
+                    {activeSpecsProduct.badge}
+                  </span>
+                )}
+              </div>
+
+              {/* Specifications List */}
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
+                  <span className="text-white/40 block">السعر الحالي</span>
+                  <span className="text-sm font-black text-primary mt-0.5 block">{formatPrice(activeSpecsProduct.price)}</span>
+                </div>
+                {activeSpecsProduct.oldPrice && (
+                  <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
+                    <span className="text-white/40 block">السعر السابق</span>
+                    <span className="text-sm font-black text-white/40 line-through mt-0.5 block">{formatPrice(activeSpecsProduct.oldPrice)}</span>
+                  </div>
+                )}
+                <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
+                  <span className="text-white/40 block">الفئة</span>
+                  <span className="text-sm font-bold text-white mt-0.5 block">
+                    {activeSpecsProduct.categoryId === "electronics" ? "إلكترونيات" : activeSpecsProduct.categoryId === "kitchen" ? "المطبخ" : "متنوعات"}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
+                  <span className="text-white/40 block">حالة التوفر</span>
+                  <span className="text-sm font-bold text-emerald-400 mt-0.5 block">{activeSpecsProduct.stock > 0 ? `متوفر (${activeSpecsProduct.stock} قطع)` : "نفذت الكمية"}</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5 text-right">
+                <h4 className="text-xs font-bold text-white/60">وصف المنتج ومميزاته:</h4>
+                <p className="text-xs text-white/80 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5 whitespace-pre-wrap">{activeSpecsProduct.description || "لا يوجد وصف متوفر لهذا المنتج حالياً."}</p>
+              </div>
+
+              {/* Video Section */}
+              <div className="space-y-2 border-t border-white/5 pt-4 text-right">
+                <h4 className="text-xs font-bold text-white/60">الفيديو التوضيحي:</h4>
+                {activeSpecsProduct.videoPlaybackId ? (
+                  <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black/60 border border-white/5">
+                    <MuxPlayer
+                      playbackId={activeSpecsProduct.videoPlaybackId}
+                      autoPlay={false}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-5 text-center flex flex-col items-center gap-3">
+                    <span className="text-[10px] text-white/50">لا يتوفر فيديو توضيحي لهذا المنتج في الوقت الحالي</span>
+                    <button
+                      type="button"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        try {
+                          const { supabase } = await import("@/integrations/supabase/client");
+                          if (supabase) {
+                            await (supabase as any).from("product_video_requests").insert({
+                              product_id: activeSpecsProduct.id,
+                              product_name: activeSpecsProduct.name
+                            });
+                          }
+                        } catch (err) {
+                          console.error("Failed to request video:", err);
+                        }
+                        toast.success("تم إرسال طلب توفير فيديو للمنتج بنجاح إلى المدير! 👍");
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-black text-white hover:bg-primary/95 transition cursor-pointer shadow-brand"
+                    >
+                      طلب توفير فيديو للمنتج 🎥
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex gap-3 border-t border-white/10 pt-4">
+                <a
+                  href={`https://wa.me/${STORE_CONTACT}?text=${encodeURIComponent(`مرحباً، أريد طلب منتج: ${activeSpecsProduct.name}\nالسعر: ${formatPrice(activeSpecsProduct.price)}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 px-5 py-3.5 text-xs font-black text-white transition shadow-lg"
+                >
+                  اطلب الآن عبر واتساب 💬
+                </a>
+                <Link
+                  to="/product/$slug"
+                  params={{ slug: activeSpecsProduct.slug }}
+                  className="inline-flex items-center justify-center rounded-2xl bg-white/10 hover:bg-white/15 px-5 py-3.5 text-xs font-bold text-white transition"
+                >
+                  صفحة المنتج الكاملة
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
