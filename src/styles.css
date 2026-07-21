@@ -123,11 +123,15 @@
   }
   html {
     font-family: var(--font-sans);
+    max-width: 100%;
+    overflow-x: hidden;
   }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
 
@@ -245,4 +249,12 @@
 @utility animate-gradient {
   background-size: 200% 200%;
   animation: gradient-shift 8s ease infinite;
+}
+
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

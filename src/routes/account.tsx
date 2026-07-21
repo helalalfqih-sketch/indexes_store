@@ -187,10 +187,10 @@ function AccountPage() {
       </section>
 
       {/* Tabs Bar */}
-      <div className="flex w-full max-w-full border-b border-showcase-border/40 overflow-x-auto gap-2 pb-1">
+      <div className="flex w-full max-w-full border-b border-showcase-border/40 overflow-x-auto gap-2 pb-1 scrollbar-none">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
+          className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
             activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
@@ -199,7 +199,7 @@ function AccountPage() {
         </button>
         <button
           onClick={() => setActiveTab("orders")}
-          className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
+          className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
             activeTab === "orders" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
@@ -208,7 +208,7 @@ function AccountPage() {
         </button>
         <button
           onClick={() => setActiveTab("addresses")}
-          className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
+          className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
             activeTab === "addresses" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
@@ -217,7 +217,7 @@ function AccountPage() {
         </button>
         <button
           onClick={() => setActiveTab("security")}
-          className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
+          className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
             activeTab === "security" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
@@ -226,7 +226,7 @@ function AccountPage() {
         </button>
         <button
           onClick={() => setActiveTab("support")}
-          className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
+          className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
             activeTab === "support" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >

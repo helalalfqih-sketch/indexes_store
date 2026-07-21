@@ -58,7 +58,7 @@ export function StoreThemeLayout({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className="relative flex min-h-screen flex-col font-sans transition-colors duration-300 bg-showcase text-showcase-foreground selection:bg-primary/30 selection:text-white"
+      className="relative flex min-h-screen w-full max-w-full overflow-x-hidden flex-col font-sans transition-colors duration-300 bg-showcase text-showcase-foreground selection:bg-primary/30 selection:text-white"
       dir="rtl"
     >
       <CinematicBackground />
