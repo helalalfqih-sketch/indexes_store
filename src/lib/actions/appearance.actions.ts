@@ -7,6 +7,7 @@ import {
   HeroConfigSchema,
   ThemeConfigSchema,
   ProductsLayoutConfigSchema,
+  ProductPageConfigSchema,
   CartConfigSchema,
   NavigationConfigSchema,
   SectionsConfigSchema,
@@ -39,6 +40,9 @@ function rowsToSettings(
     products_layout: ProductsLayoutConfigSchema.catch(
       DEFAULT_STOREFRONT_SETTINGS.products_layout
     ).parse(settingsMap.get("products_layout") ?? {}),
+    product_page: ProductPageConfigSchema.catch(
+      DEFAULT_STOREFRONT_SETTINGS.product_page
+    ).parse(settingsMap.get("product_page") ?? {}),
     cart_config: CartConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.cart_config).parse(
       settingsMap.get("cart_config") ?? {}
     ),

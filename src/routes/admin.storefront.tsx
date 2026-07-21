@@ -383,11 +383,9 @@ function ThemeTab({ cfg, onChange }: { cfg: ThemeConfig; onChange: (v: ThemeConf
       <SectionCard title="الخط والوضع">
         <div className="grid grid-cols-2 gap-3">
           <Field label="نوع الخط">
-            <select value={cfg.fontFamily} onChange={(e) => set("fontFamily", e.target.value)} className={fieldCls}>
+            <select value={cfg.fontFamily} onChange={(e) => set("fontFamily", e.target.value as ThemeConfig["fontFamily"])} className={fieldCls}>
               <option value="Tajawal">Tajawal (افتراضي)</option>
               <option value="Cairo">Cairo</option>
-              <option value="Almarai">Almarai</option>
-              <option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</option>
               <option value="Inter">Inter (إنجليزي)</option>
             </select>
           </Field>

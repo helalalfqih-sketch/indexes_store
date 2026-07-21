@@ -13,6 +13,7 @@ import {
   HeroConfigSchema,
   ThemeConfigSchema,
   ProductsLayoutConfigSchema,
+  ProductPageConfigSchema,
   CartConfigSchema,
   NavigationConfigSchema,
   SectionsConfigSchema,
@@ -62,6 +63,9 @@ export const getStorefrontSettings = createServerFn({ method: "GET" }).handler(
         products_layout: ProductsLayoutConfigSchema.catch(
           DEFAULT_STOREFRONT_SETTINGS.products_layout
         ).parse(map.get("products_layout") ?? {}),
+        product_page: ProductPageConfigSchema.catch(
+          DEFAULT_STOREFRONT_SETTINGS.product_page
+        ).parse(map.get("product_page") ?? {}),
         cart_config: CartConfigSchema.catch(
           DEFAULT_STOREFRONT_SETTINGS.cart_config
         ).parse(map.get("cart_config") ?? {}),
