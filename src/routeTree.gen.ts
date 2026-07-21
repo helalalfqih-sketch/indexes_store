@@ -32,6 +32,7 @@ import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminBranchesRouteImport } from './routes/admin.branches'
 import { Route as AdminAppearanceRouteImport } from './routes/admin.appearance'
+import { Route as AdminStorefrontRouteImport } from './routes/admin.storefront'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
 import { Route as ApiAiAnalyzeProductRouteImport } from './routes/api/ai.analyze-product'
 import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
@@ -151,6 +152,11 @@ const AdminAppearanceRoute = AdminAppearanceRouteImport.update({
   path: '/appearance',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminStorefrontRoute = AdminStorefrontRouteImport.update({
+  id: '/storefront',
+  path: '/storefront',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiPublicImageProxyRoute = ApiPublicImageProxyRouteImport.update({
   id: '/api/public/image-proxy',
   path: '/api/public/image-proxy',
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
   '/admin/appearance': typeof AdminAppearanceRoute
+  '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
   '/admin/appearance': typeof AdminAppearanceRoute
+  '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
@@ -235,6 +243,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
   '/admin/appearance': typeof AdminAppearanceRoute
+  '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/search'
     | '/admin/appearance'
+    | '/admin/storefront'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
@@ -292,6 +302,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/search'
     | '/admin/appearance'
+    | '/admin/storefront'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/search'
     | '/admin/appearance'
+    | '/admin/storefront'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
@@ -518,6 +530,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppearanceRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/storefront': {
+      id: '/admin/storefront'
+      path: '/storefront'
+      fullPath: '/admin/storefront'
+      preLoaderRoute: typeof AdminStorefrontRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/public/image-proxy': {
       id: '/api/public/image-proxy'
       path: '/api/public/image-proxy'
@@ -544,6 +563,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAppearanceRoute: typeof AdminAppearanceRoute
+  AdminStorefrontRoute: typeof AdminStorefrontRoute
   AdminBranchesRoute: typeof AdminBranchesRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
@@ -558,6 +578,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAppearanceRoute: AdminAppearanceRoute,
+  AdminStorefrontRoute: AdminStorefrontRoute,
   AdminBranchesRoute: AdminBranchesRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminInventoryRoute: AdminInventoryRoute,

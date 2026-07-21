@@ -16,6 +16,7 @@ import {
   FolderTree,
   Boxes,
   Palette,
+  Globe,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -216,6 +217,7 @@ function ShellInner() {
       { to: "/admin/categories", label: "التصنيفات", icon: FolderTree },
       { to: "/admin/inventory", label: "المخزون", icon: Boxes },
       { to: "/admin/branches", label: "الفروع", icon: Building2 },
+      { to: "/admin/storefront", label: "Storefront CMS", icon: Globe },
       { to: "/admin/appearance", label: "مظهر المتجر", icon: Palette },
       { to: "/admin/platform", label: "Platform (SaaS)", icon: Store },
       { to: "/admin/sessions", label: t("nav.sessions"), icon: Activity },
