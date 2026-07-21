@@ -327,8 +327,12 @@ function HomePage() {
                       }}
                     >
                       <Link to="/category/$id" params={{ id: c.id }} className="flex flex-col items-center gap-1.5">
-                        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20 shadow-card transition">
-                          <Icon className="h-6 w-6" />
+                        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20 shadow-card transition overflow-hidden">
+                          {c.imageUrl ? (
+                            <img src={c.imageUrl} alt={c.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <Icon className="h-6 w-6" />
+                          )}
                         </div>
                         <span className="text-center text-[10px] font-semibold leading-tight" style={{ color: "color-mix(in oklab, var(--showcase-foreground) 85%, transparent)" }}>
                           {c.name}

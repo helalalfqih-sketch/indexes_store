@@ -130,6 +130,7 @@ export type LegacyCategoryShape = {
   name: string;
   icon: string;
   color: string;
+  imageUrl?: string | null;
 };
 
 export const toLegacyCategory = (c: CategoryWithMetaDTO): LegacyCategoryShape => ({
@@ -137,4 +138,5 @@ export const toLegacyCategory = (c: CategoryWithMetaDTO): LegacyCategoryShape =>
   name: c.name,
   icon: c.icon ?? "Package",
   color: c.color ?? "from-slate-500 to-slate-700",
+  imageUrl: c.image_url,
 });

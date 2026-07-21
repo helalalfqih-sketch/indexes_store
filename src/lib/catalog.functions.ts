@@ -445,7 +445,19 @@ export const listCategories = createServerFn({ method: "GET" })
   .inputValidator((raw: unknown) =>
     z.object({ tenantId: z.string().uuid().optional() }).parse(raw ?? {}),
   )
-  .handler(async () => {
+  .handler(async ({ data }) => {
+    const db = publicClient();
+    const tenantId = await resolvePublicTenant(db, data.tenantId);
+    
+    try {
+      const dbCategories = await categoriesRepo.list(db, { tenantId, includeInactive: false });
+      if (dbCategories && dbCategories.length > 0) {
+        return dbCategories;
+      }
+    } catch (err) {
+      console.warn("Error fetching Supabase categories, using CSV fallback:", err);
+    }
+    
     const products = await fetchCsvProducts();
     const categoriesMap = new Map<string, any>();
     

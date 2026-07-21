@@ -154,6 +154,81 @@ function SectionCard({ title, children, badge }: { title: string; children: Reac
   );
 }
 
+function ImageUploader({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (base64: string) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      onChange(reader.result as string);
+      toast.success("تم رفع الصورة بنجاح! 📸");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-1">
+      <span className="text-xs font-bold text-muted-foreground">{label}</span>
+      <div className="relative flex items-center justify-between gap-4 rounded-xl border border-dashed border-border bg-background/50 p-4 transition-all hover:bg-background">
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        {value ? (
+          <div className="flex w-full items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <img src={value} alt="Preview" className="h-12 w-12 rounded-lg object-cover ring-1 ring-border" />
+              <div className="text-right">
+                <p className="text-xs font-black text-success">تم تحميل الصورة من الهاتف</p>
+                <p className="text-[10px] text-muted-foreground">صيغة قاعدة البيانات (Base64)</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition"
+              >
+                تغيير
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange("")}
+                className="rounded-lg bg-destructive/10 px-2 py-1.5 text-xs font-bold text-destructive hover:bg-destructive/20 transition"
+              >
+                حذف
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex w-full flex-col items-center justify-center py-2 text-center text-muted-foreground transition hover:text-foreground"
+          >
+            <Upload className="h-6 w-6 text-primary mb-1" />
+            <span className="text-xs font-black">اضغط لاختيار صورة من هاتفك</span>
+            <span className="text-[10px] text-muted-foreground/80 mt-0.5 font-sans">صورة الشعار أو البنر</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Live Preview Viewer Component (Phase C) ──────────────────────────────────
 function LivePreviewDevice({
   local,
@@ -450,6 +525,102 @@ function HomepageTab({
             <option value="cinematic">🎭 عرض سينمائي ممتد</option>
           </select>
         </Field>
+        {hero.type === "banner_image" && (
+          <ImageUploader
+            label="صورة البنر الرئيسي"
+            value={hero.bannerImageUrl}
+            onChange={(val) => setHero("bannerImageUrl", val)}
+          />
+        )}
+        {hero.type === "video" && (
+          <Field label="رابط فيديو البنر">
+            <input value={hero.bannerVideoUrl} onChange={(e) => setHero("bannerVideoUrl", e.target.value)} className={fieldCls} placeholder="مثال: https://..." dir="ltr" />
+          </Field>
+        )}
+        {hero.type === "slideshow" && (
+          <div className="space-y-3 pt-2 border-t border-border/40">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-muted-foreground">شرائح عرض الصور (Slideshow)</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const newSlide = {
+                    id: Math.random().toString(),
+                    mediaType: "image" as const,
+                    mediaUrl: "",
+                    badgeText: "جديد",
+                    title: "شريحة جديدة",
+                    subtitle: "وصف الشريحة",
+                    ctaText: "تصفح الآن",
+                    ctaLink: "/",
+                    order: hero.slides.length + 1,
+                  };
+                  setHero("slides", [...hero.slides, newSlide]);
+                }}
+                className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-xs font-bold text-primary hover:bg-primary/20 transition"
+              >
+                <Plus className="h-3 w-3" />
+                إضافة شريحة
+              </button>
+            </div>
+            {hero.slides.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4 bg-background/50 rounded-xl">لا توجد شرائح مضافة حالياً</p>
+            ) : (
+              <div className="space-y-3">
+                {hero.slides.map((slide, idx) => (
+                  <div key={slide.id || idx} className="rounded-xl border border-border bg-background/30 p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black">الشريحة #{idx + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = hero.slides.filter((_, sIdx) => sIdx !== idx);
+                          setHero("slides", updated);
+                        }}
+                        className="text-xs text-destructive hover:underline"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                    <ImageUploader
+                      label="صورة الشريحة"
+                      value={slide.mediaUrl}
+                      onChange={(val) => {
+                        const updated = [...hero.slides];
+                        updated[idx] = { ...updated[idx], mediaUrl: val };
+                        setHero("slides", updated);
+                      }}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Field label="شارة الشريحة">
+                        <input
+                          value={slide.badgeText}
+                          onChange={(e) => {
+                            const updated = [...hero.slides];
+                            updated[idx] = { ...updated[idx], badgeText: e.target.value };
+                            setHero("slides", updated);
+                          }}
+                          className={fieldCls}
+                        />
+                      </Field>
+                      <Field label="عنوان الشريحة">
+                        <input
+                          value={slide.title}
+                          onChange={(e) => {
+                            const updated = [...hero.slides];
+                            updated[idx] = { ...updated[idx], title: e.target.value };
+                            setHero("slides", updated);
+                          }}
+                          className={fieldCls}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between pt-2">
           <Label>تفعيل البنر الرئيسي</Label>
           <Toggle checked={hero.enabled} onChange={(v) => setHero("enabled", v)} />
@@ -554,6 +725,26 @@ function HomepageTab({
           ))}
         </div>
       </SectionCard>
+
+      {/* Cinematic section */}
+      {isSectionEnabled("cinematic") && (
+        <SectionCard title="إعدادات العرض السينمائي" badge="Cinematic Story">
+          <Field label="عنوان العرض السينمائي">
+            <input value={sections.cinematic.title} onChange={(e) => onSectionsChange({ ...sections, cinematic: { ...sections.cinematic, title: e.target.value } })} className={fieldCls} />
+          </Field>
+          <Field label="العنوان الفرعي">
+            <input value={sections.cinematic.subtitle} onChange={(e) => onSectionsChange({ ...sections, cinematic: { ...sections.cinematic, subtitle: e.target.value } })} className={fieldCls} />
+          </Field>
+          <Field label="رابط فيديو الخلفية">
+            <input value={sections.cinematic.videoUrl} onChange={(e) => onSectionsChange({ ...sections, cinematic: { ...sections.cinematic, videoUrl: e.target.value } })} className={fieldCls} placeholder="https://..." dir="ltr" />
+          </Field>
+          <ImageUploader
+            label="صورة الغلاف الاحتياطية (Poster Image)"
+            value={sections.cinematic.posterUrl}
+            onChange={(val) => onSectionsChange({ ...sections, cinematic: { ...sections.cinematic, posterUrl: val } })}
+          />
+        </SectionCard>
+      )}
 
       {/* Widgets & Blocks Engine */}
       <SectionCard title="محرك الـ Widgets / الكتل المخصصة" badge="Blocks Engine">
@@ -941,9 +1132,11 @@ function NavigationTab({
             <input value={nav.tagline} onChange={(e) => set("tagline", e.target.value)} className={fieldCls} />
           </Field>
         </div>
-        <Field label="رابط صورة شعار المتجر (Logo URL)">
-          <input value={nav.logoUrl} onChange={(e) => set("logoUrl", e.target.value)} className={fieldCls} placeholder="https://..." dir="ltr" />
-        </Field>
+        <ImageUploader
+          label="شعار المتجر (Logo)"
+          value={nav.logoUrl}
+          onChange={(val) => set("logoUrl", val)}
+        />
       </SectionCard>
 
       {/* Menu Builder */}
@@ -1176,6 +1369,33 @@ function NotificationsTab({
             <input value={notif.announcementBg} onChange={(e) => setNotif("announcementBg", e.target.value)} className={`${fieldCls} !mt-0 font-mono text-xs`} dir="ltr" />
           </div>
         </Field>
+      </SectionCard>
+
+      {/* Discount Popup */}
+      <SectionCard title="النافذة المنبثقة الترويجية" badge="Notification Center">
+        <div className="flex items-center justify-between mb-2">
+          <Label>تفعيل النافذة المنبثقة الترويجية</Label>
+          <Toggle checked={notif.popupEnabled} onChange={(v) => setNotif("popupEnabled", v)} />
+        </div>
+        <Field label="عنوان النافذة">
+          <input value={notif.popupTitle} onChange={(e) => setNotif("popupTitle", e.target.value)} className={fieldCls} />
+        </Field>
+        <Field label="نص النافذة">
+          <textarea value={notif.popupText} onChange={(e) => setNotif("popupText", e.target.value)} rows={2} className={fieldCls} />
+        </Field>
+        <ImageUploader
+          label="صورة النافذة الإعلانية"
+          value={notif.popupImage}
+          onChange={(val) => setNotif("popupImage", val)}
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="نص زر CTA">
+            <input value={notif.popupCta} onChange={(e) => setNotif("popupCta", e.target.value)} className={fieldCls} />
+          </Field>
+          <Field label="رابط زر CTA">
+            <input value={notif.popupLink} onChange={(e) => setNotif("popupLink", e.target.value)} className={fieldCls} dir="ltr" />
+          </Field>
+        </div>
       </SectionCard>
 
       {/* SEO Manager */}
