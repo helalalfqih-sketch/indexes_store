@@ -101,7 +101,7 @@ export const CartConfigSchema = z.object({
   cartStyle: z.enum(["drawer", "page", "modal"]).catch("page"),
   checkoutBtnPosition: z.enum(["bottom_fixed", "inline", "both"]).catch("bottom_fixed"),
   whatsappEnabled: z.boolean().catch(true),
-  whatsappPhone: z.string().catch("967770000000"),
+  whatsappPhone: z.string().catch("967771370740"),
   whatsappOrderTemplate: z
     .string()
     .catch(
@@ -153,7 +153,7 @@ export const NavigationConfigSchema = z.object({
   searchEnabled: z.boolean().catch(true),
   showLanguageToggle: z.boolean().catch(true),
   showCurrencyToggle: z.boolean().catch(false),
-  whatsappPhone: z.string().catch("967770000000"),
+  whatsappPhone: z.string().catch("967771370740"),
   supportEmail: z.string().catch("support@indexes-store.com"),
   addressText: z.string().catch("صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية"),
   deliveryInfoText: z.string().catch("متوفر لدينا خدمة التوصيل لجميع المحافظات 🇾🇪"),

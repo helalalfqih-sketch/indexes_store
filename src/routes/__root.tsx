@@ -1,4 +1,6 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { get, set, del } from "idb-keyval";
 import {
   Outlet,
   Link,
@@ -12,12 +14,25 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { AppShell } from "../components/app-shell";
+import { StoreThemeLayout } from "../components/store-theme-layout";
 import { supabase } from "@/integrations/supabase/client";
 import { TenantProvider } from "@/components/tenant-provider";
 import { AppearanceProvider } from "@/components/appearance-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
+import { NetworkManager } from "@/components/network-manager";
+
+const idbPersister = {
+  persistClient: async (client: any) => {
+    await set("react-query-offline-cache", client);
+  },
+  restoreClient: async () => {
+    return await get("react-query-offline-cache");
+  },
+  removeClient: async () => {
+    await del("react-query-offline-cache");
+  },
+};
 
 function NotFoundComponent() {
   useEffect(() => {
@@ -175,19 +190,20 @@ function RootComponent() {
   }, [router, queryClient]);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: idbPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}>
       <AppearanceProvider initialSettings={settings}>
         <TenantProvider>
           {isAdmin || isBare ? (
             <Outlet />
           ) : (
-            <AppShell>
+            <StoreThemeLayout>
               <Outlet />
-            </AppShell>
+            </StoreThemeLayout>
           )}
           <Toaster />
+          <NetworkManager />
         </TenantProvider>
       </AppearanceProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

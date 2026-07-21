@@ -7,6 +7,7 @@ import { buildOrderMessage, whatsappLink } from "@/lib/whatsapp";
 import { submitOrder } from "@/lib/actions/order.actions";
 import type { CreateOrderInput } from "@/lib/actions/order.actions";
 import { useAppearance } from "@/components/appearance-provider";
+import { OptimizedImage } from "@/components/optimized-image";
 
 export const Route = createFileRoute("/cart")({
   validateSearch: (search): { coupon?: string } => ({
@@ -90,7 +91,7 @@ function CartPage() {
           `\n🆔 رقم الطلب: ${result.orderId}`;
       }
 
-      const waPhone = settings.cart_config.whatsappPhone || "967770000000";
+      const waPhone = settings.cart_config.whatsappPhone || "967771370740";
       window.open(whatsappLink(orderMessage, waPhone), "_blank");
     } catch (err) {
       console.error("Order submission failed:", err);
@@ -112,9 +113,9 @@ function CartPage() {
         {items.map((it) => (
           <li
             key={it.productId}
-            className="flex gap-3 rounded-2xl border border-border bg-surface p-2.5 shadow-card"
+            className="flex gap-3 rounded-2xl border border-showcase-border bg-showcase-foreground/5 p-2.5 shadow-card backdrop-blur-md"
           >
-            <img src={it.image} alt={it.name} className="h-20 w-20 rounded-xl object-cover" />
+            <OptimizedImage src={it.image} alt={it.name} size="thumbnail" className="h-20 w-20 rounded-xl object-cover" />
             <div className="flex flex-1 flex-col justify-between">
               <div className="flex items-start justify-between gap-2">
                 <h3 className="line-clamp-2 text-xs font-bold leading-tight">{it.name}</h3>
@@ -146,7 +147,7 @@ function CartPage() {
       </ul>
 
       {deliveryFormEnabled && (
-        <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+        <section className="rounded-2xl border border-showcase-border bg-showcase-foreground/5 p-4 shadow-card backdrop-blur-md">
           <h3 className="mb-3 text-sm font-black">بيانات التسليم</h3>
           <div className="flex flex-col gap-3">
             <label
@@ -160,7 +161,7 @@ function CartPage() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="الاسم الكامل"
                 autoComplete="name"
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-xl border border-showcase-border/50 bg-black/40 px-3 py-2.5 text-sm font-normal text-showcase-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-showcase-muted"
               />
             </label>
             <label
@@ -180,10 +181,10 @@ function CartPage() {
                 autoComplete="tel"
                 aria-invalid={Boolean(orderError)}
                 aria-describedby={orderError ? "order-error" : undefined}
-                className={`w-full rounded-xl border bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:ring-2 focus:ring-primary/20 ${
+                className={`w-full rounded-xl border bg-black/40 px-3 py-2.5 text-sm font-normal text-showcase-foreground outline-none transition-colors focus:ring-2 focus:ring-primary/20 placeholder:text-showcase-muted ${
                   orderError
                     ? "border-destructive focus:border-destructive"
-                    : "border-input focus:border-primary"
+                    : "border-showcase-border/50 focus:border-primary"
                 }`}
               />
             </label>
@@ -198,7 +199,7 @@ function CartPage() {
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="المدينة، الحي"
                 autoComplete="street-address"
-                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-xl border border-showcase-border/50 bg-black/40 px-3 py-2.5 text-sm font-normal text-showcase-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-showcase-muted"
               />
             </label>
             <label
@@ -212,7 +213,7 @@ function CartPage() {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="أضف أي تفاصيل مهمة للتسليم"
                 rows={2}
-                className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="w-full resize-none rounded-xl border border-showcase-border/50 bg-black/40 px-3 py-2.5 text-sm font-normal text-showcase-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-showcase-muted"
               />
             </label>
           </div>
@@ -228,7 +229,7 @@ function CartPage() {
         </section>
       )}
 
-      <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <section className="rounded-2xl border border-showcase-border bg-showcase-foreground/5 p-4 shadow-card backdrop-blur-md">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">المجموع الفرعي</span>
           <span className="font-bold">{formatPrice(total)}</span>
@@ -243,7 +244,7 @@ function CartPage() {
           <span className="text-muted-foreground">الشحن</span>
           <span className="font-bold text-success">{shippingText}</span>
         </div>
-        <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+        <div className="mt-3 flex items-center justify-between border-t border-showcase-border/60 pt-3">
           <span className="text-sm font-bold">الإجمالي</span>
           <span className="text-lg font-black text-primary">{formatPrice(finalTotal)}</span>
         </div>

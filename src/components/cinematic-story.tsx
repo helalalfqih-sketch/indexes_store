@@ -8,7 +8,7 @@ const VIDEO_POSTER =
   "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=70";
 
 const WA_LINK =
-  "https://wa.me/967774437523?text=" +
+  "https://wa.me/967771370740?text=" +
   encodeURIComponent("مرحباً، أريد الاستفسار عن منتجات اندكس ستور");
 
 const HEADLINE = "اندكس ستور: حيث تلتقي الفخامة بالتقنية";

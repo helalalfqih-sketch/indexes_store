@@ -4,11 +4,19 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { formatPrice, type Product } from "@/lib/store-data";
 import type { LegacyProductShape, LegacyCategoryShape } from "@/lib/data-adapter";
-import { fetchProducts, fetchOffers, fetchBestSellers } from "@/lib/actions/product.actions";
-import { fetchCategories } from "@/lib/actions/category.actions";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import {
+  categoriesQueryOptions,
+  bestSellersQueryOptions,
+  offersQueryOptions,
+  allProductsQueryOptions,
+} from "@/lib/store.queries";
 import { ProductCard } from "@/components/product-card";
-import { ProductSphereHero } from "@/components/product-sphere-hero";
-import { CinematicStory } from "@/components/cinematic-story";
+import { lazy, Suspense } from "react";
+import { ProductCardSkeleton, Skeleton } from "@/components/ui/skeleton";
+
+const ProductSphereHero = lazy(() => import("@/components/product-sphere-hero").then(m => ({ default: m.ProductSphereHero })));
+const CinematicStory = lazy(() => import("@/components/cinematic-story").then(m => ({ default: m.CinematicStory })));
 import { OptimizedImage } from "@/components/optimized-image";
 import { quickOrderLink } from "@/lib/whatsapp";
 import { useAppearance } from "@/components/appearance-provider";
@@ -25,20 +33,23 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  loader: async () => {
-    const [categories, bestSellers, dailyDeals, allProducts] = await Promise.all([
-      fetchCategories(),
-      fetchBestSellers(4),
-      fetchOffers().then((rows) => rows.slice(0, 4)),
-      fetchProducts(),
-    ]);
-    return {
-      categories: categories as LegacyCategoryShape[],
-      bestSellers: bestSellers as LegacyProductShape[],
-      dailyDeals: dailyDeals as LegacyProductShape[],
-      allProducts: allProducts as LegacyProductShape[],
-    };
+  loader: ({ context: { queryClient } }) => {
+    queryClient.ensureQueryData(categoriesQueryOptions());
+    queryClient.ensureQueryData(bestSellersQueryOptions(4));
+    queryClient.ensureQueryData(offersQueryOptions());
+    queryClient.ensureQueryData(allProductsQueryOptions());
   },
+  pendingComponent: () => (
+    <div className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pt-12 md:max-w-6xl md:px-6 lg:max-w-7xl">
+      <Skeleton className="h-[50vh] w-full rounded-3xl" />
+      <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <ProductCardSkeleton />
+        <ProductCardSkeleton />
+        <ProductCardSkeleton />
+        <ProductCardSkeleton />
+      </div>
+    </div>
+  ),
   errorComponent: ({ error }) => (
     <div className="p-8 text-center text-destructive">حدث خطأ: {error.message}</div>
   ),
@@ -60,13 +71,15 @@ const revealProps = {
 };
 
 function HomePage() {
-  const data = Route.useLoaderData() as {
-    categories: LegacyCategoryShape[];
-    bestSellers: LegacyProductShape[];
-    dailyDeals: LegacyProductShape[];
-    allProducts: LegacyProductShape[];
-  };
-  const { categories, bestSellers, dailyDeals, allProducts } = data;
+  const { data: categoriesRaw } = useSuspenseQuery(categoriesQueryOptions());
+  const { data: bestSellersRaw } = useSuspenseQuery(bestSellersQueryOptions(4));
+  const { data: dailyDealsRaw } = useSuspenseQuery(offersQueryOptions());
+  const { data: allProductsRaw } = useSuspenseQuery(allProductsQueryOptions());
+
+  const categories = categoriesRaw as LegacyCategoryShape[];
+  const bestSellers = bestSellersRaw as LegacyProductShape[];
+  const dailyDeals = (dailyDealsRaw as LegacyProductShape[]).slice(0, 4);
+  const allProducts = allProductsRaw as LegacyProductShape[];
 
   const pageRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
@@ -198,22 +211,24 @@ function HomePage() {
       {/* 1. CINEMATIC HERO (3D + Video + AI) */}
       {settings.hero.enabled && (
         <div className="relative z-10 px-4">
-          {settings.hero.type === "cinematic" ? (
-            <CinematicStory />
-          ) : (
-            <ProductSphereHero
-              products={sphereProducts}
-              badgeText={settings.hero.badgeText}
-              title={settings.hero.title}
-              subtitle={settings.hero.subtitle}
-              maxProducts={settings.hero.sphereMaxProducts}
-              radius={settings.hero.sphereRadius}
-              tileScale={settings.hero.sphereTileScale}
-              cardShape={settings.hero.sphereCardShape}
-              showName={settings.hero.sphereShowName}
-              showPrice={settings.hero.sphereShowPrice}
-            />
-          )}
+          <Suspense fallback={<Skeleton className="h-[50vh] w-full rounded-3xl" />}>
+            {settings.hero.type === "cinematic" ? (
+              <CinematicStory />
+            ) : (
+              <ProductSphereHero
+                products={sphereProducts}
+                badgeText={settings.hero.badgeText}
+                title={settings.hero.title}
+                subtitle={settings.hero.subtitle}
+                maxProducts={settings.hero.sphereMaxProducts}
+                radius={settings.hero.sphereRadius}
+                tileScale={settings.hero.sphereTileScale}
+                cardShape={settings.hero.sphereCardShape}
+                showName={settings.hero.sphereShowName}
+                showPrice={settings.hero.sphereShowPrice}
+              />
+            )}
+          </Suspense>
         </div>
       )}
 

@@ -18,6 +18,7 @@ export function OptimizedImage({
   const [isLoaded, setIsLoaded] = useState(false);
   const [blurSrc, setBlurSrc] = useState<string>("");
   const [optimizedSrc, setOptimizedSrc] = useState<string>("");
+  const [errorCount, setErrorCount] = useState(0);
 
   // Build the optimized proxy URL based on requested size presets
   const getOptimizedUrl = (url: string, targetSize: string): string => {
@@ -32,15 +33,15 @@ export function OptimizedImage({
         return `/api/public/image-proxy?url=${encodeURIComponent(url)}`;
       }
 
-      let queryParams = "";
+      let queryParams = "&format=webp";
       if (targetSize === "thumbnail") {
-        queryParams = "&w=128&q=80";
+        queryParams += "&w=128&q=80";
       } else if (targetSize === "card") {
-        queryParams = "&w=384&q=80";
+        queryParams += "&w=384&q=80";
       } else if (targetSize === "large") {
-        queryParams = "&w=800&q=80";
+        queryParams += "&w=800&q=80";
       } else if (targetSize === "blur") {
-        queryParams = "&w=16&q=15"; // Tiny blur placeholder
+        queryParams += "&w=16&q=15"; // Tiny blur placeholder
       }
 
       return `/api/public/image-proxy?url=${encodeURIComponent(url)}${queryParams}`;
@@ -54,7 +55,20 @@ export function OptimizedImage({
     setBlurSrc(getOptimizedUrl(src, "blur"));
     setOptimizedSrc(getOptimizedUrl(src, size));
     setIsLoaded(false); // Reset loaded state if src changes
-  }, [src, size]);
+    setErrorCount(0); // Reset errors
+  }, [src, size, errorCount]);
+
+  const handleError = () => {
+    if (errorCount === 0) {
+      // First retry: use original source directly bypassing proxy
+      setOptimizedSrc(src);
+      setErrorCount(1);
+    } else if (errorCount === 1) {
+      // Second failure: use fallback placeholder
+      setOptimizedSrc(`https://placehold.co/600x600/120226/eef4fc?text=INDEXES`);
+      setErrorCount(2);
+    }
+  };
 
   return (
     <div className={cn("relative overflow-hidden bg-black/5", className)}>
@@ -76,6 +90,7 @@ export function OptimizedImage({
           src={optimizedSrc}
           alt={alt}
           onLoad={() => setIsLoaded(true)}
+          onError={handleError}
           className={cn(
             "h-full w-full object-cover transition-opacity duration-500 ease-in-out",
             isLoaded ? "opacity-100" : "opacity-0 absolute inset-0"

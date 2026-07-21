@@ -7,7 +7,7 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
 
   const storeName = settings.navigation.storeName || "اندكس ستور";
   const tagline = settings.navigation.tagline || "اختيارك الأفضل";
-  const phone = settings.navigation.whatsappPhone || "967770000000";
+  const phone = settings.navigation.whatsappPhone || "967771370740";
   const address = settings.navigation.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية";
   const deliveryInfo = settings.navigation.deliveryInfoText || "متوفر لدينا خدمة التوصيل لجميع المحافظات 🇾🇪";
   const copyright = settings.navigation.copyrightText || "جميع الحقوق محفوظة";
@@ -49,7 +49,7 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
           <li className="flex items-start gap-2">
             <MessageCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" />
             <span>
-              للطلب والاستفسار (واتساب):{" 77137040"}
+              للطلب والاستفسار (واتساب):{" 771370740"}
               <a
                 href={waHref}
                 target="_blank"

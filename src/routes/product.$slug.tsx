@@ -1,4 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { productBySlugQueryOptions } from "@/lib/store.queries";
+import { ProductDetailSkeleton } from "@/components/ui/skeleton";
 import {
   ArrowRight,
   Minus,
@@ -33,22 +36,32 @@ const LIGHT = "var(--showcase-foreground)";
 const TAJAWAL = "Tajawal, system-ui, sans-serif";
 
 export const Route = createFileRoute("/product/$slug")({
-  loader: async ({ params }) => {
-    const product = await fetchProductBySlug(params.slug);
+  loader: async ({ context: { queryClient }, params }) => {
+    const product = await queryClient.ensureQueryData(productBySlugQueryOptions(params.slug));
     if (!product) throw notFound();
     return { product };
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.product.name} — اندكس ستور` },
-          { name: "description", content: loaderData.product.description },
-          { property: "og:title", content: loaderData.product.name },
-          { property: "og:description", content: loaderData.product.description },
-          { property: "og:image", content: loaderData.product.image },
-        ]
-      : [{ title: "المنتج غير موجود — اندكس ستور" }, { name: "robots", content: "noindex" }],
-  }),
+  pendingComponent: () => (
+    <div className="min-h-screen bg-showcase pt-12">
+      <div className="mx-auto max-w-7xl px-4 lg:px-8">
+        <ProductDetailSkeleton />
+      </div>
+    </div>
+  ),
+  head: (ctx) => {
+    const data = ctx.loaderData as any;
+    return {
+      meta: data?.product
+        ? [
+            { title: `${data.product.name} — اندكس ستور` },
+            { name: "description", content: data.product.description },
+            { property: "og:title", content: data.product.name },
+            { property: "og:description", content: data.product.description },
+            { property: "og:image", content: data.product.image },
+          ]
+        : [{ title: "المنتج غير موجود — اندكس ستور" }, { name: "robots", content: "noindex" }],
+    };
+  },
   notFoundComponent: () => (
     <div className="p-8 text-center" dir="rtl">
       <p className="text-lg font-bold">المنتج غير موجود</p>
@@ -66,9 +79,16 @@ export const Route = createFileRoute("/product/$slug")({
 });
 
 function ProductPage() {
+  const { slug } = Route.useParams();
+  const { data: productRaw } = useSuspenseQuery(productBySlugQueryOptions(slug));
+  const product = productRaw as any;
+
+  if (!product) {
+    throw notFound();
+  }
+
   const { settings } = useAppearance();
   const pageCfg = settings.product_page;
-  const { product } = Route.useLoaderData();
   const [qty, setQty] = useState(1);
   const add = useCart((s) => s.add);
   const [added, setAdded] = useState(false);

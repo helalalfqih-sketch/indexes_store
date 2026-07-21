@@ -145,7 +145,7 @@ function AccountPage() {
   };
 
   const storeName = settings.navigation.storeName || "اندكس ستور";
-  const supportPhone = settings.navigation.whatsappPhone || "967770000000";
+  const supportPhone = settings.navigation.whatsappPhone || "967771370740";
   const supportEmail = settings.navigation.supportEmail || "support@indexes-store.com";
   const waHref = whatsappLink("مرحباً، لدي استفسار من صفحة حسابي في " + storeName, supportPhone);
 
@@ -187,11 +187,11 @@ function AccountPage() {
       </section>
 
       {/* Tabs Bar */}
-      <div className="flex border-b border-border overflow-x-auto gap-2 pb-1">
+      <div className="flex border-b border-showcase-border/40 overflow-x-auto gap-2 pb-1">
         <button
           onClick={() => setActiveTab("overview")}
           className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
-            activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
           <UserIcon className="h-4 w-4" />
@@ -200,7 +200,7 @@ function AccountPage() {
         <button
           onClick={() => setActiveTab("orders")}
           className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
-            activeTab === "orders" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            activeTab === "orders" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
           <Package className="h-4 w-4" />
@@ -209,7 +209,7 @@ function AccountPage() {
         <button
           onClick={() => setActiveTab("addresses")}
           className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
-            activeTab === "addresses" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            activeTab === "addresses" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
           <MapPin className="h-4 w-4" />
@@ -218,7 +218,7 @@ function AccountPage() {
         <button
           onClick={() => setActiveTab("security")}
           className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
-            activeTab === "security" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            activeTab === "security" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
           <ShieldCheck className="h-4 w-4" />
@@ -227,7 +227,7 @@ function AccountPage() {
         <button
           onClick={() => setActiveTab("support")}
           className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
-            activeTab === "support" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            activeTab === "support" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
           <HelpCircle className="h-4 w-4" />
@@ -238,11 +238,11 @@ function AccountPage() {
       {/* Tab 1: Overview */}
       {activeTab === "overview" && (
         <div className="space-y-4">
-          <ul className="overflow-hidden rounded-2xl bg-surface border border-border shadow-card divide-y divide-border">
+          <ul className="overflow-hidden rounded-2xl bg-showcase-foreground/5 border border-showcase-border/50 shadow-card backdrop-blur-md divide-y divide-showcase-border/50">
             <li>
               <button
                 onClick={() => setActiveTab("orders")}
-                className="w-full flex items-center justify-between p-4 text-xs font-bold hover:bg-accent transition"
+                className="w-full flex items-center justify-between p-4 text-xs font-bold hover:bg-showcase-foreground/10 transition"
               >
                 <div className="flex items-center gap-3">
                   <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -250,16 +250,16 @@ function AccountPage() {
                   </div>
                   <div className="text-right">
                     <span>متابعة وسجل الطلبات</span>
-                    <span className="block text-[10px] font-normal text-muted-foreground">عرض الطلبات السابقة وحالاتها الحالية</span>
+                    <span className="block text-[10px] font-normal text-showcase-muted">عرض الطلبات السابقة وحالاتها الحالية</span>
                   </div>
                 </div>
-                <span className="text-muted-foreground text-sm">‹</span>
+                <span className="text-showcase-muted text-sm">‹</span>
               </button>
             </li>
             <li>
               <button
                 onClick={() => setActiveTab("addresses")}
-                className="w-full flex items-center justify-between p-4 text-xs font-bold hover:bg-accent transition"
+                className="w-full flex items-center justify-between p-4 text-xs font-bold hover:bg-showcase-foreground/10 transition"
               >
                 <div className="flex items-center gap-3">
                   <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -276,7 +276,7 @@ function AccountPage() {
             <li>
               <button
                 onClick={() => setActiveTab("security")}
-                className="w-full flex items-center justify-between p-4 text-xs font-bold hover:bg-accent transition"
+                className="w-full flex items-center justify-between p-4 text-xs font-bold hover:bg-showcase-foreground/10 transition"
               >
                 <div className="flex items-center gap-3">
                   <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -284,10 +284,10 @@ function AccountPage() {
                   </div>
                   <div className="text-right">
                     <span>الخصوصية وتغيير كلمة المرور</span>
-                    <span className="block text-[10px] font-normal text-muted-foreground">حماية الحساب وإدارة الجلسات</span>
+                    <span className="block text-[10px] font-normal text-showcase-muted">حماية الحساب وإدارة الجلسات</span>
                   </div>
                 </div>
-                <span className="text-muted-foreground text-sm">‹</span>
+                <span className="text-showcase-muted text-sm">‹</span>
               </button>
             </li>
           </ul>
@@ -305,16 +305,16 @@ function AccountPage() {
           </div>
 
           {loadingOrders ? (
-            <div className="flex h-40 items-center justify-center rounded-2xl border border-border bg-surface">
+            <div className="flex h-40 items-center justify-center rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 backdrop-blur-md">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : orders.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-surface p-8 text-center space-y-3">
-              <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-muted text-muted-foreground">
+            <div className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-8 text-center space-y-3 backdrop-blur-md">
+              <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-showcase-foreground/10 text-showcase-muted">
                 <Package className="h-6 w-6" />
               </div>
               <p className="text-sm font-bold">لا توجد طلبات سابقة</p>
-              <p className="text-xs text-muted-foreground">عند قتومك بالشراء ستظهر جميع طلباتك وحالات التوصيل هنا.</p>
+              <p className="text-xs text-showcase-muted">عند قتومك بالشراء ستظهر جميع طلباتك وحالات التوصيل هنا.</p>
               <Link
                 to="/"
                 className="inline-block rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-brand"
@@ -325,19 +325,19 @@ function AccountPage() {
           ) : (
             <div className="space-y-3">
               {orders.map((ord) => (
-                <div key={ord.id} className="rounded-2xl border border-border bg-surface p-4 shadow-card space-y-2">
-                  <div className="flex items-center justify-between border-b border-border pb-2 text-xs">
+                <div key={ord.id} className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-4 shadow-card space-y-2 backdrop-blur-md">
+                  <div className="flex items-center justify-between border-b border-showcase-border/50 pb-2 text-xs">
                     <span className="font-mono font-bold text-primary">{ord.id}</span>
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                       {ord.status === "pending" ? "قيد الانتظار" : ord.status === "delivered" ? "تم التسليم" : ord.status}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="text-muted-foreground">التاريخ: {new Date(ord.created_at).toLocaleDateString("ar-EG")}</span>
-                    <span className="font-black text-foreground">{formatPrice(ord.total_amount || 0)}</span>
+                    <span className="text-showcase-muted">التاريخ: {new Date(ord.created_at).toLocaleDateString("ar-EG")}</span>
+                    <span className="font-black text-showcase-foreground">{formatPrice(ord.total_amount || 0)}</span>
                   </div>
                   {ord.customer_address && (
-                    <p className="text-[11px] text-muted-foreground">العنوان: {ord.customer_address}</p>
+                    <p className="text-[11px] text-showcase-muted">العنوان: {ord.customer_address}</p>
                   )}
                 </div>
               ))}
@@ -424,25 +424,25 @@ function AccountPage() {
           )}
 
           {loadingAddresses ? (
-            <div className="flex h-32 items-center justify-center rounded-2xl border border-border bg-surface">
+            <div className="flex h-32 items-center justify-center rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 backdrop-blur-md">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : addresses.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-surface p-8 text-center space-y-2">
+            <div className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-8 text-center space-y-2 backdrop-blur-md">
               <p className="text-sm font-bold">لا توجد عناوين محجوزة</p>
-              <p className="text-xs text-muted-foreground">أضف عنوانك لتسريع عملية الشراء والتوصيل مستقبلاً.</p>
+              <p className="text-xs text-showcase-muted">أضف عنوانك لتسريع عملية الشراء والتوصيل مستقبلاً.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {addresses.map((a) => (
-                <div key={a.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-card">
+                <div key={a.id} className="flex items-center justify-between gap-3 rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-4 shadow-card backdrop-blur-md">
                   <div className="space-y-1 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-foreground">{a.title}</span>
-                      <span className="text-[10px] text-muted-foreground">({a.city})</span>
+                      <span className="font-bold text-showcase-foreground">{a.title}</span>
+                      <span className="text-[10px] text-showcase-muted">({a.city})</span>
                     </div>
-                    <p className="text-muted-foreground">{a.address_line}</p>
-                    <p className="text-muted-foreground">هاتف: {a.phone}</p>
+                    <p className="text-showcase-muted">{a.address_line}</p>
+                    <p className="text-showcase-muted">هاتف: {a.phone}</p>
                   </div>
                   <button
                     onClick={() => handleDeleteAddress(a.id)}
@@ -461,7 +461,7 @@ function AccountPage() {
       {/* Tab 4: Security */}
       {activeTab === "security" && (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-surface p-5 shadow-card space-y-4">
+          <div className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-5 shadow-card space-y-4 backdrop-blur-md">
             <h2 className="text-sm font-black flex items-center gap-2">
               <Lock className="h-4 w-4 text-primary" />
               تغيير كلمة المرور
@@ -498,26 +498,26 @@ function AccountPage() {
       {/* Tab 5: Help & Support */}
       {activeTab === "support" && (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-surface p-5 shadow-card space-y-4">
+          <div className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-5 shadow-card space-y-4 backdrop-blur-md">
             <h2 className="text-sm font-black flex items-center gap-2">
               <HelpCircle className="h-4 w-4 text-primary" />
               مركز الدعم والمساعدة — {storeName}
             </h2>
 
             <div className="space-y-3 text-xs">
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background">
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-showcase-border/50 bg-black/40">
                 <Phone className="h-5 w-5 text-primary shrink-0" />
                 <div>
                   <span className="font-bold block">رقم الدعم الفني والطلب:</span>
-                  <span className="text-muted-foreground">{supportPhone}</span>
+                  <span className="text-showcase-muted">{supportPhone}</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background">
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-showcase-border/50 bg-black/40">
                 <Mail className="h-5 w-5 text-primary shrink-0" />
                 <div>
                   <span className="font-bold block">البريد الإلكتروني:</span>
-                  <span className="text-muted-foreground">{supportEmail}</span>
+                  <span className="text-showcase-muted">{supportEmail}</span>
                 </div>
               </div>
             </div>
