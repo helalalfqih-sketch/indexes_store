@@ -8,7 +8,11 @@ import { formatPrice } from "@/lib/store-data";
 import { Product3DTile, useModelViewer } from "@/lib/model-viewer";
 import MuxPlayer from "@mux/mux-player-react";
 
+import { useAppearance } from "@/components/appearance-provider";
+
 export function ProductCard({ product }: { product: Product | LegacyProductShape }) {
+  const { settings } = useAppearance();
+  const lay = settings.products_layout;
   useModelViewer();
   const modelUrl = (product as LegacyProductShape).modelUrl ?? null;
   const discount = product.oldPrice
@@ -44,68 +48,74 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
         params={{ slug: product.slug }}
         className="group flex flex-col overflow-hidden rounded-2xl bg-surface shadow-card transition active:scale-[0.98]"
       >
-        <motion.div style={{ filter }} className="relative aspect-square overflow-hidden bg-muted">
-          {product.videoPlaybackId ? (
-            <MuxPlayer
-              playbackId={product.videoPlaybackId}
-              autoPlay="muted"
-              loop={true}
-              style={
-                {
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                } satisfies CSSProperties
-              }
-            />
-          ) : modelUrl ? (
-            // Only show 3D viewer if the product has a real custom GLB model
-            <Product3DTile
-              modelSrc={modelUrl}
-              poster={product.image}
-              alt={product.name}
-            />
-          ) : (
-            // Default: clean, fast standard image — no random placeholder 3D models
-            <img
-              src={product.image}
-              alt={product.name}
-              loading="lazy"
-              decoding="async"
-              draggable={false}
-              className="h-full w-full object-contain p-2"
-            />
-          )}
-          {product.badge && (
-            <span className="absolute end-2 top-2 z-10 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-              {product.badge}
-            </span>
-          )}
-          {discount > 0 && (
-            <span className="absolute start-2 top-2 z-10 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-bold text-destructive-foreground">
-              -{discount}%
-            </span>
-          )}
-        </motion.div>
+        {lay.showImage !== false && (
+          <motion.div style={{ filter }} className="relative aspect-square overflow-hidden bg-muted">
+            {product.videoPlaybackId ? (
+              <MuxPlayer
+                playbackId={product.videoPlaybackId}
+                autoPlay="muted"
+                loop={true}
+                style={
+                  {
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  } satisfies CSSProperties
+                }
+              />
+            ) : modelUrl ? (
+              // Only show 3D viewer if the product has a real custom GLB model
+              <Product3DTile
+                modelSrc={modelUrl}
+                poster={product.image}
+                alt={product.name}
+              />
+            ) : (
+              // Default: clean, fast standard image — no random placeholder 3D models
+              <img
+                src={product.image}
+                alt={product.name}
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+                className="h-full w-full object-contain p-2"
+              />
+            )}
+            {product.badge && (
+              <span className="absolute end-2 top-2 z-10 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                {product.badge}
+              </span>
+            )}
+            {lay.showDiscount !== false && discount > 0 && (
+              <span className="absolute start-2 top-2 z-10 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-bold text-destructive-foreground">
+                -{discount}%
+              </span>
+            )}
+          </motion.div>
+        )}
         <div className="flex flex-1 flex-col gap-1.5 p-2.5 text-foreground">
           <h3 className="line-clamp-2 min-h-10 text-xs font-bold leading-tight text-foreground">
             {product.name}
           </h3>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Star className="h-3 w-3 fill-warning stroke-warning" />
-            <span className="font-semibold text-foreground">{product.rating}</span>
-            <span>({product.reviews})</span>
-          </div>
-          <div className="mt-auto flex items-baseline gap-1.5">
-            <span className="text-sm font-black text-primary">{formatPrice(product.price)}</span>
-            {product.oldPrice && (
-              <span className="text-[10px] text-muted-foreground line-through">
-                {formatPrice(product.oldPrice)}
-              </span>
-            )}
-          </div>
+          {lay.showRating !== false && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Star className="h-3 w-3 fill-warning stroke-warning" />
+              <span className="font-semibold text-foreground">{product.rating}</span>
+              <span>({product.reviews})</span>
+            </div>
+          )}
+          {lay.showPrice !== false && (
+            <div className="mt-auto flex items-baseline gap-1.5">
+              <span className="text-sm font-black text-primary">{formatPrice(product.price)}</span>
+              {product.oldPrice && (
+                <span className="text-[10px] text-muted-foreground line-through">
+                  {formatPrice(product.oldPrice)}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </Link>
     </motion.div>

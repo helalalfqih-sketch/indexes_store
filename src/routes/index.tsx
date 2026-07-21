@@ -11,6 +11,7 @@ import { ProductSphereHero } from "@/components/product-sphere-hero";
 import { CinematicStory } from "@/components/cinematic-story";
 import { quickOrderLink } from "@/lib/whatsapp";
 import { useAppearance } from "@/components/appearance-provider";
+import { type ProductsLayoutConfig } from "@/lib/domain/appearance";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -125,6 +126,29 @@ function HomePage() {
     return list;
   }, [allProducts, bestSellers, dailyDeals, settings.hero.sphereProductSource, settings.hero.sphereCustomProductIds]);
 
+  const getGridClass = (layout: ProductsLayoutConfig) => {
+    const m = layout.columnsMobile === 1 ? "grid-cols-1" : "grid-cols-2";
+    const t =
+      layout.columnsTablet === 1
+        ? "sm:grid-cols-1"
+        : layout.columnsTablet === 2
+        ? "sm:grid-cols-2"
+        : layout.columnsTablet === 4
+        ? "sm:grid-cols-4"
+        : "sm:grid-cols-3";
+    const d =
+      layout.columnsDesktop === 2
+        ? "md:grid-cols-2"
+        : layout.columnsDesktop === 3
+        ? "md:grid-cols-3"
+        : layout.columnsDesktop === 5
+        ? "md:grid-cols-5"
+        : layout.columnsDesktop === 6
+        ? "md:grid-cols-6"
+        : "md:grid-cols-4";
+    return `grid ${m} ${t} ${d} gap-4`;
+  };
+
   return (
     <div
       ref={pageRef}
@@ -221,7 +245,7 @@ function HomePage() {
                   استكشف الكل
                 </Link>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className={getGridClass(settings.products_layout)}>
                 {allProducts.slice(0, limit).map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
@@ -328,7 +352,7 @@ function HomePage() {
                 <h3 className="text-base font-black" style={{ color: LIGHT }}>{sec.title || "عروض اليوم 🔥"}</h3>
                 <Link to="/offers" className="text-xs font-bold" style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}>الكل</Link>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className={getGridClass(settings.products_layout)}>
                 {dailyDeals.slice(0, limit).map((p) => <ProductCard key={p.id} product={p} />)}
               </div>
             </motion.section>
@@ -355,7 +379,7 @@ function HomePage() {
                 <h3 className="text-base font-black" style={{ color: LIGHT }}>{sec.title || "الأكثر مبيعاً"}</h3>
                 <Link to="/search" className="text-xs font-bold" style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}>الكل</Link>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className={getGridClass(settings.products_layout)}>
                 {bestSellers.slice(0, limit).map((p) => <ProductCard key={p.id} product={p} />)}
               </div>
             </motion.section>

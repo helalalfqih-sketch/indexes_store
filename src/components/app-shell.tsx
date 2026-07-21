@@ -10,6 +10,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isHome = pathname === "/" || pathname === "/app" || pathname === "/app/";
   const isShowcase = isHome || pathname.startsWith("/product/");
+  const { settings } = useAppearance();
 
   return (
     <div
@@ -17,6 +18,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         isShowcase ? "bg-showcase text-showcase-foreground" : "bg-background text-foreground"
       }`}
     >
+      {settings.notifications?.announcementEnabled && (
+        <div
+          style={{ backgroundColor: settings.notifications.announcementBg }}
+          className="text-white text-xs font-bold py-2 px-4 text-center shrink-0"
+        >
+          {settings.notifications.announcementText}
+        </div>
+      )}
       <TopBar isHome={isShowcase} />
       <main className="mx-auto w-full max-w-md md:max-w-6xl lg:max-w-7xl px-4 md:px-6 pb-20 md:pb-12 flex-1">
         {children}

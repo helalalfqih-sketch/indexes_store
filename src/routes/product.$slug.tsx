@@ -25,6 +25,8 @@ import { useCart } from "@/lib/cart-store";
 import { quickOrderLink } from "@/lib/whatsapp";
 import { Product3DTile, modelFor, useModelViewer, useMounted } from "@/lib/model-viewer";
 
+import { useAppearance } from "@/components/appearance-provider";
+
 const DARK = "var(--showcase)";
 const LIGHT = "var(--showcase-foreground)";
 const TAJAWAL = "Tajawal, system-ui, sans-serif";
@@ -63,6 +65,8 @@ export const Route = createFileRoute("/product/$slug")({
 });
 
 function ProductPage() {
+  const { settings } = useAppearance();
+  const pageCfg = settings.product_page;
   const { product } = Route.useLoaderData();
   const [qty, setQty] = useState(1);
   const add = useCart((s) => s.add);
@@ -79,8 +83,8 @@ function ProductPage() {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [activeMode, setActiveMode] = useState<"image" | "video" | "3d">("image");
 
-  const hasVideo = !!product.videoPlaybackId;
-  const has3D = mounted && !!modelFor(product.id);
+  const hasVideo = !!product.videoPlaybackId && pageCfg.showVideo !== false;
+  const has3D = mounted && !!modelFor(product.id) && pageCfg.show3DModel !== false;
 
   const [showStickyBar, setShowStickyBar] = useState(false);
   useEffect(() => {
@@ -285,9 +289,11 @@ function ProductPage() {
             </div>
 
             {/* Description Summary */}
-            <div className="text-sm leading-relaxed text-showcase-foreground/80 border-t border-b border-showcase-border/60 py-4">
-              {product.description}
-            </div>
+            {pageCfg.showDescription !== false && (
+              <div className="text-sm leading-relaxed text-showcase-foreground/80 border-t border-b border-showcase-border/60 py-4">
+                {product.description}
+              </div>
+            )}
 
             {/* Quantity Selector */}
             <div className="flex items-center justify-between rounded-xl border border-showcase-border bg-showcase-foreground/5 p-3">
@@ -311,23 +317,27 @@ function ProductPage() {
 
             {/* CTA Action Buttons */}
             <div className="flex flex-col gap-2.5">
-              <a
-                href={orderHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-2xl bg-success py-3.5 text-sm font-black text-success-foreground shadow-brand hover:bg-success/90 transition"
-              >
-                <MessageCircle className="h-5 w-5" />
-                <span>اطلب فوراً عبر واتساب</span>
-              </a>
+              {pageCfg.showWaBtn !== false && (
+                <a
+                  href={orderHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-success py-3.5 text-sm font-black text-success-foreground shadow-brand hover:bg-success/90 transition"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  <span>اطلب فوراً عبر واتساب</span>
+                </a>
+              )}
 
-              <button
-                onClick={handleAdd}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-showcase-border bg-showcase-foreground/10 py-3 text-xs font-bold text-showcase-foreground hover:bg-showcase-foreground/20 transition"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                <span>{added ? "تمت الإضافة للسلة ✓" : "إضافة إلى سلة المشتريات"}</span>
-              </button>
+              {pageCfg.showCartBtn !== false && (
+                <button
+                  onClick={handleAdd}
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-showcase-border bg-showcase-foreground/10 py-3 text-xs font-bold text-showcase-foreground hover:bg-showcase-foreground/20 transition"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  <span>{added ? "تمت الإضافة للسلة ✓" : "إضافة إلى سلة المشتريات"}</span>
+                </button>
+              )}
             </div>
 
             {/* Trust Badges */}
@@ -391,32 +401,34 @@ function ProductPage() {
       </div>
 
       {/* Sticky Conversion Bar when scrolling */}
-      <motion.div
-        initial={false}
-        animate={{
-          y: showStickyBar ? 0 : 120,
-          opacity: showStickyBar ? 1 : 0,
-        }}
-        transition={{ duration: 0.3 }}
-        className="fixed inset-x-0 bottom-4 z-40 mx-auto w-full max-w-md px-3"
-        style={{ pointerEvents: showStickyBar ? "auto" : "none" }}
-      >
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-showcase-border bg-showcase/90 p-3 shadow-2xl backdrop-blur-2xl">
-          <div className="min-w-0 flex-1 ps-2">
-            <p className="truncate text-xs font-bold text-showcase-foreground">{product.name}</p>
-            <p className="text-xs font-black text-primary">{formatPrice(product.price)}</p>
+      {pageCfg.showWaBtn !== false && (
+        <motion.div
+          initial={false}
+          animate={{
+            y: showStickyBar ? 0 : 120,
+            opacity: showStickyBar ? 1 : 0,
+          }}
+          transition={{ duration: 0.3 }}
+          className="fixed inset-x-0 bottom-4 z-40 mx-auto w-full max-w-md px-3"
+          style={{ pointerEvents: showStickyBar ? "auto" : "none" }}
+        >
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-showcase-border bg-showcase/90 p-3 shadow-2xl backdrop-blur-2xl">
+            <div className="min-w-0 flex-1 ps-2">
+              <p className="truncate text-xs font-bold text-showcase-foreground">{product.name}</p>
+              <p className="text-xs font-black text-primary">{formatPrice(product.price)}</p>
+            </div>
+            <a
+              href={orderHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-xl bg-success px-4 py-2 text-xs font-black text-success-foreground transition hover:bg-success/90"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              اطلب عبر واتساب
+            </a>
           </div>
-          <a
-            href={orderHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-xl bg-success px-4 py-2 text-xs font-black text-success-foreground transition hover:bg-success/90"
-          >
-            <MessageCircle className="h-3.5 w-3.5" />
-            اطلب عبر واتساب
-          </a>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }
