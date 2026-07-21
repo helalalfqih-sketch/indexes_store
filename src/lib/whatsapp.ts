@@ -6,27 +6,43 @@ export function buildOrderMessage(
   total: number,
   customer?: { name?: string; phone?: string; address?: string; notes?: string },
   coupon?: string,
-  discount?: number
+  discount?: number,
+  customTemplate?: string
 ) {
+  const formattedProducts = items
+    .map((it, idx) => `${idx + 1}. ${it.name} (الكمية: ${it.qty}) — ${formatPrice(it.price * it.qty)}`)
+    .join("\n");
+
+  const formattedTotal = formatPrice(total);
+
+  if (customTemplate && customTemplate.includes("{products}")) {
+    return customTemplate
+      .replace(/{products}/g, formattedProducts)
+      .replace(/{total}/g, formattedTotal)
+      .replace(/{name}/g, customer?.name || "عميل مميز")
+      .replace(/{phone}/g, customer?.phone || "")
+      .replace(/{address}/g, customer?.address || "غير محدد");
+  }
+
   const lines: string[] = [];
-  lines.push("🧾 *طلب جديد من اندكس ستور*");
+  lines.push("🧾 *طلب جديد من المتجر*");
   lines.push("");
   items.forEach((it, idx) => {
     lines.push(`${idx + 1}. ${it.name}`);
-    lines.push(`   الكمية: ${it.qty} × ${it.price.toLocaleString("ar-EG")} ${CURRENCY}`);
-    lines.push(`   الإجمالي: ${(it.qty * it.price).toLocaleString("ar-EG")} ${CURRENCY}`);
+    lines.push(`   الكمية: ${it.qty} × ${formatPrice(it.price)}`);
+    lines.push(`   الإجمالي: ${formatPrice(it.qty * it.price)}`);
     lines.push("");
   });
 
   if (discount && discount > 0) {
     const subtotal = total + discount;
-    lines.push(`💵 *المجموع الفرعي:* ${subtotal.toLocaleString("ar-EG")} ${CURRENCY}`);
-    lines.push(`🏷️ *الخصم:* -${discount.toLocaleString("ar-EG")} ${CURRENCY}`);
+    lines.push(`💵 *المجموع الفرعي:* ${formatPrice(subtotal)}`);
+    lines.push(`🏷️ *الخصم:* -${formatPrice(discount)}`);
     if (coupon) lines.push(`🎫 *الكوبون المستخدم:* ${coupon}`);
     lines.push("");
   }
 
-  lines.push(`💰 *الإجمالي الكلي:* ${total.toLocaleString("ar-EG")} ${CURRENCY}`);
+  lines.push(`💰 *الإجمالي الكلي:* ${formattedTotal}`);
   lines.push("");
   if (customer?.name) lines.push(`👤 الاسم: ${customer.name}`);
   if (customer?.phone) lines.push(`📞 الهاتف: ${customer.phone}`);
@@ -38,13 +54,17 @@ export function buildOrderMessage(
 }
 
 export function whatsappLink(message: string, phone = STORE_CONTACT) {
-  const normalized = phone.startsWith("+") ? phone.slice(1) : `967${phone}`;
+  const cleanPhone = (phone || STORE_CONTACT).replace(/[^\d+]/g, "");
+  const normalized = cleanPhone.startsWith("+")
+    ? cleanPhone.slice(1)
+    : cleanPhone.startsWith("967")
+    ? cleanPhone
+    : `967${cleanPhone}`;
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }
 
 /** Quick single-product order link matching the exact brand template. */
 export function quickOrderLink(product: Pick<Product, "name" | "price">, phone = STORE_CONTACT) {
-  const normalized = phone.startsWith("+") ? phone.slice(1) : `967${phone}`;
   const text = `مرحباً، أريد طلب ${product.name} بسعر ${formatPrice(product.price)}`;
-  return `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`;
+  return whatsappLink(text, phone);
 }

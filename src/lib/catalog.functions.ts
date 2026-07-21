@@ -292,7 +292,14 @@ export const listProducts = createServerFn({ method: "GET" })
     }
     if (data.search) {
       const s = data.search.toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(s) || p.description.toLowerCase().includes(s));
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(s) ||
+          (p.description ?? "").toLowerCase().includes(s) ||
+          (p.sku ?? "").toLowerCase().includes(s) ||
+          (p.brand ?? "").toLowerCase().includes(s) ||
+          (p.category_name ?? "").toLowerCase().includes(s)
+      );
     }
     if (data.offset != null && data.limit) {
       list = list.slice(data.offset, data.offset + data.limit);

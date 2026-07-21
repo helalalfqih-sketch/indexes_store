@@ -24,6 +24,7 @@ import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
 import { Route as AdminStudioRouteImport } from './routes/admin.studio'
+import { Route as AdminStorefrontRouteImport } from './routes/admin.storefront'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminSessionsRouteImport } from './routes/admin.sessions'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
@@ -32,7 +33,6 @@ import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminBranchesRouteImport } from './routes/admin.branches'
 import { Route as AdminAppearanceRouteImport } from './routes/admin.appearance'
-import { Route as AdminStorefrontRouteImport } from './routes/admin.storefront'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
 import { Route as ApiAiAnalyzeProductRouteImport } from './routes/api/ai.analyze-product'
 import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
@@ -112,6 +112,11 @@ const AdminStudioRoute = AdminStudioRouteImport.update({
   path: '/studio',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminStorefrontRoute = AdminStorefrontRouteImport.update({
+  id: '/storefront',
+  path: '/storefront',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -152,11 +157,6 @@ const AdminAppearanceRoute = AdminAppearanceRouteImport.update({
   path: '/appearance',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminStorefrontRoute = AdminStorefrontRouteImport.update({
-  id: '/storefront',
-  path: '/storefront',
-  getParentRoute: () => AdminRoute,
-} as any)
 const ApiPublicImageProxyRoute = ApiPublicImageProxyRouteImport.update({
   id: '/api/public/image-proxy',
   path: '/api/public/image-proxy',
@@ -185,7 +185,6 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
   '/admin/appearance': typeof AdminAppearanceRoute
-  '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
@@ -193,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/admin/products': typeof AdminProductsRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/studio': typeof AdminStudioRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -213,7 +213,6 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
   '/admin/appearance': typeof AdminAppearanceRoute
-  '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
@@ -221,6 +220,7 @@ export interface FileRoutesByTo {
   '/admin/products': typeof AdminProductsRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/studio': typeof AdminStudioRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -243,7 +243,6 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
   '/admin/appearance': typeof AdminAppearanceRoute
-  '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
@@ -251,6 +250,7 @@ export interface FileRoutesById {
   '/admin/products': typeof AdminProductsRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/studio': typeof AdminStudioRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -274,7 +274,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/search'
     | '/admin/appearance'
-    | '/admin/storefront'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
@@ -282,6 +281,7 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/sessions'
     | '/admin/settings'
+    | '/admin/storefront'
     | '/admin/studio'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -302,7 +302,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/search'
     | '/admin/appearance'
-    | '/admin/storefront'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
@@ -310,6 +309,7 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/sessions'
     | '/admin/settings'
+    | '/admin/storefront'
     | '/admin/studio'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -331,7 +331,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/search'
     | '/admin/appearance'
-    | '/admin/storefront'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
@@ -339,6 +338,7 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/sessions'
     | '/admin/settings'
+    | '/admin/storefront'
     | '/admin/studio'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -474,6 +474,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStudioRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/storefront': {
+      id: '/admin/storefront'
+      path: '/storefront'
+      fullPath: '/admin/storefront'
+      preLoaderRoute: typeof AdminStorefrontRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/settings'
@@ -530,13 +537,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppearanceRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/storefront': {
-      id: '/admin/storefront'
-      path: '/storefront'
-      fullPath: '/admin/storefront'
-      preLoaderRoute: typeof AdminStorefrontRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/api/public/image-proxy': {
       id: '/api/public/image-proxy'
       path: '/api/public/image-proxy'
@@ -563,7 +563,6 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAppearanceRoute: typeof AdminAppearanceRoute
-  AdminStorefrontRoute: typeof AdminStorefrontRoute
   AdminBranchesRoute: typeof AdminBranchesRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
@@ -571,6 +570,7 @@ interface AdminRouteChildren {
   AdminProductsRoute: typeof AdminProductsRoute
   AdminSessionsRoute: typeof AdminSessionsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminStorefrontRoute: typeof AdminStorefrontRoute
   AdminStudioRoute: typeof AdminStudioRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminProductIdRoute: typeof AdminProductIdRoute
@@ -578,7 +578,6 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAppearanceRoute: AdminAppearanceRoute,
-  AdminStorefrontRoute: AdminStorefrontRoute,
   AdminBranchesRoute: AdminBranchesRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminInventoryRoute: AdminInventoryRoute,
@@ -586,6 +585,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminProductsRoute: AdminProductsRoute,
   AdminSessionsRoute: AdminSessionsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminStorefrontRoute: AdminStorefrontRoute,
   AdminStudioRoute: AdminStudioRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminProductIdRoute: AdminProductIdRoute,
