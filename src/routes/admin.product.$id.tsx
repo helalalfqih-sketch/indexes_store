@@ -172,6 +172,7 @@ function ProductDetailPage() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  const [aiSectionCollapsed, setAiSectionCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOverAi, setDragOverAi] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -463,6 +464,8 @@ function ProductDetailPage() {
       }));
 
       toast.success("تم تحليل الصورة وتعبئة الحقول تلقائياً!");
+      // Auto-collapse AI section after successful analysis to reduce screen clutter
+      setAiSectionCollapsed(true);
     },
     onError: (e: Error) => {
       toast.error(`فشل تحليل الصورة: ${e.message}`);
@@ -577,8 +580,9 @@ function ProductDetailPage() {
 
       setForm((f) => ({
         ...f,
-        name: titleStr ? (hookStr ? `${titleStr} - ${hookStr}` : titleStr) : f.name,
-        description: formattedDesc,
+        // Set name cleanly from TITLE only — hook goes into description
+        name: titleStr || f.name,
+        description: formattedDesc.trim(),
         price: priceYer ? Number(priceYer) : f.price,
         google_product_category: parsed.G_CAT || f.google_product_category,
         fb_product_category: parsed.FB_CAT || f.fb_product_category,
@@ -588,6 +592,8 @@ function ProductDetailPage() {
       }));
 
       toast.success("تمت الصياغة والتسعير الذكي للمنتج بنجاح!");
+      // Auto-collapse AI section after successful optimization
+      setAiSectionCollapsed(true);
     },
     onError: (e: Error) => {
       toast.error(e.message);
@@ -895,45 +901,69 @@ function ProductDetailPage() {
               }}
               onDragLeave={() => setDragOverAi(false)}
               onDrop={handleAiDrop}
-              className={`rounded-2xl border p-4 space-y-3 transition-all duration-200 ${
+              className={`rounded-2xl border p-4 transition-all duration-200 ${
                 dragOverAi
                   ? "border-primary bg-primary/10 scale-[1.01]"
                   : "border-primary/30 bg-primary/5"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-                <h3 className="font-bold text-sm text-primary">توليد وصف بالذكاء الاصطناعي</h3>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                ارفع صورة المنتج بالسحب والإفلات هنا، أو انقر للاختيار لتوليد العنوان والوصف
-                والتصنيف والأسعار تلقائياً!
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
+              {/* Header — always visible */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                  <h3 className="font-bold text-sm text-primary">توليد وصف بالذكاء الاصطناعي</h3>
+                </div>
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={analyzeImageMut.isPending}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition disabled:opacity-60"
+                  onClick={() => setAiSectionCollapsed((v) => !v)}
+                  className="text-[11px] font-bold text-primary/70 hover:text-primary transition"
                 >
-                  {analyzeImageMut.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> جاري تحليل الصورة...
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="h-4 w-4" /> اختر صورة لتحليلها 🪄
-                    </>
-                  )}
+                  {aiSectionCollapsed ? "▾ توسيع" : "▴ طي"}
                 </button>
               </div>
+
+              {/* Collapsible body */}
+              {!aiSectionCollapsed && (
+                <div className="mt-3 space-y-3">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    ارفع صورة المنتج بالسحب والإفلات هنا، أو انقر للاختيار لتوليد العنوان والوصف
+                    والتصنيف والأسعار تلقائياً!
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={analyzeImageMut.isPending}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition disabled:opacity-60"
+                    >
+                      {analyzeImageMut.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" /> جاري تحليل الصورة...
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="h-4 w-4" /> اختر صورة لتحليلها 🪄
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Show loading indicator even when collapsed */}
+              {aiSectionCollapsed && analyzeImageMut.isPending && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-primary">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>جاري تحليل الصورة...</span>
+                </div>
+              )}
             </div>
 
             {/* 4. Product Info */}
@@ -980,7 +1010,8 @@ function ProductDetailPage() {
                     }
                     rows={6}
                     placeholder="اكتب وصفاً واضحاً للمنتج..."
-                    className={inputCls}
+                    className={`${inputCls} resize-y`}
+                    style={{ minHeight: "120px", maxHeight: "320px", overflowY: "auto" }}
                   />
                 </FormField>
 
