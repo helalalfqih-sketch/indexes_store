@@ -45,16 +45,9 @@ function buildProductItem(p: any, baseUrl: string): string {
   const sku = xmlEscape(p.sku || p.id);
   const mpn = xmlEscape(p.mpn || p.sku || p.id);
   
-  // GTIN resolution (explicit fields take priority over barcode, fallback to product id)
-  const gtinValue = (() => {
-    if (p.gtin14) return p.gtin14;
-    if (p.gtin13) return p.gtin13;
-    if (p.gtin12) return p.gtin12;
-    if (p.gtin8) return p.gtin8;
-    if (p.barcode) return p.barcode;
-    return p.id;
-  })();
-  const gtin = xmlEscape(gtinValue);
+  // GTIN resolution (explicit fields take priority over barcode, no fallback to id)
+  const gtinValue = p.gtin14 || p.gtin13 || p.gtin12 || p.gtin8 || p.barcode || null;
+  const gtinField = gtinValue ? `    <g:gtin>${xmlEscape(gtinValue)}</g:gtin>\n` : "";
 
   // Additional images (all except the primary)
   const extraImages = Array.isArray(p.images)
@@ -76,8 +69,7 @@ ${extraImages ? extraImages + "\n" : ""}    <g:availability>${availability}</g:a
     <g:brand>${xmlEscape(p.brand || SITE_NAME)}</g:brand>
     <g:sku>${sku}</g:sku>
     <g:mpn>${mpn}</g:mpn>
-    <g:gtin>${gtin}</g:gtin>
-    <g:product_type>${xmlEscape(p.categoryId || "عام")}</g:product_type>
+${gtinField}    <g:product_type>${xmlEscape(p.categoryId || "عام")}</g:product_type>
     <g:shipping>
       <g:country>${STORE_COUNTRY}</g:country>
       <g:service>Standard</g:service>
