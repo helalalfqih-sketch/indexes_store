@@ -6,6 +6,7 @@ import { formatPrice } from "@/lib/store-data";
 import { buildOrderMessage, whatsappLink } from "@/lib/whatsapp";
 import { submitOrder } from "@/lib/actions/order.actions";
 import type { CreateOrderInput } from "@/lib/actions/order.actions";
+import { useAppearance } from "@/components/appearance-provider";
 
 export const Route = createFileRoute("/cart")({
   validateSearch: (search): { coupon?: string } => ({
@@ -21,6 +22,7 @@ function CartPage() {
   const total = useCart((s) => s.total());
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);
+  const { settings } = useAppearance();
 
   const discount = coupon ? Math.round(total * 0.1) : 0;
   const finalTotal = total - discount;
@@ -53,7 +55,7 @@ function CartPage() {
 
   const handleSubmitOrder = async () => {
     setOrderError(null);
-    if (!phone || phone.trim().length < 5) {
+    if (settings.cart_config.deliveryFormEnabled && (!phone || phone.trim().length < 5)) {
       setOrderError("الرجاء إدخال رقم هاتف صالح لإتمام الطلب.");
       return;
     }
@@ -62,7 +64,7 @@ function CartPage() {
       const input: CreateOrderInput = {
         items: items.map((it) => ({ productId: it.productId, quantity: it.qty })),
         customerName: name || undefined,
-        customerPhone: phone,
+        customerPhone: phone || "000000000",
         customerAddress: address || undefined,
         notes: notes || undefined,
         couponCode: coupon || undefined,
@@ -71,11 +73,25 @@ function CartPage() {
       };
       const result = await submitOrder(input);
       setOrderId(result.orderId);
-      // Build WhatsApp message with order ID
-      const orderMessage =
-        buildOrderMessage(items, finalTotal, { name, phone, address, notes }, coupon, discount) +
-        `\n🆔 رقم الطلب: ${result.orderId}`;
-      window.open(whatsappLink(orderMessage), "_blank");
+
+      // Read template from cart config or use fallback
+      let orderMessage = "";
+      const template = settings.cart_config.whatsappOrderTemplate;
+      if (template) {
+        const prodList = items.map((it) => `- ${it.name} (${it.qty}x)`).join("\n");
+        orderMessage = template
+          .replace("{products}", prodList)
+          .replace("{total}", formatPrice(finalTotal))
+          .replace("{name}", name || "غير محدد")
+          .replace("{address}", address || "غير محدد") + `\n🆔 رقم الطلب: ${result.orderId}`;
+      } else {
+        orderMessage =
+          buildOrderMessage(items, finalTotal, { name, phone, address, notes }, coupon, discount) +
+          `\n🆔 رقم الطلب: ${result.orderId}`;
+      }
+
+      const waPhone = settings.cart_config.whatsappPhone || "967770000000";
+      window.open(whatsappLink(orderMessage, waPhone), "_blank");
     } catch (err) {
       console.error("Order submission failed:", err);
       setOrderError("فشل في إنشاء الطلب. الرجاء المحاولة مرة أخرى.");
@@ -83,6 +99,10 @@ function CartPage() {
       setIsSubmitting(false);
     }
   };
+
+  const deliveryFormEnabled = settings.cart_config.deliveryFormEnabled !== false;
+  const couponEnabled = settings.cart_config.couponFieldEnabled !== false;
+  const shippingText = settings.cart_config.defaultShippingText || "يتم الاتفاق عليه";
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-4">
@@ -125,93 +145,95 @@ function CartPage() {
         ))}
       </ul>
 
-      <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-        <h3 className="mb-3 text-sm font-black">بيانات التسليم</h3>
-        <div className="flex flex-col gap-3">
-          <label
-            className="grid gap-1.5 text-xs font-bold text-muted-foreground"
-            htmlFor="customer-name"
-          >
-            الاسم الكامل
-            <input
-              id="customer-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="الاسم الكامل"
-              autoComplete="name"
-              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-          </label>
-          <label
-            className="grid gap-1.5 text-xs font-bold text-muted-foreground"
-            htmlFor="customer-phone"
-          >
-            رقم الهاتف <span className="text-destructive">*</span>
-            <input
-              id="customer-phone"
-              value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value);
-                if (orderError) setOrderError(null);
-              }}
-              placeholder="رقم الهاتف"
-              inputMode="tel"
-              autoComplete="tel"
-              aria-invalid={Boolean(orderError)}
-              aria-describedby={orderError ? "order-error" : undefined}
-              className={`w-full rounded-xl border bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:ring-2 focus:ring-primary/20 ${
-                orderError
-                  ? "border-destructive focus:border-destructive"
-                  : "border-input focus:border-primary"
-              }`}
-            />
-          </label>
-          <label
-            className="grid gap-1.5 text-xs font-bold text-muted-foreground"
-            htmlFor="delivery-address"
-          >
-            عنوان التسليم
-            <input
-              id="delivery-address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="المدينة، الحي"
-              autoComplete="street-address"
-              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-          </label>
-          <label
-            className="grid gap-1.5 text-xs font-bold text-muted-foreground"
-            htmlFor="order-notes"
-          >
-            ملاحظات إضافية <span className="font-normal">(اختياري)</span>
-            <textarea
-              id="order-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="أضف أي تفاصيل مهمة للتسليم"
-              rows={2}
-              className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-          </label>
-        </div>
-        {orderError && (
-          <p
-            id="order-error"
-            role="alert"
-            className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive"
-          >
-            {orderError}
-          </p>
-        )}
-      </section>
+      {deliveryFormEnabled && (
+        <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+          <h3 className="mb-3 text-sm font-black">بيانات التسليم</h3>
+          <div className="flex flex-col gap-3">
+            <label
+              className="grid gap-1.5 text-xs font-bold text-muted-foreground"
+              htmlFor="customer-name"
+            >
+              الاسم الكامل
+              <input
+                id="customer-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="الاسم الكامل"
+                autoComplete="name"
+                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </label>
+            <label
+              className="grid gap-1.5 text-xs font-bold text-muted-foreground"
+              htmlFor="customer-phone"
+            >
+              رقم الهاتف <span className="text-destructive">*</span>
+              <input
+                id="customer-phone"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  if (orderError) setOrderError(null);
+                }}
+                placeholder="رقم الهاتف"
+                inputMode="tel"
+                autoComplete="tel"
+                aria-invalid={Boolean(orderError)}
+                aria-describedby={orderError ? "order-error" : undefined}
+                className={`w-full rounded-xl border bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:ring-2 focus:ring-primary/20 ${
+                  orderError
+                    ? "border-destructive focus:border-destructive"
+                    : "border-input focus:border-primary"
+                }`}
+              />
+            </label>
+            <label
+              className="grid gap-1.5 text-xs font-bold text-muted-foreground"
+              htmlFor="delivery-address"
+            >
+              عنوان التسليم
+              <input
+                id="delivery-address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="المدينة، الحي"
+                autoComplete="street-address"
+                className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </label>
+            <label
+              className="grid gap-1.5 text-xs font-bold text-muted-foreground"
+              htmlFor="order-notes"
+            >
+              ملاحظات إضافية <span className="font-normal">(اختياري)</span>
+              <textarea
+                id="order-notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="أضف أي تفاصيل مهمة للتسليم"
+                rows={2}
+                className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </label>
+          </div>
+          {orderError && (
+            <p
+              id="order-error"
+              role="alert"
+              className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive"
+            >
+              {orderError}
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">المجموع الفرعي</span>
           <span className="font-bold">{formatPrice(total)}</span>
         </div>
-        {coupon && discount > 0 && (
+        {couponEnabled && coupon && discount > 0 && (
           <div className="flex items-center justify-between text-sm text-success">
             <span>خصم الكوبون ({coupon})</span>
             <span className="font-bold">-{formatPrice(discount)}</span>
@@ -219,7 +241,7 @@ function CartPage() {
         )}
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">الشحن</span>
-          <span className="font-bold text-success">يتم الاتفاق عليه</span>
+          <span className="font-bold text-success">{shippingText}</span>
         </div>
         <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
           <span className="text-sm font-bold">الإجمالي</span>
@@ -244,3 +266,6 @@ function CartPage() {
     </div>
   );
 }
+
+
+

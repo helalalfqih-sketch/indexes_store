@@ -1,9 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Search, ShoppingCart, Tag, User } from "lucide-react";
+import { Home, Search, ShoppingCart, Tag, User, Globe, Activity, Settings, HelpCircle, FileText } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useCart } from "@/lib/cart-store";
 import noqtaLogo from "@/assets/noqta-logo.png";
 import { SiteFooter } from "@/components/site-footer";
+import { useAppearance } from "@/components/appearance-provider";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -26,21 +27,58 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
+// Map string icon names to Lucide icons dynamically
+const ICON_MAP: Record<string, any> = {
+  Home,
+  Tag,
+  ShoppingCart,
+  User,
+  Globe,
+  Activity,
+  Settings,
+  HelpCircle,
+  FileText
+};
+
 function TopBar({ isHome }: { isHome: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [count, setCount] = useState(0);
   const items = useCart((s) => s.items);
+  const { settings } = useAppearance();
 
   useEffect(() => {
     setCount(items.reduce((a, i) => a + i.qty, 0));
   }, [items]);
 
-  const navLinks: Array<{ to: string; label: string; icon: typeof Home; badge?: number }> = [
-    { to: "/", label: "الرئيسية", icon: Home },
-    { to: "/offers", label: "العروض", icon: Tag },
-    { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count },
-    { to: "/account", label: "حسابي", icon: User },
+  // Read header links from CMS navigation setting
+  const dbLinks = settings.navigation.headerLinks || [];
+  const navLinks = dbLinks
+    .filter((link) => link.visible)
+    .sort((a, b) => a.order - b.order)
+    .map((link) => {
+      const IconComp = ICON_MAP[link.icon] || HelpCircle;
+      return {
+        to: link.to,
+        label: link.label,
+        icon: IconComp,
+        badge: link.to === "/cart" ? count : undefined,
+        external: link.external,
+        target: link.target,
+      };
+    });
+
+  // Fallback if links are empty
+  const activeLinks = navLinks.length > 0 ? navLinks : [
+    { to: "/", label: "الرئيسية", icon: Home, badge: undefined, external: false, target: "_self" as const },
+    { to: "/offers", label: "العروض", icon: Tag, badge: undefined, external: false, target: "_self" as const },
+    { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count, external: false, target: "_self" as const },
+    { to: "/account", label: "حسابي", icon: User, badge: undefined, external: false, target: "_self" as const },
   ];
+
+  const storeLogo = settings.navigation.logoUrl || noqtaLogo;
+  const storeName = settings.navigation.storeName || "اندكس ستور";
+  const tagline = settings.navigation.tagline || "اختيارك الأفضل";
+  const searchPlaceholder = settings.navigation.searchPlaceholder || "ابحث عن منتج...";
 
   return (
     <header
@@ -53,27 +91,47 @@ function TopBar({ isHome }: { isHome: boolean }) {
       <div className="mx-auto flex w-full max-w-md md:max-w-6xl lg:max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
         {/* Logo and Name */}
         <Link to="/" className="flex items-center gap-2">
-          <img src={noqtaLogo} alt="اندكس ستور" className="h-10 w-10 rounded-xl shadow-brand" />
+          <img src={storeLogo} alt={storeName} className="h-10 w-10 rounded-xl shadow-brand object-cover" />
           <div className="leading-tight">
             <div
               className={`text-base font-black tracking-tight ${
                 isHome ? "text-showcase-foreground" : "text-foreground"
               }`}
             >
-              اندكس ستور
+              {storeName}
             </div>
-            <div
-              className={`text-[10px] ${isHome ? "text-showcase-muted" : "text-muted-foreground"}`}
-            >
-              اختيارك الأفضل
-            </div>
+            {tagline && (
+              <div
+                className={`text-[10px] ${isHome ? "text-showcase-muted" : "text-muted-foreground"}`}
+              >
+                {tagline}
+              </div>
+            )}
           </div>
         </Link>
 
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-5">
-          {navLinks.map((tab) => {
+          {activeLinks.map((tab) => {
             const active = pathname === tab.to;
+            if (tab.external) {
+              return (
+                <a
+                  key={tab.to}
+                  href={tab.to}
+                  target={tab.target || "_blank"}
+                  rel="noopener noreferrer"
+                  className={`relative flex items-center gap-1.5 text-xs font-bold transition py-1.5 px-3 rounded-lg ${
+                    isHome
+                      ? "text-showcase-muted hover:text-showcase-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  <span>{tab.label}</span>
+                </a>
+              );
+            }
             return (
               <Link
                 key={tab.to}
@@ -110,7 +168,7 @@ function TopBar({ isHome }: { isHome: boolean }) {
           }`}
         >
           <Search className="h-4 w-4" />
-          <span>ابحث عن منتج...</span>
+          <span>{searchPlaceholder}</span>
         </Link>
       </div>
     </header>
@@ -121,16 +179,34 @@ function BottomNav({ isHome }: { isHome: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [count, setCount] = useState(0);
   const items = useCart((s) => s.items);
+  const { settings } = useAppearance();
+
   useEffect(() => {
     setCount(items.reduce((a, i) => a + i.qty, 0));
   }, [items]);
 
-  const tabs = [
-    { to: "/", label: "الرئيسية", icon: Home },
-    { to: "/offers", label: "العروض", icon: Tag },
-    { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count },
-    { to: "/account", label: "حسابي", icon: User },
-  ] as const;
+  // Read links from CMS
+  const dbLinks = settings.navigation.headerLinks || [];
+  const navLinks = dbLinks
+    .filter((link) => link.visible)
+    .sort((a, b) => a.order - b.order)
+    .map((link) => {
+      const IconComp = ICON_MAP[link.icon] || HelpCircle;
+      return {
+        to: link.to,
+        label: link.label,
+        icon: IconComp,
+        badge: link.to === "/cart" ? count : undefined,
+        external: link.external,
+      };
+    });
+
+  const tabs = navLinks.length > 0 ? navLinks : [
+    { to: "/", label: "الرئيسية", icon: Home, badge: undefined, external: false },
+    { to: "/offers", label: "العروض", icon: Tag, badge: undefined, external: false },
+    { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count, external: false },
+    { to: "/account", label: "حسابي", icon: User, badge: undefined, external: false },
+  ];
 
   return (
     <nav
@@ -141,9 +217,28 @@ function BottomNav({ isHome }: { isHome: boolean }) {
       }`}
     >
       <ul className="grid grid-cols-4">
-        {tabs.map((t) => {
+        {tabs.slice(0, 4).map((t) => {
           const active = pathname === t.to;
           const Icon = t.icon;
+          if (t.external) {
+            return (
+              <li key={t.to}>
+                <a
+                  href={t.to}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition ${
+                    isHome
+                      ? "text-showcase-muted hover:text-showcase-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{t.label}</span>
+                </a>
+              </li>
+            );
+          }
           return (
             <li key={t.to}>
               <Link

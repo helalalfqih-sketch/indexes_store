@@ -1,9 +1,19 @@
 import { MapPin, MessageCircle, ShoppingBag, Truck } from "lucide-react";
-import { STORE_CONTACT } from "@/lib/store-data";
+import { useAppearance } from "@/components/appearance-provider";
 import { whatsappLink } from "@/lib/whatsapp";
 
 export function SiteFooter({ isHome }: { isHome?: boolean }) {
-  const waHref = whatsappLink("مرحباً، لدي استفسار عن اندكس ستور");
+  const { settings } = useAppearance();
+
+  const storeName = settings.navigation.storeName || "اندكس ستور";
+  const tagline = settings.navigation.tagline || "اختيارك الأفضل";
+  const phone = settings.navigation.whatsappPhone || "967770000000";
+  const address = settings.navigation.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية";
+  const deliveryInfo = settings.navigation.deliveryInfoText || "متوفر لدينا خدمة التوصيل لجميع المحافظات 🇾🇪";
+  const copyright = settings.navigation.copyrightText || "جميع الحقوق محفوظة";
+
+  const waHref = whatsappLink("مرحباً، لدي استفسار عن " + storeName, phone);
+
   return (
     <footer
       dir="rtl"
@@ -23,13 +33,15 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
             <div
               className={`text-sm font-black ${isHome ? "text-showcase-foreground" : "text-primary"}`}
             >
-              اندكس ستور
+              {storeName}
             </div>
-            <div
-              className={`text-[11px] ${isHome ? "text-showcase-muted" : "text-muted-foreground"}`}
-            >
-              اختيارك الأفضل
-            </div>
+            {tagline && (
+              <div
+                className={`text-[11px] ${isHome ? "text-showcase-muted" : "text-muted-foreground"}`}
+              >
+                {tagline}
+              </div>
+            )}
           </div>
         </div>
 
@@ -44,18 +56,20 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
                 rel="noopener noreferrer"
                 className="font-bold text-primary underline-offset-2 hover:underline"
               >
-                {STORE_CONTACT}
+                {phone}
               </a>
             </span>
           </li>
           <li className="flex items-start gap-2">
             <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-            <span>العنوان: صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية</span>
+            <span>العنوان: {address}</span>
           </li>
-          <li className="flex items-start gap-2">
-            <Truck className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-            <span>متوفر لدينا خدمة التوصيل لجميع المحافظات 🇾🇪</span>
-          </li>
+          {deliveryInfo && (
+            <li className="flex items-start gap-2">
+              <Truck className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+              <span>{deliveryInfo}</span>
+            </li>
+          )}
         </ul>
 
         <a
@@ -71,7 +85,7 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
         <p
           className={`pt-2 text-center text-[10px] ${isHome ? "text-showcase-muted" : "text-muted-foreground"}`}
         >
-          © اندكس ستور {new Date().getFullYear()} — جميع الحقوق محفوظة
+          © {storeName} {new Date().getFullYear()} — {copyright}
         </p>
       </div>
     </footer>
