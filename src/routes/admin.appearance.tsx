@@ -446,7 +446,7 @@ function HeroTab({
                 <input
                   type="number"
                   min={6}
-                  max={40}
+                  max={120}
                   value={config.sphereMaxProducts || 28}
                   onChange={(e) => onChange({ ...config, sphereMaxProducts: Number(e.target.value) })}
                   className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
