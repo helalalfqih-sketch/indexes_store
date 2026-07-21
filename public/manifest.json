@@ -1,0 +1,52 @@
+{
+  "name": "اندكس ستور — Indexes Store",
+  "short_name": "اندكس ستور",
+  "description": "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06091f",
+  "theme_color": "#1F5EFF",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl",
+  "scope": "/",
+  "categories": ["shopping", "lifestyle"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "label": "Homepage"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "العروض",
+      "short_name": "العروض",
+      "description": "تصفح عروض وخصومات اندكس ستور",
+      "url": "/offers",
+      "icons": [{ "src": "/favicon.ico", "sizes": "any" }]
+    },
+    {
+      "name": "سلة المشتريات",
+      "short_name": "السلة",
+      "description": "عرض سلة مشترياتك",
+      "url": "/cart",
+      "icons": [{ "src": "/favicon.ico", "sizes": "any" }]
+    }
+  ]
+}

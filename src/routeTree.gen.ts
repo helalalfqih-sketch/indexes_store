@@ -20,7 +20,10 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
+import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
+import { Route as GoogleShoppingXmlRouteImport } from './routes/google-shopping.xml'
 import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
 import { Route as AdminStudioRouteImport } from './routes/admin.studio'
@@ -92,9 +95,24 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const SitemapXmlRoute = SitemapXmlRouteImport.update({
+  id: '/sitemap/xml',
+  path: '/sitemap/xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsTxtRoute = RobotsTxtRouteImport.update({
+  id: '/robots/txt',
+  path: '/robots/txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductSlugRoute = ProductSlugRouteImport.update({
   id: '/product/$slug',
   path: '/product/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoogleShoppingXmlRoute = GoogleShoppingXmlRouteImport.update({
+  id: '/google-shopping/xml',
+  path: '/google-shopping/xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Demo3dViewerRoute = Demo3dViewerRouteImport.update({
@@ -196,7 +214,10 @@ export interface FileRoutesByFullPath {
   '/admin/studio': typeof AdminStudioRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
+  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/robots/txt': typeof RobotsTxtRoute
+  '/sitemap/xml': typeof SitemapXmlRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
@@ -224,7 +245,10 @@ export interface FileRoutesByTo {
   '/admin/studio': typeof AdminStudioRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
+  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/robots/txt': typeof RobotsTxtRoute
+  '/sitemap/xml': typeof SitemapXmlRoute
   '/admin': typeof AdminIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
@@ -254,7 +278,10 @@ export interface FileRoutesById {
   '/admin/studio': typeof AdminStudioRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
+  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/robots/txt': typeof RobotsTxtRoute
+  '/sitemap/xml': typeof SitemapXmlRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
@@ -285,7 +312,10 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/category/$id'
     | '/demo/3d-viewer'
+    | '/google-shopping/xml'
     | '/product/$slug'
+    | '/robots/txt'
+    | '/sitemap/xml'
     | '/admin/'
     | '/admin/product/$id'
     | '/api/ai/analyze-product'
@@ -313,7 +343,10 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/category/$id'
     | '/demo/3d-viewer'
+    | '/google-shopping/xml'
     | '/product/$slug'
+    | '/robots/txt'
+    | '/sitemap/xml'
     | '/admin'
     | '/admin/product/$id'
     | '/api/ai/analyze-product'
@@ -342,7 +375,10 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/category/$id'
     | '/demo/3d-viewer'
+    | '/google-shopping/xml'
     | '/product/$slug'
+    | '/robots/txt'
+    | '/sitemap/xml'
     | '/admin/'
     | '/admin/product/$id'
     | '/api/ai/analyze-product'
@@ -362,7 +398,10 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
+  GoogleShoppingXmlRoute: typeof GoogleShoppingXmlRoute
   ProductSlugRoute: typeof ProductSlugRoute
+  RobotsTxtRoute: typeof RobotsTxtRoute
+  SitemapXmlRoute: typeof SitemapXmlRoute
   ApiAiAnalyzeProductRoute: typeof ApiAiAnalyzeProductRoute
   ApiPublicImageProxyRoute: typeof ApiPublicImageProxyRoute
 }
@@ -446,11 +485,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/sitemap/xml': {
+      id: '/sitemap/xml'
+      path: '/sitemap/xml'
+      fullPath: '/sitemap/xml'
+      preLoaderRoute: typeof SitemapXmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots/txt': {
+      id: '/robots/txt'
+      path: '/robots/txt'
+      fullPath: '/robots/txt'
+      preLoaderRoute: typeof RobotsTxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/product/$slug': {
       id: '/product/$slug'
       path: '/product/$slug'
       fullPath: '/product/$slug'
       preLoaderRoute: typeof ProductSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/google-shopping/xml': {
+      id: '/google-shopping/xml'
+      path: '/google-shopping/xml'
+      fullPath: '/google-shopping/xml'
+      preLoaderRoute: typeof GoogleShoppingXmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/3d-viewer': {
@@ -606,7 +666,10 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
+  GoogleShoppingXmlRoute: GoogleShoppingXmlRoute,
   ProductSlugRoute: ProductSlugRoute,
+  RobotsTxtRoute: RobotsTxtRoute,
+  SitemapXmlRoute: SitemapXmlRoute,
   ApiAiAnalyzeProductRoute: ApiAiAnalyzeProductRoute,
   ApiPublicImageProxyRoute: ApiPublicImageProxyRoute,
 }

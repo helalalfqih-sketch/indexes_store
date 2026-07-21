@@ -105,6 +105,27 @@ export type LegacyProductShape = {
   videoPlaybackId?: string;
   /** URL to the product's 3D GLB model — null/undefined means no custom model */
   modelUrl?: string | null;
+  // ── SEO / Merchant Center fields ──────────────────────────────────────────
+  /** Stock Keeping Unit — used in Google Merchant structured data */
+  sku?: string | null;
+  /** Brand name — used in Google Merchant structured data */
+  brand?: string | null;
+  /** Item condition: 'new' | 'used' | 'refurbished' */
+  condition?: string | null;
+  /** Availability override: 'in_stock' | 'out_of_stock' | 'preorder' | 'backorder' */
+  availability?: string | null;
+  /** Raw barcode / GTIN (length determines gtin8/12/13/14 variant) */
+  barcode?: string | null;
+  /** Explicit GTIN-8 */
+  gtin8?: string | null;
+  /** Explicit GTIN-12 (UPC) */
+  gtin12?: string | null;
+  /** Explicit GTIN-13 (EAN) */
+  gtin13?: string | null;
+  /** Explicit GTIN-14 */
+  gtin14?: string | null;
+  /** Manufacturer Part Number */
+  mpn?: string | null;
 };
 
 export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
@@ -123,6 +144,13 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   videoPlaybackId: p.video_playback_id ?? undefined,
   // Prefer model_3d_url (AI-generated) over model_url (manual upload)
   modelUrl: p.model_3d_url ?? p.model_url ?? null,
+  // SEO / Merchant Center fields
+  sku: p.sku ?? null,
+  brand: p.brand ?? null,
+  condition: p.condition ?? null,
+  availability: p.availability ?? null,
+  barcode: p.barcode ?? null,
+  mpn: p.mpn ?? null,
 });
 
 export type LegacyCategoryShape = {

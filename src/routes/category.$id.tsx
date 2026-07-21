@@ -7,6 +7,7 @@ import {
 } from "@/lib/store.queries";
 import type { Product } from "@/lib/store-data";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
+import { Home, ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/category/$id")({
   loader: async ({ context: { queryClient }, params }) => {
@@ -27,8 +28,13 @@ export const Route = createFileRoute("/category/$id")({
   ),
   head: (ctx) => {
     const data = ctx.loaderData as any;
+    if (!data?.id) {
+      return { meta: [{ title: "تصنيف — اندكس ستور" }] };
+    }
+    // The category name is available in the query cache but not in loaderData directly.
+    // We provide a minimal head here; the component hydrates with full data.
     return {
-      meta: [{ title: data?.cat ? `${data.cat.name} — اندكس ستور` : "تصنيف — اندكس ستور" }],
+      meta: [{ title: "تصنيف — اندكس ستور" }],
     };
   },
   errorComponent: ({ error }) => (
@@ -77,17 +83,35 @@ function CategoryPage() {
   const gridClass = `grid ${m} ${t} ${d} gap-4`;
 
   return (
-    <div className="flex flex-col gap-4 px-4 pt-4">
+    <div className="flex flex-col gap-4 px-4 pt-2">
+      {/* Visible Breadcrumbs */}
+      <nav
+        aria-label="مسار التنقل"
+        className="flex items-center gap-1.5 py-2 text-[11px] text-showcase-foreground/50"
+      >
+        <Link to="/" className="flex items-center gap-1 hover:text-showcase-foreground transition" aria-label="الرئيسية">
+          <Home className="h-3 w-3" aria-hidden="true" />
+          <span>الرئيسية</span>
+        </Link>
+        <ChevronLeft className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+        <span className="text-showcase-foreground/80 font-semibold" aria-current="page">
+          {cat.name}
+        </span>
+      </nav>
+
       <h1 className="text-lg font-black text-showcase-foreground">{cat.name}</h1>
       {items.length === 0 ? (
         <p className="py-10 text-center text-sm text-showcase-muted">لا توجد منتجات في هذا التصنيف بعد.</p>
       ) : (
-        <div className={gridClass}>
+        <div className={gridClass} role="list" aria-label={`منتجات ${cat.name}`}>
           {items.map((p: any) => (
-            <ProductCard key={p.id} product={p as unknown as Product} />
+            <div key={p.id} role="listitem">
+              <ProductCard product={p as unknown as Product} />
+            </div>
           ))}
         </div>
       )}
     </div>
   );
 }
+

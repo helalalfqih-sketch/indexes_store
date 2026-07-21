@@ -35,6 +35,16 @@ export type ProductDTO = {
   condition?: string | null;
   source_url?: string | null;
   meta_sync_status?: string | null;
+  /** Manufacturer Part Number */
+  mpn?: string | null;
+  /** Explicit GTIN-8 (overrides barcode-length detection) */
+  gtin8?: string | null;
+  /** Explicit GTIN-12 / UPC (overrides barcode-length detection) */
+  gtin12?: string | null;
+  /** Explicit GTIN-13 / EAN (overrides barcode-length detection) */
+  gtin13?: string | null;
+  /** Explicit GTIN-14 (overrides barcode-length detection) */
+  gtin14?: string | null;
 };
 
 export type CategoryDTO = {

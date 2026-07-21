@@ -19,6 +19,8 @@ import {
   Box,
   Image as ImageIcon,
   CheckCircle2,
+  Home,
+  ChevronLeft,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,8 +30,8 @@ import { useCart } from "@/lib/cart-store";
 import { quickOrderLink } from "@/lib/whatsapp";
 import { Product3DTile, modelFor, useModelViewer, useMounted } from "@/lib/model-viewer";
 import { OptimizedImage } from "@/components/optimized-image";
-
 import { useAppearance } from "@/components/appearance-provider";
+import { buildProductHead } from "@/lib/seo";
 
 const DARK = "var(--showcase)";
 const LIGHT = "var(--showcase-foreground)";
@@ -50,17 +52,49 @@ export const Route = createFileRoute("/product/$slug")({
   ),
   head: (ctx) => {
     const data = ctx.loaderData as any;
-    return {
-      meta: data?.product
-        ? [
-            { title: `${data.product.name} — اندكس ستور` },
-            { name: "description", content: data.product.description },
-            { property: "og:title", content: data.product.name },
-            { property: "og:description", content: data.product.description },
-            { property: "og:image", content: data.product.image },
-          ]
-        : [{ title: "المنتج غير موجود — اندكس ستور" }, { name: "robots", content: "noindex" }],
-    };
+    if (!data?.product) {
+      return {
+        meta: [
+          { title: "المنتج غير موجود — اندكس ستور" },
+          { name: "robots", content: "noindex, nofollow" },
+        ],
+      };
+    }
+    const p = data.product;
+    // Resolve base URL from environment dynamically
+    const baseUrl =
+      process.env.SITE_URL ||
+      (typeof window !== "undefined" ? window.location.origin : null) ||
+      import.meta.env.VITE_PUBLIC_URL ||
+      "";
+
+    const { meta, links, scripts } = buildProductHead(
+      {
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        oldPrice: p.oldPrice,
+        currency: "YER",
+        stock: p.stock,
+        image: p.image,
+        images: p.images,
+        brand: p.brand,
+        categoryId: p.categoryId,
+        rating: p.rating,
+        reviews: p.reviews,
+        sku: p.sku,
+        barcode: p.barcode,
+        mpn: p.mpn,
+        condition: p.condition,
+        availability: p.availability,
+        videoPlaybackId: p.videoPlaybackId,
+      },
+      baseUrl,
+      p.categoryName,
+    );
+    return { meta, links, scripts };
   },
   notFoundComponent: () => (
     <div className="p-8 text-center" dir="rtl">
@@ -133,18 +167,49 @@ function ProductPage() {
       style={{ background: DARK, color: LIGHT, fontFamily: TAJAWAL }}
     >
       {/* Top Header / Navigation Bar */}
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-showcase-border bg-showcase/80 px-4 py-3 backdrop-blur-xl">
+      <nav
+        aria-label="التنقل الرئيسي"
+        className="sticky top-0 z-30 flex items-center justify-between border-b border-showcase-border bg-showcase/80 px-4 py-3 backdrop-blur-xl"
+      >
         <Link
           to="/"
           className="flex items-center gap-2 text-xs font-bold text-showcase-foreground/80 hover:text-showcase-foreground transition"
+          aria-label="العودة للمتجر الرئيسي"
         >
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
           <span>العودة للمتجر</span>
         </Link>
         <span className="rounded-full border border-showcase-border bg-showcase-foreground/5 px-3 py-1 text-[10px] font-bold tracking-[0.2em]">
           INDEXES · {product.categoryId || "PREMIUM"}
         </span>
-      </div>
+      </nav>
+
+      {/* Visible Breadcrumbs (SEO + UX) */}
+      <nav
+        aria-label="مسار التنقل"
+        className="flex items-center gap-1.5 px-4 py-2 text-[11px] text-showcase-foreground/50 border-b border-showcase-border/30"
+      >
+        <Link to="/" className="flex items-center gap-1 hover:text-showcase-foreground transition" aria-label="الرئيسية">
+          <Home className="h-3 w-3" aria-hidden="true" />
+          <span>الرئيسية</span>
+        </Link>
+        <ChevronLeft className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+        {product.categoryId && (
+          <>
+            <Link
+              to="/category/$id"
+              params={{ id: product.categoryId }}
+              className="hover:text-showcase-foreground transition truncate max-w-[120px]"
+            >
+              {product.categoryId}
+            </Link>
+            <ChevronLeft className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+          </>
+        )}
+        <span className="text-showcase-foreground/80 font-semibold truncate max-w-[180px]" aria-current="page">
+          {product.name}
+        </span>
+      </nav>
 
       {/* Main Content Area: 2-Column Responsive Layout */}
       <div ref={heroRef} className="mx-auto max-w-7xl px-4 pt-6 lg:px-8">
@@ -199,6 +264,7 @@ function ProductPage() {
                       alt={product.name}
                       size="large"
                       className="h-full w-full object-contain p-4"
+                      eager={activeMediaIndex === 0}
                     />
                   </motion.div>
                 )}

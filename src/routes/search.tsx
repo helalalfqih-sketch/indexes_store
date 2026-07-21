@@ -13,7 +13,12 @@ const searchParamsSchema = z.object({
 });
 
 export const Route = createFileRoute("/search")({
-  head: () => ({ meta: [{ title: "البحث في المنتجات — اندكس ستور" }] }),
+  head: () => ({
+    meta: [
+      { title: "البحث في المنتجات — اندكس ستور" },
+      { name: "robots", content: "noindex, follow" },
+    ],
+  }),
   validateSearch: (search) => searchParamsSchema.parse(search),
   loader: ({ location }) => {
     const q = new URLSearchParams(location.search).get("q") || "";

@@ -13,9 +13,15 @@ export const Route = createFileRoute("/cart")({
   validateSearch: (search): { coupon?: string } => ({
     coupon: typeof search.coupon === "string" ? search.coupon : undefined,
   }),
-  head: () => ({ meta: [{ title: "السلة — اندكس ستور" }] }),
+  head: () => ({
+    meta: [
+      { title: "سلة المشتريات — اندكس ستور" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: CartPage,
 });
+
 
 function CartPage() {
   const { coupon } = Route.useSearch();

@@ -32,9 +32,15 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/account")({
-  head: () => ({ meta: [{ title: "حسابي — اندكس ستور" }] }),
+  head: () => ({
+    meta: [
+      { title: "حسابي — اندكس ستور" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: AccountPage,
 });
+
 
 type TabType = "overview" | "orders" | "addresses" | "security" | "support";
 

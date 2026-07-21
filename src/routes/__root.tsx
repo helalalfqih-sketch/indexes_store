@@ -21,6 +21,12 @@ import { AppearanceProvider } from "@/components/appearance-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
 import { NetworkManager } from "@/components/network-manager";
+import {
+  generateOrganizationJsonLd,
+  generateLocalBusinessJsonLd,
+  generateWebsiteJsonLd,
+  DEFAULT_OG_IMAGE,
+} from "@/lib/seo";
 
 const idbPersister = {
   persistClient: async (client: any) => {
@@ -115,31 +121,73 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: ({ loaderData }) => {
     // loaderData may be undefined on first render — fall back gracefully
     const seo = loaderData?.settings?.seo;
+    const navigation = loaderData?.settings?.navigation;
     const title = seo?.metaTitle || "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن";
-    const description = seo?.metaDescription || "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.";
-    const ogImage = seo?.ogImage || "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png";
+    const description =
+      seo?.metaDescription ||
+      "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.";
+    const ogImage = seo?.ogImage || DEFAULT_OG_IMAGE;
     const themeColor = seo?.themeColor || "#1F5EFF";
+    const baseUrl =
+      process.env.SITE_URL ||
+      (typeof window !== "undefined" ? window.location.origin : null) ||
+      import.meta.env.VITE_PUBLIC_URL ||
+      "";
+    const logoUrl = navigation?.logoUrl || undefined;
+
+    // Structured data
+    const orgLd = generateOrganizationJsonLd(baseUrl, logoUrl);
+    const localBizLd = generateLocalBusinessJsonLd(baseUrl, logoUrl);
+    const websiteLd = generateWebsiteJsonLd(baseUrl);
 
     return {
       meta: [
         { charSet: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
+        { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=5" },
         { name: "theme-color", content: themeColor },
+        { name: "msapplication-TileColor", content: themeColor },
+        { name: "apple-mobile-web-app-capable", content: "yes" },
+        { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+        { name: "apple-mobile-web-app-title", content: "اندكس ستور" },
+        { name: "application-name", content: "اندكس ستور" },
+        { name: "author", content: "اندكس ستور" },
+        { name: "format-detection", content: "telephone=no" },
         { title },
         { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
         { property: "og:type", content: "website" },
         { property: "og:site_name", content: "Indexes Store — اندكس ستور" },
+        { property: "og:locale", content: "ar_YE" },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
         { property: "og:image", content: ogImage },
-        { name: "twitter:card", content: "summary_large_image" },
+        { property: "og:image:width", content: String(seo?.ogImageWidth || 1200) },
+        { property: "og:image:height", content: String(seo?.ogImageHeight || 630) },
+        { property: "og:image:alt", content: title },
+        { name: "twitter:card", content: seo?.twitterCard || "summary_large_image" },
+        { name: "twitter:site", content: "@indexes_store" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: description },
         { name: "twitter:image", content: ogImage },
+        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
       ],
       links: [
         { rel: "stylesheet", href: appCss },
         { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+        { rel: "canonical", href: baseUrl },
+        { rel: "alternate", hrefLang: "ar", href: baseUrl },
+        { rel: "alternate", hrefLang: "x-default", href: baseUrl },
+        // Performance: preconnect critical origins
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com" },
+        { rel: "preconnect", href: "https://images.unsplash.com" },
+        { rel: "dns-prefetch", href: "https://stream.mux.com" },
+        { rel: "dns-prefetch", href: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev" },
+        { rel: "manifest", href: "/manifest.json" },
+      ],
+      scripts: [
+        { type: "application/ld+json", children: JSON.stringify(orgLd) },
+        { type: "application/ld+json", children: JSON.stringify(localBizLd) },
+        { type: "application/ld+json", children: JSON.stringify(websiteLd) },
       ],
     };
   },
@@ -152,6 +200,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
+
 
 function RootShell({ children }: { children: ReactNode }) {
   return (

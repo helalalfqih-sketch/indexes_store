@@ -6,6 +6,12 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   alt: string;
   size?: "thumbnail" | "card" | "large" | "original";
   className?: string;
+  /** Set to true for above-the-fold / LCP images to skip lazy loading */
+  eager?: boolean;
+  /** Natural image width for CLS prevention (avoids layout shift) */
+  naturalWidth?: number;
+  /** Natural image height for CLS prevention (avoids layout shift) */
+  naturalHeight?: number;
 }
 
 export function OptimizedImage({
@@ -13,6 +19,9 @@ export function OptimizedImage({
   alt,
   size = "card",
   className,
+  eager = false,
+  naturalWidth,
+  naturalHeight,
   ...props
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -39,7 +48,7 @@ export function OptimizedImage({
       } else if (targetSize === "card") {
         queryParams += "&w=384&q=80";
       } else if (targetSize === "large") {
-        queryParams += "&w=800&q=80";
+        queryParams += "&w=800&q=85";
       } else if (targetSize === "blur") {
         queryParams += "&w=16&q=15"; // Tiny blur placeholder
       }
@@ -70,13 +79,25 @@ export function OptimizedImage({
     }
   };
 
+  const loadingAttr = eager ? "eager" : "lazy";
+  // fetchpriority is a non-standard attribute — use React's way
+  const fetchPriority = eager ? "high" : "auto";
+
   return (
-    <div className={cn("relative overflow-hidden bg-black/5", className)}>
+    <div
+      className={cn("relative overflow-hidden bg-black/5", className)}
+      // Reserve layout space to prevent CLS when dimensions are known
+      style={
+        naturalWidth && naturalHeight
+          ? { aspectRatio: `${naturalWidth} / ${naturalHeight}` }
+          : undefined
+      }
+    >
       {/* Blurry low-quality image placeholder */}
-      {blurSrc && !isLoaded && (
+      {blurSrc && !isLoaded && !eager && (
         <img
           src={blurSrc}
-          alt={alt}
+          alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover filter blur-md scale-[1.05] transition-opacity duration-300 pointer-events-none"
           loading="eager"
@@ -93,10 +114,14 @@ export function OptimizedImage({
           onError={handleError}
           className={cn(
             "h-full w-full object-cover transition-opacity duration-500 ease-in-out",
-            isLoaded ? "opacity-100" : "opacity-0 absolute inset-0"
+            isLoaded || eager ? "opacity-100" : "opacity-0 absolute inset-0"
           )}
-          loading="lazy"
+          loading={loadingAttr}
           decoding="async"
+          // @ts-ignore — fetchpriority is valid HTML5 but not yet in TS types
+          fetchpriority={fetchPriority}
+          width={naturalWidth ?? (size === "thumbnail" ? 128 : size === "card" ? 384 : size === "large" ? 800 : undefined)}
+          height={naturalHeight ?? (size === "thumbnail" ? 128 : size === "card" ? 384 : size === "large" ? 800 : undefined)}
           {...props}
         />
       )}

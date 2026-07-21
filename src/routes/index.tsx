@@ -23,16 +23,39 @@ import { useAppearance } from "@/components/appearance-provider";
 import { type ProductsLayoutConfig } from "@/lib/domain/appearance";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن" },
-      {
-        name: "description",
-        content:
-          "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = (loaderData as any)?.settings?.seo;
+    const baseUrl =
+      process.env.SITE_URL ||
+      (typeof window !== "undefined" ? window.location.origin : null) ||
+      import.meta.env.VITE_PUBLIC_URL ||
+      "";
+    const title = seo?.metaTitle || "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن";
+    const description =
+      seo?.metaDescription ||
+      "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.";
+    const ogImage = seo?.ogImage || "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:url", content: baseUrl },
+        { property: "og:image", content: ogImage },
+        { property: "og:type", content: "website" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: ogImage },
+      ],
+      links: [
+        { rel: "canonical", href: baseUrl },
+        { rel: "alternate", hrefLang: "ar", href: baseUrl },
+        { rel: "alternate", hrefLang: "x-default", href: baseUrl },
+      ],
+    };
+  },
   loader: ({ context: { queryClient } }) => {
     queryClient.ensureQueryData(categoriesQueryOptions());
     queryClient.ensureQueryData(bestSellersQueryOptions(4));

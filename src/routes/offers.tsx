@@ -7,7 +7,16 @@ import type { Product } from "@/lib/store-data";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/offers")({
-  head: () => ({ meta: [{ title: "العروض — اندكس ستور" }] }),
+  head: () => ({
+    meta: [
+      { title: "العروض والخصومات — اندكس ستور" },
+      { name: "description", content: "تصفح أقوى عروض وخصومات اندكس ستور. خصومات تصل إلى 40% لفترة محدودة على إلكترونيات، أدوات منزلية، والمزيد." },
+      { name: "robots", content: "index, follow" },
+      { property: "og:title", content: "العروض والخصومات — اندكس ستور" },
+      { property: "og:description", content: "خصومات تصل إلى 40% لفترة محدودة" },
+      { property: "og:type", content: "website" },
+    ],
+  }),
   loader: ({ context: { queryClient } }) => {
     queryClient.ensureQueryData(offersQueryOptions());
   },

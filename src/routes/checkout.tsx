@@ -48,7 +48,12 @@ export const Route = createFileRoute("/checkout")({
     coupon: typeof search.coupon === "string" ? search.coupon : undefined,
   }),
 
-  head: () => ({ meta: [{ title: "تأكيد الطلب — اندكس ستور" }] }),
+  head: () => ({
+    meta: [
+      { title: "تأكيد الطلب — اندكس ستور" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
 
   /**
    * Loader: parses IDs from the URL and fetches only those products from
