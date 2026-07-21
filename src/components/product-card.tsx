@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Star } from "lucide-react";
-import { useRef, type CSSProperties } from "react";
+import { Star, Play, X } from "lucide-react";
+import { useState, useRef, type CSSProperties } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import type { Product } from "@/lib/store-data";
 import type { LegacyProductShape } from "@/lib/data-adapter";
@@ -18,6 +18,8 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
   const discount = product.oldPrice
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
+
+  const [showVideo, setShowVideo] = useState(false);
 
   const ref = useRef<HTMLAnchorElement>(null);
   // Track card position within viewport: 0 = entering bottom, 0.5 = centered, 1 = exiting top
@@ -50,22 +52,7 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
       >
         {lay.showImage !== false && (
           <motion.div style={{ filter }} className="relative aspect-square overflow-hidden bg-muted">
-            {product.videoPlaybackId ? (
-              <MuxPlayer
-                playbackId={product.videoPlaybackId}
-                autoPlay="muted"
-                loop={true}
-                style={
-                  {
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  } satisfies CSSProperties
-                }
-              />
-            ) : modelUrl ? (
+            {modelUrl ? (
               // Only show 3D viewer if the product has a real custom GLB model
               <Product3DTile
                 modelSrc={modelUrl}
@@ -73,7 +60,7 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
                 alt={product.name}
               />
             ) : (
-              // Default: clean, fast standard image — no random placeholder 3D models
+              // Default: clean, fast standard image
               <img
                 src={product.image}
                 alt={product.name}
@@ -83,6 +70,23 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
                 className="h-full w-full object-contain p-2"
               />
             )}
+            
+            {/* Explanatory Video Play Button */}
+            {product.videoPlaybackId && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowVideo(true);
+                }}
+                className="absolute bottom-2 end-2 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white shadow-lg backdrop-blur-md transition hover:scale-110 active:scale-95"
+                title="مشاهدة فيديو توضيحي"
+              >
+                <Play className="h-4 w-4 fill-white text-white translate-x-[1px]" />
+              </button>
+            )}
+
             {product.badge && (
               <span className="absolute end-2 top-2 z-10 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
                 {product.badge}
@@ -118,6 +122,36 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
           )}
         </div>
       </Link>
+
+      {/* Video Modal Overlay */}
+      {showVideo && product.videoPlaybackId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-surface/90 shadow-2xl p-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowVideo(false);
+              }}
+              className="absolute top-4 end-4 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
+              <MuxPlayer
+                playbackId={product.videoPlaybackId}
+                autoPlay={true}
+                style={{ width: "100%", height: "100%" }}
+              />
+            </div>
+            <div className="p-4 text-start">
+              <h4 className="text-sm font-black text-foreground">{product.name}</h4>
+              <p className="text-xs text-muted-foreground mt-1">فيديو توضيحي للمنتج</p>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
