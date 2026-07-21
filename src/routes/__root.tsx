@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TenantProvider } from "@/components/tenant-provider";
 import { AppearanceProvider } from "@/components/appearance-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
 
 function NotFoundComponent() {
   useEffect(() => {
@@ -138,6 +139,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
+  loader: async () => {
+    const settings = await getStorefrontAppearance();
+    return { settings };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -160,6 +165,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { settings } = Route.useLoaderData();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const cleanPath = pathname.replace(/^\/app/, "");
@@ -181,7 +187,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppearanceProvider>
+      <AppearanceProvider initialSettings={settings}>
         <TenantProvider>
           {isAdmin || isBare ? (
             <Outlet />
