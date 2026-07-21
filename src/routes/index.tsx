@@ -221,32 +221,32 @@ function HomePage() {
         const featuredProduct = bestSellers[0] || allProducts[0];
         return (
           <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-            <div className="group relative overflow-hidden rounded-3xl border border-showcase-border bg-gradient-to-br from-surface to-black/60 p-6 shadow-2xl flex flex-col md:flex-row gap-6 items-center">
+            <div className="group relative overflow-hidden rounded-2xl border border-showcase-border bg-gradient-to-br from-surface to-black/60 p-4 shadow-xl flex flex-col sm:flex-row gap-4 items-center">
               <div className="absolute inset-0 bg-radial-gradient(circle at 10% 10%, var(--primary) 10%, transparent 40%)" />
-              <div className="relative aspect-square w-full md:w-48 overflow-hidden rounded-2xl bg-black/30 p-4 flex items-center justify-center shrink-0">
+              <div className="relative aspect-square w-24 h-24 sm:w-28 sm:h-28 overflow-hidden rounded-xl bg-black/30 p-2 flex items-center justify-center shrink-0">
                 <img src={featuredProduct.image} alt={featuredProduct.name} className="h-full w-full object-contain transition group-hover:scale-105" />
               </div>
-              <div className="flex-1 flex flex-col gap-3 text-start">
-                <span className="self-start rounded-full bg-primary/20 px-3 py-1 text-[10px] font-black text-primary border border-primary/25">المنتج المميز للـيوم ⭐</span>
-                <h3 className="text-lg md:text-xl font-black text-showcase-foreground line-clamp-1">{featuredProduct.name}</h3>
-                <p className="text-xs text-showcase-foreground/75 line-clamp-2 leading-relaxed">{featuredProduct.description}</p>
-                <div className="flex items-center gap-1.5 text-xs text-amber-400">
-                  <Icons.Star className="h-3.5 w-3.5 fill-amber-400" />
+              <div className="flex-1 flex flex-col gap-1.5 text-start w-full min-w-0">
+                <span className="self-start rounded-full bg-primary/20 px-2 py-0.5 text-[9px] font-black text-primary border border-primary/25">المنتج المميز ⭐</span>
+                <h3 className="text-sm font-black text-showcase-foreground line-clamp-1">{featuredProduct.name}</h3>
+                <p className="text-[11px] text-showcase-foreground/70 line-clamp-1 leading-relaxed">{featuredProduct.description}</p>
+                <div className="flex items-center gap-1.5 text-[10px] text-amber-400">
+                  <Icons.Star className="h-3 w-3 fill-amber-400" />
                   <span className="font-bold">{featuredProduct.rating}</span>
                   <span className="text-showcase-foreground/50">({featuredProduct.reviews} تقييم)</span>
                 </div>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-xl font-black text-primary">{formatPrice(featuredProduct.price)}</span>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-base font-black text-primary">{formatPrice(featuredProduct.price)}</span>
                   {featuredProduct.oldPrice && (
-                    <span className="text-xs line-through text-showcase-foreground/45">{formatPrice(featuredProduct.oldPrice)}</span>
+                    <span className="text-[10px] line-through text-showcase-foreground/45">{formatPrice(featuredProduct.oldPrice)}</span>
                   )}
                 </div>
-                <div className="flex gap-3 mt-2">
-                  <Link to="/product/$slug" params={{ slug: featuredProduct.slug }} className="inline-flex items-center gap-1.5 rounded-xl bg-showcase-foreground/10 px-4 py-2.5 text-xs font-bold hover:bg-showcase-foreground/20 transition">
-                    تفاصيل المنتج
+                <div className="flex gap-2 mt-1">
+                  <Link to="/product/$slug" params={{ slug: featuredProduct.slug }} className="inline-flex items-center gap-1.5 rounded-lg bg-showcase-foreground/10 px-3 py-1.5 text-[10px] font-bold hover:bg-showcase-foreground/20 transition">
+                    تفاصيل
                   </Link>
-                  <a href={quickOrderLink(featuredProduct)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-success px-4 py-2.5 text-xs font-black text-success-foreground hover:bg-success/90 transition shadow-lg">
-                    <Icons.MessageCircle className="h-4 w-4" />
+                  <a href={quickOrderLink(featuredProduct)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-success px-3 py-1.5 text-[10px] font-black text-success-foreground hover:bg-success/90 transition shadow-md">
+                    <Icons.MessageCircle className="h-3.5 w-3.5" />
                     اطلب الآن
                   </a>
                 </div>
@@ -258,13 +258,13 @@ function HomePage() {
 
       {/* 3. AI SEARCH */}
       <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-        <div className="rounded-3xl border border-showcase-border bg-surface/40 p-5 backdrop-blur-md shadow-xl text-center space-y-4">
-          <div>
-            <h3 className="text-base font-black text-showcase-foreground flex items-center justify-center gap-1.5">
-              <Icons.Sparkles className="h-4 w-4 text-primary animate-pulse" />
+        <div className="rounded-2xl border border-showcase-border bg-surface/40 p-4 backdrop-blur-md shadow-lg text-center space-y-3">
+          <div className="text-center">
+            <h3 className="text-xs font-black text-showcase-foreground flex items-center justify-center gap-1">
+              <Icons.Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
               البحث الذكي بالذكاء الاصطناعي
             </h3>
-            <p className="text-[11px] text-showcase-foreground/60 mt-1">اكتب مواصفات ما تبحث عنه، وسيقوم محرك البحث الذكي بإيجاده لك</p>
+            <p className="text-[10px] text-showcase-foreground/60 mt-0.5">اكتب مواصفات ما تبحث عنه، وسيقوم محرك البحث بإيجاده لك</p>
           </div>
           <form
             onSubmit={(e) => {
@@ -280,23 +280,23 @@ function HomePage() {
               <input
                 name="search"
                 type="text"
-                placeholder={settings.navigation.searchPlaceholder || "ابحث عن منتج بالاسم، اللون، المواصفات..."}
-                className="w-full rounded-2xl border border-showcase-border bg-black/40 py-3 pr-10 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-primary focus:outline-none transition-all"
+                placeholder={settings.navigation.searchPlaceholder || "ابحث بالاسم، اللون، المواصفات..."}
+                className="w-full rounded-xl border border-showcase-border bg-black/40 py-2.5 pr-9 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-primary focus:outline-none transition-all"
               />
-              <Icons.Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-showcase-muted" />
+              <Icons.Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-showcase-muted" />
             </div>
-            <button type="submit" className="rounded-2xl bg-primary px-5 py-3 text-xs font-black text-primary-foreground hover:bg-primary/95 transition shadow-brand">
+            <button type="submit" className="rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground hover:bg-primary/95 transition shadow-brand">
               ابحث
             </button>
           </form>
-          <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-            <span className="text-[10px] text-showcase-foreground/50">عمليات بحث شائعة:</span>
+          <div className="flex flex-wrap items-center justify-center gap-1 pt-0.5">
+            <span className="text-[9px] text-showcase-foreground/50">شائع:</span>
             {["إلكترونيات", "أحدث الهواتف", "عروض اليوم"].map((tag) => (
               <Link
                 key={tag}
                 to="/search"
                 search={{ q: tag }}
-                className="rounded-full bg-showcase-foreground/5 border border-showcase-border/40 px-2.5 py-1 text-[10px] text-showcase-foreground/75 hover:bg-showcase-foreground/10 transition"
+                className="rounded-full bg-showcase-foreground/5 border border-showcase-border/40 px-2 py-0.5 text-[9px] text-showcase-foreground/75 hover:bg-showcase-foreground/10 transition"
               >
                 #{tag}
               </Link>
