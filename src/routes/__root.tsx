@@ -97,48 +97,37 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
-      { name: "theme-color", content: "#1F5EFF" },
-      { title: "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن" },
-      {
-        name: "description",
-        content:
-          "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.",
-      },
-      { property: "og:title", content: "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن" },
-      {
-        property: "og:description",
-        content:
-          "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "Indexes Store — اندكس ستور" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن" },
-      {
-        name: "twitter:description",
-        content:
-          "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.",
-      },
-      {
-        property: "og:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png",
-      },
-      {
-        name: "twitter:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png",
-      },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    // loaderData may be undefined on first render — fall back gracefully
+    const seo = loaderData?.settings?.seo;
+    const title = seo?.metaTitle || "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن";
+    const description = seo?.metaDescription || "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.";
+    const ogImage = seo?.ogImage || "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png";
+    const themeColor = seo?.themeColor || "#1F5EFF";
+
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
+        { name: "theme-color", content: themeColor },
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "website" },
+        { property: "og:site_name", content: "Indexes Store — اندكس ستور" },
+        { property: "og:image", content: ogImage },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: ogImage },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      ],
+    };
+  },
   loader: async () => {
     const settings = await getStorefrontAppearance();
     return { settings };
