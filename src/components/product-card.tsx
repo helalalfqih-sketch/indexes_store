@@ -7,6 +7,7 @@ import type { LegacyProductShape } from "@/lib/data-adapter";
 import { formatPrice } from "@/lib/store-data";
 import { Product3DTile, useModelViewer } from "@/lib/model-viewer";
 import MuxPlayer from "@mux/mux-player-react";
+import { OptimizedImage } from "@/components/optimized-image";
 
 import { useAppearance } from "@/components/appearance-provider";
 
@@ -61,11 +62,10 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
               />
             ) : (
               // Default: clean, fast standard image
-              <img
+              <OptimizedImage
                 src={product.image}
                 alt={product.name}
-                loading="lazy"
-                decoding="async"
+                size="card"
                 draggable={false}
                 className="h-full w-full object-contain p-2"
               />

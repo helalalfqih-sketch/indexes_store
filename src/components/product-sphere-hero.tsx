@@ -10,6 +10,7 @@ import {
   type ReactNode,
   type ErrorInfo,
 } from "react";
+import { createPortal } from "react-dom";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { Environment, Float } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,6 +21,7 @@ import { formatPrice, STORE_CONTACT } from "@/lib/store-data";
 import { toast } from "sonner";
 import { Play, X } from "lucide-react";
 import MuxPlayer from "@mux/mux-player-react";
+import { OptimizedImage } from "@/components/optimized-image";
 
 // ─── Design Tokens ───────────────────────────────────────────────────────────
 const BG_TOP    = "#040818";   // deep navy top
@@ -845,14 +847,11 @@ export function ProductSphereHero({
                   className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl animate-fade-in"
                   style={{ border: "1px solid rgba(79,140,255,0.25)" }}
                 >
-                  <img
-                    src={proxiedTextureUrl(hovered.image)}
+                  <OptimizedImage
+                    src={hovered.image}
                     alt={hovered.name}
+                    size="thumbnail"
                     className="h-full w-full object-cover"
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
                   />
                 </div>
 
@@ -951,7 +950,7 @@ export function ProductSphereHero({
       </motion.div>
 
       {/* Video Modal Overlay */}
-      {showVideo && hovered && hovered.videoPlaybackId && (
+      {showVideo && hovered && hovered.videoPlaybackId && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
           <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-surface/90 shadow-2xl p-2">
             <button
@@ -977,12 +976,13 @@ export function ProductSphereHero({
               <p className="text-xs text-muted-foreground mt-1">فيديو توضيحي للمنتج</p>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Product Specs & Details Modal */}
       <AnimatePresence>
-        {activeSpecsProduct && (
+        {activeSpecsProduct && typeof document !== "undefined" && createPortal(
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
             onClick={() => setActiveSpecsProduct(null)}
@@ -1012,9 +1012,10 @@ export function ProductSphereHero({
 
               {/* Media Preview */}
               <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center">
-                <img
-                  src={proxiedTextureUrl(activeSpecsProduct.image)}
+                <OptimizedImage
+                  src={activeSpecsProduct.image}
                   alt={activeSpecsProduct.name}
+                  size="large"
                   className="h-full w-full object-contain p-2"
                 />
                 {activeSpecsProduct.badge && (
@@ -1112,7 +1113,8 @@ export function ProductSphereHero({
                 </Link>
               </div>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
     </section>

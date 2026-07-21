@@ -9,6 +9,7 @@ import { fetchCategories } from "@/lib/actions/category.actions";
 import { ProductCard } from "@/components/product-card";
 import { ProductSphereHero } from "@/components/product-sphere-hero";
 import { CinematicStory } from "@/components/cinematic-story";
+import { OptimizedImage } from "@/components/optimized-image";
 import { quickOrderLink } from "@/lib/whatsapp";
 import { useAppearance } from "@/components/appearance-provider";
 import { type ProductsLayoutConfig } from "@/lib/domain/appearance";
@@ -221,28 +222,36 @@ function HomePage() {
         const featuredProduct = bestSellers[0] || allProducts[0];
         return (
           <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-            <div className="group relative overflow-hidden rounded-2xl border border-showcase-border bg-gradient-to-br from-surface to-black/60 p-4 shadow-xl flex flex-col sm:flex-row gap-4 items-center">
-              <div className="absolute inset-0 bg-radial-gradient(circle at 10% 10%, var(--primary) 10%, transparent 40%)" />
-              <div className="relative aspect-square w-24 h-24 sm:w-28 sm:h-28 overflow-hidden rounded-xl bg-black/30 p-2 flex items-center justify-center shrink-0">
-                <img src={featuredProduct.image} alt={featuredProduct.name} className="h-full w-full object-contain transition group-hover:scale-105" />
-              </div>
-              <div className="flex-1 flex flex-col gap-1.5 text-start w-full min-w-0">
+            <div className="group relative overflow-hidden rounded-2xl border border-showcase-border p-4 shadow-xl min-h-[140px] flex items-center">
+              {/* Optimized Background Image with zoom transition */}
+              <OptimizedImage
+                src={featuredProduct.image}
+                alt={featuredProduct.name}
+                size="large"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none"
+              />
+              {/* Dark/Blur Gradients Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-black/30 sm:from-black/90 sm:via-black/70 sm:to-black/20 z-0 pointer-events-none" />
+              <div className="absolute inset-0 bg-radial-gradient(circle at 10% 10%, var(--primary) 15%, transparent 60%) opacity-30 z-0 pointer-events-none" />
+
+              {/* Content on top */}
+              <div className="relative flex-1 flex flex-col gap-1.5 text-start w-full min-w-0 z-10">
                 <span className="self-start rounded-full bg-primary/20 px-2 py-0.5 text-[9px] font-black text-primary border border-primary/25">المنتج المميز ⭐</span>
-                <h3 className="text-sm font-black text-showcase-foreground line-clamp-1">{featuredProduct.name}</h3>
-                <p className="text-[11px] text-showcase-foreground/70 line-clamp-1 leading-relaxed">{featuredProduct.description}</p>
+                <h3 className="text-sm font-black text-white line-clamp-1">{featuredProduct.name}</h3>
+                <p className="text-[11px] text-white/80 line-clamp-1 leading-relaxed max-w-xl">{featuredProduct.description}</p>
                 <div className="flex items-center gap-1.5 text-[10px] text-amber-400">
                   <Icons.Star className="h-3 w-3 fill-amber-400" />
                   <span className="font-bold">{featuredProduct.rating}</span>
-                  <span className="text-showcase-foreground/50">({featuredProduct.reviews} تقييم)</span>
+                  <span className="text-white/50">({featuredProduct.reviews} تقييم)</span>
                 </div>
                 <div className="flex items-baseline gap-2 mt-0.5">
                   <span className="text-base font-black text-primary">{formatPrice(featuredProduct.price)}</span>
                   {featuredProduct.oldPrice && (
-                    <span className="text-[10px] line-through text-showcase-foreground/45">{formatPrice(featuredProduct.oldPrice)}</span>
+                    <span className="text-[10px] line-through text-white/40">{formatPrice(featuredProduct.oldPrice)}</span>
                   )}
                 </div>
                 <div className="flex gap-2 mt-1">
-                  <Link to="/product/$slug" params={{ slug: featuredProduct.slug }} className="inline-flex items-center gap-1.5 rounded-lg bg-showcase-foreground/10 px-3 py-1.5 text-[10px] font-bold hover:bg-showcase-foreground/20 transition">
+                  <Link to="/product/$slug" params={{ slug: featuredProduct.slug }} className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 px-3 py-1.5 text-[10px] font-bold text-white transition backdrop-blur-sm border border-white/5">
                     تفاصيل
                   </Link>
                   <a href={quickOrderLink(featuredProduct)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-success px-3 py-1.5 text-[10px] font-black text-success-foreground hover:bg-success/90 transition shadow-md">
@@ -340,7 +349,7 @@ function HomePage() {
                   <Link to="/category/$id" params={{ id: c.id }} className="flex flex-col items-center gap-1.5">
                     <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20 shadow-card transition overflow-hidden">
                       {c.imageUrl ? (
-                        <img src={c.imageUrl} alt={c.name} className="h-full w-full object-cover" />
+                        <OptimizedImage src={c.imageUrl} alt={c.name} size="thumbnail" className="h-full w-full object-cover" />
                       ) : (
                         <Icon className="h-6 w-6" />
                       )}

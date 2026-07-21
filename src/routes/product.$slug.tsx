@@ -24,6 +24,7 @@ import { fetchProductBySlug } from "@/lib/actions/product.actions";
 import { useCart } from "@/lib/cart-store";
 import { quickOrderLink } from "@/lib/whatsapp";
 import { Product3DTile, modelFor, useModelViewer, useMounted } from "@/lib/model-viewer";
+import { OptimizedImage } from "@/components/optimized-image";
 
 import { useAppearance } from "@/components/appearance-provider";
 
@@ -165,16 +166,21 @@ function ProductPage() {
                     />
                   </motion.div>
                 ) : (
-                  <motion.img
+                  <motion.div
                     key={rawImages[activeMediaIndex] || product.image}
-                    src={rawImages[activeMediaIndex] || product.image}
-                    alt={product.name}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="h-full w-full object-contain p-4"
-                  />
+                    className="h-full w-full"
+                  >
+                    <OptimizedImage
+                      src={rawImages[activeMediaIndex] || product.image}
+                      alt={product.name}
+                      size="large"
+                      className="h-full w-full object-contain p-4"
+                    />
+                  </motion.div>
                 )}
               </AnimatePresence>
 
@@ -225,7 +231,7 @@ function ProductPage() {
                         : "border-showcase-border opacity-70 hover:opacity-100"
                     }`}
                   >
-                    <img src={imgUrl} alt={`${product.name} ${idx + 1}`} className="h-full w-full object-cover" />
+                    <OptimizedImage src={imgUrl} alt={`${product.name} ${idx + 1}`} size="thumbnail" className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>
