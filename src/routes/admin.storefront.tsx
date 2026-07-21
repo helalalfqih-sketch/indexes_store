@@ -39,6 +39,7 @@ import {
   type HeroConfig,
   type ThemeConfig,
   type ProductsLayoutConfig,
+  type ProductPageConfig,
   type CartConfig,
   type NavigationConfig,
   type SeoConfig,
@@ -51,13 +52,14 @@ export const Route = createFileRoute("/admin/storefront")({
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type TabId = "hero" | "sections" | "theme" | "products" | "cart" | "navigation" | "seo" | "advanced";
+type TabId = "hero" | "sections" | "theme" | "products" | "product_page" | "cart" | "navigation" | "seo" | "advanced";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof Layout }> = [
   { id: "hero", label: "البنر الرئيسي", icon: MonitorPlay },
   { id: "sections", label: "ترتيب الأقسام", icon: Layout },
   { id: "theme", label: "الثيم والألوان", icon: Palette },
   { id: "products", label: "شبكة المنتجات", icon: Grid3X3 },
+  { id: "product_page", label: "صفحة المنتج", icon: Sliders },
   { id: "cart", label: "السلة والواتساب", icon: ShoppingCart },
   { id: "navigation", label: "التنقل والتذييل", icon: Navigation },
   { id: "seo", label: "إعدادات SEO", icon: Search },
@@ -440,9 +442,12 @@ function ProductsTab({ cfg, onChange }: { cfg: ProductsLayoutConfig; onChange: (
   return (
     <div className="space-y-4">
       <SectionCard title="تخطيط الشبكة">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Field label="أعمدة (شاشة كبيرة)">
             <input type="number" min={2} max={6} value={cfg.columnsDesktop} onChange={(e) => set("columnsDesktop", Number(e.target.value))} className={fieldCls} dir="ltr" />
+          </Field>
+          <Field label="أعمدة (تابلت)">
+            <input type="number" min={1} max={4} value={cfg.columnsTablet ?? 3} onChange={(e) => set("columnsTablet", Number(e.target.value))} className={fieldCls} dir="ltr" />
           </Field>
           <Field label="أعمدة (الجوال)">
             <input type="number" min={1} max={3} value={cfg.columnsMobile} onChange={(e) => set("columnsMobile", Number(e.target.value))} className={fieldCls} dir="ltr" />
@@ -487,14 +492,60 @@ function ProductsTab({ cfg, onChange }: { cfg: ProductsLayoutConfig; onChange: (
         </div>
       </SectionCard>
 
-      <SectionCard title="عناصر البطاقة">
-        <div className="grid grid-cols-2 gap-3">
-          {(["showPrice", "showDiscount", "showRating", "showAddToCartButton"] as const).map((k) => (
-            <div key={k} className="flex items-center justify-between rounded-xl border border-border p-3">
-              <span className="text-xs font-bold">
-                {k === "showPrice" ? "السعر" : k === "showDiscount" ? "نسبة الخصم" : k === "showRating" ? "التقييم" : "زر أضف للسلة"}
-              </span>
-              <Toggle checked={cfg[k]} onChange={(v) => set(k, v)} />
+      <SectionCard title="عناصر بطاقة المنتج (تشغيل / إيقاف)">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {(
+            [
+              { key: "showImage", label: "الصورة" },
+              { key: "showPrice", label: "السعر" },
+              { key: "showDiscount", label: "نسبة الخصم" },
+              { key: "showRating", label: "التقييم" },
+              { key: "showStock", label: "المخزون" },
+              { key: "showAddToCartButton", label: "زر السلة" },
+              { key: "showWaBtn", label: "زر الواتساب" },
+              { key: "showWishlist", label: "المفضلة" },
+            ] as const
+          ).map((item) => (
+            <div key={item.key} className="flex items-center justify-between rounded-xl border border-border p-3">
+              <span className="text-xs font-bold">{item.label}</span>
+              <Toggle
+                checked={Boolean(cfg[item.key as keyof ProductsLayoutConfig])}
+                onChange={(v) => set(item.key as keyof ProductsLayoutConfig, v as any)}
+              />
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+function ProductPageTab({ cfg, onChange }: { cfg: ProductPageConfig; onChange: (v: ProductPageConfig) => void }) {
+  const set = <K extends keyof ProductPageConfig>(k: K, v: ProductPageConfig[K]) =>
+    onChange({ ...cfg, [k]: v });
+
+  return (
+    <div className="space-y-4">
+      <SectionCard title="عرض عناصر صفحة المنتج (Product Page Builder)">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {(
+            [
+              { key: "showImages", label: "عرض الصور" },
+              { key: "showVideo", label: "عرض الفيديو" },
+              { key: "show3DModel", label: "نموذج 3D" },
+              { key: "showDescription", label: "وصف المنتج" },
+              { key: "showWaBtn", label: "زر الطلب عبر واتساب" },
+              { key: "showCartBtn", label: "زر الإضافة للسلة" },
+              { key: "showRelatedProducts", label: "المنتجات المشابهة" },
+              { key: "showRecommendedProducts", label: "المنتجات المقترحة" },
+            ] as const
+          ).map((item) => (
+            <div key={item.key} className="flex items-center justify-between rounded-xl border border-border p-3">
+              <span className="text-xs font-bold">{item.label}</span>
+              <Toggle
+                checked={Boolean(cfg[item.key as keyof ProductPageConfig])}
+                onChange={(v) => set(item.key as keyof ProductPageConfig, v)}
+              />
             </div>
           ))}
         </div>
@@ -889,6 +940,7 @@ function StorefrontCMSPage() {
         sections: "sections",
         theme: "theme",
         products: "products_layout",
+        product_page: "product_page",
         cart: "cart_config",
         navigation: "navigation",
         seo: "seo",
@@ -911,7 +963,17 @@ function StorefrontCMSPage() {
 
   const saveAllMut = useMutation({
     mutationFn: async () => {
-      const keys: Array<keyof StorefrontSettingsShape> = ["hero", "sections", "theme", "products_layout", "cart_config", "navigation", "seo", "advanced"];
+      const keys: Array<keyof StorefrontSettingsShape> = [
+        "hero",
+        "sections",
+        "theme",
+        "products_layout",
+        "product_page",
+        "cart_config",
+        "navigation",
+        "seo",
+        "advanced",
+      ];
       const results = await Promise.all(
         keys.map((key) => saveSettings({ data: { key, value: local[key] } }))
       );
@@ -1001,6 +1063,7 @@ function StorefrontCMSPage() {
           {activeTab === "sections" && <SectionsTab cfg={local.sections} onChange={(v) => handleChange("sections", v)} />}
           {activeTab === "theme" && <ThemeTab cfg={local.theme} onChange={(v) => handleChange("theme", v)} />}
           {activeTab === "products" && <ProductsTab cfg={local.products_layout} onChange={(v) => handleChange("products_layout", v)} />}
+          {activeTab === "product_page" && <ProductPageTab cfg={local.product_page} onChange={(v) => handleChange("product_page", v)} />}
           {activeTab === "cart" && <CartTab cfg={local.cart_config} onChange={(v) => handleChange("cart_config", v)} />}
           {activeTab === "navigation" && <NavigationTab cfg={local.navigation} onChange={(v) => handleChange("navigation", v)} />}
           {activeTab === "seo" && <SeoTab cfg={local.seo} onChange={(v) => handleChange("seo", v)} />}
