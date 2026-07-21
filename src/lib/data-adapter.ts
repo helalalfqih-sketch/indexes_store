@@ -103,6 +103,8 @@ export type LegacyProductShape = {
   categoryId: string;
   badge?: string;
   videoPlaybackId?: string;
+  /** URL to the product's 3D GLB model — null/undefined means no custom model */
+  modelUrl?: string | null;
 };
 
 export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
@@ -119,6 +121,8 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   categoryId: p.category_id ?? "",
   badge: p.tags[0],
   videoPlaybackId: p.video_playback_id ?? undefined,
+  // Prefer model_3d_url (AI-generated) over model_url (manual upload)
+  modelUrl: p.model_3d_url ?? p.model_url ?? null,
 });
 
 export type LegacyCategoryShape = {

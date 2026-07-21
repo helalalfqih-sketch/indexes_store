@@ -49,10 +49,12 @@ const LIGHT_MUTED = "var(--showcase-muted)";
 const LIGHT_BORDER = "var(--showcase-border)";
 
 const revealProps = {
-  initial: { opacity: 0, y: 50 },
+  initial: { opacity: 0, y: 15 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: false, amount: 0.3 },
-  transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] as const },
+  // once:true prevents sections from disappearing on scroll-back (fixes blank gaps on mobile)
+  // amount:0.05 triggers reveal as soon as 5% of the element is visible
+  viewport: { once: true, amount: 0.05 },
+  transition: { duration: 0.5, ease: "easeOut" as const },
 };
 
 function HomePage() {

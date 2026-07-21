@@ -15,6 +15,9 @@ import {
   ProductsLayoutConfigSchema,
   CartConfigSchema,
   NavigationConfigSchema,
+  SectionsConfigSchema,
+  SeoConfigSchema,
+  AdvancedConfigSchema,
   type StorefrontSettingsShape,
 } from "@/lib/domain/appearance";
 
@@ -65,6 +68,15 @@ export const getStorefrontSettings = createServerFn({ method: "GET" }).handler(
         navigation: NavigationConfigSchema.catch(
           DEFAULT_STOREFRONT_SETTINGS.navigation
         ).parse(map.get("navigation") ?? {}),
+        sections: SectionsConfigSchema.catch(
+          DEFAULT_STOREFRONT_SETTINGS.sections
+        ).parse(map.get("sections") ?? {}),
+        seo: SeoConfigSchema.catch(
+          DEFAULT_STOREFRONT_SETTINGS.seo
+        ).parse(map.get("seo") ?? {}),
+        advanced: AdvancedConfigSchema.catch(
+          DEFAULT_STOREFRONT_SETTINGS.advanced
+        ).parse(map.get("advanced") ?? {}),
       };
     } catch (err) {
       console.warn("[getStorefrontSettings] fallback to defaults:", err);

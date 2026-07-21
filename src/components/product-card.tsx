@@ -3,11 +3,14 @@ import { Star } from "lucide-react";
 import { useRef, type CSSProperties } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import type { Product } from "@/lib/store-data";
+import type { LegacyProductShape } from "@/lib/data-adapter";
 import { formatPrice } from "@/lib/store-data";
-import { Product3DTile, modelFor } from "@/lib/model-viewer";
+import { Product3DTile, useModelViewer } from "@/lib/model-viewer";
 import MuxPlayer from "@mux/mux-player-react";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: { product: Product | LegacyProductShape }) {
+  useModelViewer();
+  const modelUrl = (product as LegacyProductShape).modelUrl ?? null;
   const discount = product.oldPrice
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
     : 0;
@@ -57,11 +60,22 @@ export function ProductCard({ product }: { product: Product }) {
                 } satisfies CSSProperties
               }
             />
-          ) : (
+          ) : modelUrl ? (
+            // Only show 3D viewer if the product has a real custom GLB model
             <Product3DTile
-              modelSrc={modelFor(product.id)}
+              modelSrc={modelUrl}
               poster={product.image}
               alt={product.name}
+            />
+          ) : (
+            // Default: clean, fast standard image — no random placeholder 3D models
+            <img
+              src={product.image}
+              alt={product.name}
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+              className="h-full w-full object-contain p-2"
             />
           )}
           {product.badge && (
