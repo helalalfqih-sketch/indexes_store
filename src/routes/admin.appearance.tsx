@@ -478,6 +478,40 @@ function HeroTab({
                   <option value={1.0}>كبيرة (1.0x)</option>
                 </select>
               </label>
+
+              <label className="space-y-1 text-xs font-bold">
+                شكل بطاقات المنتجات
+                <select
+                  value={config.sphereCardShape || "rectangle"}
+                  onChange={(e) => onChange({ ...config, sphereCardShape: e.target.value as any })}
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  <option value="rectangle">مستطيل (Rectangle)</option>
+                  <option value="circle">دائري (Circle)</option>
+                </select>
+              </label>
+
+              <div className="md:col-span-2 flex flex-wrap gap-6 pt-2 border-t border-primary/10 mt-2">
+                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.sphereShowName !== false}
+                    onChange={(e) => onChange({ ...config, sphereShowName: e.target.checked })}
+                    className="rounded border-input text-primary focus:ring-primary h-4 w-4 accent-primary"
+                  />
+                  عرض اسم المنتج عند التمرير
+                </label>
+
+                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.sphereShowPrice !== false}
+                    onChange={(e) => onChange({ ...config, sphereShowPrice: e.target.checked })}
+                    className="rounded border-input text-primary focus:ring-primary h-4 w-4 accent-primary"
+                  />
+                  عرض سعر المنتج عند التمرير
+                </label>
+              </div>
             </div>
           </div>
         )}

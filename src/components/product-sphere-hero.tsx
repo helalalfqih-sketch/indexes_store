@@ -200,12 +200,14 @@ function ProductTile({
   onLeave,
   onSelect,
   isHovered,
+  cardShape = "rectangle",
 }: {
   data: TileData;
   onHover: (p: LegacyProductShape) => void;
   onLeave: () => void;
   onSelect: (p: LegacyProductShape) => void;
   isHovered: boolean;
+  cardShape?: "rectangle" | "circle";
 }) {
   const rawUrl = data.product.image;
   const hasVideo = !!data.product.videoPlaybackId;
@@ -249,7 +251,11 @@ function ProductTile({
     <RGroup position={data.position} quaternion={data.quaternion}>
       {/* Glow backing ring */}
       <RMesh ref={glowRef}>
-        <RPlaneGeometry args={[TILE * 1.18, TILE * 1.18]} />
+        {cardShape === "circle" ? (
+          <RCircleGeometry args={[(TILE * 1.18) / 2, 32]} />
+        ) : (
+          <RPlaneGeometry args={[TILE * 1.18, TILE * 1.18]} />
+        )}
         <RMeshBasicMaterial color={ACCENT} transparent opacity={0} side={THREE.DoubleSide} />
       </RMesh>
       {/* Main card */}
@@ -269,7 +275,11 @@ function ProductTile({
           onSelect(data.product);
         }}
       >
-        <RPlaneGeometry args={[TILE, TILE]} />
+        {cardShape === "circle" ? (
+          <RCircleGeometry args={[TILE / 2, 32]} />
+        ) : (
+          <RPlaneGeometry args={[TILE, TILE]} />
+        )}
         <RMeshBasicMaterial
           map={texture}
           toneMapped={false}
@@ -352,6 +362,7 @@ function ProductSphere({
   hoveredId,
   radius = 2.2,
   tileScale = 0.8,
+  cardShape = "rectangle",
 }: {
   products: LegacyProductShape[];
   onHoverAny: (p: LegacyProductShape | null) => void;
@@ -359,6 +370,7 @@ function ProductSphere({
   hoveredId: string | null;
   radius?: number;
   tileScale?: number;
+  cardShape?: "rectangle" | "circle";
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const { isDragging, autoRotate, velocity } = useDragRotation(
@@ -425,7 +437,11 @@ function ProductSphere({
       {tiles.map((t) => {
         const fb = (
           <RMesh key={t.product.id} position={t.position} quaternion={t.quaternion}>
-            <RPlaneGeometry args={[TILE, TILE]} />
+            {cardShape === "circle" ? (
+              <RCircleGeometry args={[TILE / 2, 32]} />
+            ) : (
+              <RPlaneGeometry args={[TILE, TILE]} />
+            )}
             {fallbackMat}
           </RMesh>
         );
@@ -435,6 +451,7 @@ function ProductSphere({
               <ProductTile
                 data={t}
                 isHovered={hoveredId === t.product.id}
+                cardShape={cardShape}
                 onHover={(p) => onHoverAny(p)}
                 onLeave={() => onHoverAny(null)}
                 onSelect={onSelect}
@@ -455,6 +472,7 @@ function Scene({
   hoveredId,
   radius = 2.2,
   tileScale = 0.8,
+  cardShape = "rectangle",
 }: {
   products: LegacyProductShape[];
   onHoverAny: (p: LegacyProductShape | null) => void;
@@ -462,6 +480,7 @@ function Scene({
   hoveredId: string | null;
   radius?: number;
   tileScale?: number;
+  cardShape?: "rectangle" | "circle";
 }) {
   const { size, camera } = useThree();
 
@@ -512,6 +531,7 @@ function Scene({
           hoveredId={hoveredId}
           radius={radius}
           tileScale={tileScale}
+          cardShape={cardShape}
         />,
       )}
     </>
@@ -591,6 +611,9 @@ export function ProductSphereHero({
   maxProducts = 28,
   radius = 2.2,
   tileScale = 0.8,
+  cardShape = "rectangle",
+  showName = true,
+  showPrice = true,
 }: {
   products: LegacyProductShape[];
   badgeText?: string;
@@ -599,6 +622,9 @@ export function ProductSphereHero({
   maxProducts?: number;
   radius?: number;
   tileScale?: number;
+  cardShape?: "rectangle" | "circle";
+  showName?: boolean;
+  showPrice?: boolean;
 }) {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
@@ -655,7 +681,7 @@ export function ProductSphereHero({
         <Suspense fallback={<Fallback />}>
           {mounted && pool.length > 0 ? (
             <Canvas
-              dpr={[1, 1.5]}
+               dpr={[1, 1.5]}
               camera={{ position: [0, 0.3, 5.8], fov: 44 }}
               gl={{
                 antialias: true,
@@ -673,6 +699,7 @@ export function ProductSphereHero({
                   hoveredId={hoveredId}
                   radius={radius}
                   tileScale={tileScale}
+                  cardShape={cardShape}
                 />
               </Suspense>
             </Canvas>
@@ -819,20 +846,26 @@ export function ProductSphereHero({
               </div>
 
               {/* Info */}
-              <div className="min-w-0 flex-1 text-right">
-                <p
-                  className="truncate text-xs font-bold leading-snug"
-                  style={{ color: LIGHT }}
-                >
-                  {hovered.name}
-                </p>
-                <p
-                  className="mt-0.5 text-[11px] font-black"
-                  style={{ color: ACCENT }}
-                >
-                  {formatPrice(hovered.price)}
-                </p>
-              </div>
+              {(showName || showPrice) && (
+                <div className="min-w-0 flex-1 text-right">
+                  {showName && (
+                    <p
+                      className="truncate text-xs font-bold leading-snug"
+                      style={{ color: LIGHT }}
+                    >
+                      {hovered.name}
+                    </p>
+                  )}
+                  {showPrice && (
+                    <p
+                      className="mt-0.5 text-[11px] font-black"
+                      style={{ color: ACCENT }}
+                    >
+                      {formatPrice(hovered.price)}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* CTA pill */}
               <div

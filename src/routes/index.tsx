@@ -186,6 +186,9 @@ function HomePage() {
               maxProducts={settings.hero.sphereMaxProducts}
               radius={settings.hero.sphereRadius}
               tileScale={settings.hero.sphereTileScale}
+              cardShape={settings.hero.sphereCardShape}
+              showName={settings.hero.sphereShowName}
+              showPrice={settings.hero.sphereShowPrice}
             />
           )}
         </div>

@@ -19,6 +19,9 @@ export const HeroConfigSchema = z.object({
   sphereTileScale: z.number().min(0.2).max(2.0).catch(0.8),
   sphereProductSource: z.enum(["all", "bestsellers", "offers", "custom"]).catch("all"),
   sphereCustomProductIds: z.array(z.string()).catch([]),
+  sphereCardShape: z.enum(["rectangle", "circle"]).catch("rectangle"),
+  sphereShowName: z.boolean().catch(true),
+  sphereShowPrice: z.boolean().catch(true),
 });
 export type HeroConfig = z.infer<typeof HeroConfigSchema>;
 
