@@ -30,13 +30,16 @@ export function AppearanceProvider({
     if (typeof window === "undefined") return;
 
     const root = document.documentElement;
-    const { primaryColor, secondaryColor, fontFamily } = settings.theme;
+    const { primaryColor, secondaryColor, backgroundColor, fontFamily } = settings.theme;
 
     if (primaryColor) {
       root.style.setProperty("--primary", primaryColor);
     }
     if (secondaryColor) {
       root.style.setProperty("--primary-light", secondaryColor);
+    }
+    if (backgroundColor) {
+      root.style.setProperty("--showcase", backgroundColor);
     }
     if (fontFamily) {
       root.style.setProperty("--font-sans", `${fontFamily}, system-ui, sans-serif`);
