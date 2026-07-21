@@ -176,7 +176,7 @@ const TrustBadgesSectionSchema = z.object({
 export const SectionsConfigSchema = z.object({
   sectionOrder: z
     .array(z.string())
-    .catch(["hero", "latest", "showroom", "categories", "deals", "cinematic", "recommended"]),
+    .catch(["hero", "categories", "latest", "showroom", "deals", "cinematic", "recommended"]),
   latest: SectionItemSchema.catch({ enabled: true, title: "أحدث المنتجات", limit: 12 }),
   categories: SectionItemSchema.catch({ enabled: true, title: "التصنيفات", limit: 8 }),
   deals: SectionItemSchema.catch({ enabled: true, title: "عروض اليوم 🔥", limit: 6 }),

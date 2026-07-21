@@ -61,7 +61,7 @@ CREATE POLICY storefront_change_logs_admin_insert ON public.storefront_change_lo
 INSERT INTO public.storefront_settings (key, value, type) VALUES
 
   ('sections', '{
-    "sectionOrder": ["hero", "latest", "showroom", "categories", "deals", "cinematic", "recommended"],
+    "sectionOrder": ["hero", "categories", "latest", "showroom", "deals", "cinematic", "recommended"],
     "latest": { "enabled": true, "title": "أحدث المنتجات", "limit": 12 },
     "categories": { "enabled": true, "title": "التصنيفات", "limit": 8 },
     "deals": { "enabled": true, "title": "عروض اليوم 🔥", "limit": 6 },
@@ -157,3 +157,17 @@ SET value = value || '{
 }'::jsonb
 WHERE key = 'theme'
   AND NOT (value ? 'cardStyle');
+
+-- 9. Update sectionOrder default to put categories after hero for existing databases
+UPDATE public.storefront_settings
+SET value = jsonb_set(
+  value, 
+  '{sectionOrder}', 
+  '["hero", "categories", "latest", "showroom", "deals", "cinematic", "recommended"]'::jsonb
+)
+WHERE key = 'sections'
+  AND (
+    value -> 'sectionOrder' = '["hero", "latest", "showroom", "categories", "deals", "cinematic", "recommended"]'::jsonb
+    OR value -> 'sectionOrder' IS NULL
+  );
+
