@@ -148,6 +148,41 @@ function CategoriesPage() {
     onError: (e: Error) => toast.error(`تعذّر الحذف: ${e.message} (قد يحتوي التصنيف على منتجات)`),
   });
 
+  const seedMut = useMutation({
+    mutationFn: async () => {
+      const defaultCats = [
+        { name: "إلكترونيات", slug: "electronics", icon: "Smartphone", color: "purple" },
+        { name: "الجمال والعناية", slug: "beauty-care", icon: "Sparkles", color: "pink" },
+        { name: "المطبخ والأواني", slug: "kitchen", icon: "Utensils", color: "orange" },
+        { name: "التنظيم والتخزين", slug: "storage-organization", icon: "Archive", color: "yellow" },
+        { name: "الصحة والمساج", slug: "health-massage", icon: "Activity", color: "red" },
+        { name: "الرياضة واللياقة", slug: "sports-fitness", icon: "Flame", color: "emerald" },
+        { name: "السيارات والإكسسوارات", slug: "automotive", icon: "Car", color: "blue" },
+        { name: "الأطفال والألعاب", slug: "kids-toys", icon: "Baby", color: "cyan" },
+      ];
+      for (let i = 0; i < defaultCats.length; i++) {
+        const cat = defaultCats[i];
+        try {
+          await createAdminCategory({
+            name: cat.name,
+            slug: cat.slug,
+            icon: cat.icon,
+            color: cat.color,
+            is_active: true,
+            sort: i,
+          });
+        } catch {
+          // ignore duplicates
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success("تم إضافة التصنيفات الافتراضية بنجاح! 🚀");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const products: AdminProduct[] = productsQ.data ?? [];
 
   return (
@@ -159,16 +194,26 @@ function CategoriesPage() {
             {q.isLoading ? "جارٍ التحميل..." : `${categories.length} تصنيف`}
           </p>
         </div>
-        <button
-          onClick={() => {
-            setCreating((v) => !v);
-            setDraft(emptyDraft);
-          }}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-brand hover:bg-primary/90 transition"
-        >
-          <Plus className="h-4 w-4" />
-          تصنيف جديد
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => seedMut.mutate()}
+            disabled={seedMut.isPending}
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-bold text-foreground shadow-card hover:bg-accent transition disabled:opacity-50"
+          >
+            {seedMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderTree className="h-4 w-4 text-primary" />}
+            {seedMut.isPending ? "جاري الاستيراد..." : "استيراد تصنيفات افتراضية"}
+          </button>
+          <button
+            onClick={() => {
+              setCreating((v) => !v);
+              setDraft(emptyDraft);
+            }}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-brand hover:bg-primary/90 transition"
+          >
+            <Plus className="h-4 w-4" />
+            تصنيف جديد
+          </button>
+        </div>
       </div>
 
       {creating && (
@@ -207,11 +252,22 @@ function CategoriesPage() {
           <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
         </div>
       ) : categories.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-surface p-12 text-center">
+        <div className="rounded-2xl border border-border bg-surface p-12 text-center space-y-4">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-primary/10">
             <FolderTree className="h-7 w-7 text-primary" />
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">لا توجد تصنيفات</p>
+          <div>
+            <h3 className="text-base font-black">لا توجد تصنيفات في قاعدة البيانات</h3>
+            <p className="mt-1 text-sm text-muted-foreground">يمكنك إضافة تصنيف جديد يدوياً أو زرع التشكيلة الافتراضية بنقرة واحدة.</p>
+          </div>
+          <button
+            onClick={() => seedMut.mutate()}
+            disabled={seedMut.isPending}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand hover:bg-primary/90 transition disabled:opacity-50"
+          >
+            {seedMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderTree className="h-4 w-4" />}
+            {seedMut.isPending ? "جاري إنشاء التصنيفات..." : "إضافة التصنيفات الافتراضية تلقائياً 🚀"}
+          </button>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
