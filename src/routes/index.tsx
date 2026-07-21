@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import * as Icons from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { formatPrice, type Product } from "@/lib/store-data";
 import type { LegacyProductShape, LegacyCategoryShape } from "@/lib/data-adapter";
@@ -107,6 +107,22 @@ function HomePage() {
 
   const { settings } = useAppearance();
 
+  const sphereProducts = useMemo(() => {
+    let list = [...allProducts];
+    const source = settings.hero.sphereProductSource || "all";
+    if (source === "bestsellers") {
+      list = [...bestSellers];
+    } else if (source === "offers") {
+      list = [...dailyDeals];
+    } else if (source === "custom" && settings.hero.sphereCustomProductIds?.length) {
+      const idMap = new Map(settings.hero.sphereCustomProductIds.map((id, idx) => [id, idx]));
+      list = allProducts
+        .filter((p) => idMap.has(p.id))
+        .sort((a, b) => idMap.get(a.id)! - idMap.get(b.id)!);
+    }
+    return list;
+  }, [allProducts, bestSellers, dailyDeals, settings.hero.sphereProductSource, settings.hero.sphereCustomProductIds]);
+
   return (
     <div
       ref={pageRef}
@@ -163,7 +179,7 @@ function HomePage() {
             <CinematicStory />
           ) : (
             <ProductSphereHero
-              products={allProducts}
+              products={sphereProducts}
               badgeText={settings.hero.badgeText}
               title={settings.hero.title}
               subtitle={settings.hero.subtitle}

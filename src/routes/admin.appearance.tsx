@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Palette,
   Home,
@@ -12,11 +12,16 @@ import {
   Loader2,
   Eye,
   RefreshCw,
+  ArrowUp,
+  ArrowDown,
+  Trash,
+  Plus,
 } from "lucide-react";
 import {
   getStorefrontAppearance,
   updateStorefrontAppearance,
 } from "@/lib/actions/appearance.actions";
+import { listAdminProducts } from "@/lib/actions/admin.actions";
 import {
   DEFAULT_STOREFRONT_SETTINGS,
   type StorefrontSettingsShape,
@@ -37,21 +42,26 @@ type TabType = "hero" | "theme" | "products" | "cart" | "navigation";
 function AdminAppearancePage() {
   const [activeTab, setActiveTab] = useState<TabType>("hero");
   const [settings, setSettings] = useState<StorefrontSettingsShape>(DEFAULT_STOREFRONT_SETTINGS);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Fetch initial settings from DB
+  // Fetch initial settings and products from DB
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
       try {
-        const data = await getStorefrontAppearance();
-        setSettings(data);
+        const [appearanceData, productsRes] = await Promise.all([
+          getStorefrontAppearance(),
+          listAdminProducts(),
+        ]);
+        setSettings(appearanceData);
+        setAllProducts(productsRes || []);
       } catch (err) {
-        console.error("Failed to load storefront appearance:", err);
+        console.error("Failed to load storefront appearance/products:", err);
       } finally {
         setIsLoading(false);
       }
@@ -168,6 +178,7 @@ function AdminAppearancePage() {
           {activeTab === "hero" && (
             <HeroTab
               config={settings.hero}
+              allProducts={allProducts}
               onChange={(updated) => setSettings((s) => ({ ...s, hero: updated }))}
               onSave={() => handleSaveKey("hero", settings.hero)}
               isSaving={isSaving}
@@ -284,15 +295,58 @@ function TabButton({
 // ── Tab 1: Hero Builder ────────────────────────────────────────────────────────
 function HeroTab({
   config,
+  allProducts = [],
   onChange,
   onSave,
   isSaving,
 }: {
   config: HeroConfig;
+  allProducts?: any[];
   onChange: (updated: HeroConfig) => void;
   onSave: () => void;
   isSaving: boolean;
 }) {
+  const selectedProducts = useMemo(() => {
+    const ids = config.sphereCustomProductIds || [];
+    return ids
+      .map((id) => allProducts.find((p) => p.id === id))
+      .filter((p): p is any => p !== undefined);
+  }, [config.sphereCustomProductIds, allProducts]);
+
+  const addProduct = (productId: string) => {
+    if (!productId) return;
+    const currentIds = config.sphereCustomProductIds || [];
+    if (currentIds.includes(productId)) return;
+    onChange({
+      ...config,
+      sphereCustomProductIds: [...currentIds, productId],
+    });
+  };
+
+  const removeProduct = (productId: string) => {
+    const currentIds = config.sphereCustomProductIds || [];
+    onChange({
+      ...config,
+      sphereCustomProductIds: currentIds.filter((id) => id !== productId),
+    });
+  };
+
+  const moveProduct = (index: number, direction: "up" | "down") => {
+    const currentIds = [...(config.sphereCustomProductIds || [])];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= currentIds.length) return;
+
+    // Swap the elements
+    const temp = currentIds[index];
+    currentIds[index] = currentIds[targetIndex];
+    currentIds[targetIndex] = temp;
+
+    onChange({
+      ...config,
+      sphereCustomProductIds: currentIds,
+    });
+  };
+
   return (
     <div className="rounded-2xl border border-border bg-surface p-6 shadow-card space-y-6">
       <div className="flex items-center justify-between border-b border-border pb-4">
@@ -371,7 +425,7 @@ function HeroTab({
         {config.type === "sphere_3d" && (
           <div className="md:col-span-2 space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4 mt-2">
             <h3 className="text-xs font-black text-primary">إعدادات معرض الكرة ثلاثية الأبعاد (3D Sphere Customization)</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="space-y-1 text-xs font-bold">
                 مصدر المنتجات المعروضة
@@ -383,6 +437,7 @@ function HeroTab({
                   <option value="all">جميع المنتجات المتوفرة</option>
                   <option value="bestsellers">الأكثر مبيعاً فقط</option>
                   <option value="offers">العروض والخصومات فقط</option>
+                  <option value="custom">تحديد منتجات مخصصة وترتيبها (Custom Selection)</option>
                 </select>
               </label>
 
@@ -424,6 +479,89 @@ function HeroTab({
                 </select>
               </label>
             </div>
+          </div>
+        )}
+
+        {config.type === "sphere_3d" && config.sphereProductSource === "custom" && (
+          <div className="md:col-span-2 space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4 mt-2">
+            <h3 className="text-xs font-black text-primary">تحديد وترتيب منتجات المعرض ثلاثي الأبعاد</h3>
+
+            {/* Selector */}
+            <div className="flex gap-2 items-end">
+              <label className="flex-1 space-y-1 text-xs font-bold">
+                اختر منتجاً لإضافته:
+                <select
+                  id="custom-product-select"
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                  defaultValue=""
+                >
+                  <option value="" disabled>-- اختر منتجاً --</option>
+                  {allProducts
+                    .filter((p) => !(config.sphereCustomProductIds || []).includes(p.id))
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  const selectEl = document.getElementById("custom-product-select") as HTMLSelectElement;
+                  if (selectEl && selectEl.value) {
+                    addProduct(selectEl.value);
+                    selectEl.value = "";
+                  }
+                }}
+                className="flex items-center gap-1 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/95 transition whitespace-nowrap"
+              >
+                <Plus className="h-4 w-4" />
+                إضافة
+              </button>
+            </div>
+
+            {/* Selected Products List */}
+            {selectedProducts.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">لم يتم اختيار أي منتجات بعد. اختر منتجاً من القائمة أعلاه.</p>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {selectedProducts.map((p, idx) => (
+                  <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-2">
+                    <div className="flex items-center gap-3">
+                      <img src={p.image} alt={p.name} className="h-10 w-10 rounded-md object-cover border border-border" />
+                      <span className="text-xs font-bold line-clamp-1">{p.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveProduct(idx, "up")}
+                        disabled={idx === 0}
+                        className="p-1 rounded-md hover:bg-accent text-muted-foreground disabled:opacity-30 disabled:pointer-events-none"
+                        title="تحريك لأعلى"
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveProduct(idx, "down")}
+                        disabled={idx === selectedProducts.length - 1}
+                        className="p-1 rounded-md hover:bg-accent text-muted-foreground disabled:opacity-30 disabled:pointer-events-none"
+                        title="تحريك لأسفل"
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeProduct(p.id)}
+                        className="p-1 rounded-md hover:bg-destructive/10 text-destructive"
+                        title="حذف"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -17,7 +17,8 @@ export const HeroConfigSchema = z.object({
   sphereMaxProducts: z.number().min(6).max(40).default(28),
   sphereRadius: z.number().min(1.5).max(3.5).default(2.2),
   sphereTileScale: z.number().min(0.4).max(1.5).default(0.8),
-  sphereProductSource: z.enum(["all", "bestsellers", "offers"]).default("all"),
+  sphereProductSource: z.enum(["all", "bestsellers", "offers", "custom"]).default("all"),
+  sphereCustomProductIds: z.array(z.string()).default([]),
 });
 export type HeroConfig = z.infer<typeof HeroConfigSchema>;
 
