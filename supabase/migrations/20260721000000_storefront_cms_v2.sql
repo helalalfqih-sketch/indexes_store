@@ -138,7 +138,8 @@ WHERE key = 'cart_config'
 -- 7. Update existing hero seed to include sphereCardShape/showName/showPrice
 UPDATE public.storefront_settings
 SET value = value || '{
-  "sphereCardShape": "rectangle",
+  "sphereCardShape": "circle",
+  "sphereMaxProducts": 100,
   "sphereShowName": true,
   "sphereShowPrice": true,
   "sphereCustomProductIds": [],

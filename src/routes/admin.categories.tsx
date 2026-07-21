@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2, Save, Eye, EyeOff, FolderTree, GripVertical } from "lucide-react";
+import { Plus, Trash2, Loader2, Save, Eye, EyeOff, FolderTree, GripVertical, Upload, Image as ImageIcon, X } from "lucide-react";
 import {
   listAdminCategories,
   createAdminCategory,
@@ -451,15 +451,14 @@ function DraftForm({
           className={`${inputCls} mt-1 font-mono`}
         />
       </label>
-      <label className="block sm:col-span-2">
-        <span className="text-xs font-bold text-muted-foreground">رابط صورة الفئة (Image URL)</span>
-        <input
-          value={draft.image_url}
-          onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
-          className={`${inputCls} mt-1`}
-          placeholder="https://example.com/image.jpg"
+      {/* Category Image Picker */}
+      <div className="sm:col-span-2">
+        <CategoryImagePicker
+          imageUrl={draft.image_url}
+          onChange={(url) => setDraft({ ...draft, image_url: url })}
         />
-      </label>
+      </div>
+
       <label className="block sm:col-span-2">
         <span className="text-xs font-bold text-muted-foreground">الوصف</span>
         <input
@@ -517,6 +516,165 @@ function DraftForm({
         />
         <span className="text-sm font-bold">مفعّل</span>
       </label>
+    </div>
+  );
+}
+
+// Preset Category High-Quality Sample Images
+const PRESET_CATEGORY_IMAGES = [
+  { label: "إلكترونيات", url: "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&w=600&q=80" },
+  { label: "تجميل وعناية", url: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80" },
+  { label: "أواني ومطبخ", url: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=600&q=80" },
+  { label: "تنظيم وتخزين", url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80" },
+  { label: "صحة ومساج", url: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80" },
+  { label: "رياضة ولياقة", url: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80" },
+  { label: "سيارات", url: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=600&q=80" },
+  { label: "أطفال وألعاب", url: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=600&q=80" },
+];
+
+function CategoryImagePicker({
+  imageUrl,
+  onChange,
+}: {
+  imageUrl: string;
+  onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("الرجاء اختيار ملف صورة صالح (PNG, JPG, WebP)");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب أن لا يتجاوز 5 ميجابايت");
+      return;
+    }
+
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        onChange(result);
+        toast.success("تم تمكين الصورة المرفوعة بنجاح 🖼️");
+      }
+      setUploading(false);
+    };
+    reader.onerror = () => {
+      toast.error("حدث خطأ أثناء قراءة الملف");
+      setUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-3 rounded-xl border border-border bg-background/50 p-4">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+          <ImageIcon className="h-4 w-4 text-primary" />
+          صورة التصنيف (Category Image)
+        </span>
+        {imageUrl && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="flex items-center gap-1 text-[11px] font-bold text-destructive hover:underline"
+          >
+            <X className="h-3.5 w-3.5" />
+            حذف الصورة
+          </button>
+        )}
+      </div>
+
+      {/* Preview and Upload Dropzone */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center">
+        {imageUrl ? (
+          <div className="relative group shrink-0">
+            <img
+              src={imageUrl}
+              alt="معاينة الفئة"
+              className="h-24 w-24 rounded-2xl object-cover border-2 border-primary/30 shadow-md"
+            />
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="absolute -top-2 -end-2 grid h-6 w-6 place-items-center rounded-full bg-destructive text-white shadow-md hover:scale-110 transition"
+              title="حذف"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="h-24 w-24 shrink-0 rounded-2xl border-2 border-dashed border-border bg-surface grid place-items-center text-muted-foreground">
+            <ImageIcon className="h-8 w-8 opacity-40" />
+          </div>
+        )}
+
+        <div className="flex-1 space-y-2 w-full">
+          {/* File Upload Input */}
+          <div className="flex gap-2">
+            <label className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/20 cursor-pointer transition">
+              {uploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+              {uploading ? "جاري الرفع..." : "رفع صورة من جهازك"}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          {/* Direct URL Input */}
+          <input
+            type="url"
+            value={imageUrl}
+            onChange={(e) => onChange(e.target.value)}
+            className={`${inputCls} text-xs`}
+            placeholder="أو ألصق رابط صورة مباشر (URL)..."
+          />
+        </div>
+      </div>
+
+      {/* Preset Image Gallery */}
+      <div className="pt-2 border-t border-border/60">
+        <span className="text-[11px] font-bold text-muted-foreground block mb-2">
+          أو اختر صورة جاهزة عالية الجودة بنقرة واحدة:
+        </span>
+        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+          {PRESET_CATEGORY_IMAGES.map((preset, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => onChange(preset.url)}
+              className={`group relative aspect-square rounded-xl overflow-hidden border-2 transition ${
+                imageUrl === preset.url
+                  ? "border-primary ring-2 ring-primary/30 scale-105"
+                  : "border-border hover:border-primary/50"
+              }`}
+              title={preset.label}
+            >
+              <img
+                src={preset.url}
+                alt={preset.label}
+                className="h-full w-full object-cover group-hover:scale-110 transition"
+              />
+              <span className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-[9px] font-bold text-white text-center truncate px-0.5">
+                {preset.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

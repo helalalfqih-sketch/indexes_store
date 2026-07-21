@@ -31,12 +31,12 @@ export const HeroConfigSchema = z.object({
   // Multi-slide support
   slides: z.array(HeroSlideSchema).catch([]),
   // 3D Sphere options
-  sphereMaxProducts: z.number().min(6).max(120).catch(28),
+  sphereMaxProducts: z.number().min(6).max(120).catch(100),
   sphereRadius: z.number().min(1.0).max(5.0).catch(2.2),
   sphereTileScale: z.number().min(0.2).max(2.0).catch(0.8),
   sphereProductSource: z.enum(["all", "bestsellers", "offers", "custom"]).catch("all"),
   sphereCustomProductIds: z.array(z.string()).catch([]),
-  sphereCardShape: z.enum(["rectangle", "circle"]).catch("rectangle"),
+  sphereCardShape: z.enum(["rectangle", "circle"]).catch("circle"),
   sphereShowName: z.boolean().catch(true),
   sphereShowPrice: z.boolean().catch(true),
 });
