@@ -48,153 +48,90 @@ const wordVariants: Variants = {
 };
 
 export function CinematicStory() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end end"],
-  });
-
-  // Slow parallax for the video (zooms subtly during the pin)
-  const videoScale = useTransform(scrollYProgress, [0, 1], [1.05, 1.25]);
-  const videoY = useTransform(scrollYProgress, [0, 1], ["0%", "-8%"]);
-  const overlayOpacity = useTransform(scrollYProgress, [0, 0.4, 1], [0.55, 0.7, 0.85]);
-  // Background editorial typography drift
-  const bgTypoX = useTransform(scrollYProgress, [0, 1], ["-4%", "4%"]);
-
   return (
     <section
-      ref={sectionRef}
       dir="rtl"
       aria-label="قصة اندكس ستور"
-      className="relative w-full"
+      className="relative w-full rounded-3xl overflow-hidden my-4 py-12 md:py-16 bg-showcase border border-showcase-border/40"
       style={{
-        // 4 viewports: headline + 3 chapters + CTA sit inside a pinned stage
-        height: "400vh",
         fontFamily: "Tajawal, system-ui, sans-serif",
       }}
     >
-      {/* Sticky pinned stage */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-showcase">
-        {/* Video background */}
-        <motion.div
-          style={{ scale: videoScale, y: videoY }}
-          className="absolute inset-0 h-full w-full"
-        >
-          <video
-            src={VIDEO_SRC}
-            poster={VIDEO_POSTER}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            className="h-full w-full object-cover"
-          />
-        </motion.div>
-
-        {/* Dark gradient overlay for readability */}
-        <motion.div style={{ opacity: overlayOpacity }} className="absolute inset-0" aria-hidden>
-          <div
-            className="h-full w-full"
-            style={{
-              background:
-                "linear-gradient(180deg, color-mix(in oklab, var(--showcase) 90%, transparent) 0%, color-mix(in oklab, var(--showcase) 35%, transparent) 40%, color-mix(in oklab, var(--showcase) 55%, transparent) 70%, color-mix(in oklab, var(--showcase) 95%, transparent) 100%)",
-            }}
-          />
-        </motion.div>
-
-        {/* Massive editorial background typography (blend mode) */}
-        <motion.div
-          style={{ x: bgTypoX }}
-          aria-hidden
-          className="pointer-events-none absolute inset-0 flex items-center justify-center"
-        >
-          <span
-            className="select-none font-black tracking-tight text-showcase-foreground/25 mix-blend-overlay whitespace-nowrap"
-            style={{
-              fontSize: "clamp(8rem, 26vw, 26rem)",
-              lineHeight: 0.85,
-            }}
-          >
-            INDEXES
-          </span>
-        </motion.div>
-
-        {/* Foreground scroll-telling content */}
-        <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-6 text-center text-showcase-foreground">
-          {/* Headline — split into words, staggered entry */}
-          <motion.h2
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: false, amount: 0.4 }}
-            className="mx-auto max-w-5xl font-black leading-[1.15] tracking-tight text-[clamp(2rem,5vw,5rem)]"
-          >
-            {headlineWords.map((w, i) => (
-              <motion.span
-                key={`${w}-${i}`}
-                custom={i}
-                variants={wordVariants}
-                className="inline-block px-1"
-              >
-                {w}
-              </motion.span>
-            ))}
-          </motion.h2>
-
-          {/* Chapters — fade sequentially */}
-          <div className="mt-10 flex w-full max-w-2xl flex-col gap-6">
-            {STORY_BLOCKS.map((b, i) => (
-              <motion.div
-                key={b.title}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: false, amount: 0.6 }}
-                transition={{
-                  duration: 0.9,
-                  delay: i * 0.08,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                className="rounded-2xl border border-showcase-border bg-showcase-foreground/[0.03] p-5 backdrop-blur-sm"
-              >
-                <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-showcase-muted">
-                  {b.kicker}
-                </p>
-                <h3 className="mt-1.5 text-lg font-black text-showcase-foreground text-[clamp(1.1rem,2.4vw,1.6rem)]">
-                  {b.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-showcase-foreground/80 text-[clamp(0.9rem,1.6vw,1.05rem)]">
-                  {b.body}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Sticky final CTA — materializes at end of scroll */}
-          <motion.a
-            href={WA_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
-            initial={{ opacity: 0, y: 30, scale: 0.9 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: false, amount: 0.9 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            className="mt-8 inline-flex items-center gap-2.5 rounded-full border border-showcase-foreground/25 bg-showcase-foreground/10 px-7 py-3.5 text-sm font-black text-showcase-foreground shadow-2xl backdrop-blur-xl transition hover:bg-showcase-foreground/20"
-          >
-            <MessageCircle className="h-4 w-4" />
-            <span>ابدأ رحلتك معنا عبر واتساب</span>
-          </motion.a>
-        </div>
-
-        {/* Bottom vignette */}
+      {/* Video background */}
+      <div className="absolute inset-0 h-full w-full">
+        <video
+          src={VIDEO_SRC}
+          poster={VIDEO_POSTER}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+        />
         <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-40"
+          className="absolute inset-0"
           style={{
-            background: "linear-gradient(to top, var(--showcase) 0%, transparent 100%)",
+            background:
+              "linear-gradient(180deg, color-mix(in oklab, var(--showcase) 92%, transparent) 0%, color-mix(in oklab, var(--showcase) 70%, transparent) 50%, color-mix(in oklab, var(--showcase) 95%, transparent) 100%)",
           }}
         />
+      </div>
+
+      {/* Massive editorial background typography */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden"
+      >
+        <span
+          className="select-none font-black tracking-tight text-showcase-foreground/15 mix-blend-overlay whitespace-nowrap"
+          style={{
+            fontSize: "clamp(6rem, 20vw, 20rem)",
+            lineHeight: 0.85,
+          }}
+        >
+          INDEXES
+        </span>
+      </div>
+
+      {/* Foreground content */}
+      <div className="relative z-10 flex flex-col items-center justify-center px-4 md:px-6 text-center text-showcase-foreground">
+        <h2 className="mx-auto max-w-4xl font-black leading-[1.15] tracking-tight text-2xl sm:text-4xl md:text-5xl">
+          {HEADLINE}
+        </h2>
+
+        {/* Chapters */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-5xl">
+          {STORY_BLOCKS.map((b) => (
+            <div
+              key={b.title}
+              className="rounded-2xl border border-showcase-border/60 bg-showcase-foreground/[0.05] p-5 backdrop-blur-md text-start flex flex-col justify-between"
+            >
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-showcase-muted">
+                  {b.kicker}
+                </p>
+                <h3 className="mt-1.5 text-base font-black text-showcase-foreground">
+                  {b.title}
+                </h3>
+                <p className="mt-2 text-xs leading-relaxed text-showcase-foreground/80">
+                  {b.body}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <a
+          href={WA_LINK}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-8 inline-flex items-center gap-2.5 rounded-full border border-showcase-foreground/25 bg-showcase-foreground/10 px-7 py-3 text-xs md:text-sm font-black text-showcase-foreground shadow-2xl backdrop-blur-xl transition hover:bg-showcase-foreground/20 hover:scale-105"
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span>ابدأ رحلتك معنا عبر واتساب</span>
+        </a>
       </div>
     </section>
   );

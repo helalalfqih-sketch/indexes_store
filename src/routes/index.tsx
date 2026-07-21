@@ -129,7 +129,7 @@ function HomePage() {
     <div
       ref={pageRef}
       data-home-root="true"
-      className="relative flex flex-col gap-10 overflow-hidden pt-4 pb-64"
+      className="relative flex flex-col gap-6 md:gap-10 overflow-hidden pt-2 pb-6"
       style={{ background: DARK, color: LIGHT, fontFamily: "Tajawal, system-ui, sans-serif" }}
     >
       <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
