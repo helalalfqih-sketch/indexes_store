@@ -194,204 +194,294 @@ function HomePage() {
         </motion.div>
       </div>
 
-      {settings.sections.sectionOrder.map((sectionKey) => {
-        if (sectionKey === "hero") {
-          if (!settings.hero.enabled) return null;
-          return (
-            <div key="hero" className="relative z-10 px-4">
-              {settings.hero.type === "cinematic" ? (
-                <CinematicStory />
-              ) : (
-                <ProductSphereHero
-                  products={sphereProducts}
-                  badgeText={settings.hero.badgeText}
-                  title={settings.hero.title}
-                  subtitle={settings.hero.subtitle}
-                  maxProducts={settings.hero.sphereMaxProducts}
-                  radius={settings.hero.sphereRadius}
-                  tileScale={settings.hero.sphereTileScale}
-                  cardShape={settings.hero.sphereCardShape}
-                  showName={settings.hero.sphereShowName}
-                  showPrice={settings.hero.sphereShowPrice}
-                />
-              )}
+      {/* 1. CINEMATIC HERO (3D + Video + AI) */}
+      {settings.hero.enabled && (
+        <div className="relative z-10 px-4">
+          {settings.hero.type === "cinematic" ? (
+            <CinematicStory />
+          ) : (
+            <ProductSphereHero
+              products={sphereProducts}
+              badgeText={settings.hero.badgeText}
+              title={settings.hero.title}
+              subtitle={settings.hero.subtitle}
+              maxProducts={settings.hero.sphereMaxProducts}
+              radius={settings.hero.sphereRadius}
+              tileScale={settings.hero.sphereTileScale}
+              cardShape={settings.hero.sphereCardShape}
+              showName={settings.hero.sphereShowName}
+              showPrice={settings.hero.sphereShowPrice}
+            />
+          )}
+        </div>
+      )}
+
+      {/* 2. FEATURED PRODUCT */}
+      {(bestSellers[0] || allProducts[0]) && (() => {
+        const featuredProduct = bestSellers[0] || allProducts[0];
+        return (
+          <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
+            <div className="group relative overflow-hidden rounded-3xl border border-showcase-border bg-gradient-to-br from-surface to-black/60 p-6 shadow-2xl flex flex-col md:flex-row gap-6 items-center">
+              <div className="absolute inset-0 bg-radial-gradient(circle at 10% 10%, var(--primary) 10%, transparent 40%)" />
+              <div className="relative aspect-square w-full md:w-48 overflow-hidden rounded-2xl bg-black/30 p-4 flex items-center justify-center shrink-0">
+                <img src={featuredProduct.image} alt={featuredProduct.name} className="h-full w-full object-contain transition group-hover:scale-105" />
+              </div>
+              <div className="flex-1 flex flex-col gap-3 text-start">
+                <span className="self-start rounded-full bg-primary/20 px-3 py-1 text-[10px] font-black text-primary border border-primary/25">المنتج المميز للـيوم ⭐</span>
+                <h3 className="text-lg md:text-xl font-black text-showcase-foreground line-clamp-1">{featuredProduct.name}</h3>
+                <p className="text-xs text-showcase-foreground/75 line-clamp-2 leading-relaxed">{featuredProduct.description}</p>
+                <div className="flex items-center gap-1.5 text-xs text-amber-400">
+                  <Icons.Star className="h-3.5 w-3.5 fill-amber-400" />
+                  <span className="font-bold">{featuredProduct.rating}</span>
+                  <span className="text-showcase-foreground/50">({featuredProduct.reviews} تقييم)</span>
+                </div>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-xl font-black text-primary">{formatPrice(featuredProduct.price)}</span>
+                  {featuredProduct.oldPrice && (
+                    <span className="text-xs line-through text-showcase-foreground/45">{formatPrice(featuredProduct.oldPrice)}</span>
+                  )}
+                </div>
+                <div className="flex gap-3 mt-2">
+                  <Link to="/product/$slug" params={{ slug: featuredProduct.slug }} className="inline-flex items-center gap-1.5 rounded-xl bg-showcase-foreground/10 px-4 py-2.5 text-xs font-bold hover:bg-showcase-foreground/20 transition">
+                    تفاصيل المنتج
+                  </Link>
+                  <a href={quickOrderLink(featuredProduct)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-success px-4 py-2.5 text-xs font-black text-success-foreground hover:bg-success/90 transition shadow-lg">
+                    <Icons.MessageCircle className="h-4 w-4" />
+                    اطلب الآن
+                  </a>
+                </div>
+              </div>
             </div>
-          );
-        }
+          </motion.section>
+        );
+      })()}
 
-        if (sectionKey === "latest") {
-          const sec = settings.sections.latest;
-          if (!sec.enabled) return null;
-          const limit = settings.products_layout.latestProductsLimit ?? sec.limit;
-          return (
-            <motion.section key="latest" {...revealProps} className="relative z-10 px-4 pt-8 sm:pt-12">
-              <div className="mb-5 flex items-end justify-between">
-                <div>
-                  <span
-                    className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em]"
-                    style={{ color: "color-mix(in oklab, var(--showcase-foreground) 55%, transparent)" }}
-                  >
-                    NEW ARRIVALS
-                  </span>
-                  <h2 className="text-xl font-black leading-tight sm:text-2xl" style={{ color: LIGHT }}>
-                    {sec.title || "أحدث المنتجات"}
-                  </h2>
-                </div>
-                <Link
-                  to="/search"
-                  className="text-xs font-bold"
-                  style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
-                >
-                  استكشف الكل
-                </Link>
-              </div>
-              <div className={getGridClass(settings.products_layout)}>
-                {allProducts.slice(0, limit).map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
-              </div>
-            </motion.section>
-          );
-        }
-
-        if (sectionKey === "showroom") {
-          const sec = settings.sections.showroom;
-          if (!sec.enabled) return null;
-          return (
-            <motion.section key="showroom" {...revealProps} className="relative z-10 px-4">
+      {/* 3. AI SEARCH */}
+      <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
+        <div className="rounded-3xl border border-showcase-border bg-surface/40 p-5 backdrop-blur-md shadow-xl text-center space-y-4">
+          <div>
+            <h3 className="text-base font-black text-showcase-foreground flex items-center justify-center gap-1.5">
+              <Icons.Sparkles className="h-4 w-4 text-primary animate-pulse" />
+              البحث الذكي بالذكاء الاصطناعي
+            </h3>
+            <p className="text-[11px] text-showcase-foreground/60 mt-1">اكتب مواصفات ما تبحث عنه، وسيقوم محرك البحث الذكي بإيجاده لك</p>
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const input = (e.currentTarget.elements.namedItem("search") as HTMLInputElement).value;
+              if (input.trim()) {
+                window.location.href = `/search?q=${encodeURIComponent(input)}`;
+              }
+            }}
+            className="relative flex items-center gap-2"
+          >
+            <div className="relative flex-1">
+              <input
+                name="search"
+                type="text"
+                placeholder={settings.navigation.searchPlaceholder || "ابحث عن منتج بالاسم، اللون، المواصفات..."}
+                className="w-full rounded-2xl border border-showcase-border bg-black/40 py-3 pr-10 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-primary focus:outline-none transition-all"
+              />
+              <Icons.Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-showcase-muted" />
+            </div>
+            <button type="submit" className="rounded-2xl bg-primary px-5 py-3 text-xs font-black text-primary-foreground hover:bg-primary/95 transition shadow-brand">
+              ابحث
+            </button>
+          </form>
+          <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+            <span className="text-[10px] text-showcase-foreground/50">عمليات بحث شائعة:</span>
+            {["إلكترونيات", "أحدث الهواتف", "عروض اليوم"].map((tag) => (
               <Link
-                to="/immersive-store"
-                className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-3xl border p-4 shadow-2xl"
-                style={{
-                  borderColor: LIGHT_BORDER,
-                  background:
-                    "linear-gradient(120deg, color-mix(in oklab, var(--showcase) 90%, transparent) 0%, color-mix(in oklab, var(--primary) 55%, transparent) 55%, color-mix(in oklab, var(--primary-light) 40%, transparent) 100%)",
-                  color: LIGHT,
-                }}
+                key={tag}
+                to="/search"
+                search={{ q: tag }}
+                className="rounded-full bg-showcase-foreground/5 border border-showcase-border/40 px-2.5 py-1 text-[10px] text-showcase-foreground/75 hover:bg-showcase-foreground/10 transition"
               >
-                <div
-                  className="absolute inset-0 opacity-40 mix-blend-overlay"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 20% 20%, color-mix(in oklab, var(--showcase-foreground) 60%, transparent), transparent 40%), radial-gradient(circle at 80% 80%, color-mix(in oklab, var(--primary-light) 70%, transparent), transparent 45%)",
-                  }}
-                />
-                <div className="relative">
-                  <span className="inline-block rounded-full bg-showcase-foreground/20 px-2.5 py-0.5 text-[10px] font-bold">
-                    {sec.badge || "جديد · تجربة ثلاثية الأبعاد"}
-                  </span>
-                  <h3 className="mt-1.5 text-lg font-black leading-tight">{sec.title || "المعرض الافتراضي"}</h3>
-                  <p className="text-[11px] text-showcase-foreground/85">{sec.subtitle || "تجوّل داخل اندكس ستور الفاخر"}</p>
-                </div>
-                <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-showcase-foreground/15 ring-1 ring-showcase-foreground/30 backdrop-blur-md transition group-hover:scale-110">
-                  <Icons.Sparkles className="h-5 w-5" />
-                </div>
+                #{tag}
               </Link>
-            </motion.section>
-          );
-        }
+            ))}
+          </div>
+        </div>
+      </motion.section>
 
-        if (sectionKey === "categories") {
-          const sec = settings.sections.categories;
-          if (!sec.enabled) return null;
-          const limit = sec.limit ?? 8;
-          return (
-            <motion.section key="categories" {...revealProps} className="relative z-10 px-4">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-base font-black" style={{ color: LIGHT }}>
-                  {sec.title || "التصنيفات"}
-                </h3>
-                <Link
-                  to="/search"
-                  className="text-xs font-bold"
-                  style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
+      {/* 4. SMART CATEGORIES */}
+      {settings.sections.categories.enabled && (
+        <motion.section key="categories" {...revealProps} className="relative z-10 px-4">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-black" style={{ color: LIGHT }}>
+              {settings.sections.categories.title || "التصنيفات الذكية"}
+            </h3>
+            <Link
+              to="/search"
+              className="text-xs font-bold"
+              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
+            >
+              الكل
+            </Link>
+          </div>
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.05 }}
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
+            className="grid grid-cols-4 gap-3"
+          >
+            {categories.slice(0, settings.sections.categories.limit ?? 8).map((c) => {
+              const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[c.icon] ?? Icons.Package;
+              return (
+                <motion.div
+                  key={c.id}
+                  variants={{
+                    hidden: { opacity: 0, y: 30 },
+                    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+                  }}
                 >
-                  الكل
-                </Link>
-              </div>
-              <motion.div
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.05 }}
-                variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
-                className="grid grid-cols-4 gap-3"
+                  <Link to="/category/$id" params={{ id: c.id }} className="flex flex-col items-center gap-1.5">
+                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20 shadow-card transition overflow-hidden">
+                      {c.imageUrl ? (
+                        <img src={c.imageUrl} alt={c.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <Icon className="h-6 w-6" />
+                      )}
+                    </div>
+                    <span className="text-center text-[10px] font-semibold leading-tight" style={{ color: "color-mix(in oklab, var(--showcase-foreground) 85%, transparent)" }}>
+                      {c.name}
+                    </span>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </motion.section>
+      )}
+
+      {/* 5. TRENDING NOW */}
+      {settings.sections.latest.enabled && (
+        <motion.section key="latest" {...revealProps} className="relative z-10 px-4 pt-4 sm:pt-6">
+          <div className="mb-5 flex items-end justify-between">
+            <div>
+              <span
+                className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em]"
+                style={{ color: "color-mix(in oklab, var(--showcase-foreground) 55%, transparent)" }}
               >
-                {categories.slice(0, limit).map((c) => {
-                  const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[c.icon] ?? Icons.Package;
-                  return (
-                    <motion.div
-                      key={c.id}
-                      variants={{
-                        hidden: { opacity: 0, y: 30 },
-                        show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
-                      }}
-                    >
-                      <Link to="/category/$id" params={{ id: c.id }} className="flex flex-col items-center gap-1.5">
-                        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20 shadow-card transition overflow-hidden">
-                          {c.imageUrl ? (
-                            <img src={c.imageUrl} alt={c.name} className="h-full w-full object-cover" />
-                          ) : (
-                            <Icon className="h-6 w-6" />
-                          )}
-                        </div>
-                        <span className="text-center text-[10px] font-semibold leading-tight" style={{ color: "color-mix(in oklab, var(--showcase-foreground) 85%, transparent)" }}>
-                          {c.name}
-                        </span>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-            </motion.section>
-          );
-        }
+                TRENDING NOW
+              </span>
+              <h2 className="text-xl font-black leading-tight sm:text-2xl" style={{ color: LIGHT }}>
+                {settings.sections.latest.title || "المنتجات الأكثر رواجاً"}
+              </h2>
+            </div>
+            <Link
+              to="/search"
+              className="text-xs font-bold"
+              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
+            >
+              استكشف الكل
+            </Link>
+          </div>
+          <div className={getGridClass(settings.products_layout)}>
+            {allProducts.slice(0, settings.products_layout.latestProductsLimit ?? settings.sections.latest.limit).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </motion.section>
+      )}
 
-        if (sectionKey === "deals") {
-          const sec = settings.sections.deals;
-          if (!sec.enabled) return null;
-          const limit = settings.products_layout.dailyDealsLimit ?? sec.limit;
-          return (
-            <motion.section key="deals" {...revealProps} className="relative z-10 px-4">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-base font-black" style={{ color: LIGHT }}>{sec.title || "عروض اليوم 🔥"}</h3>
-                <Link to="/offers" className="text-xs font-bold" style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}>الكل</Link>
-              </div>
-              <div className={getGridClass(settings.products_layout)}>
-                {dailyDeals.slice(0, limit).map((p) => <ProductCard key={p.id} product={p} />)}
-              </div>
-            </motion.section>
-          );
-        }
+      {/* 6. AI RECOMMENDED */}
+      {settings.sections.recommended.enabled && (
+        <motion.section key="recommended" {...revealProps} className="relative z-10 px-4">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-black" style={{ color: LIGHT }}>
+              {settings.sections.recommended.title || "مقترحات الذكاء الاصطناعي"}
+            </h3>
+            <Link to="/search" className="text-xs font-bold" style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}>الكل</Link>
+          </div>
+          <div className={getGridClass(settings.products_layout)}>
+            {bestSellers.slice(0, settings.products_layout.bestSellersLimit ?? settings.sections.recommended.limit).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </motion.section>
+      )}
 
-        if (sectionKey === "cinematic") {
-          const sec = settings.sections.cinematic;
-          if (!sec.enabled) return null;
-          return (
-            <section key="cinematic" className="relative z-10 -mx-4">
-              <CinematicStory />
-            </section>
-          );
-        }
+      {/* 7. OFFERS */}
+      {settings.sections.deals.enabled && (
+        <motion.section key="deals" {...revealProps} className="relative z-10 px-4">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-black" style={{ color: LIGHT }}>
+              {settings.sections.deals.title || "أقوى العروض والخصومات 🔥"}
+            </h3>
+            <Link to="/offers" className="text-xs font-bold" style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}>الكل</Link>
+          </div>
+          <div className={getGridClass(settings.products_layout)}>
+            {dailyDeals.slice(0, settings.products_layout.dailyDealsLimit ?? settings.sections.deals.limit).map((p) => <ProductCard key={p.id} product={p} />)}
+          </div>
+        </motion.section>
+      )}
 
-        if (sectionKey === "recommended") {
-          const sec = settings.sections.recommended;
-          if (!sec.enabled) return null;
-          const limit = settings.products_layout.bestSellersLimit ?? sec.limit;
-          return (
-            <motion.section key="recommended" {...revealProps} className="relative z-10 px-4">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-base font-black" style={{ color: LIGHT }}>{sec.title || "الأكثر مبيعاً"}</h3>
-                <Link to="/search" className="text-xs font-bold" style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}>الكل</Link>
-              </div>
-              <div className={getGridClass(settings.products_layout)}>
-                {bestSellers.slice(0, limit).map((p) => <ProductCard key={p.id} product={p} />)}
-              </div>
-            </motion.section>
-          );
-        }
+      {/* 8. VIRTUAL SHOWROOM */}
+      {settings.sections.showroom.enabled && (
+        <motion.section key="showroom" {...revealProps} className="relative z-10 px-4">
+          <Link
+            to="/immersive-store"
+            className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-3xl border p-4 shadow-2xl"
+            style={{
+              borderColor: LIGHT_BORDER,
+              background:
+                "linear-gradient(120deg, color-mix(in oklab, var(--showcase) 90%, transparent) 0%, color-mix(in oklab, var(--primary) 55%, transparent) 55%, color-mix(in oklab, var(--primary-light) 40%, transparent) 100%)",
+              color: LIGHT,
+            }}
+          >
+            <div
+              className="absolute inset-0 opacity-40 mix-blend-overlay"
+              style={{
+                background:
+                  "radial-gradient(circle at 20% 20%, color-mix(in oklab, var(--showcase-foreground) 60%, transparent), transparent 40%), radial-gradient(circle at 80% 80%, color-mix(in oklab, var(--primary-light) 70%, transparent), transparent 45%)",
+              }}
+            />
+            <div className="relative">
+              <span className="inline-block rounded-full bg-showcase-foreground/20 px-2.5 py-0.5 text-[10px] font-bold">
+                {settings.sections.showroom.badge || "جديد · تجربة ثلاثية الأبعاد"}
+              </span>
+              <h3 className="mt-1.5 text-lg font-black leading-tight">{settings.sections.showroom.title || "المعرض الافتراضي"}</h3>
+              <p className="text-[11px] text-showcase-foreground/85">{settings.sections.showroom.subtitle || "تجوّل داخل اندكس ستور الفاخر"}</p>
+            </div>
+            <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-showcase-foreground/15 ring-1 ring-showcase-foreground/30 backdrop-blur-md transition group-hover:scale-110">
+              <Icons.Sparkles className="h-5 w-5" />
+            </div>
+          </Link>
+        </motion.section>
+      )}
 
-        return null;
-      })}
+      {/* 9. SOCIAL PROOF */}
+      <motion.section {...revealProps} className="relative z-10 px-4 mt-4 pb-4 border-t border-showcase-border/40 pt-6">
+        <div className="mb-4 text-center">
+          <span className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em] text-primary">REVIEWS & TESTIMONIALS</span>
+          <h3 className="text-base font-black text-showcase-foreground">ماذا يقول عملاؤنا؟ ❤️</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { name: "أحمد الحميري", role: "صنعاء", text: "تجربة شراء رائعة جداً، المنتج وصل مغلف تماماً والمعاينة ثلاثية الأبعاد ساعدتني أقرر بسرعة.", rating: 5 },
+            { name: "جميل الشرعبي", role: "تعز", text: "أفضل خدمة توصيل وتعامل محترم من الدعم الفني، الجودة ممتازة والأسعار منافسة.", rating: 5 },
+            { name: "سامي الذبحاني", role: "عدن", text: "الطلب عبر الواتساب سهل وسريع، والكرة ثلاثية الأبعاد فكرة مبتكرة جداً في متجر يمني.", rating: 5 }
+          ].map((item, idx) => (
+            <div key={idx} className="rounded-2xl border border-showcase-border bg-surface/50 p-4 space-y-2 text-start">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-black text-showcase-foreground">{item.name}</h4>
+                  <p className="text-[9px] text-showcase-foreground/50">{item.role}</p>
+                </div>
+                <div className="flex gap-0.5 text-amber-400">
+                  {Array.from({ length: item.rating }).map((_, i) => (
+                    <Icons.Star key={i} className="h-3 w-3 fill-amber-400" />
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-showcase-foreground/80 leading-relaxed italic">"{item.text}"</p>
+            </div>
+          ))}
+        </div>
+      </motion.section>
 
       {/* ============= STICKY MOBILE CHECKOUT ============= */}
       {settings.cart_config.floatingBarEnabled && (
