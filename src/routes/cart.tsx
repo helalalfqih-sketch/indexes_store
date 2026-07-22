@@ -125,9 +125,9 @@ function CartPage() {
         {items.map((it) => (
           <li
             key={it.productId}
-            className="flex gap-3 rounded-2xl border border-showcase-border bg-showcase-foreground/5 p-2.5 shadow-card backdrop-blur-md"
+            className="flex gap-3 rounded-3xl glass-float p-3"
           >
-            <OptimizedImage src={it.image} alt={it.name} size="thumbnail" className="h-20 w-20 rounded-xl object-cover" />
+            <OptimizedImage src={it.image} alt={it.name} size="thumbnail" className="h-24 w-24 rounded-2xl object-cover" />
             <div className="flex flex-1 flex-col justify-between">
               <div className="flex items-start justify-between gap-2">
                 <h3 className="line-clamp-2 text-xs font-bold leading-tight">{it.name}</h3>
@@ -140,7 +140,7 @@ function CartPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setQty(it.productId, it.qty - 1)}
-                    className="grid h-7 w-7 place-items-center rounded-full bg-muted"
+                    className="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-showcase-foreground backdrop-blur-sm"
                   >
                     <Minus className="h-3 w-3" />
                   </button>
@@ -159,7 +159,7 @@ function CartPage() {
       </ul>
 
       {deliveryFormEnabled && (
-        <section className="rounded-2xl border border-showcase-border bg-showcase-foreground/5 p-4 shadow-card backdrop-blur-md">
+        <section className="rounded-3xl glass-float p-4">
           <h3 className="mb-3 text-sm font-black">بيانات التسليم</h3>
           <div className="flex flex-col gap-3">
             <label
@@ -241,7 +241,7 @@ function CartPage() {
         </section>
       )}
 
-      <section className="rounded-2xl border border-showcase-border bg-showcase-foreground/5 p-4 shadow-card backdrop-blur-md">
+      <section className="rounded-3xl glass-float p-4">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">المجموع الفرعي</span>
           <span className="font-bold">{formatPrice(total)}</span>
