@@ -28,6 +28,10 @@ export const getRouter = () => {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 10000,
+    // PERF: route loaders stay fresh for 5 minutes — Home → Cart → Home never
+    // re-runs loaders (instant back-navigation, no pending flash). Data
+    // freshness is still guaranteed by react-query background refetching.
+    defaultStaleTime: 5 * 60 * 1000,
   });
 
   return router;
