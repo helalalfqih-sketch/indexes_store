@@ -136,7 +136,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       // Read under RLS: proves the caller can manage this order's tenant.
       const { data: order, error: readErr } = await supabase
         .from("orders")
-        .select("id, status, tenant_id")
+        .select("id, status, tenant_id, total, currency")
         .eq("id", data.orderId)
         .maybeSingle();
       if (readErr || !order) {
@@ -174,6 +174,29 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       });
       if (histErr) {
         console.warn("[updateOrderStatus] history notice:", histErr.message);
+      }
+
+      // P4 — financial ledger hooks (best-effort, idempotent, service role;
+      // ledger has NO client INSERT policy so this is the only write path).
+      // A failure here never fails the status change.
+      if (data.toStatus === "delivered" || data.toStatus === "refunded") {
+        try {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const fin = await import("@/lib/services/store-financial.service");
+          const orderRow = {
+            id: order.id,
+            tenant_id: order.tenant_id,
+            total: Number(order.total ?? 0),
+            currency: order.currency ?? "YER",
+          };
+          if (data.toStatus === "delivered") {
+            await fin.recordOrderIncome(supabaseAdmin as any, orderRow);
+          } else {
+            await fin.recordOrderRefund(supabaseAdmin as any, orderRow);
+          }
+        } catch (finErr) {
+          console.warn("[updateOrderStatus] financial ledger notice:", finErr);
+        }
       }
 
       return { ok: true, from: fromStatus, to: data.toStatus };

@@ -47,7 +47,10 @@ import {
   getStorefrontAppearance,
   updateStorefrontAppearance,
   getStorefrontChangeLogs,
+  restoreStorefrontVersion,
+  type ChangeLogEntry,
 } from "@/lib/actions/appearance.actions";
+import { notifyStorefrontPublished } from "@/components/appearance-provider";
 import {
   DEFAULT_STOREFRONT_SETTINGS,
   type StorefrontSettingsShape,
@@ -1432,12 +1435,27 @@ function NotificationsTab({
 // ── 08. Studio Dashboard & Logs Tab ───────────────────────────────────────────
 function StudioTab() {
   const getLogs = useServerFn(getStorefrontChangeLogs);
+  const restoreVersion = useServerFn(restoreStorefrontVersion);
   const logsQ = useQuery({
     queryKey: ["storefront-change-logs-studio"],
     queryFn: () => getLogs(),
   });
 
-  const logs = logsQ.data ?? [];
+  const restoreMut = useMutation({
+    mutationFn: (logId: string) => restoreVersion({ data: { logId } }),
+    onSuccess: (r) => {
+      if (r.success) {
+        toast.success(`↩️ تمت استعادة نسخة «${r.key}» ونشرها حياً`);
+        void notifyStorefrontPublished();
+        logsQ.refetch();
+      } else {
+        toast.error(r.message ?? "تعذّرت الاستعادة");
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const logs = (logsQ.data ?? []) as ChangeLogEntry[];
 
   return (
     <div className="space-y-4">
@@ -1484,15 +1502,29 @@ function StudioTab() {
         {logs.length > 0 ? (
           <div className="divide-y divide-border border border-border rounded-xl overflow-hidden text-xs max-h-64 overflow-y-auto">
             {logs.map((log) => (
-              <div key={log.id} className="flex items-center justify-between p-3 hover:bg-background/40 font-mono">
+              <div key={log.id} className="flex items-center justify-between gap-2 p-3 hover:bg-background/40 font-mono">
                 <span className="text-primary font-bold">{log.key_changed}</span>
                 <span className="bg-background/90 text-muted-foreground rounded-full px-2 py-0.5 text-[10px]">
-                  {log.action_type === "publish" ? "نشر نهائي" : "مسودة محفوظة"}
+                  {log.action_type === "publish"
+                    ? "نشر نهائي"
+                    : log.action_type === "restore"
+                      ? "استعادة نسخة"
+                      : "مسودة محفوظة"}
                 </span>
                 <span className="text-muted-foreground shrink-0">{log.user_email || "—"}</span>
                 <span className="text-muted-foreground text-[10px] shrink-0">
                   {new Date(log.created_at).toLocaleString("ar", { hour: "2-digit", minute: "2-digit" })}
                 </span>
+                {log.old_value != null && (
+                  <button
+                    onClick={() => restoreMut.mutate(log.id)}
+                    disabled={restoreMut.isPending}
+                    title="استعادة هذه النسخة ونشرها حياً"
+                    className="shrink-0 rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary transition hover:bg-primary/20 disabled:opacity-50"
+                  >
+                    ↩️ استعادة
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -1558,6 +1590,8 @@ function StorefrontCMSPage() {
         toast.success("✅ تم حفظ تغييرات التبويب بنجاح!");
         setSavedAt(new Date());
         dirty.current = false;
+        // Realtime: push the change to every open storefront tab instantly.
+        void notifyStorefrontPublished();
       } else {
         toast.error("حدث خطأ أثناء حفظ بعض الإعدادات");
       }
@@ -1591,6 +1625,8 @@ function StorefrontCMSPage() {
       toast.success("🚀 تم نشر جميع الإعدادات وتطبيقها حياً على المتجر!");
       setSavedAt(new Date());
       dirty.current = false;
+      // Realtime: push the change to every open storefront tab instantly.
+      void notifyStorefrontPublished();
     },
     onError: (e: Error) => toast.error(e.message),
   });

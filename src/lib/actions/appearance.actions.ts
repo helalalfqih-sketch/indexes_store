@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { supabase } from "@/integrations/supabase/client";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
@@ -21,6 +22,77 @@ import {
 } from "@/lib/domain/appearance";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
+// Validation lives in @/lib/validators/storefront (Phase 3), and ALL database
+// access goes through @/lib/services/storefront.service (Phase 4 — single CMS
+// data layer). This actions file keeps only: auth, validation, logging calls.
+import { validateSettingValue } from "@/lib/validators/storefront";
+import * as storefrontService from "@/lib/services/storefront.service";
+import { resolveTenantId } from "@/lib/saas/tenant-context";
+import { resolveCurrentTenant } from "@/lib/saas/tenant-resolver";
+
+/**
+ * P5 — CMS write scope resolution:
+ *   platform admin → GLOBAL rows (tenant_id NULL, platform defaults)
+ *   store owner    → THEIR tenant's override rows
+ * Anyone else is rejected. RLS enforces the same split as backstop.
+ */
+async function resolveCmsScope(
+  authSupabase: any,
+  userId: string,
+): Promise<{ allowed: boolean; scope: string | null }> {
+  const { data: isAdmin } = await authSupabase.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
+  if (isAdmin) return { allowed: true, scope: null };
+
+  try {
+    const tenantId = await resolveCurrentTenant(authSupabase, { userId });
+    const { data: isOwner } = await authSupabase.rpc("has_tenant_permission", {
+      _tenant_id: tenantId,
+      _user_id: userId,
+      _required_role: "owner",
+    });
+    if (isOwner) return { allowed: true, scope: tenantId };
+  } catch {
+    /* fall through */
+  }
+  return { allowed: false, scope: null };
+}
+
+/** Resolve the storefront tenant for PUBLIC reads from request headers. */
+async function resolvePublicCmsTenant(db: any): Promise<string | null> {
+  try {
+    const headers = getRequest()?.headers ?? null;
+    return await resolveTenantId(db, { headers });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Verify the caller of a public (middleware-less) server fn is a platform
+ * admin, using the request bearer token verified against Supabase Auth.
+ * Returns the service-role client when authorized, otherwise null.
+ */
+async function getAdminClientIfAuthorized() {
+  try {
+    const authHeader = getRequest()?.headers?.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) return null;
+    const token = authHeader.slice("Bearer ".length).trim();
+    if (!token || token.split(".").length !== 3) return null;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
+    if (error || !data?.user) return null;
+    const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
+      _user_id: data.user.id,
+      _role: "admin",
+    });
+    return isAdmin ? supabaseAdmin : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Parse the raw DB rows into the full StorefrontSettingsShape using safe Zod defaults. */
 function rowsToSettings(
@@ -91,16 +163,27 @@ export const getStorefrontAppearance = createServerFn({ method: "GET" })
     try {
       if (!supabase) return DEFAULT_STOREFRONT_SETTINGS;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: rows, error } = await (supabase as any)
-        .from("storefront_settings")
-        .select("key, value, draft_value");
+      // Preview (drafts) is ADMIN-ONLY: draft_value is no longer readable by
+      // the anon role (column-scoped grant, S1), so the preview path verifies
+      // the caller's bearer token and reads via the service role. An
+      // unauthorized previewMode request silently degrades to published values.
+      // P5: resolve the storefront's tenant (subdomain / x-tenant headers /
+      // default) — reads merge tenant overrides over platform defaults.
+      const publicTenantId = await resolvePublicCmsTenant(supabase);
 
-      if (error || !rows || rows.length === 0) {
-        return DEFAULT_STOREFRONT_SETTINGS;
+      if (previewMode) {
+        const adminClient = await getAdminClientIfAuthorized();
+        if (adminClient) {
+          const rows = await storefrontService.fetchRowsWithDrafts(adminClient, publicTenantId);
+          if (rows) return rowsToSettings(rows, true);
+        }
+        // fall through → published values
       }
 
-      return rowsToSettings(rows, previewMode);
+      // Public storefront read: published values only (never draft_value).
+      const rows = await storefrontService.fetchPublishedRows(supabase, publicTenantId);
+      if (!rows) return DEFAULT_STOREFRONT_SETTINGS;
+      return rowsToSettings(rows, false);
     } catch (err) {
       console.warn("[getStorefrontAppearance] Returning fallback defaults:", err);
       return DEFAULT_STOREFRONT_SETTINGS;
@@ -120,47 +203,32 @@ export const saveStorefrontDraft = createServerFn({ method: "POST" })
     try {
       const { supabase: authSupabase, userId } = context;
 
-      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-
-      if (roleErr || !isAdmin) {
-        return { success: false, message: "غير مسموح: يجب أن تكون مديراً لتعديل الإعدادات" };
+      const gate = await resolveCmsScope(authSupabase, userId);
+      if (!gate.allowed) {
+        return { success: false, message: "غير مسموح: يتطلب مدير المنصّة أو مالك المتجر" };
       }
 
-      // Write to draft_value (not yet live)
-      const { error } = await authSupabase
-        .from("storefront_settings")
-        .upsert(
-          {
-            key: data.key,
-            value: {}, // keep existing live value intact on upsert
-            draft_value: data.value,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key", ignoreDuplicates: false }
-        );
+      // S2: validate the payload against the key's schema before storing.
+      const validated = validateSettingValue(data.key, data.value);
+      if (!validated.ok) return { success: false, message: validated.message };
 
-      // Actually only update draft_value without touching value
-      await authSupabase
-        .from("storefront_settings")
-        .update({ draft_value: data.value, updated_at: new Date().toISOString() })
-        .eq("key", data.key);
+      // C1-safe draft save through the unified service (never touches `value`).
+      const res = await storefrontService.saveDraftValue(authSupabase, data.key, validated.value, gate.scope);
+      if (!res.ok) {
+        console.error("[saveStorefrontDraft] Error:", res.message);
+        return { success: false, message: res.message };
+      }
 
-      // Insert change log entry
+      // Change log with value snapshots (enables version restore).
       const { data: userData } = await authSupabase.auth.getUser();
-      await authSupabase.from("storefront_change_logs").insert({
-        user_id: userId,
-        user_email: userData?.user?.email ?? null,
-        action_type: "save_draft",
-        key_changed: data.key,
+      await storefrontService.logChange(authSupabase, {
+        userId,
+        userEmail: userData?.user?.email ?? null,
+        actionType: "save_draft",
+        key: data.key,
+        oldValue: res.oldValue,
+        newValue: validated.value,
       });
-
-      if (error) {
-        console.error("[saveStorefrontDraft] Error:", error);
-        return { success: false, message: error.message };
-      }
 
       return { success: true };
     } catch (err: unknown) {
@@ -182,51 +250,24 @@ export const publishStorefrontSettings = createServerFn({ method: "POST" })
     try {
       const { supabase: authSupabase, userId } = context;
 
-      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-
-      if (roleErr || !isAdmin) {
-        return { success: false, message: "غير مسموح: يجب أن تكون مديراً لنشر الإعدادات" };
+      const gate = await resolveCmsScope(authSupabase, userId);
+      if (!gate.allowed) {
+        return { success: false, message: "غير مسموح: يتطلب مدير المنصّة أو مالك المتجر" };
       }
 
-      // Read current draft_value for this key
-      const { data: row, error: fetchErr } = await authSupabase
-        .from("storefront_settings")
-        .select("draft_value")
-        .eq("key", data.key)
-        .single();
+      // Publish draft → live through the unified service.
+      const res = await storefrontService.publishDraftKey(authSupabase, data.key, gate.scope);
+      if (!res.ok) return { success: false, message: res.message };
 
-      if (fetchErr || !row) {
-        return { success: false, message: "المفتاح غير موجود" };
-      }
-
-      if (row.draft_value == null) {
-        return { success: false, message: "لا توجد مسودة للنشر" };
-      }
-
-      // Copy draft_value → value (publish)
-      const { error } = await authSupabase
-        .from("storefront_settings")
-        .update({
-          value: row.draft_value,
-          draft_value: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("key", data.key);
-
-      if (error) {
-        return { success: false, message: error.message };
-      }
-
-      // Log the publish action
+      // Log with snapshots (old published value → newly published value).
       const { data: userData } = await authSupabase.auth.getUser();
-      await authSupabase.from("storefront_change_logs").insert({
-        user_id: userId,
-        user_email: userData?.user?.email ?? null,
-        action_type: "publish",
-        key_changed: data.key,
+      await storefrontService.logChange(authSupabase, {
+        userId,
+        userEmail: userData?.user?.email ?? null,
+        actionType: "publish",
+        key: data.key,
+        oldValue: res.oldValue,
+        newValue: res.newValue,
       });
 
       return { success: true };
@@ -247,50 +288,30 @@ export const publishAllStorefrontSettings = createServerFn({ method: "POST" })
     try {
       const { supabase: authSupabase, userId } = context;
 
-      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-
-      if (roleErr || !isAdmin) {
+      const gate = await resolveCmsScope(authSupabase, userId);
+      if (!gate.allowed) {
         return { success: false, message: "غير مسموح", published: [] };
       }
 
-      // Fetch all rows that have a pending draft
-      const { data: rows, error: fetchErr } = await authSupabase
-        .from("storefront_settings")
-        .select("key, draft_value")
-        .not("draft_value", "is", null);
-
-      if (fetchErr || !rows || rows.length === 0) {
+      // Publish every pending draft (within the caller's scope only).
+      const results = await storefrontService.publishAllDraftKeys(authSupabase, gate.scope);
+      if (results.length === 0) {
         return { success: true, published: [], message: "لا توجد مسودات معلقة" };
       }
 
-      const published: string[] = [];
       const { data: userData } = await authSupabase.auth.getUser();
-
-      for (const row of rows) {
-        const { error } = await authSupabase
-          .from("storefront_settings")
-          .update({
-            value: row.draft_value,
-            draft_value: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("key", row.key);
-
-        if (!error) {
-          published.push(row.key);
-          await authSupabase.from("storefront_change_logs").insert({
-            user_id: userId,
-            user_email: userData?.user?.email ?? null,
-            action_type: "publish",
-            key_changed: row.key,
-          });
-        }
+      for (const r of results) {
+        await storefrontService.logChange(authSupabase, {
+          userId,
+          userEmail: userData?.user?.email ?? null,
+          actionType: "publish",
+          key: r.key,
+          oldValue: r.oldValue,
+          newValue: r.newValue,
+        });
       }
 
-      return { success: true, published };
+      return { success: true, published: results.map((r) => r.key) };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "حدث خطأ";
       return { success: false, message: msg, published: [] };
@@ -305,6 +326,9 @@ export type ChangeLogEntry = {
   action_type: string;
   key_changed: string;
   created_at: string;
+  /** Present after migration 20260722000008 — snapshot of the replaced value. */
+  changed_section?: string | null;
+  old_value?: unknown;
 };
 
 /**
@@ -324,16 +348,66 @@ export const getStorefrontChangeLogs = createServerFn({ method: "GET" })
       if (!isAdmin) return [];
 
       const limit = data?.limit ?? 20;
-      const { data: logs, error } = await authSupabase
-        .from("storefront_change_logs")
-        .select("id, user_email, action_type, key_changed, created_at")
-        .order("created_at", { ascending: false })
-        .limit(limit);
-
-      if (error || !logs) return [];
+      const logs = await storefrontService.listChangeLogs(authSupabase, limit);
       return logs as ChangeLogEntry[];
     } catch {
       return [];
+    }
+  });
+
+// ── 6. Restore a previous version (Phase 5) ──────────────────────────────────
+
+/**
+ * Restore a CMS key to a previous version from a change-log snapshot.
+ * The restored value goes LIVE immediately; the restore itself is logged with
+ * snapshots, so it is always reversible via its own log entry. Admin only.
+ */
+export const restoreStorefrontVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { logId: string }) => data)
+  .handler(async ({ data, context }): Promise<{ success: boolean; message?: string; key?: string }> => {
+    try {
+      const { supabase: authSupabase, userId } = context;
+
+      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
+        _user_id: userId,
+        _role: "admin",
+      });
+      if (roleErr || !isAdmin) {
+        return { success: false, message: "غير مسموح: يجب أن تكون مديراً لاستعادة النسخ" };
+      }
+
+      // 1) Read the snapshot, 2) zod-validate it against the key's CURRENT
+      // schema (corrupt/legacy snapshots are rejected before any write),
+      // 3) apply as the live value.
+      const snap = await storefrontService.getLogSnapshot(authSupabase, data.logId);
+      if (!snap.ok) return { success: false, message: snap.message };
+
+      const validated = validateSettingValue(snap.key, snap.oldValue);
+      if (!validated.ok) {
+        return {
+          success: false,
+          message: `تعذّرت الاستعادة — اللقطة لا تطابق مخطط الإعدادات الحالي: ${validated.message}`,
+        };
+      }
+
+      const res = await storefrontService.applyRestore(authSupabase, snap.key, validated.value);
+      if (!res.ok) return { success: false, message: res.message };
+
+      const { data: userData } = await authSupabase.auth.getUser();
+      await storefrontService.logChange(authSupabase, {
+        userId,
+        userEmail: userData?.user?.email ?? null,
+        actionType: "restore",
+        key: snap.key,
+        oldValue: res.previousValue,
+        newValue: validated.value,
+      });
+
+      return { success: true, key: snap.key };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "حدث خطأ أثناء الاستعادة";
+      return { success: false, message: msg };
     }
   });
 
@@ -347,38 +421,31 @@ export const updateStorefrontAppearance = createServerFn({ method: "POST" })
     try {
       const { supabase: authSupabase, userId } = context;
 
-      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-
-      if (roleErr || !isAdmin) {
-        return { success: false, message: "غير مسموح: يجب أن تكون مديراً لتعديل المظهر" };
+      const gate = await resolveCmsScope(authSupabase, userId);
+      if (!gate.allowed) {
+        return { success: false, message: "غير مسموح: يتطلب مدير المنصّة أو مالك المتجر" };
       }
 
-      const { error } = await authSupabase
-        .from("storefront_settings")
-        .upsert(
-          {
-            key: data.key,
-            value: data.value,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key" }
-        );
+      // S2: validate against the key's schema before writing to the live value.
+      const validated = validateSettingValue(data.key, data.value);
+      if (!validated.ok) return { success: false, message: validated.message };
 
-      if (error) {
-        console.error("[updateStorefrontAppearance] Upsert error:", error);
-        return { success: false, message: error.message };
+      // Direct live save through the unified service (snapshots the old value).
+      const res = await storefrontService.saveLiveValue(authSupabase, data.key, validated.value, gate.scope);
+      if (!res.ok) {
+        console.error("[updateStorefrontAppearance] Error:", res.message);
+        return { success: false, message: res.message };
       }
 
-      // Log the direct save
+      // This write goes LIVE immediately → log it as a publish, with snapshots.
       const { data: userData } = await authSupabase.auth.getUser();
-      await authSupabase.from("storefront_change_logs").insert({
-        user_id: userId,
-        user_email: userData?.user?.email ?? null,
-        action_type: "save_draft",
-        key_changed: data.key,
+      await storefrontService.logChange(authSupabase, {
+        userId,
+        userEmail: userData?.user?.email ?? null,
+        actionType: "publish",
+        key: data.key,
+        oldValue: res.oldValue,
+        newValue: validated.value,
       });
 
       return { success: true };

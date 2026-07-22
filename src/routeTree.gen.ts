@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrackRouteImport } from './routes/track'
+import { Route as StoreRouteImport } from './routes/store'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OffersRouteImport } from './routes/offers'
@@ -20,9 +21,17 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StoreIndexRouteImport } from './routes/store.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
-import { Route as VendorSlugRouteImport } from './routes/vendor.$slug'
+import { Route as StoreSettingsRouteImport } from './routes/store.settings'
+import { Route as StoreProductsRouteImport } from './routes/store.products'
+import { Route as StoreOrdersRouteImport } from './routes/store.orders'
+import { Route as StoreMarketingRouteImport } from './routes/store.marketing'
+import { Route as StoreInventoryRouteImport } from './routes/store.inventory'
+import { Route as StoreEarningsRouteImport } from './routes/store.earnings'
+import { Route as StoreDashboardRouteImport } from './routes/store.dashboard'
+import { Route as StoreCustomersRouteImport } from './routes/store.customers'
+import { Route as StoreAnalyticsRouteImport } from './routes/store.analytics'
 import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
 import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
@@ -30,6 +39,7 @@ import { Route as GoogleShoppingXmlRouteImport } from './routes/google-shopping.
 import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
 import { Route as AdminStudioRouteImport } from './routes/admin.studio'
+import { Route as AdminStoresRouteImport } from './routes/admin.stores'
 import { Route as AdminStorefrontRouteImport } from './routes/admin.storefront'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminSessionsRouteImport } from './routes/admin.sessions'
@@ -42,11 +52,17 @@ import { Route as AdminBranchesRouteImport } from './routes/admin.branches'
 import { Route as AdminAppearanceRouteImport } from './routes/admin.appearance'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
 import { Route as ApiAiAnalyzeProductRouteImport } from './routes/api/ai.analyze-product'
+import { Route as AdminStoresTenantIdRouteImport } from './routes/admin.stores.$tenantId'
 import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
 
 const TrackRoute = TrackRouteImport.update({
   id: '/track',
   path: '/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoreRoute = StoreRouteImport.update({
+  id: '/store',
+  path: '/store',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SearchRoute = SearchRouteImport.update({
@@ -99,20 +115,60 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoreIndexRoute = StoreIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StoreRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const VendorDashboardRoute = VendorDashboardRouteImport.update({
-  id: '/vendor/dashboard',
-  path: '/vendor/dashboard',
-  getParentRoute: () => rootRouteImport,
+const StoreSettingsRoute = StoreSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => StoreRoute,
 } as any)
-const VendorSlugRoute = VendorSlugRouteImport.update({
-  id: '/vendor/$slug',
-  path: '/vendor/$slug',
-  getParentRoute: () => rootRouteImport,
+const StoreProductsRoute = StoreProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreOrdersRoute = StoreOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreMarketingRoute = StoreMarketingRouteImport.update({
+  id: '/marketing',
+  path: '/marketing',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreInventoryRoute = StoreInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreEarningsRoute = StoreEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreDashboardRoute = StoreDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreCustomersRoute = StoreCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreAnalyticsRoute = StoreAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => StoreRoute,
 } as any)
 const SitemapXmlRoute = SitemapXmlRouteImport.update({
   id: '/sitemap/xml',
@@ -147,6 +203,11 @@ const CategoryIdRoute = CategoryIdRouteImport.update({
 const AdminStudioRoute = AdminStudioRouteImport.update({
   id: '/studio',
   path: '/studio',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStoresRoute = AdminStoresRouteImport.update({
+  id: '/stores',
+  path: '/stores',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminStorefrontRoute = AdminStorefrontRouteImport.update({
@@ -209,6 +270,11 @@ const ApiAiAnalyzeProductRoute = ApiAiAnalyzeProductRouteImport.update({
   path: '/api/ai/analyze-product',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminStoresTenantIdRoute = AdminStoresTenantIdRouteImport.update({
+  id: '/$tenantId',
+  path: '/$tenantId',
+  getParentRoute: () => AdminStoresRoute,
+} as any)
 const AdminProductIdRoute = AdminProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -226,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
+  '/store': typeof StoreRouteWithChildren
   '/track': typeof TrackRoute
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
@@ -237,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/storefront': typeof AdminStorefrontRoute
+  '/admin/stores': typeof AdminStoresRouteWithChildren
   '/admin/studio': typeof AdminStudioRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -244,10 +312,19 @@ export interface FileRoutesByFullPath {
   '/product/$slug': typeof ProductSlugRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
-  '/vendor/$slug': typeof VendorSlugRoute
-  '/vendor/dashboard': typeof VendorDashboardRoute
+  '/store/analytics': typeof StoreAnalyticsRoute
+  '/store/customers': typeof StoreCustomersRoute
+  '/store/dashboard': typeof StoreDashboardRoute
+  '/store/earnings': typeof StoreEarningsRoute
+  '/store/inventory': typeof StoreInventoryRoute
+  '/store/marketing': typeof StoreMarketingRoute
+  '/store/orders': typeof StoreOrdersRoute
+  '/store/products': typeof StoreProductsRoute
+  '/store/settings': typeof StoreSettingsRoute
   '/admin/': typeof AdminIndexRoute
+  '/store/': typeof StoreIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
+  '/admin/stores/$tenantId': typeof AdminStoresTenantIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
 }
@@ -272,6 +349,7 @@ export interface FileRoutesByTo {
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/storefront': typeof AdminStorefrontRoute
+  '/admin/stores': typeof AdminStoresRouteWithChildren
   '/admin/studio': typeof AdminStudioRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -279,10 +357,19 @@ export interface FileRoutesByTo {
   '/product/$slug': typeof ProductSlugRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
-  '/vendor/$slug': typeof VendorSlugRoute
-  '/vendor/dashboard': typeof VendorDashboardRoute
+  '/store/analytics': typeof StoreAnalyticsRoute
+  '/store/customers': typeof StoreCustomersRoute
+  '/store/dashboard': typeof StoreDashboardRoute
+  '/store/earnings': typeof StoreEarningsRoute
+  '/store/inventory': typeof StoreInventoryRoute
+  '/store/marketing': typeof StoreMarketingRoute
+  '/store/orders': typeof StoreOrdersRoute
+  '/store/products': typeof StoreProductsRoute
+  '/store/settings': typeof StoreSettingsRoute
   '/admin': typeof AdminIndexRoute
+  '/store': typeof StoreIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
+  '/admin/stores/$tenantId': typeof AdminStoresTenantIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
 }
@@ -298,6 +385,7 @@ export interface FileRoutesById {
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
+  '/store': typeof StoreRouteWithChildren
   '/track': typeof TrackRoute
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
@@ -309,6 +397,7 @@ export interface FileRoutesById {
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/storefront': typeof AdminStorefrontRoute
+  '/admin/stores': typeof AdminStoresRouteWithChildren
   '/admin/studio': typeof AdminStudioRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -316,10 +405,19 @@ export interface FileRoutesById {
   '/product/$slug': typeof ProductSlugRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
-  '/vendor/$slug': typeof VendorSlugRoute
-  '/vendor/dashboard': typeof VendorDashboardRoute
+  '/store/analytics': typeof StoreAnalyticsRoute
+  '/store/customers': typeof StoreCustomersRoute
+  '/store/dashboard': typeof StoreDashboardRoute
+  '/store/earnings': typeof StoreEarningsRoute
+  '/store/inventory': typeof StoreInventoryRoute
+  '/store/marketing': typeof StoreMarketingRoute
+  '/store/orders': typeof StoreOrdersRoute
+  '/store/products': typeof StoreProductsRoute
+  '/store/settings': typeof StoreSettingsRoute
   '/admin/': typeof AdminIndexRoute
+  '/store/': typeof StoreIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
+  '/admin/stores/$tenantId': typeof AdminStoresTenantIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
 }
@@ -336,6 +434,7 @@ export interface FileRouteTypes {
     | '/offers'
     | '/onboarding'
     | '/search'
+    | '/store'
     | '/track'
     | '/admin/appearance'
     | '/admin/branches'
@@ -347,6 +446,7 @@ export interface FileRouteTypes {
     | '/admin/sessions'
     | '/admin/settings'
     | '/admin/storefront'
+    | '/admin/stores'
     | '/admin/studio'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -354,10 +454,19 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/robots/txt'
     | '/sitemap/xml'
-    | '/vendor/$slug'
-    | '/vendor/dashboard'
+    | '/store/analytics'
+    | '/store/customers'
+    | '/store/dashboard'
+    | '/store/earnings'
+    | '/store/inventory'
+    | '/store/marketing'
+    | '/store/orders'
+    | '/store/products'
+    | '/store/settings'
     | '/admin/'
+    | '/store/'
     | '/admin/product/$id'
+    | '/admin/stores/$tenantId'
     | '/api/ai/analyze-product'
     | '/api/public/image-proxy'
   fileRoutesByTo: FileRoutesByTo
@@ -382,6 +491,7 @@ export interface FileRouteTypes {
     | '/admin/sessions'
     | '/admin/settings'
     | '/admin/storefront'
+    | '/admin/stores'
     | '/admin/studio'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -389,10 +499,19 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/robots/txt'
     | '/sitemap/xml'
-    | '/vendor/$slug'
-    | '/vendor/dashboard'
+    | '/store/analytics'
+    | '/store/customers'
+    | '/store/dashboard'
+    | '/store/earnings'
+    | '/store/inventory'
+    | '/store/marketing'
+    | '/store/orders'
+    | '/store/products'
+    | '/store/settings'
     | '/admin'
+    | '/store'
     | '/admin/product/$id'
+    | '/admin/stores/$tenantId'
     | '/api/ai/analyze-product'
     | '/api/public/image-proxy'
   id:
@@ -407,6 +526,7 @@ export interface FileRouteTypes {
     | '/offers'
     | '/onboarding'
     | '/search'
+    | '/store'
     | '/track'
     | '/admin/appearance'
     | '/admin/branches'
@@ -418,6 +538,7 @@ export interface FileRouteTypes {
     | '/admin/sessions'
     | '/admin/settings'
     | '/admin/storefront'
+    | '/admin/stores'
     | '/admin/studio'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -425,10 +546,19 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/robots/txt'
     | '/sitemap/xml'
-    | '/vendor/$slug'
-    | '/vendor/dashboard'
+    | '/store/analytics'
+    | '/store/customers'
+    | '/store/dashboard'
+    | '/store/earnings'
+    | '/store/inventory'
+    | '/store/marketing'
+    | '/store/orders'
+    | '/store/products'
+    | '/store/settings'
     | '/admin/'
+    | '/store/'
     | '/admin/product/$id'
+    | '/admin/stores/$tenantId'
     | '/api/ai/analyze-product'
     | '/api/public/image-proxy'
   fileRoutesById: FileRoutesById
@@ -444,6 +574,7 @@ export interface RootRouteChildren {
   OffersRoute: typeof OffersRoute
   OnboardingRoute: typeof OnboardingRoute
   SearchRoute: typeof SearchRoute
+  StoreRoute: typeof StoreRouteWithChildren
   TrackRoute: typeof TrackRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
@@ -451,8 +582,6 @@ export interface RootRouteChildren {
   ProductSlugRoute: typeof ProductSlugRoute
   RobotsTxtRoute: typeof RobotsTxtRoute
   SitemapXmlRoute: typeof SitemapXmlRoute
-  VendorSlugRoute: typeof VendorSlugRoute
-  VendorDashboardRoute: typeof VendorDashboardRoute
   ApiAiAnalyzeProductRoute: typeof ApiAiAnalyzeProductRoute
   ApiPublicImageProxyRoute: typeof ApiPublicImageProxyRoute
 }
@@ -464,6 +593,13 @@ declare module '@tanstack/react-router' {
       path: '/track'
       fullPath: '/track'
       preLoaderRoute: typeof TrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/store': {
+      id: '/store'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof StoreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -536,6 +672,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/store/': {
+      id: '/store/'
+      path: '/'
+      fullPath: '/store/'
+      preLoaderRoute: typeof StoreIndexRouteImport
+      parentRoute: typeof StoreRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -543,19 +686,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/vendor/dashboard': {
-      id: '/vendor/dashboard'
-      path: '/vendor/dashboard'
-      fullPath: '/vendor/dashboard'
-      preLoaderRoute: typeof VendorDashboardRouteImport
-      parentRoute: typeof rootRouteImport
+    '/store/settings': {
+      id: '/store/settings'
+      path: '/settings'
+      fullPath: '/store/settings'
+      preLoaderRoute: typeof StoreSettingsRouteImport
+      parentRoute: typeof StoreRoute
     }
-    '/vendor/$slug': {
-      id: '/vendor/$slug'
-      path: '/vendor/$slug'
-      fullPath: '/vendor/$slug'
-      preLoaderRoute: typeof VendorSlugRouteImport
-      parentRoute: typeof rootRouteImport
+    '/store/products': {
+      id: '/store/products'
+      path: '/products'
+      fullPath: '/store/products'
+      preLoaderRoute: typeof StoreProductsRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/orders': {
+      id: '/store/orders'
+      path: '/orders'
+      fullPath: '/store/orders'
+      preLoaderRoute: typeof StoreOrdersRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/marketing': {
+      id: '/store/marketing'
+      path: '/marketing'
+      fullPath: '/store/marketing'
+      preLoaderRoute: typeof StoreMarketingRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/inventory': {
+      id: '/store/inventory'
+      path: '/inventory'
+      fullPath: '/store/inventory'
+      preLoaderRoute: typeof StoreInventoryRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/earnings': {
+      id: '/store/earnings'
+      path: '/earnings'
+      fullPath: '/store/earnings'
+      preLoaderRoute: typeof StoreEarningsRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/dashboard': {
+      id: '/store/dashboard'
+      path: '/dashboard'
+      fullPath: '/store/dashboard'
+      preLoaderRoute: typeof StoreDashboardRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/customers': {
+      id: '/store/customers'
+      path: '/customers'
+      fullPath: '/store/customers'
+      preLoaderRoute: typeof StoreCustomersRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/analytics': {
+      id: '/store/analytics'
+      path: '/analytics'
+      fullPath: '/store/analytics'
+      preLoaderRoute: typeof StoreAnalyticsRouteImport
+      parentRoute: typeof StoreRoute
     }
     '/sitemap/xml': {
       id: '/sitemap/xml'
@@ -604,6 +796,13 @@ declare module '@tanstack/react-router' {
       path: '/studio'
       fullPath: '/admin/studio'
       preLoaderRoute: typeof AdminStudioRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/stores': {
+      id: '/admin/stores'
+      path: '/stores'
+      fullPath: '/admin/stores'
+      preLoaderRoute: typeof AdminStoresRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/storefront': {
@@ -690,6 +889,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiAnalyzeProductRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/stores/$tenantId': {
+      id: '/admin/stores/$tenantId'
+      path: '/$tenantId'
+      fullPath: '/admin/stores/$tenantId'
+      preLoaderRoute: typeof AdminStoresTenantIdRouteImport
+      parentRoute: typeof AdminStoresRoute
+    }
     '/admin/product/$id': {
       id: '/admin/product/$id'
       path: '/product/$id'
@@ -699,6 +905,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminStoresRouteChildren {
+  AdminStoresTenantIdRoute: typeof AdminStoresTenantIdRoute
+}
+
+const AdminStoresRouteChildren: AdminStoresRouteChildren = {
+  AdminStoresTenantIdRoute: AdminStoresTenantIdRoute,
+}
+
+const AdminStoresRouteWithChildren = AdminStoresRoute._addFileChildren(
+  AdminStoresRouteChildren,
+)
 
 interface AdminRouteChildren {
   AdminAppearanceRoute: typeof AdminAppearanceRoute
@@ -711,6 +929,7 @@ interface AdminRouteChildren {
   AdminSessionsRoute: typeof AdminSessionsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminStorefrontRoute: typeof AdminStorefrontRoute
+  AdminStoresRoute: typeof AdminStoresRouteWithChildren
   AdminStudioRoute: typeof AdminStudioRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminProductIdRoute: typeof AdminProductIdRoute
@@ -727,12 +946,41 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSessionsRoute: AdminSessionsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminStorefrontRoute: AdminStorefrontRoute,
+  AdminStoresRoute: AdminStoresRouteWithChildren,
   AdminStudioRoute: AdminStudioRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminProductIdRoute: AdminProductIdRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface StoreRouteChildren {
+  StoreAnalyticsRoute: typeof StoreAnalyticsRoute
+  StoreCustomersRoute: typeof StoreCustomersRoute
+  StoreDashboardRoute: typeof StoreDashboardRoute
+  StoreEarningsRoute: typeof StoreEarningsRoute
+  StoreInventoryRoute: typeof StoreInventoryRoute
+  StoreMarketingRoute: typeof StoreMarketingRoute
+  StoreOrdersRoute: typeof StoreOrdersRoute
+  StoreProductsRoute: typeof StoreProductsRoute
+  StoreSettingsRoute: typeof StoreSettingsRoute
+  StoreIndexRoute: typeof StoreIndexRoute
+}
+
+const StoreRouteChildren: StoreRouteChildren = {
+  StoreAnalyticsRoute: StoreAnalyticsRoute,
+  StoreCustomersRoute: StoreCustomersRoute,
+  StoreDashboardRoute: StoreDashboardRoute,
+  StoreEarningsRoute: StoreEarningsRoute,
+  StoreInventoryRoute: StoreInventoryRoute,
+  StoreMarketingRoute: StoreMarketingRoute,
+  StoreOrdersRoute: StoreOrdersRoute,
+  StoreProductsRoute: StoreProductsRoute,
+  StoreSettingsRoute: StoreSettingsRoute,
+  StoreIndexRoute: StoreIndexRoute,
+}
+
+const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -745,6 +993,7 @@ const rootRouteChildren: RootRouteChildren = {
   OffersRoute: OffersRoute,
   OnboardingRoute: OnboardingRoute,
   SearchRoute: SearchRoute,
+  StoreRoute: StoreRouteWithChildren,
   TrackRoute: TrackRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
@@ -752,8 +1001,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProductSlugRoute: ProductSlugRoute,
   RobotsTxtRoute: RobotsTxtRoute,
   SitemapXmlRoute: SitemapXmlRoute,
-  VendorSlugRoute: VendorSlugRoute,
-  VendorDashboardRoute: VendorDashboardRoute,
   ApiAiAnalyzeProductRoute: ApiAiAnalyzeProductRoute,
   ApiPublicImageProxyRoute: ApiPublicImageProxyRoute,
 }
