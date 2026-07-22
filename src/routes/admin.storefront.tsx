@@ -48,6 +48,7 @@ import {
   updateStorefrontAppearance,
   getStorefrontChangeLogs,
 } from "@/lib/actions/appearance.actions";
+import { notifyStorefrontPublished } from "@/components/appearance-provider";
 import {
   DEFAULT_STOREFRONT_SETTINGS,
   type StorefrontSettingsShape,
@@ -1558,6 +1559,8 @@ function StorefrontCMSPage() {
         toast.success("✅ تم حفظ تغييرات التبويب بنجاح!");
         setSavedAt(new Date());
         dirty.current = false;
+        // Realtime: push the change to every open storefront tab instantly.
+        void notifyStorefrontPublished();
       } else {
         toast.error("حدث خطأ أثناء حفظ بعض الإعدادات");
       }
@@ -1591,6 +1594,8 @@ function StorefrontCMSPage() {
       toast.success("🚀 تم نشر جميع الإعدادات وتطبيقها حياً على المتجر!");
       setSavedAt(new Date());
       dirty.current = false;
+      // Realtime: push the change to every open storefront tab instantly.
+      void notifyStorefrontPublished();
     },
     onError: (e: Error) => toast.error(e.message),
   });

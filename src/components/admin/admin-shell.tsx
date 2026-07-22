@@ -210,21 +210,44 @@ function ShellInner() {
     setOpen(false);
   }, [pathname]);
 
-  const items: Array<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }> =
-    [
-      { to: "/admin", label: t("nav.dashboard"), icon: LayoutDashboard, exact: true },
-      { to: "/admin/studio", label: t("nav.studio"), icon: Sparkles },
-      { to: "/admin/orders", label: "الطلبات", icon: ShoppingBag },
-      { to: "/admin/products", label: t("nav.products"), icon: Package },
-      { to: "/admin/categories", label: "التصنيفات", icon: FolderTree },
-      { to: "/admin/inventory", label: "المخزون", icon: Boxes },
-      { to: "/admin/branches", label: "الفروع", icon: Building2 },
-      { to: "/admin/storefront", label: "Storefront CMS", icon: Globe },
-      { to: "/admin/appearance", label: "مظهر المتجر", icon: Palette },
-      { to: "/admin/platform", label: "Platform (SaaS)", icon: Store },
-      { to: "/admin/sessions", label: t("nav.sessions"), icon: Activity },
-      { to: "/admin/settings", label: t("nav.settings"), icon: Settings },
-    ];
+  type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+  type NavGroup = { label: string; items: NavItem[] };
+
+  // SaaS control-center grouping: overview / commerce / storefront / platform.
+  const groups: NavGroup[] = [
+    {
+      label: "نظرة عامة",
+      items: [
+        { to: "/admin", label: t("nav.dashboard"), icon: LayoutDashboard, exact: true },
+        { to: "/admin/sessions", label: t("nav.sessions"), icon: Activity },
+      ],
+    },
+    {
+      label: "التجارة",
+      items: [
+        { to: "/admin/orders", label: "الطلبات", icon: ShoppingBag },
+        { to: "/admin/products", label: t("nav.products"), icon: Package },
+        { to: "/admin/categories", label: "التصنيفات", icon: FolderTree },
+        { to: "/admin/inventory", label: "المخزون", icon: Boxes },
+        { to: "/admin/branches", label: "الفروع", icon: Building2 },
+      ],
+    },
+    {
+      label: "المتجر والتسويق",
+      items: [
+        { to: "/admin/storefront", label: "Storefront CMS", icon: Globe },
+        { to: "/admin/appearance", label: "مظهر المتجر", icon: Palette },
+        { to: "/admin/studio", label: t("nav.studio"), icon: Sparkles },
+      ],
+    },
+    {
+      label: "المنصة",
+      items: [
+        { to: "/admin/platform", label: "Platform (SaaS)", icon: Store },
+        { to: "/admin/settings", label: t("nav.settings"), icon: Settings },
+      ],
+    },
+  ];
 
   const isActive = (to: string, exact?: boolean) =>
     exact ? pathname === to : pathname === to || pathname.startsWith(to + "/");
@@ -269,25 +292,32 @@ function ShellInner() {
             </button>
           </div>
 
-          <nav className="mt-8 flex flex-1 flex-col gap-0.5">
-            {items.map((it) => {
-              const active = isActive(it.to, it.exact);
-              const Icon = it.icon;
-              return (
-                <Link
-                  key={it.to}
-                  to={it.to as string}
-                  className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="h-5 w-5 shrink-0" />
-                  <span className="truncate">{it.label}</span>
-                </Link>
-              );
-            })}
+          <nav className="mt-6 flex flex-1 flex-col gap-0.5 overflow-y-auto pb-2">
+            {groups.map((group) => (
+              <div key={group.label} className="mb-2">
+                <p className="mb-1 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                  {group.label}
+                </p>
+                {group.items.map((it) => {
+                  const active = isActive(it.to, it.exact);
+                  const Icon = it.icon;
+                  return (
+                    <Link
+                      key={it.to}
+                      to={it.to as string}
+                      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 shrink-0" />
+                      <span className="truncate">{it.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
           <div className="mt-4 space-y-2">

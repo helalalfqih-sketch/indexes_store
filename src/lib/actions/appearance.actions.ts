@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { supabase } from "@/integrations/supabase/client";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
@@ -21,6 +22,62 @@ import {
 } from "@/lib/domain/appearance";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Zod schema per CMS key — writes are validated against these (S2). */
+const SCHEMA_BY_KEY = {
+  hero: HeroConfigSchema,
+  theme: ThemeConfigSchema,
+  products_layout: ProductsLayoutConfigSchema,
+  product_page: ProductPageConfigSchema,
+  cart_config: CartConfigSchema,
+  checkout: CheckoutConfigSchema,
+  navigation: NavigationConfigSchema,
+  pages: PagesConfigSchema,
+  translation: TranslationConfigSchema,
+  notifications: NotificationsConfigSchema,
+  sections: SectionsConfigSchema,
+  seo: SeoConfigSchema,
+  advanced: AdvancedConfigSchema,
+};
+
+/**
+ * Validate an incoming CMS value against its key's schema.
+ * Returns { ok, value } with the parsed (defaults-filled) value, or an Arabic error.
+ */
+function validateSettingValue(key: string, value: unknown): { ok: true; value: unknown } | { ok: false; message: string } {
+  const schema = SCHEMA_BY_KEY[key];
+  if (!schema) return { ok: false, message: `مفتاح إعدادات غير معروف: ${key}` };
+  const parsed = schema.safeParse(value ?? {});
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return { ok: false, message: `قيمة غير صالحة (${key}${issue?.path?.length ? "." + issue.path.join(".") : ""}): ${issue?.message ?? "خطأ تحقق"}` };
+  }
+  return { ok: true, value: parsed.data };
+}
+
+/**
+ * Verify the caller of a public (middleware-less) server fn is a platform
+ * admin, using the request bearer token verified against Supabase Auth.
+ * Returns the service-role client when authorized, otherwise null.
+ */
+async function getAdminClientIfAuthorized() {
+  try {
+    const authHeader = getRequest()?.headers?.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) return null;
+    const token = authHeader.slice("Bearer ".length).trim();
+    if (!token || token.split(".").length !== 3) return null;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
+    if (error || !data?.user) return null;
+    const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
+      _user_id: data.user.id,
+      _role: "admin",
+    });
+    return isAdmin ? supabaseAdmin : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Parse the raw DB rows into the full StorefrontSettingsShape using safe Zod defaults. */
 function rowsToSettings(
@@ -91,16 +148,34 @@ export const getStorefrontAppearance = createServerFn({ method: "GET" })
     try {
       if (!supabase) return DEFAULT_STOREFRONT_SETTINGS;
 
+      // Preview (drafts) is ADMIN-ONLY: draft_value is no longer readable by
+      // the anon role (column-scoped grant, S1), so the preview path verifies
+      // the caller's bearer token and reads via the service role. An
+      // unauthorized previewMode request silently degrades to published values.
+      if (previewMode) {
+        const adminClient = await getAdminClientIfAuthorized();
+        if (adminClient) {
+          const { data: rows, error } = await adminClient
+            .from("storefront_settings")
+            .select("key, value, draft_value");
+          if (!error && rows && rows.length > 0) {
+            return rowsToSettings(rows, true);
+          }
+        }
+        // fall through → published values
+      }
+
+      // Public storefront read: published values only (never draft_value).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rows, error } = await (supabase as any)
         .from("storefront_settings")
-        .select("key, value, draft_value");
+        .select("key, value");
 
       if (error || !rows || rows.length === 0) {
         return DEFAULT_STOREFRONT_SETTINGS;
       }
 
-      return rowsToSettings(rows, previewMode);
+      return rowsToSettings(rows, false);
     } catch (err) {
       console.warn("[getStorefrontAppearance] Returning fallback defaults:", err);
       return DEFAULT_STOREFRONT_SETTINGS;
@@ -129,24 +204,31 @@ export const saveStorefrontDraft = createServerFn({ method: "POST" })
         return { success: false, message: "غير مسموح: يجب أن تكون مديراً لتعديل الإعدادات" };
       }
 
-      // Write to draft_value (not yet live)
-      const { error } = await authSupabase
-        .from("storefront_settings")
-        .upsert(
-          {
-            key: data.key,
-            value: {}, // keep existing live value intact on upsert
-            draft_value: data.value,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key", ignoreDuplicates: false }
-        );
+      // S2: validate the payload against the key's schema before storing.
+      const validated = validateSettingValue(data.key, data.value);
+      if (!validated.ok) return { success: false, message: validated.message };
 
-      // Actually only update draft_value without touching value
-      await authSupabase
+      // C1 FIX: never touch the published `value` when saving a draft.
+      // (The previous upsert wrote value:{} on conflict, wiping the live
+      // configuration for that key.) UPDATE draft_value only; INSERT a fresh
+      // row (with empty published value) only when the key doesn't exist yet.
+      const { data: updatedRows, error } = await authSupabase
         .from("storefront_settings")
-        .update({ draft_value: data.value, updated_at: new Date().toISOString() })
-        .eq("key", data.key);
+        .update({ draft_value: validated.value, updated_at: new Date().toISOString() })
+        .eq("key", data.key)
+        .select("key");
+
+      if (!error && (!updatedRows || updatedRows.length === 0)) {
+        const { error: insErr } = await authSupabase.from("storefront_settings").insert({
+          key: data.key,
+          value: {},
+          draft_value: validated.value,
+          type: "json",
+        });
+        if (insErr) {
+          return { success: false, message: insErr.message };
+        }
+      }
 
       // Insert change log entry
       const { data: userData } = await authSupabase.auth.getUser();
@@ -356,12 +438,16 @@ export const updateStorefrontAppearance = createServerFn({ method: "POST" })
         return { success: false, message: "غير مسموح: يجب أن تكون مديراً لتعديل المظهر" };
       }
 
+      // S2: validate against the key's schema before writing to the live value.
+      const validated = validateSettingValue(data.key, data.value);
+      if (!validated.ok) return { success: false, message: validated.message };
+
       const { error } = await authSupabase
         .from("storefront_settings")
         .upsert(
           {
             key: data.key,
-            value: data.value,
+            value: validated.value,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "key" }
