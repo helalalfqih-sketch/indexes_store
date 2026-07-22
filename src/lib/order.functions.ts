@@ -99,6 +99,18 @@ export const createOrder = createServerFn({ method: "POST" })
     // 2. Resolve the storefront tenant server-side.
     const tenantId = await resolveCurrentTenant(supabaseAdmin as any, { userId });
 
+    // SECURITY (F3): the resolved tenant id can originate from client-controlled
+    // headers (x-tenant-id / x-tenant-slug). Verify it references a real, ACTIVE
+    // tenant before creating anything under it with the service role.
+    const { data: tenant, error: tenantErr } = await supabaseAdmin
+      .from("tenants")
+      .select("id, status")
+      .eq("id", tenantId)
+      .maybeSingle();
+    if (tenantErr || !tenant || tenant.status !== "active") {
+      throw new Error("المتجر غير متاح حالياً.");
+    }
+
     // 3. Load the requested products for THIS tenant, published only. Price is
     //    authoritative from the DB — the client never sets prices.
     const productIds = Array.from(new Set(data.items.map((i) => i.productId)));
@@ -146,8 +158,13 @@ export const createOrder = createServerFn({ method: "POST" })
       };
     });
 
-    const discount = Math.max(0, Number(data.discountAmount ?? 0));
-    const total = Math.max(0, subtotal - discount);
+    // SECURITY (F1): never trust a client-provided discount. The client may
+    // send any value (including the full subtotal). Until a server-side coupon
+    // service exists, the applied discount is ALWAYS 0; `couponCode` is stored
+    // as metadata only and grants nothing.
+    // TODO: Apply verified coupon discount after coupon service implementation
+    const validatedDiscount = 0;
+    const total = Math.max(0, subtotal - validatedDiscount);
 
     // 5. Insert the order (service role). user_id is our verified value or null.
     const { data: order, error: orderErr } = await supabaseAdmin
@@ -166,7 +183,7 @@ export const createOrder = createServerFn({ method: "POST" })
         total,
         currency,
         coupon_code: data.couponCode ?? null,
-        discount_amount: discount,
+        discount_amount: validatedDiscount,
       })
       .select("id")
       .single();
@@ -184,6 +201,22 @@ export const createOrder = createServerFn({ method: "POST" })
       throw new Error("تعذّر حفظ عناصر الطلب.");
     }
 
+    // 7. Initial audit entry (Task 4) — best-effort: never fails the order.
+    //    Uses the service role (staff-only RLS INSERT policy does not apply).
+    try {
+      const { error: histErr } = await supabaseAdmin.from("order_status_history").insert({
+        order_id: order.id,
+        tenant_id: tenantId,
+        from_status: null,
+        to_status: "pending",
+        changed_by: userId,
+        note: "Order created via checkout",
+      });
+      if (histErr) console.warn("[createOrder] status history notice:", histErr.message);
+    } catch (histEx) {
+      console.warn("[createOrder] status history skipped:", histEx);
+    }
+
     return { orderId: order.id, total, currency, itemsCount: itemRows.length };
   });
 
@@ -193,7 +226,7 @@ export const createOrder = createServerFn({ method: "POST" })
 export const getMyOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<MyOrderSummary[]> => {
-    const { supabase, userId } = context as { supabase: any; userId: string };
+    const { supabase, userId } = context as unknown as { supabase: any; userId: string };
     return getMyOrdersFromDb(supabase, userId);
   });
 
@@ -204,7 +237,7 @@ export const getMyOrderDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => z.object({ orderId: z.string().uuid() }).parse(raw))
   .handler(async ({ data, context }): Promise<MyOrderDetails | null> => {
-    const { supabase, userId } = context as { supabase: any; userId: string };
+    const { supabase, userId } = context as unknown as { supabase: any; userId: string };
     return getMyOrderDetailsFromDb(supabase, userId, data.orderId);
   });
 
