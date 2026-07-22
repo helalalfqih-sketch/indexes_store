@@ -305,7 +305,7 @@ function HomePage() {
 
       {/* 3. AI SEARCH */}
       <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-        <div className="rounded-2xl border border-showcase-border bg-surface/40 p-4 backdrop-blur-md shadow-lg text-center space-y-3">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md shadow-lg text-center space-y-3">
           <div className="text-center">
             <h3 className="text-xs font-black text-showcase-foreground flex items-center justify-center gap-1">
               <Icons.Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
@@ -536,14 +536,14 @@ function HomePage() {
           initial={false}
           animate={{ y: focusedProduct ? 0 : 120, opacity: focusedProduct ? 1 : 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="pointer-events-none fixed inset-x-0 bottom-16 z-30 mx-auto w-full max-w-md px-3"
+          className="pointer-events-none fixed inset-x-0 bottom-20 z-30 mx-auto w-full max-w-md px-3"
         >
           {focusedProduct && (
             <a
               href={quickOrderLink(focusedProduct)}
               target="_blank"
               rel="noopener noreferrer"
-              className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl border p-2.5 shadow-2xl"
+              className="pointer-events-auto flex items-center justify-between gap-3 rounded-full border p-2 ps-4 shadow-2xl"
               style={{
                 borderColor: LIGHT_BORDER,
                 background: "color-mix(in oklab, var(--showcase) 72%, transparent)",
@@ -557,7 +557,7 @@ function HomePage() {
                   {formatPrice(focusedProduct.price)}
                 </p>
               </div>
-              <span className="flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-black" style={{ background: LIGHT, color: DARK }}>
+              <span className="flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-black" style={{ background: LIGHT, color: DARK }}>
                 <Icons.MessageCircle className="h-3.5 w-3.5" />
                 اطلب عبر واتساب
               </span>

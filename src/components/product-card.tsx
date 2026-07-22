@@ -49,10 +49,10 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
         ref={ref}
         to="/product/$slug"
         params={{ slug: product.slug }}
-        className="group flex flex-col overflow-hidden rounded-2xl bg-surface shadow-card transition active:scale-[0.98]"
+        className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-card backdrop-blur-md transition active:scale-[0.98]"
       >
         {lay.showImage !== false && (
-          <motion.div style={{ filter }} className="relative aspect-square overflow-hidden bg-muted">
+          <motion.div style={{ filter }} className="relative aspect-square overflow-hidden bg-white/5">
             {modelUrl ? (
               // Only show 3D viewer if the product has a real custom GLB model
               <Product3DTile
@@ -99,14 +99,14 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
             )}
           </motion.div>
         )}
-        <div className="flex flex-1 flex-col gap-1.5 p-2.5 text-foreground">
-          <h3 className="line-clamp-2 min-h-10 text-xs font-bold leading-tight text-foreground">
+        <div className="flex flex-1 flex-col gap-1.5 p-2.5 text-showcase-foreground">
+          <h3 className="line-clamp-2 min-h-10 text-xs font-bold leading-tight text-showcase-foreground">
             {product.name}
           </h3>
           {lay.showRating !== false && (
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-1 text-[10px] text-showcase-foreground/55">
               <Star className="h-3 w-3 fill-warning stroke-warning" />
-              <span className="font-semibold text-foreground">{product.rating}</span>
+              <span className="font-semibold text-showcase-foreground">{product.rating}</span>
               <span>({product.reviews})</span>
             </div>
           )}
@@ -114,7 +114,7 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
             <div className="mt-auto flex items-baseline gap-1.5">
               <span className="text-sm font-black text-primary">{formatPrice(product.price)}</span>
               {product.oldPrice && (
-                <span className="text-[10px] text-muted-foreground line-through">
+                <span className="text-[10px] text-showcase-foreground/50 line-through">
                   {formatPrice(product.oldPrice)}
                 </span>
               )}
