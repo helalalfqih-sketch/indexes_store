@@ -15,6 +15,10 @@ import {
   Phone,
   Mail,
   CheckCircle2,
+  Circle,
+  XCircle,
+  RotateCcw,
+  Clock,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +33,27 @@ import {
 } from "@/lib/actions/order.actions";
 import { getMyOrders, getMyOrderDetails } from "@/lib/order.functions";
 import type { MyOrderSummary, MyOrderDetails } from "@/lib/services/order-history.service";
-import { orderStatusLabel, orderStatusTone, paymentStatusLabel } from "@/lib/order-status";
+import {
+  orderStatusLabel,
+  orderStatusTone,
+  paymentStatusLabel,
+  type OrderStatus,
+} from "@/lib/order-status";
+
+/** Fulfillment steps in order (cancelled/refunded handled separately). */
+const ORDER_FLOW: OrderStatus[] = ["pending", "confirmed", "processing", "shipped", "delivered"];
+
+function dateForStatus(
+  status: OrderStatus,
+  history: Array<{ to_status: OrderStatus; created_at: string }>,
+  orderCreatedAt: string,
+): string | null {
+  if (status === "pending") {
+    const h = history.find((x) => x.to_status === "pending");
+    return h?.created_at ?? orderCreatedAt;
+  }
+  return history.find((x) => x.to_status === status)?.created_at ?? null;
+}
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/account")({
@@ -379,8 +403,14 @@ function AccountPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-black flex items-center gap-2">
               <Package className="h-4 w-4 text-primary" />
-              سجل الطلبات الحقيقي
+              طلباتي
             </h2>
+            <Link
+              to="/track"
+              className="text-[11px] font-bold text-primary hover:underline"
+            >
+              تتبع طلب كضيف ›
+            </Link>
           </div>
 
           {loadingOrders ? (
@@ -429,18 +459,84 @@ function AccountPage() {
                     </div>
 
                     {open && (
-                      <div className="mt-2 space-y-2 border-t border-showcase-border/50 pt-3">
+                      <div className="mt-2 space-y-3 border-t border-showcase-border/50 pt-3">
                         {loadingDetails && !detail ? (
                           <div className="flex h-16 items-center justify-center">
                             <Loader2 className="h-4 w-4 animate-spin text-primary" />
                           </div>
                         ) : detail ? (
                           <>
+                            {/* Payment status row */}
                             <div className="flex items-center justify-between text-[11px] text-showcase-muted">
                               <span>حالة الدفع: {paymentStatusLabel(detail.payment_status)}</span>
                               <span>{new Date(detail.created_at).toLocaleString("ar-EG")}</span>
                             </div>
-                            <ul className="space-y-2">
+
+                            {/* Order status timeline */}
+                            {(detail.status === "cancelled" || detail.status === "refunded") ? (
+                              <div className="flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+                                {detail.status === "cancelled"
+                                  ? <XCircle className="h-4 w-4 shrink-0" />
+                                  : <RotateCcw className="h-4 w-4 shrink-0" />}
+                                <div>
+                                  <p className="font-bold">{orderStatusLabel(detail.status)}</p>
+                                  {detail.history.length > 0 && (
+                                    <p className="opacity-70">
+                                      {new Date(detail.history[detail.history.length - 1].created_at).toLocaleString("ar-EG")}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="rounded-xl border border-showcase-border/40 bg-black/20 p-3">
+                                <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-showcase-muted flex items-center gap-1">
+                                  <Clock className="h-3 w-3" /> مسار الطلب
+                                </p>
+                                <ol className="space-y-0">
+                                  {ORDER_FLOW.map((s, i) => {
+                                    const reachedIdx = ORDER_FLOW.indexOf(detail.status);
+                                    const reached = reachedIdx >= i;
+                                    const date = reached
+                                      ? dateForStatus(s, detail.history, detail.created_at)
+                                      : null;
+                                    const isLast = i === ORDER_FLOW.length - 1;
+                                    return (
+                                      <li key={s} className="relative flex gap-2 pb-3 last:pb-0">
+                                        {!isLast && (
+                                          <span
+                                            className={`absolute right-[7px] top-5 h-full w-0.5 ${
+                                              reachedIdx > i ? "bg-success/60" : "bg-showcase-border/40"
+                                            }`}
+                                          />
+                                        )}
+                                        <span className="relative z-10 mt-0.5">
+                                          {reached ? (
+                                            <CheckCircle2 className="h-4 w-4 text-success" />
+                                          ) : (
+                                            <Circle className="h-4 w-4 text-showcase-muted/40" />
+                                          )}
+                                        </span>
+                                        <div>
+                                          <p className={`text-xs font-bold ${
+                                            reached ? "text-showcase-foreground" : "text-showcase-muted"
+                                          }`}>
+                                            {orderStatusLabel(s)}
+                                          </p>
+                                          {date && (
+                                            <p className="text-[10px] text-showcase-muted">
+                                              {new Date(date).toLocaleString("ar-EG")}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </li>
+                                    );
+                                  })}
+                                </ol>
+                              </div>
+                            )}
+
+                            {/* Line items */}
+                            <ul className="space-y-2 border-t border-showcase-border/40 pt-2">
                               {detail.items.map((it) => (
                                 <li key={it.id} className="flex items-center gap-3">
                                   {it.image ? (
