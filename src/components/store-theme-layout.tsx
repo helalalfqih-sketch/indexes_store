@@ -199,7 +199,14 @@ function StoreBottomNav() {
       className="fixed inset-x-3 z-40 mx-auto w-auto max-w-md md:hidden"
       style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
     >
-      <ul className="grid grid-cols-4 items-center rounded-[28px] glass-dark px-2 py-1.5 shadow-2xl">
+      <ul
+        className="grid grid-cols-4 items-center rounded-[28px] px-2 py-1.5 shadow-2xl backdrop-blur-[20px]"
+        style={{
+          background: "rgba(6, 18, 30, 0.85)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "inset 0 1px 0 rgba(184,126,82,0.4), 0 18px 44px -16px rgba(0,0,0,0.75)",
+        }}
+      >
         {tabs.map((t) => {
           const active = pathname === t.to;
           const Icon = t.icon;

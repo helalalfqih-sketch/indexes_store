@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import * as Icons from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring, useInView } from "framer-motion";
 import { formatPrice, type Product } from "@/lib/store-data";
 import type { LegacyProductShape, LegacyCategoryShape } from "@/lib/data-adapter";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import { lazy, Suspense } from "react";
 import { ProductCardSkeleton, Skeleton } from "@/components/ui/skeleton";
 
 const ProductSphereHero = lazy(() => import("@/components/product-sphere-hero").then(m => ({ default: m.ProductSphereHero })));
+const ProductStage = lazy(() => import("@/components/showroom/ProductStage"));
 const CinematicStory = lazy(() => import("@/components/cinematic-story").then(m => ({ default: m.CinematicStory })));
 import { OptimizedImage } from "@/components/optimized-image";
 import { quickOrderLink } from "@/lib/whatsapp";
@@ -92,6 +93,74 @@ const revealProps = {
   viewport: { once: true, amount: 0.05 },
   transition: { duration: 0.5, ease: "easeOut" as const },
 };
+
+/**
+ * 3D PRODUCT STAGE — cinematic showroom section (copper platform + reflection).
+ * three.js is lazy-loaded ONLY when this section approaches the viewport, so
+ * the main bundle and first paint are untouched (performance rule #7).
+ */
+function ShowroomStageSection({ product }: { product: LegacyProductShape }) {
+  const gateRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(gateRef, { once: true, margin: "500px 0px" });
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const showCanvas = mounted && inView;
+
+  return (
+    <motion.section {...revealProps} className="relative z-10 px-4">
+      <div className="mb-4 text-center">
+        <span className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em] text-teal-glow">
+          3D SHOWROOM
+        </span>
+        <h3 className="text-base font-black text-showcase-foreground">منصّة العرض ثلاثية الأبعاد</h3>
+      </div>
+      <div
+        ref={gateRef}
+        className="relative overflow-hidden rounded-[32px] glass-dark"
+        style={{ boxShadow: "inset 0 1px 0 rgba(184,126,82,0.35), 0 18px 50px -20px rgba(0,0,0,0.7)" }}
+      >
+        <div className="relative h-[340px] w-full">
+          {showCanvas ? (
+            <Suspense
+              fallback={
+                <div className="grid h-full w-full place-items-center">
+                  <div className="h-10 w-10 animate-spin rounded-full border-2 border-teal-glow/60 border-t-transparent" />
+                </div>
+              }
+            >
+              <ProductStage imageUrl={product.image} />
+            </Suspense>
+          ) : (
+            <div className="grid h-full w-full place-items-center">
+              <OptimizedImage
+                src={product.image}
+                alt={product.name}
+                size="large"
+                className="max-h-56 object-contain drop-shadow-[0_24px_28px_rgba(0,0,0,0.55)]"
+              />
+            </div>
+          )}
+        </div>
+        {/* Product info overlay */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/60 to-transparent p-4">
+          <div className="min-w-0 text-start">
+            <p className="truncate text-xs font-black text-white">{product.name}</p>
+            <p className="text-sm font-black text-neon drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">
+              {formatPrice(product.price)}
+            </p>
+          </div>
+          <Link
+            to="/product/$slug"
+            params={{ slug: product.slug }}
+            className="pointer-events-auto shrink-0 rounded-full bg-neon px-4 py-2 text-[11px] font-black text-[#04121d] glow-neon transition hover:brightness-110"
+          >
+            اكتشف المنتج
+          </Link>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
 
 function HomePage() {
   const { data: categoriesRaw } = useSuspenseQuery(categoriesQueryOptions());
@@ -489,7 +558,12 @@ function HomePage() {
         </motion.section>
       )}
 
-      {/* 8. VIRTUAL SHOWROOM */}
+      {/* 8. 3D PRODUCT STAGE — cinematic showroom platform */}
+      {(bestSellers[0] || allProducts[0]) && (
+        <ShowroomStageSection product={bestSellers[0] || allProducts[0]} />
+      )}
+
+      {/* 8b. VIRTUAL SHOWROOM */}
       {settings.sections.showroom.enabled && (
         <motion.section key="showroom" {...revealProps} className="relative z-10 px-4">
           <Link
