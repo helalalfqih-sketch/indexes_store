@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useCart } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/store-data";
 import { buildOrderMessage, whatsappLink } from "@/lib/whatsapp";
+import { formatOrderNumber } from "@/lib/order-status";
 import { submitOrder } from "@/lib/actions/order.actions";
 import type { CreateOrderInput } from "@/lib/actions/order.actions";
 import { useAppearance } from "@/components/appearance-provider";
@@ -81,6 +82,11 @@ function CartPage() {
       const result = await submitOrder(input);
       setOrderId(result.orderId);
 
+      // Human-friendly order number (matches DB orders.order_number) + tracking link.
+      const orderNumber = formatOrderNumber(result.orderId);
+      const trackUrl = `${window.location.origin}/track`;
+      const orderFooter = `\n🆔 رقم الطلب: ${orderNumber}\n📦 تتبع طلبك: ${trackUrl}`;
+
       // Read template from cart config or use fallback
       let orderMessage = "";
       const template = settings.cart_config.whatsappOrderTemplate;
@@ -90,11 +96,11 @@ function CartPage() {
           .replace("{products}", prodList)
           .replace("{total}", formatPrice(finalTotal))
           .replace("{name}", name || "غير محدد")
-          .replace("{address}", address || "غير محدد") + `\n🆔 رقم الطلب: ${result.orderId}`;
+          .replace("{address}", address || "غير محدد") + orderFooter;
       } else {
         orderMessage =
           buildOrderMessage(items, finalTotal, { name, phone, address, notes }, coupon, discount) +
-          `\n🆔 رقم الطلب: ${result.orderId}`;
+          orderFooter;
       }
 
       const waPhone = settings.cart_config.whatsappPhone || "967771370740";
@@ -265,7 +271,12 @@ function CartPage() {
         {isSubmitting ? "جاري إنشاء الطلب..." : "إتمام الطلب عبر واتساب"}
       </button>
       {orderId && (
-        <p className="pb-1 text-center text-xs text-success">✅ تم إنشاء الطلب رقم {orderId}</p>
+        <p className="pb-1 text-center text-xs text-success">
+          ✅ تم إنشاء الطلب رقم {formatOrderNumber(orderId)} —{" "}
+          <Link to="/track" className="font-bold underline underline-offset-2">
+            تتبع طلبك
+          </Link>
+        </p>
       )}
       <p className="pb-2 text-center text-[11px] text-muted-foreground">
         الدفع عند الاستلام متاح • تأكيد الطلب مباشرة مع الإدارة
