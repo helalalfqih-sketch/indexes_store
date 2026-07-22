@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
@@ -33,6 +34,13 @@ export const getRouter = () => {
     // freshness is still guaranteed by react-query background refetching.
     defaultStaleTime: 5 * 60 * 1000,
   });
+
+  // PERF (root-cause fix): dehydrate the react-query cache on the server and
+  // hydrate it on the client BEFORE the first render. Without this, every
+  // full page load started with an EMPTY client cache → useSuspenseQuery
+  // refetched all home queries right after the SSR paint (visible "reload").
+  // With it, SSR-fetched products are already in memory when React hydrates.
+  setupRouterSsrQueryIntegration({ router, queryClient });
 
   return router;
 };

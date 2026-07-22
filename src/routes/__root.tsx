@@ -246,8 +246,23 @@ function RootComponent() {
     cleanPath.startsWith("/auth/");
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+    // PERF (root-cause fix): supabase-js re-emits SIGNED_IN every time the tab
+    // regains focus / the session is re-confirmed — NOT only on real sign-ins.
+    // The previous listener invalidated the router + the ENTIRE query cache on
+    // each of those re-emissions, forcing loaders and all product queries to
+    // refetch (the "products reload" flash). Track the user id and only
+    // invalidate when the authenticated identity actually changes.
+    let lastUserId: string | null | undefined;
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      const uid = session?.user?.id ?? null;
+      if (event === "INITIAL_SESSION") {
+        lastUserId = uid;
+        return;
+      }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      // Tab-focus re-emission of SIGNED_IN for the same user → no-op.
+      if (event === "SIGNED_IN" && lastUserId !== undefined && uid === lastUserId) return;
+      lastUserId = uid;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
