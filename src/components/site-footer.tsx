@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, MessageCircle, PackageSearch, ShoppingBag, Truck } from "lucide-react";
+import { MapPin, MessageCircle, PackageSearch, Truck } from "lucide-react";
 import { useAppearance } from "@/components/appearance-provider";
+import { StoreBrand } from "@/components/brand/store-brand";
 import { whatsappLink } from "@/lib/whatsapp";
 
 export function SiteFooter({ isHome }: { isHome?: boolean }) {
@@ -26,25 +27,11 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
       style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-brand">
-            <ShoppingBag className="h-4.5 w-4.5" />
-          </div>
-          <div className="leading-tight">
-            <div
-              className={`text-sm font-black ${isHome ? "text-showcase-foreground" : "text-primary"}`}
-            >
-              {storeName}
-            </div>
-            {tagline && (
-              <div
-                className={`text-[11px] ${isHome ? "text-showcase-muted" : "text-muted-foreground"}`}
-              >
-                {tagline}
-              </div>
-            )}
-          </div>
-        </div>
+        <StoreBrand
+          size="md"
+          nameClassName={isHome ? "text-showcase-foreground" : "text-primary"}
+          taglineClassName={isHome ? "text-showcase-muted" : "text-muted-foreground"}
+        />
 
         <ul className="flex flex-col gap-2.5 text-[12px] leading-relaxed">
           <li className="flex items-start gap-2">
