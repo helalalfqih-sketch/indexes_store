@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowUpRight,
   DollarSign,
+  Eye,
   ShoppingBag,
   Package,
   Users,
@@ -13,7 +14,22 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useAdmin } from "@/lib/admin-store";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { listAdminProducts } from "@/lib/actions/admin.actions";
+import {
+  getAdminDashboardStats,
+  type AdminDashboardStats,
+} from "@/lib/admin-dashboard.functions";
+import { formatPrice } from "@/lib/store-data";
+
+/** Format a 7-day-over-7-day change as a signed percentage badge. */
+function deltaPct(current: number, previous: number): { text: string; up: boolean } {
+  if (previous <= 0) {
+    return current > 0 ? { text: "جديد ↑", up: true } : { text: "—", up: true };
+  }
+  const pct = ((current - previous) / previous) * 100;
+  return { text: `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`, up: pct >= 0 };
+}
 
 export const Route = createFileRoute("/admin/")({
   component: DashboardPage,
@@ -31,32 +47,70 @@ function DashboardPage() {
   });
   const products: AdminProduct[] = productsQ.data ?? [];
 
+  // REAL dashboard numbers from the database (orders, customers, products, CMS).
+  const fetchStats = useServerFn(getAdminDashboardStats);
+  const statsQ = useQuery({
+    queryKey: ["admin-dashboard-stats"],
+    queryFn: () => fetchStats(),
+    refetchInterval: 60_000,
+  });
+  const s = statsQ.data as AdminDashboardStats | undefined;
+
+  const revenueDelta = deltaPct(s?.revenue7d ?? 0, s?.revenuePrev7d ?? 0);
+  const ordersDelta = deltaPct(s?.orders7d ?? 0, s?.ordersPrev7d ?? 0);
+
   const stats = [
     {
       k: "dash.revenue",
-      value: "$48,290",
-      delta: "+12.4%",
+      value: s ? formatPrice(s.revenue7d) : "…",
+      sub: "آخر 7 أيام",
+      delta: revenueDelta.text,
+      up: revenueDelta.up,
       icon: DollarSign,
     },
     {
       k: "dash.orders",
-      value: "1,284",
-      delta: "+8.1%",
+      value: s ? String(s.orders7d) : "…",
+      sub: `${s?.pendingOrders ?? 0} بانتظار التأكيد`,
+      delta: ordersDelta.text,
+      up: ordersDelta.up,
       icon: ShoppingBag,
     },
     {
       k: "dash.products",
-      value: String(products.length || 24),
-      delta: "+3",
+      value: s ? String(s.productsCount) : String(products.length || "…"),
+      sub: `${s?.publishedCount ?? 0} منشور`,
+      delta: s ? `${s.metaUnsyncedCount} غير متزامن` : "",
+      up: (s?.metaUnsyncedCount ?? 0) === 0,
       icon: Package,
     },
     {
       k: "dash.customers",
-      value: "9,340",
-      delta: "+5.6%",
+      value: s ? String(s.customersCount) : "…",
+      sub: "حسابات مسجَّلة",
+      delta: "",
+      up: true,
       icon: Users,
     },
   ];
+
+  // Rule-based, DATA-DRIVEN insights (no fabricated numbers).
+  const insights: Array<{ text: string; to: string }> = [];
+  if (s) {
+    if (s.pendingOrders > 0)
+      insights.push({ text: `📦 ${s.pendingOrders} طلب بانتظار التأكيد — راجع الطلبات الآن.`, to: "/admin/orders" });
+    if (s.lowStock.length > 0)
+      insights.push({
+        text: `⚠️ ${s.lowStock.length} منتجات منشورة مخزونها ≤ 5: ${s.lowStock.slice(0, 3).map((p) => p.name).join("، ")}${s.lowStock.length > 3 ? "…" : ""}`,
+        to: "/admin/inventory",
+      });
+    if (s.metaUnsyncedCount > 0)
+      insights.push({ text: `🔄 ${s.metaUnsyncedCount} منتجاً منشوراً غير متزامن مع كتالوج Meta.`, to: "/admin/products" });
+    if (s.cmsDraftCount > 0)
+      insights.push({ text: `📝 لديك ${s.cmsDraftCount} مسودة CMS غير منشورة.`, to: "/admin/storefront" });
+    if (insights.length === 0)
+      insights.push({ text: "✨ كل شيء على ما يرام — لا تنبيهات حالياً.", to: "/admin" });
+  }
 
   return (
     <div className="space-y-8">
@@ -102,6 +156,15 @@ function DashboardPage() {
                 {lang === "ar" ? "مظهر المتجر" : "Store Appearance"}
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-5 py-3 text-sm font-bold hover:bg-accent transition"
+              >
+                <Eye className="h-4 w-4" />
+                {lang === "ar" ? "معاينة المتجر" : "Preview Store"}
+              </a>
             </div>
           </div>
           <div className="relative">
@@ -111,38 +174,57 @@ function DashboardPage() {
                   <TrendingUp className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">{t("dash.performance")}</div>
-                  <div className="text-lg font-black">+18.3%</div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("dash.performance")} · إيرادات 7 أيام
+                  </div>
+                  <div className={`text-lg font-black ${revenueDelta.up ? "text-success" : "text-destructive"}`}>
+                    {revenueDelta.text}
+                  </div>
                 </div>
               </div>
-              <Sparkline />
+              <Sparkline points={s?.dailyRevenue} />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Stats — real database numbers */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((s) => {
-          const Icon = s.icon;
-          return (
-            <div
-              key={s.k}
-              className="relative overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card transition hover:border-primary/30"
-            >
-              <div className="relative flex items-start justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-muted-foreground">{t(s.k)}</div>
-                  <div className="mt-2 text-2xl font-black">{s.value}</div>
-                  <div className="mt-1 text-xs font-bold text-success">{s.delta}</div>
+        {statsQ.isLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-32 animate-pulse rounded-2xl border border-border bg-surface"
+                aria-busy="true"
+              />
+            ))
+          : stats.map((card) => {
+              const Icon = card.icon;
+              return (
+                <div
+                  key={card.k}
+                  className="relative overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card transition hover:border-primary/30"
+                >
+                  <div className="relative flex items-start justify-between">
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground">{t(card.k)}</div>
+                      <div className="mt-2 text-2xl font-black">{card.value}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                        {card.delta && (
+                          <span className={`font-bold ${card.up ? "text-success" : "text-destructive"}`}>
+                            {card.delta}
+                          </span>
+                        )}
+                        <span className="text-muted-foreground">{card.sub}</span>
+                      </div>
+                    </div>
+                    <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
                 </div>
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+              );
+            })}
       </section>
 
       {/* Grid */}
@@ -150,30 +232,30 @@ function DashboardPage() {
         <div className="rounded-2xl border border-border bg-surface p-5 lg:col-span-2">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black">{t("dash.performance")}</h2>
-            <span className="text-xs text-muted-foreground">Last 30 days</span>
+            <span className="text-xs text-muted-foreground">الإيرادات اليومية · آخر 12 يوماً</span>
           </div>
-          <BigChart />
+          <BigChart values={s?.dailyRevenue} loading={statsQ.isLoading} />
         </div>
         <div className="rounded-2xl border border-border bg-surface p-5">
           <h2 className="text-lg font-black">{t("dash.aiInsights")}</h2>
           <ul className="mt-4 space-y-3 text-sm">
-            {(lang === "ar"
-              ? [
-                  "زيادة 24% في مشاهدات فئة الإلكترونيات — فكّر بحملة إعلانية.",
-                  "3 منتجات نفدت من المخزون خلال اليومين الماضيين.",
-                  "أفضل وقت للنشر: 8–10 مساءً بحسب تحليل الجمهور.",
-                ]
-              : [
-                  "24% surge in Electronics category — consider an ad push.",
-                  "3 SKUs went out of stock in the last 48h.",
-                  "Best posting window: 8–10pm based on audience analytics.",
-                ]
-            ).map((tip, i) => (
-              <li key={i} className="flex items-start gap-3 rounded-xl bg-accent/50 p-3">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <span>{tip}</span>
-              </li>
-            ))}
+            {statsQ.isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <li key={i} className="h-12 animate-pulse rounded-xl bg-accent/50" />
+              ))
+            ) : (
+              insights.map((tip, i) => (
+                <li key={i}>
+                  <Link
+                    to={tip.to}
+                    className="flex items-start gap-3 rounded-xl bg-accent/50 p-3 transition hover:bg-accent"
+                  >
+                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <span>{tip.text}</span>
+                  </Link>
+                </li>
+              ))
+            )}
           </ul>
         </div>
       </section>
@@ -293,8 +375,10 @@ function DashboardPage() {
   );
 }
 
-function Sparkline() {
-  const points = [8, 14, 10, 18, 12, 22, 19, 28, 24, 32, 30, 40];
+function Sparkline({ points: input }: { points?: number[] }) {
+  const raw = input && input.length >= 2 ? input : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  // Flat-line gracefully when there's no revenue yet.
+  const points = raw.every((v) => v === 0) ? raw.map(() => 1) : raw.map((v) => v + 0.0001);
   const max = Math.max(...points);
   const w = 200;
   const h = 60;
@@ -316,16 +400,27 @@ function Sparkline() {
   );
 }
 
-function BigChart() {
-  const bars = [42, 58, 36, 74, 52, 88, 66, 92, 70, 84, 60, 96];
+function BigChart({ values, loading }: { values?: number[]; loading?: boolean }) {
+  if (loading) {
+    return <div className="mt-6 h-48 animate-pulse rounded-xl bg-accent/50" aria-busy="true" />;
+  }
+  const data = values && values.length > 0 ? values : [];
+  const max = Math.max(...data, 0);
+  if (max === 0) {
+    return (
+      <div className="mt-6 flex h-48 items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
+        لا توجد إيرادات في آخر 12 يوماً بعد — ستظهر الأعمدة هنا مع أول الطلبات 📈
+      </div>
+    );
+  }
   return (
     <div className="mt-6 flex h-48 items-end gap-2">
-      {bars.map((b, i) => (
+      {data.map((v, i) => (
         <div
           key={i}
           className="flex-1 rounded-t-lg bg-gradient-to-t from-primary to-primary-light transition-all hover:opacity-90"
-          style={{ height: `${b}%` }}
-          title={`${b}%`}
+          style={{ height: `${Math.max(4, (v / max) * 100)}%` }}
+          title={`${v.toLocaleString("ar-EG")}`}
         />
       ))}
     </div>

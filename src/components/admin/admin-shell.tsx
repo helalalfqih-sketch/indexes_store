@@ -9,6 +9,14 @@ import {
   ShoppingBag,
   Menu,
   X,
+  ChevronsLeft,
+  ChevronsRight,
+  FileText,
+  Search,
+  Image as ImageIcon,
+  BarChart3,
+  Wand2,
+  Users,
   Languages,
   LogOut,
   Loader2,
@@ -189,6 +197,24 @@ function NoRoleScreen({
 function ShellInner() {
   const { t, dir, lang, setLang } = useI18n();
   const [open, setOpen] = useState(false);
+  // Desktop sidebar collapse (icons-only), persisted across sessions.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("admin.sidebar.collapsed") === "1") setCollapsed(true);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+  const toggleCollapsed = () =>
+    setCollapsed((c) => {
+      try {
+        localStorage.setItem("admin.sidebar.collapsed", c ? "0" : "1");
+      } catch {
+        /* storage unavailable */
+      }
+      return !c;
+    });
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -210,13 +236,22 @@ function ShellInner() {
     setOpen(false);
   }, [pathname]);
 
-  type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
-  type NavGroup = { label: string; items: NavItem[] };
+  type NavItem = {
+    to: string;
+    label: string;
+    icon: typeof LayoutDashboard;
+    exact?: boolean;
+    /** Planned page — rendered disabled with a «قريباً» badge (route doesn't exist yet). */
+    soon?: boolean;
+  };
+  type NavGroup = { label: string; emoji: string; items: NavItem[] };
 
-  // SaaS control-center grouping: overview / commerce / storefront / platform.
+  // SaaS Commerce-OS information architecture. Items marked `soon` are part of
+  // the target IA but their routes don't exist yet — shown disabled, never linked.
   const groups: NavGroup[] = [
     {
       label: "نظرة عامة",
+      emoji: "🏠",
       items: [
         { to: "/admin", label: t("nav.dashboard"), icon: LayoutDashboard, exact: true },
         { to: "/admin/sessions", label: t("nav.sessions"), icon: Activity },
@@ -224,6 +259,7 @@ function ShellInner() {
     },
     {
       label: "التجارة",
+      emoji: "🛒",
       items: [
         { to: "/admin/orders", label: "الطلبات", icon: ShoppingBag },
         { to: "/admin/products", label: t("nav.products"), icon: Package },
@@ -233,17 +269,31 @@ function ShellInner() {
       ],
     },
     {
-      label: "المتجر والتسويق",
+      label: "تجربة المتجر",
+      emoji: "🎨",
       items: [
         { to: "/admin/storefront", label: "Storefront CMS", icon: Globe },
         { to: "/admin/appearance", label: "مظهر المتجر", icon: Palette },
+        { to: "#pages", label: "الصفحات", icon: FileText, soon: true },
+        { to: "#seo", label: "SEO", icon: Search, soon: true },
+        { to: "#media", label: "مكتبة الوسائط", icon: ImageIcon, soon: true },
+      ],
+    },
+    {
+      label: "الذكاء الاصطناعي",
+      emoji: "🤖",
+      items: [
         { to: "/admin/studio", label: t("nav.studio"), icon: Sparkles },
+        { to: "#insights", label: "رؤى AI", icon: BarChart3, soon: true },
+        { to: "#generator", label: "مولّد المنتجات", icon: Wand2, soon: true },
       ],
     },
     {
       label: "المنصة",
+      emoji: "⚙️",
       items: [
         { to: "/admin/platform", label: "Platform (SaaS)", icon: Store },
+        { to: "#users", label: "المستخدمون والصلاحيات", icon: Users, soon: true },
         { to: "/admin/settings", label: t("nav.settings"), icon: Settings },
       ],
     },
@@ -262,9 +312,9 @@ function ShellInner() {
   return (
     <div dir={dir} className="relative min-h-screen bg-background text-foreground">
       <aside
-        className={`fixed inset-y-0 z-50 w-64 transform border-e border-border bg-surface transition-transform duration-300 ${
-          dir === "rtl" ? "right-0" : "left-0"
-        } ${
+        className={`fixed inset-y-0 z-50 transform border-e border-border bg-surface transition-all duration-300 ${
+          collapsed ? "w-64 lg:w-20" : "w-64"
+        } ${dir === "rtl" ? "right-0" : "left-0"} ${
           open
             ? "translate-x-0"
             : dir === "rtl"
@@ -276,43 +326,89 @@ function ShellInner() {
           <div className="flex items-center justify-between">
             <Link to="/admin" className="flex items-center gap-3">
               <img src={noqtaLogo} alt="Indexes Store" className="h-11 w-11 rounded-xl neon-ring" />
-              <div className="leading-tight">
+              <div className={`leading-tight ${collapsed ? "lg:hidden" : ""}`}>
                 <div className="text-lg font-black">
                   <span className="neon-text">NOQTA</span>
                 </div>
                 <div className="text-[11px] text-muted-foreground">{t("brand.tagline")}</div>
               </div>
             </Link>
-            <button
-              onClick={() => setOpen(false)}
-              className="rounded-lg p-2 text-muted-foreground hover:bg-accent lg:hidden"
-              aria-label="close"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleCollapsed}
+                className="hidden rounded-lg p-2 text-muted-foreground hover:bg-accent lg:grid place-items-center"
+                aria-label={collapsed ? "توسيع الشريط الجانبي" : "طيّ الشريط الجانبي"}
+                title={collapsed ? "توسيع" : "طيّ"}
+              >
+                {collapsed ? (
+                  dir === "rtl" ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />
+                ) : dir === "rtl" ? (
+                  <ChevronsRight className="h-4 w-4" />
+                ) : (
+                  <ChevronsLeft className="h-4 w-4" />
+                )}
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                className="rounded-lg p-2 text-muted-foreground hover:bg-accent lg:hidden"
+                aria-label="close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           <nav className="mt-6 flex flex-1 flex-col gap-0.5 overflow-y-auto pb-2">
             {groups.map((group) => (
               <div key={group.label} className="mb-2">
-                <p className="mb-1 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
-                  {group.label}
+                <p
+                  className={`mb-1 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 ${
+                    collapsed ? "lg:hidden" : ""
+                  }`}
+                >
+                  {group.emoji} {group.label}
                 </p>
+                {collapsed && <div className="mx-3 mb-1 hidden border-t border-border/50 lg:block" />}
                 {group.items.map((it) => {
-                  const active = isActive(it.to, it.exact);
                   const Icon = it.icon;
+                  if (it.soon) {
+                    return (
+                      <div
+                        key={it.to}
+                        title={`${it.label} — قريباً`}
+                        aria-disabled="true"
+                        className={`flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/40 ${
+                          collapsed ? "lg:justify-center" : ""
+                        }`}
+                      >
+                        <Icon className="h-5 w-5 shrink-0" />
+                        <span className={`truncate ${collapsed ? "lg:hidden" : ""}`}>{it.label}</span>
+                        <span
+                          className={`ms-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold ${
+                            collapsed ? "lg:hidden" : ""
+                          }`}
+                        >
+                          قريباً
+                        </span>
+                      </div>
+                    );
+                  }
+                  const active = isActive(it.to, it.exact);
                   return (
                     <Link
                       key={it.to}
                       to={it.to as string}
+                      title={it.label}
                       className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        collapsed ? "lg:justify-center" : ""
+                      } ${
                         active
                           ? "bg-primary/10 text-primary"
                           : "text-muted-foreground hover:bg-accent hover:text-foreground"
                       }`}
                     >
                       <Icon className="h-5 w-5 shrink-0" />
-                      <span className="truncate">{it.label}</span>
+                      <span className={`truncate ${collapsed ? "lg:hidden" : ""}`}>{it.label}</span>
                     </Link>
                   );
                 })}
@@ -323,29 +419,40 @@ function ShellInner() {
           <div className="mt-4 space-y-2">
             <button
               onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-              className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/60 px-3.5 py-2.5 text-sm font-semibold hover:bg-accent"
+              title="اللغة"
+              className={`flex w-full items-center gap-2 rounded-xl border border-border/60 px-3.5 py-2.5 text-sm font-semibold hover:bg-accent ${
+                collapsed ? "lg:justify-center lg:px-2" : "justify-between"
+              }`}
             >
               <span className="flex items-center gap-2">
-                <Languages className="h-4 w-4" />
-                {lang === "ar" ? "العربية" : "English"}
+                <Languages className="h-4 w-4 shrink-0" />
+                <span className={collapsed ? "lg:hidden" : ""}>
+                  {lang === "ar" ? "العربية" : "English"}
+                </span>
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className={`text-xs text-muted-foreground ${collapsed ? "lg:hidden" : ""}`}>
                 {lang === "ar" ? "AR → EN" : "EN → AR"}
               </span>
             </button>
             <Link
               to="/"
-              className="flex w-full items-center gap-2 rounded-xl border border-border/60 px-3.5 py-2.5 text-sm font-semibold hover:bg-accent"
+              title={t("nav.storefront")}
+              className={`flex w-full items-center gap-2 rounded-xl border border-border/60 px-3.5 py-2.5 text-sm font-semibold hover:bg-accent ${
+                collapsed ? "lg:justify-center lg:px-2" : ""
+              }`}
             >
-              <Store className="h-4 w-4" />
-              {t("nav.storefront")}
+              <Store className="h-4 w-4 shrink-0" />
+              <span className={collapsed ? "lg:hidden" : ""}>{t("nav.storefront")}</span>
             </Link>
             <button
               onClick={handleSignOut}
-              className="flex w-full items-center gap-2 rounded-xl border border-destructive/30 px-3.5 py-2.5 text-sm font-semibold text-destructive hover:bg-destructive/10 transition"
+              title="تسجيل الخروج"
+              className={`flex w-full items-center gap-2 rounded-xl border border-destructive/30 px-3.5 py-2.5 text-sm font-semibold text-destructive hover:bg-destructive/10 transition ${
+                collapsed ? "lg:justify-center lg:px-2" : ""
+              }`}
             >
-              <LogOut className="h-4 w-4" />
-              تسجيل الخروج
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span className={collapsed ? "lg:hidden" : ""}>تسجيل الخروج</span>
             </button>
           </div>
         </div>
@@ -358,7 +465,17 @@ function ShellInner() {
         />
       )}
 
-      <div className={dir === "rtl" ? "lg:pr-64" : "lg:pl-64"}>
+      <div
+        className={
+          dir === "rtl"
+            ? collapsed
+              ? "lg:pr-20 transition-all duration-300"
+              : "lg:pr-64 transition-all duration-300"
+            : collapsed
+              ? "lg:pl-20 transition-all duration-300"
+              : "lg:pl-64 transition-all duration-300"
+        }
+      >
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-surface border-b border-border px-4 py-3 lg:px-8">
           <button
             onClick={() => setOpen(true)}
