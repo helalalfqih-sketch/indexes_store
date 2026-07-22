@@ -255,25 +255,10 @@ function HomePage() {
       </div>
 
       {/* 1. CINEMATIC HERO (3D + Video + AI) */}
-      {settings.hero.enabled && (
+      {settings.hero.enabled && settings.hero.type === "cinematic" && (
         <div className="relative z-10 px-4">
           <Suspense fallback={<Skeleton className="h-[50vh] w-full rounded-3xl" />}>
-            {settings.hero.type === "cinematic" ? (
-              <CinematicStory />
-            ) : (
-              <ProductSphereHero
-                products={sphereProducts}
-                badgeText={settings.hero.badgeText}
-                title={settings.hero.title}
-                subtitle={settings.hero.subtitle}
-                maxProducts={settings.hero.sphereMaxProducts}
-                radius={settings.hero.sphereRadius}
-                tileScale={settings.hero.sphereTileScale}
-                cardShape={settings.hero.sphereCardShape}
-                showName={settings.hero.sphereShowName}
-                showPrice={settings.hero.sphereShowPrice}
-              />
-            )}
+            <CinematicStory />
           </Suspense>
         </div>
       )}

@@ -22,6 +22,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
 import type { StorefrontSettingsShape } from "@/lib/domain/appearance";
 import { NetworkManager } from "@/components/network-manager";
+import { PersistentShowcaseCanvas } from "@/components/persistent/PersistentShowcaseCanvas";
 import {
   generateOrganizationJsonLd,
   generateLocalBusinessJsonLd,
@@ -277,6 +278,7 @@ function RootComponent() {
             <Outlet />
           ) : (
             <StoreThemeLayout>
+              <PersistentShowcaseCanvas />
               <Outlet />
             </StoreThemeLayout>
           )}

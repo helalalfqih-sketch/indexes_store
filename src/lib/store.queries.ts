@@ -9,8 +9,10 @@ import {
 } from "./actions/product.actions";
 
 const CACHE_CONFIG = {
-  staleTime: 1000 * 60 * 5, // 5 minutes
-  gcTime: 1000 * 60 * 30,    // 30 minutes
+  staleTime: 1000 * 60 * 15, // 15 minutes
+  gcTime: 1000 * 60 * 60 * 2,  // 2 hours
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
 };
 
 /**

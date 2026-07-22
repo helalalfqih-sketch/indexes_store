@@ -87,13 +87,8 @@ export function StoreThemeLayout({ children }: { children: ReactNode }) {
 
 function StoreTopBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [count, setCount] = useState(0);
-  const items = useCart((s) => s.items);
+  const count = useCart((s) => s.count());
   const { settings } = useAppearance();
-
-  useEffect(() => {
-    setCount(items.reduce((a, i) => a + i.qty, 0));
-  }, [items]);
 
   const activeLinks = [
     { to: "/", label: "الرئيسية", icon: Home },
@@ -128,6 +123,7 @@ function StoreTopBar() {
               <Link
                 key={tab.to}
                 to={tab.to}
+                preload="intent"
                 className={`relative flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
                   active
                     ? "bg-primary text-white shadow-brand"
@@ -148,6 +144,7 @@ function StoreTopBar() {
 
         <Link
           to="/search"
+          preload="intent"
           className="flex flex-1 items-center gap-2 rounded-xl border border-showcase-border/50 bg-black/40 px-3 py-2.5 text-sm text-showcase-muted backdrop-blur-sm transition-colors hover:border-primary/50 hover:bg-black/60 hover:text-white md:max-w-xs"
         >
           <Search className="h-4 w-4 text-primary" />
@@ -160,12 +157,7 @@ function StoreTopBar() {
 
 function StoreBottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [count, setCount] = useState(0);
-  const items = useCart((s) => s.items);
-
-  useEffect(() => {
-    setCount(items.reduce((a, i) => a + i.qty, 0));
-  }, [items]);
+  const count = useCart((s) => s.count());
 
   const tabs = [
     { to: "/", label: "الرئيسية", icon: Home },
@@ -184,6 +176,7 @@ function StoreBottomNav() {
             <li key={t.to}>
               <Link
                 to={t.to}
+                preload="intent"
                 className={`flex flex-col items-center gap-1.5 py-3 text-[10px] font-bold transition-all ${
                   active
                     ? "text-primary drop-shadow-md"
