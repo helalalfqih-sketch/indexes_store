@@ -992,7 +992,7 @@ export function ProductSphereHero({
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: 20, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="relative w-full max-w-lg overflow-y-auto max-h-[85vh] rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl space-y-6 text-start"
+              className="relative w-full max-w-lg overflow-y-auto max-h-[85vh] rounded-3xl glass-dark p-6 shadow-2xl space-y-6 text-start"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}

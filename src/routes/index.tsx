@@ -305,7 +305,7 @@ function HomePage() {
 
       {/* 3. AI SEARCH */}
       <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md shadow-lg text-center space-y-3">
+        <div className="rounded-2xl glass-dark p-4 shadow-lg text-center space-y-3">
           <div className="text-center">
             <h3 className="text-xs font-black text-showcase-foreground flex items-center justify-center gap-1">
               <Icons.Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
@@ -536,7 +536,11 @@ function HomePage() {
           initial={false}
           animate={{ y: focusedProduct ? 0 : 120, opacity: focusedProduct ? 1 : 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="pointer-events-none fixed inset-x-0 bottom-20 z-30 mx-auto w-full max-w-md px-3"
+          className="pointer-events-none fixed inset-x-0 z-30 mx-auto w-full max-w-md px-3 sm:inset-x-auto sm:end-4 sm:mx-0 sm:max-w-sm"
+          style={{
+            // Above the mobile bottom nav + notch-safe (env safe-area).
+            bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
+          }}
         >
           {focusedProduct && (
             <a
