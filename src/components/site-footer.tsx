@@ -1,4 +1,5 @@
-import { MapPin, MessageCircle, ShoppingBag, Truck } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { MapPin, MessageCircle, PackageSearch, ShoppingBag, Truck } from "lucide-react";
 import { useAppearance } from "@/components/appearance-provider";
 import { whatsappLink } from "@/lib/whatsapp";
 
@@ -70,6 +71,18 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
               <span>{deliveryInfo}</span>
             </li>
           )}
+          <li className="flex items-start gap-2">
+            <PackageSearch className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+            <span>
+              <Link
+                to="/track"
+                className="font-bold text-primary underline-offset-2 hover:underline"
+              >
+                تتبع طلبك
+              </Link>{" "}
+              — برقم الطلب وآخر 4 أرقام من هاتفك
+            </span>
+          </li>
         </ul>
 
         <a
