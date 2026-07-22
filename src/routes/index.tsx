@@ -56,11 +56,13 @@ export const Route = createFileRoute("/")({
       ],
     };
   },
-  loader: ({ context: { queryClient } }) => {
-    queryClient.ensureQueryData(categoriesQueryOptions());
-    queryClient.ensureQueryData(bestSellersQueryOptions(4));
-    queryClient.ensureQueryData(offersQueryOptions());
-    queryClient.ensureQueryData(allProductsQueryOptions());
+  loader: async ({ context: { queryClient } }) => {
+    await Promise.all([
+      queryClient.ensureQueryData(categoriesQueryOptions()),
+      queryClient.ensureQueryData(bestSellersQueryOptions(4)),
+      queryClient.ensureQueryData(offersQueryOptions()),
+      queryClient.ensureQueryData(allProductsQueryOptions()),
+    ]);
   },
   pendingComponent: () => (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pt-12 md:max-w-6xl md:px-6 lg:max-w-7xl">

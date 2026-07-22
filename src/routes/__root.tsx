@@ -247,12 +247,6 @@ function RootComponent() {
     cleanPath.startsWith("/auth/");
 
   useEffect(() => {
-    // PERF (root-cause fix): supabase-js re-emits SIGNED_IN every time the tab
-    // regains focus / the session is re-confirmed — NOT only on real sign-ins.
-    // The previous listener invalidated the router + the ENTIRE query cache on
-    // each of those re-emissions, forcing loaders and all product queries to
-    // refetch (the "products reload" flash). Track the user id and only
-    // invalidate when the authenticated identity actually changes.
     let lastUserId: string | null | undefined;
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       const uid = session?.user?.id ?? null;
@@ -261,14 +255,15 @@ function RootComponent() {
         return;
       }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      // Tab-focus re-emission of SIGNED_IN for the same user → no-op.
+      // Tab-focus or auth check re-emission for the same user → no-op.
       if (event === "SIGNED_IN" && lastUserId !== undefined && uid === lastUserId) return;
       lastUserId = uid;
-      router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      // Invalidate only user-specific data (orders, profile) — NEVER public catalog cache
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      queryClient.invalidateQueries({ queryKey: ["my-orders"] });
     });
     return () => sub.subscription.unsubscribe();
-  }, [router, queryClient]);
+  }, [queryClient]);
 
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: idbPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}>

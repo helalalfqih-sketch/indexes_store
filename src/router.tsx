@@ -7,13 +7,13 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 15 * 60 * 1000, // 15 minutes
-        refetchOnWindowFocus: true,
-        refetchOnReconnect: true,
+        staleTime: 15 * 60 * 1000, // 15 minutes
+        gcTime: 2 * 60 * 60 * 1000, // 2 hours
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: false,
         networkMode: "offlineFirst",
         retry: (failureCount, error) => {
-          // Retry up to 3 times for network issues
           if (failureCount >= 3) return false;
           return true;
         },
@@ -28,11 +28,9 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreload: "intent",
-    defaultPreloadStaleTime: 10000,
-    // PERF: route loaders stay fresh for 5 minutes — Home → Cart → Home never
-    // re-runs loaders (instant back-navigation, no pending flash). Data
-    // freshness is still guaranteed by react-query background refetching.
-    defaultStaleTime: 5 * 60 * 1000,
+    defaultPreloadDelay: 50,
+    defaultPreloadStaleTime: 15 * 60 * 1000, // 15 minutes
+    defaultStaleTime: 15 * 60 * 1000, // 15 minutes
   });
 
   // PERF (root-cause fix): dehydrate the react-query cache on the server and
