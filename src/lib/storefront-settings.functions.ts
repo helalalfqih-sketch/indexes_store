@@ -1,10 +1,17 @@
 /**
- * Server functions for global storefront appearance settings.
+ * ⚠️ DEPRECATED — do NOT add new callers to this module.
+ *
+ * The canonical CMS layer is:
+ *   src/lib/actions/appearance.actions.ts  (auth + validation + draft/publish)
+ *   src/lib/services/storefront.service.ts (single data-access layer)
+ *
+ * This legacy module has ZERO consumers in the codebase (verified) and is kept
+ * temporarily only to avoid breaking any out-of-tree references. It bypasses
+ * the draft/publish system, change-log snapshots, and the unified validation
+ * path. Scheduled for removal in a future cleanup PR.
+ *
  * - getStorefrontSettings: public read (no auth required)
  * - saveStorefrontSettings: admin-only write (JWT role = admin)
- *
- * Data is stored in `storefront_settings` table (key/value JSONB rows).
- * Falls back to DEFAULT_STOREFRONT_SETTINGS if table is empty or unavailable.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";

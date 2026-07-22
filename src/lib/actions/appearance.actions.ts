@@ -22,38 +22,11 @@ import {
 } from "@/lib/domain/appearance";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-
-/** Zod schema per CMS key — writes are validated against these (S2). */
-const SCHEMA_BY_KEY = {
-  hero: HeroConfigSchema,
-  theme: ThemeConfigSchema,
-  products_layout: ProductsLayoutConfigSchema,
-  product_page: ProductPageConfigSchema,
-  cart_config: CartConfigSchema,
-  checkout: CheckoutConfigSchema,
-  navigation: NavigationConfigSchema,
-  pages: PagesConfigSchema,
-  translation: TranslationConfigSchema,
-  notifications: NotificationsConfigSchema,
-  sections: SectionsConfigSchema,
-  seo: SeoConfigSchema,
-  advanced: AdvancedConfigSchema,
-};
-
-/**
- * Validate an incoming CMS value against its key's schema.
- * Returns { ok, value } with the parsed (defaults-filled) value, or an Arabic error.
- */
-function validateSettingValue(key: string, value: unknown): { ok: true; value: unknown } | { ok: false; message: string } {
-  const schema = SCHEMA_BY_KEY[key];
-  if (!schema) return { ok: false, message: `مفتاح إعدادات غير معروف: ${key}` };
-  const parsed = schema.safeParse(value ?? {});
-  if (!parsed.success) {
-    const issue = parsed.error.issues[0];
-    return { ok: false, message: `قيمة غير صالحة (${key}${issue?.path?.length ? "." + issue.path.join(".") : ""}): ${issue?.message ?? "خطأ تحقق"}` };
-  }
-  return { ok: true, value: parsed.data };
-}
+// Validation lives in @/lib/validators/storefront (Phase 3), and ALL database
+// access goes through @/lib/services/storefront.service (Phase 4 — single CMS
+// data layer). This actions file keeps only: auth, validation, logging calls.
+import { validateSettingValue } from "@/lib/validators/storefront";
+import * as storefrontService from "@/lib/services/storefront.service";
 
 /**
  * Verify the caller of a public (middleware-less) server fn is a platform
@@ -208,41 +181,23 @@ export const saveStorefrontDraft = createServerFn({ method: "POST" })
       const validated = validateSettingValue(data.key, data.value);
       if (!validated.ok) return { success: false, message: validated.message };
 
-      // C1 FIX: never touch the published `value` when saving a draft.
-      // (The previous upsert wrote value:{} on conflict, wiping the live
-      // configuration for that key.) UPDATE draft_value only; INSERT a fresh
-      // row (with empty published value) only when the key doesn't exist yet.
-      const { data: updatedRows, error } = await authSupabase
-        .from("storefront_settings")
-        .update({ draft_value: validated.value, updated_at: new Date().toISOString() })
-        .eq("key", data.key)
-        .select("key");
-
-      if (!error && (!updatedRows || updatedRows.length === 0)) {
-        const { error: insErr } = await authSupabase.from("storefront_settings").insert({
-          key: data.key,
-          value: {},
-          draft_value: validated.value,
-          type: "json",
-        });
-        if (insErr) {
-          return { success: false, message: insErr.message };
-        }
+      // C1-safe draft save through the unified service (never touches `value`).
+      const res = await storefrontService.saveDraftValue(authSupabase, data.key, validated.value);
+      if (!res.ok) {
+        console.error("[saveStorefrontDraft] Error:", res.message);
+        return { success: false, message: res.message };
       }
 
-      // Insert change log entry
+      // Change log with value snapshots (enables version restore).
       const { data: userData } = await authSupabase.auth.getUser();
-      await authSupabase.from("storefront_change_logs").insert({
-        user_id: userId,
-        user_email: userData?.user?.email ?? null,
-        action_type: "save_draft",
-        key_changed: data.key,
+      await storefrontService.logChange(authSupabase, {
+        userId,
+        userEmail: userData?.user?.email ?? null,
+        actionType: "save_draft",
+        key: data.key,
+        oldValue: res.oldValue,
+        newValue: validated.value,
       });
-
-      if (error) {
-        console.error("[saveStorefrontDraft] Error:", error);
-        return { success: false, message: error.message };
-      }
 
       return { success: true };
     } catch (err: unknown) {
@@ -273,42 +228,19 @@ export const publishStorefrontSettings = createServerFn({ method: "POST" })
         return { success: false, message: "غير مسموح: يجب أن تكون مديراً لنشر الإعدادات" };
       }
 
-      // Read current draft_value for this key
-      const { data: row, error: fetchErr } = await authSupabase
-        .from("storefront_settings")
-        .select("draft_value")
-        .eq("key", data.key)
-        .single();
+      // Publish draft → live through the unified service.
+      const res = await storefrontService.publishDraftKey(authSupabase, data.key);
+      if (!res.ok) return { success: false, message: res.message };
 
-      if (fetchErr || !row) {
-        return { success: false, message: "المفتاح غير موجود" };
-      }
-
-      if (row.draft_value == null) {
-        return { success: false, message: "لا توجد مسودة للنشر" };
-      }
-
-      // Copy draft_value → value (publish)
-      const { error } = await authSupabase
-        .from("storefront_settings")
-        .update({
-          value: row.draft_value,
-          draft_value: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("key", data.key);
-
-      if (error) {
-        return { success: false, message: error.message };
-      }
-
-      // Log the publish action
+      // Log with snapshots (old published value → newly published value).
       const { data: userData } = await authSupabase.auth.getUser();
-      await authSupabase.from("storefront_change_logs").insert({
-        user_id: userId,
-        user_email: userData?.user?.email ?? null,
-        action_type: "publish",
-        key_changed: data.key,
+      await storefrontService.logChange(authSupabase, {
+        userId,
+        userEmail: userData?.user?.email ?? null,
+        actionType: "publish",
+        key: data.key,
+        oldValue: res.oldValue,
+        newValue: res.newValue,
       });
 
       return { success: true };
@@ -338,41 +270,25 @@ export const publishAllStorefrontSettings = createServerFn({ method: "POST" })
         return { success: false, message: "غير مسموح", published: [] };
       }
 
-      // Fetch all rows that have a pending draft
-      const { data: rows, error: fetchErr } = await authSupabase
-        .from("storefront_settings")
-        .select("key, draft_value")
-        .not("draft_value", "is", null);
-
-      if (fetchErr || !rows || rows.length === 0) {
+      // Publish every pending draft through the unified service.
+      const results = await storefrontService.publishAllDraftKeys(authSupabase);
+      if (results.length === 0) {
         return { success: true, published: [], message: "لا توجد مسودات معلقة" };
       }
 
-      const published: string[] = [];
       const { data: userData } = await authSupabase.auth.getUser();
-
-      for (const row of rows) {
-        const { error } = await authSupabase
-          .from("storefront_settings")
-          .update({
-            value: row.draft_value,
-            draft_value: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("key", row.key);
-
-        if (!error) {
-          published.push(row.key);
-          await authSupabase.from("storefront_change_logs").insert({
-            user_id: userId,
-            user_email: userData?.user?.email ?? null,
-            action_type: "publish",
-            key_changed: row.key,
-          });
-        }
+      for (const r of results) {
+        await storefrontService.logChange(authSupabase, {
+          userId,
+          userEmail: userData?.user?.email ?? null,
+          actionType: "publish",
+          key: r.key,
+          oldValue: r.oldValue,
+          newValue: r.newValue,
+        });
       }
 
-      return { success: true, published };
+      return { success: true, published: results.map((r) => r.key) };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "حدث خطأ";
       return { success: false, message: msg, published: [] };
@@ -387,6 +303,9 @@ export type ChangeLogEntry = {
   action_type: string;
   key_changed: string;
   created_at: string;
+  /** Present after migration 20260722000008 — snapshot of the replaced value. */
+  changed_section?: string | null;
+  old_value?: unknown;
 };
 
 /**
@@ -406,16 +325,52 @@ export const getStorefrontChangeLogs = createServerFn({ method: "GET" })
       if (!isAdmin) return [];
 
       const limit = data?.limit ?? 20;
-      const { data: logs, error } = await authSupabase
-        .from("storefront_change_logs")
-        .select("id, user_email, action_type, key_changed, created_at")
-        .order("created_at", { ascending: false })
-        .limit(limit);
-
-      if (error || !logs) return [];
+      const logs = await storefrontService.listChangeLogs(authSupabase, limit);
       return logs as ChangeLogEntry[];
     } catch {
       return [];
+    }
+  });
+
+// ── 6. Restore a previous version (Phase 5) ──────────────────────────────────
+
+/**
+ * Restore a CMS key to a previous version from a change-log snapshot.
+ * The restored value goes LIVE immediately; the restore itself is logged with
+ * snapshots, so it is always reversible via its own log entry. Admin only.
+ */
+export const restoreStorefrontVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { logId: string }) => data)
+  .handler(async ({ data, context }): Promise<{ success: boolean; message?: string; key?: string }> => {
+    try {
+      const { supabase: authSupabase, userId } = context;
+
+      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
+        _user_id: userId,
+        _role: "admin",
+      });
+      if (roleErr || !isAdmin) {
+        return { success: false, message: "غير مسموح: يجب أن تكون مديراً لاستعادة النسخ" };
+      }
+
+      const res = await storefrontService.restoreVersion(authSupabase, data.logId);
+      if (!res.ok) return { success: false, message: res.message };
+
+      const { data: userData } = await authSupabase.auth.getUser();
+      await storefrontService.logChange(authSupabase, {
+        userId,
+        userEmail: userData?.user?.email ?? null,
+        actionType: "restore",
+        key: res.key!,
+        oldValue: res.previousValue,
+        newValue: res.restoredValue,
+      });
+
+      return { success: true, key: res.key };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "حدث خطأ أثناء الاستعادة";
+      return { success: false, message: msg };
     }
   });
 
@@ -442,29 +397,22 @@ export const updateStorefrontAppearance = createServerFn({ method: "POST" })
       const validated = validateSettingValue(data.key, data.value);
       if (!validated.ok) return { success: false, message: validated.message };
 
-      const { error } = await authSupabase
-        .from("storefront_settings")
-        .upsert(
-          {
-            key: data.key,
-            value: validated.value,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key" }
-        );
-
-      if (error) {
-        console.error("[updateStorefrontAppearance] Upsert error:", error);
-        return { success: false, message: error.message };
+      // Direct live save through the unified service (snapshots the old value).
+      const res = await storefrontService.saveLiveValue(authSupabase, data.key, validated.value);
+      if (!res.ok) {
+        console.error("[updateStorefrontAppearance] Error:", res.message);
+        return { success: false, message: res.message };
       }
 
-      // Log the direct save
+      // This write goes LIVE immediately → log it as a publish, with snapshots.
       const { data: userData } = await authSupabase.auth.getUser();
-      await authSupabase.from("storefront_change_logs").insert({
-        user_id: userId,
-        user_email: userData?.user?.email ?? null,
-        action_type: "save_draft",
-        key_changed: data.key,
+      await storefrontService.logChange(authSupabase, {
+        userId,
+        userEmail: userData?.user?.email ?? null,
+        actionType: "publish",
+        key: data.key,
+        oldValue: res.oldValue,
+        newValue: validated.value,
       });
 
       return { success: true };
