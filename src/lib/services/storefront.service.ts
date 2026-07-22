@@ -16,8 +16,8 @@
  *  - Snapshot columns are written with a legacy fallback so the code keeps
  *    working if it deploys before migration 20260722000008 is applied.
  *
- * The legacy `storefront-settings.functions.ts` layer is deprecated and has
- * zero consumers; do not add new callers to it.
+ * The legacy settings-functions layer was fully REMOVED — this service is the
+ * only path to storefront_settings. Do not query the table anywhere else.
  */
 
 type Db = any;
@@ -25,6 +25,36 @@ type Db = any;
 const now = () => new Date().toISOString();
 
 // ── Reads ────────────────────────────────────────────────────────────────────
+
+/** Published values only — the public storefront read (never draft_value). */
+export async function fetchPublishedRows(
+  db: Db,
+): Promise<Array<{ key: string; value: unknown }> | null> {
+  const { data, error } = await db.from("storefront_settings").select("key, value");
+  if (error || !data || data.length === 0) return null;
+  return data;
+}
+
+/** Values + drafts — ADMIN preview read (caller must be admin-verified). */
+export async function fetchRowsWithDrafts(
+  db: Db,
+): Promise<Array<{ key: string; value: unknown; draft_value: unknown }> | null> {
+  const { data, error } = await db
+    .from("storefront_settings")
+    .select("key, value, draft_value");
+  if (error || !data || data.length === 0) return null;
+  return data;
+}
+
+/** Number of keys with a pending (unpublished) draft. */
+export async function countPendingDrafts(db: Db): Promise<number> {
+  const { count, error } = await db
+    .from("storefront_settings")
+    .select("*", { count: "exact", head: true })
+    .not("draft_value", "is", null);
+  if (error) return 0;
+  return count ?? 0;
+}
 
 export async function readSettingRow(
   db: Db,
@@ -181,17 +211,15 @@ export async function listChangeLogs(db: Db, limit: number): Promise<any[]> {
 }
 
 // ── Version restore (Phase 5) ────────────────────────────────────────────────
+// Split into snapshot-read + apply so the ACTIONS layer can run zod validation
+// on the snapshot between the two steps (restores of corrupt/legacy snapshots
+// are rejected before anything is written).
 
-/**
- * Restore a previous version from a change-log snapshot: writes the log's
- * old_value back as the LIVE published value (immediately visible), and the
- * restore itself is snapshotted — so a restore is always reversible via its
- * own log entry.
- */
-export async function restoreVersion(
+/** Read a change-log entry's restorable snapshot. */
+export async function getLogSnapshot(
   db: Db,
   logId: string,
-): Promise<{ ok: boolean; message?: string; key?: string; previousValue?: unknown; restoredValue?: unknown }> {
+): Promise<{ ok: true; key: string; oldValue: unknown } | { ok: false; message: string }> {
   const { data: log, error } = await db
     .from("storefront_change_logs")
     .select("id, key_changed, old_value")
@@ -202,15 +230,26 @@ export async function restoreVersion(
   if (log.old_value == null) {
     return { ok: false, message: "هذا السجل قديم ولا يحمل لقطة قابلة للاستعادة" };
   }
+  return { ok: true, key: log.key_changed, oldValue: log.old_value };
+}
 
-  const current = await readSettingRow(db, log.key_changed);
+/**
+ * Apply a (pre-validated) restored value as the LIVE published value.
+ * The caller logs the restore with snapshots — restores stay reversible.
+ */
+export async function applyRestore(
+  db: Db,
+  key: string,
+  value: unknown,
+): Promise<{ ok: boolean; message?: string; previousValue?: unknown }> {
+  const current = await readSettingRow(db, key);
   const previousValue = current?.value ?? null;
 
-  const { error: updErr } = await db
+  const { error } = await db
     .from("storefront_settings")
-    .update({ value: log.old_value, updated_at: now() })
-    .eq("key", log.key_changed);
-  if (updErr) return { ok: false, message: updErr.message };
+    .update({ value, updated_at: now() })
+    .eq("key", key);
+  if (error) return { ok: false, message: error.message };
 
-  return { ok: true, key: log.key_changed, previousValue, restoredValue: log.old_value };
+  return { ok: true, previousValue };
 }
