@@ -27,6 +27,48 @@ import {
 // data layer). This actions file keeps only: auth, validation, logging calls.
 import { validateSettingValue } from "@/lib/validators/storefront";
 import * as storefrontService from "@/lib/services/storefront.service";
+import { resolveTenantId } from "@/lib/saas/tenant-context";
+import { resolveCurrentTenant } from "@/lib/saas/tenant-resolver";
+
+/**
+ * P5 — CMS write scope resolution:
+ *   platform admin → GLOBAL rows (tenant_id NULL, platform defaults)
+ *   store owner    → THEIR tenant's override rows
+ * Anyone else is rejected. RLS enforces the same split as backstop.
+ */
+async function resolveCmsScope(
+  authSupabase: any,
+  userId: string,
+): Promise<{ allowed: boolean; scope: string | null }> {
+  const { data: isAdmin } = await authSupabase.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
+  if (isAdmin) return { allowed: true, scope: null };
+
+  try {
+    const tenantId = await resolveCurrentTenant(authSupabase, { userId });
+    const { data: isOwner } = await authSupabase.rpc("has_tenant_permission", {
+      _tenant_id: tenantId,
+      _user_id: userId,
+      _required_role: "owner",
+    });
+    if (isOwner) return { allowed: true, scope: tenantId };
+  } catch {
+    /* fall through */
+  }
+  return { allowed: false, scope: null };
+}
+
+/** Resolve the storefront tenant for PUBLIC reads from request headers. */
+async function resolvePublicCmsTenant(db: any): Promise<string | null> {
+  try {
+    const headers = getRequest()?.headers ?? null;
+    return await resolveTenantId(db, { headers });
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Verify the caller of a public (middleware-less) server fn is a platform
@@ -125,17 +167,21 @@ export const getStorefrontAppearance = createServerFn({ method: "GET" })
       // the anon role (column-scoped grant, S1), so the preview path verifies
       // the caller's bearer token and reads via the service role. An
       // unauthorized previewMode request silently degrades to published values.
+      // P5: resolve the storefront's tenant (subdomain / x-tenant headers /
+      // default) — reads merge tenant overrides over platform defaults.
+      const publicTenantId = await resolvePublicCmsTenant(supabase);
+
       if (previewMode) {
         const adminClient = await getAdminClientIfAuthorized();
         if (adminClient) {
-          const rows = await storefrontService.fetchRowsWithDrafts(adminClient);
+          const rows = await storefrontService.fetchRowsWithDrafts(adminClient, publicTenantId);
           if (rows) return rowsToSettings(rows, true);
         }
         // fall through → published values
       }
 
       // Public storefront read: published values only (never draft_value).
-      const rows = await storefrontService.fetchPublishedRows(supabase);
+      const rows = await storefrontService.fetchPublishedRows(supabase, publicTenantId);
       if (!rows) return DEFAULT_STOREFRONT_SETTINGS;
       return rowsToSettings(rows, false);
     } catch (err) {
@@ -157,13 +203,9 @@ export const saveStorefrontDraft = createServerFn({ method: "POST" })
     try {
       const { supabase: authSupabase, userId } = context;
 
-      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-
-      if (roleErr || !isAdmin) {
-        return { success: false, message: "غير مسموح: يجب أن تكون مديراً لتعديل الإعدادات" };
+      const gate = await resolveCmsScope(authSupabase, userId);
+      if (!gate.allowed) {
+        return { success: false, message: "غير مسموح: يتطلب مدير المنصّة أو مالك المتجر" };
       }
 
       // S2: validate the payload against the key's schema before storing.
@@ -171,7 +213,7 @@ export const saveStorefrontDraft = createServerFn({ method: "POST" })
       if (!validated.ok) return { success: false, message: validated.message };
 
       // C1-safe draft save through the unified service (never touches `value`).
-      const res = await storefrontService.saveDraftValue(authSupabase, data.key, validated.value);
+      const res = await storefrontService.saveDraftValue(authSupabase, data.key, validated.value, gate.scope);
       if (!res.ok) {
         console.error("[saveStorefrontDraft] Error:", res.message);
         return { success: false, message: res.message };
@@ -208,17 +250,13 @@ export const publishStorefrontSettings = createServerFn({ method: "POST" })
     try {
       const { supabase: authSupabase, userId } = context;
 
-      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-
-      if (roleErr || !isAdmin) {
-        return { success: false, message: "غير مسموح: يجب أن تكون مديراً لنشر الإعدادات" };
+      const gate = await resolveCmsScope(authSupabase, userId);
+      if (!gate.allowed) {
+        return { success: false, message: "غير مسموح: يتطلب مدير المنصّة أو مالك المتجر" };
       }
 
       // Publish draft → live through the unified service.
-      const res = await storefrontService.publishDraftKey(authSupabase, data.key);
+      const res = await storefrontService.publishDraftKey(authSupabase, data.key, gate.scope);
       if (!res.ok) return { success: false, message: res.message };
 
       // Log with snapshots (old published value → newly published value).
@@ -250,17 +288,13 @@ export const publishAllStorefrontSettings = createServerFn({ method: "POST" })
     try {
       const { supabase: authSupabase, userId } = context;
 
-      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-
-      if (roleErr || !isAdmin) {
+      const gate = await resolveCmsScope(authSupabase, userId);
+      if (!gate.allowed) {
         return { success: false, message: "غير مسموح", published: [] };
       }
 
-      // Publish every pending draft through the unified service.
-      const results = await storefrontService.publishAllDraftKeys(authSupabase);
+      // Publish every pending draft (within the caller's scope only).
+      const results = await storefrontService.publishAllDraftKeys(authSupabase, gate.scope);
       if (results.length === 0) {
         return { success: true, published: [], message: "لا توجد مسودات معلقة" };
       }
@@ -387,13 +421,9 @@ export const updateStorefrontAppearance = createServerFn({ method: "POST" })
     try {
       const { supabase: authSupabase, userId } = context;
 
-      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-
-      if (roleErr || !isAdmin) {
-        return { success: false, message: "غير مسموح: يجب أن تكون مديراً لتعديل المظهر" };
+      const gate = await resolveCmsScope(authSupabase, userId);
+      if (!gate.allowed) {
+        return { success: false, message: "غير مسموح: يتطلب مدير المنصّة أو مالك المتجر" };
       }
 
       // S2: validate against the key's schema before writing to the live value.
@@ -401,7 +431,7 @@ export const updateStorefrontAppearance = createServerFn({ method: "POST" })
       if (!validated.ok) return { success: false, message: validated.message };
 
       // Direct live save through the unified service (snapshots the old value).
-      const res = await storefrontService.saveLiveValue(authSupabase, data.key, validated.value);
+      const res = await storefrontService.saveLiveValue(authSupabase, data.key, validated.value, gate.scope);
       if (!res.ok) {
         console.error("[updateStorefrontAppearance] Error:", res.message);
         return { success: false, message: res.message };

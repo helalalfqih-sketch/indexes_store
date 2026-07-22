@@ -2,56 +2,87 @@
 /**
  * Storefront CMS Service — the SINGLE data-access layer for CMS settings.
  *
- *   UI → actions (appearance.actions.ts: auth + zod validation)
+ *   UI → actions (appearance.actions.ts: auth + zod validation + scope)
  *      → THIS SERVICE (all storefront_settings / storefront_change_logs I/O)
  *      → Supabase
  *
- * Rules:
- *  - Every function receives the CALLER's Supabase client (the RLS-scoped
- *    authenticated client from server functions). Authorization (admin
- *    checks) happens in the actions layer; RLS is the database backstop.
- *  - Draft saves NEVER touch the published `value` (C1 regression guard).
- *  - Every mutation records a change-log entry WITH value snapshots
- *    (old_value / new_value / changed_section) — enabling version restore.
- *  - Snapshot columns are written with a legacy fallback so the code keeps
- *    working if it deploys before migration 20260722000008 is applied.
+ * P5 — layered per-store CMS:
+ *   scope = null   → GLOBAL rows (platform defaults, admin-managed)
+ *   scope = tenant → that store's override rows (owner-managed)
+ * Reads merge tenant-over-global per key, so stores inherit platform defaults
+ * until they customize a section. Single-store mode is unchanged (global only).
  *
- * The legacy settings-functions layer was fully REMOVED — this service is the
- * only path to storefront_settings. Do not query the table anywhere else.
+ * Rules:
+ *  - Callers pass the RLS-scoped client; authorization (admin / store-owner
+ *    scope resolution) happens in the actions layer; RLS is the backstop.
+ *  - Draft saves NEVER touch the published `value` (C1 regression guard).
+ *  - Upserts avoid ON CONFLICT (the global unique is a partial index) —
+ *    update-then-insert is used instead.
+ *  - No other module may query these tables. The legacy settings layer was
+ *    fully removed.
  */
 
 type Db = any;
 
+/** null = global/platform scope; string = tenant (store) scope. */
+export type CmsScope = string | null;
+
 const now = () => new Date().toISOString();
+
+function scoped(q: any, scope: CmsScope) {
+  return scope === null ? q.is("tenant_id", null) : q.eq("tenant_id", scope);
+}
+
+/** Merge rows: tenant override wins over the global default per key. */
+function mergeRows<T extends { key: string; tenant_id?: string | null }>(rows: T[]): T[] {
+  const byKey = new Map<string, T>();
+  for (const r of rows) {
+    const existing = byKey.get(r.key);
+    if (!existing || (existing.tenant_id == null && r.tenant_id != null)) {
+      byKey.set(r.key, r);
+    }
+  }
+  return Array.from(byKey.values());
+}
 
 // ── Reads ────────────────────────────────────────────────────────────────────
 
-/** Published values only — the public storefront read (never draft_value). */
+/** Published values (global + tenant overrides merged). Public storefront read. */
 export async function fetchPublishedRows(
   db: Db,
+  tenantId?: string | null,
 ): Promise<Array<{ key: string; value: unknown }> | null> {
-  const { data, error } = await db.from("storefront_settings").select("key, value");
+  let q = db.from("storefront_settings").select("key, value, tenant_id");
+  q = tenantId ? q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`) : q.is("tenant_id", null);
+  const { data, error } = await q;
   if (error || !data || data.length === 0) return null;
-  return data;
+  return mergeRows(data as any[]).map((r: any) => ({ key: r.key, value: r.value }));
 }
 
-/** Values + drafts — ADMIN preview read (caller must be admin-verified). */
+/** Values + drafts (merged) — ADMIN/OWNER preview read (caller pre-verified). */
 export async function fetchRowsWithDrafts(
   db: Db,
+  tenantId?: string | null,
 ): Promise<Array<{ key: string; value: unknown; draft_value: unknown }> | null> {
-  const { data, error } = await db
-    .from("storefront_settings")
-    .select("key, value, draft_value");
+  let q = db.from("storefront_settings").select("key, value, draft_value, tenant_id");
+  q = tenantId ? q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`) : q.is("tenant_id", null);
+  const { data, error } = await q;
   if (error || !data || data.length === 0) return null;
-  return data;
+  return mergeRows(data as any[]).map((r: any) => ({
+    key: r.key,
+    value: r.value,
+    draft_value: r.draft_value,
+  }));
 }
 
-/** Number of keys with a pending (unpublished) draft. */
-export async function countPendingDrafts(db: Db): Promise<number> {
-  const { count, error } = await db
+/** Number of keys with a pending draft within ONE scope. */
+export async function countPendingDrafts(db: Db, scope: CmsScope = null): Promise<number> {
+  let q = db
     .from("storefront_settings")
     .select("*", { count: "exact", head: true })
     .not("draft_value", "is", null);
+  q = scoped(q, scope);
+  const { count, error } = await q;
   if (error) return 0;
   return count ?? 0;
 }
@@ -59,34 +90,33 @@ export async function countPendingDrafts(db: Db): Promise<number> {
 export async function readSettingRow(
   db: Db,
   key: string,
+  scope: CmsScope = null,
 ): Promise<{ key: string; value: unknown; draft_value: unknown } | null> {
-  const { data, error } = await db
-    .from("storefront_settings")
-    .select("key, value, draft_value")
-    .eq("key", key)
-    .maybeSingle();
+  let q = db.from("storefront_settings").select("key, value, draft_value").eq("key", key);
+  q = scoped(q, scope);
+  const { data, error } = await q.maybeSingle();
   if (error || !data) return null;
   return data;
 }
 
-// ── Draft save (C1-safe) ─────────────────────────────────────────────────────
+// ── Draft save (C1-safe, scoped) ─────────────────────────────────────────────
 
 export async function saveDraftValue(
   db: Db,
   key: string,
   value: unknown,
+  scope: CmsScope = null,
 ): Promise<{ ok: boolean; message?: string; oldValue: unknown }> {
-  // Snapshot the state being replaced (previous draft, else published value).
-  const existing = await readSettingRow(db, key);
+  const existing = await readSettingRow(db, key, scope);
   const oldValue = existing ? (existing.draft_value ?? existing.value) : null;
 
   // NEVER touch the published `value` when saving a draft.
-  const { data: updated, error } = await db
+  let uq = db
     .from("storefront_settings")
     .update({ draft_value: value, updated_at: now() })
-    .eq("key", key)
-    .select("key");
-
+    .eq("key", key);
+  uq = scoped(uq, scope);
+  const { data: updated, error } = await uq.select("key");
   if (error) return { ok: false, message: error.message, oldValue };
 
   if (!updated || updated.length === 0) {
@@ -95,26 +125,30 @@ export async function saveDraftValue(
       value: {},
       draft_value: value,
       type: "json",
+      tenant_id: scope,
     });
     if (insErr) return { ok: false, message: insErr.message, oldValue };
   }
   return { ok: true, oldValue };
 }
 
-// ── Publish ──────────────────────────────────────────────────────────────────
+// ── Publish (scoped) ─────────────────────────────────────────────────────────
 
 export async function publishDraftKey(
   db: Db,
   key: string,
+  scope: CmsScope = null,
 ): Promise<{ ok: boolean; message?: string; oldValue?: unknown; newValue?: unknown }> {
-  const row = await readSettingRow(db, key);
+  const row = await readSettingRow(db, key, scope);
   if (!row) return { ok: false, message: "المفتاح غير موجود" };
   if (row.draft_value == null) return { ok: false, message: "لا توجد مسودة للنشر" };
 
-  const { error } = await db
+  let uq = db
     .from("storefront_settings")
     .update({ value: row.draft_value, draft_value: null, updated_at: now() })
     .eq("key", key);
+  uq = scoped(uq, scope);
+  const { error } = await uq;
   if (error) return { ok: false, message: error.message };
 
   return { ok: true, oldValue: row.value, newValue: row.draft_value };
@@ -122,19 +156,24 @@ export async function publishDraftKey(
 
 export async function publishAllDraftKeys(
   db: Db,
+  scope: CmsScope = null,
 ): Promise<Array<{ key: string; oldValue: unknown; newValue: unknown }>> {
-  const { data: rows, error } = await db
+  let q = db
     .from("storefront_settings")
     .select("key, value, draft_value")
     .not("draft_value", "is", null);
+  q = scoped(q, scope);
+  const { data: rows, error } = await q;
   if (error || !rows) return [];
 
   const published: Array<{ key: string; oldValue: unknown; newValue: unknown }> = [];
   for (const row of rows as Array<{ key: string; value: unknown; draft_value: unknown }>) {
-    const { error: updErr } = await db
+    let uq = db
       .from("storefront_settings")
       .update({ value: row.draft_value, draft_value: null, updated_at: now() })
       .eq("key", row.key);
+    uq = scoped(uq, scope);
+    const { error: updErr } = await uq;
     if (!updErr) {
       published.push({ key: row.key, oldValue: row.value, newValue: row.draft_value });
     }
@@ -142,24 +181,41 @@ export async function publishAllDraftKeys(
   return published;
 }
 
-// ── Direct live save (used by the CMS "save" buttons) ───────────────────────
+// ── Direct live save (scoped; update-then-insert — no ON CONFLICT) ─────────
 
 export async function saveLiveValue(
   db: Db,
   key: string,
   value: unknown,
+  scope: CmsScope = null,
 ): Promise<{ ok: boolean; message?: string; oldValue: unknown }> {
-  const existing = await readSettingRow(db, key);
+  const existing = await readSettingRow(db, key, scope);
   const oldValue = existing?.value ?? null;
 
-  const { error } = await db
+  let uq = db
     .from("storefront_settings")
-    .upsert({ key, value, updated_at: now() }, { onConflict: "key" });
+    .update({ value, updated_at: now() })
+    .eq("key", key);
+  uq = scoped(uq, scope);
+  const { data: updated, error } = await uq.select("key");
   if (error) return { ok: false, message: error.message, oldValue };
+
+  if (!updated || updated.length === 0) {
+    const { error: insErr } = await db.from("storefront_settings").insert({
+      key,
+      value,
+      type: "json",
+      tenant_id: scope,
+    });
+    if (insErr) return { ok: false, message: insErr.message, oldValue };
+  }
   return { ok: true, oldValue };
 }
 
 // ── Change log (with snapshots + legacy fallback) ────────────────────────────
+// NOTE: change-log INSERT is platform-admin-gated by RLS; tenant-scoped owner
+// saves are not yet audit-logged (logChange fails soft) — follow-up will add
+// tenant-aware audit policies.
 
 export interface ChangeLogInput {
   userId: string;
@@ -201,7 +257,6 @@ export async function listChangeLogs(db: Db, limit: number): Promise<any[]> {
     .limit(limit);
   if (!error && data) return data;
 
-  // Legacy fallback (snapshot columns not applied yet).
   const { data: legacy } = await db
     .from("storefront_change_logs")
     .select("id, user_email, action_type, key_changed, created_at")
@@ -210,12 +265,8 @@ export async function listChangeLogs(db: Db, limit: number): Promise<any[]> {
   return legacy ?? [];
 }
 
-// ── Version restore (Phase 5) ────────────────────────────────────────────────
-// Split into snapshot-read + apply so the ACTIONS layer can run zod validation
-// on the snapshot between the two steps (restores of corrupt/legacy snapshots
-// are rejected before anything is written).
+// ── Version restore (GLOBAL scope — admin studio feature) ───────────────────
 
-/** Read a change-log entry's restorable snapshot. */
 export async function getLogSnapshot(
   db: Db,
   logId: string,
@@ -233,22 +284,19 @@ export async function getLogSnapshot(
   return { ok: true, key: log.key_changed, oldValue: log.old_value };
 }
 
-/**
- * Apply a (pre-validated) restored value as the LIVE published value.
- * The caller logs the restore with snapshots — restores stay reversible.
- */
+/** Apply a (pre-validated) restored value as the LIVE published value. */
 export async function applyRestore(
   db: Db,
   key: string,
   value: unknown,
+  scope: CmsScope = null,
 ): Promise<{ ok: boolean; message?: string; previousValue?: unknown }> {
-  const current = await readSettingRow(db, key);
+  const current = await readSettingRow(db, key, scope);
   const previousValue = current?.value ?? null;
 
-  const { error } = await db
-    .from("storefront_settings")
-    .update({ value, updated_at: now() })
-    .eq("key", key);
+  let uq = db.from("storefront_settings").update({ value, updated_at: now() }).eq("key", key);
+  uq = scoped(uq, scope);
+  const { error } = await uq;
   if (error) return { ok: false, message: error.message };
 
   return { ok: true, previousValue };
