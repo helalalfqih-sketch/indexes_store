@@ -41,6 +41,14 @@ export interface MyOrderItem {
   total_price: number;
 }
 
+export interface OrderTimelineEntry {
+  id: string;
+  from_status: OrderStatus | null;
+  to_status: OrderStatus;
+  note: string | null;
+  created_at: string;
+}
+
 export interface MyOrderDetails {
   id: string;
   order_number: string;
@@ -50,6 +58,20 @@ export interface MyOrderDetails {
   total: number;
   currency: string;
   items: MyOrderItem[];
+  history: OrderTimelineEntry[];
+}
+
+/** Staff-facing details: customer contact fields included (RLS-gated to tenant staff). */
+export interface StaffOrderDetails extends MyOrderDetails {
+  customer_name: string | null;
+  customer_phone: string | null;
+  customer_address: string | null;
+  customer_email: string | null;
+  notes: string | null;
+  user_id: string | null;
+  tenant_id: string;
+  discount_amount: number;
+  coupon_code: string | null;
 }
 
 /** Count items per order id without relying on fragile aggregate embeds. */
@@ -133,8 +155,55 @@ export async function getMyOrderDetails(
 
   if (error || !order) return null;
 
-  const items = await loadItems(db, orderId);
-  return buildDetails(order as OrderHead, items);
+  const [items, history] = await Promise.all([loadItems(db, orderId), loadHistory(db, orderId)]);
+  return buildDetails(order as OrderHead, items, history);
+}
+
+/**
+ * Staff-facing order details (items + timeline + customer contact fields).
+ * `db` MUST be an RLS-scoped client — the staff SELECT policies
+ * (can_manage_tenant) are the authorization layer. Returns null when the
+ * caller has no access to the order.
+ */
+export async function getOrderDetailsForStaff(
+  db: DB,
+  orderId: string,
+): Promise<StaffOrderDetails | null> {
+  const { data: order, error } = await db
+    .from("orders")
+    .select(
+      "id, status, payment_status, created_at, total, currency, customer_name, customer_phone, customer_address, customer_email, notes, user_id, tenant_id, discount_amount, coupon_code",
+    )
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (error || !order) return null;
+
+  const [items, history] = await Promise.all([loadItems(db, orderId), loadHistory(db, orderId)]);
+  const base = buildDetails(order as OrderHead, items, history);
+  const o = order as OrderHead & {
+    customer_name: string | null;
+    customer_phone: string | null;
+    customer_address: string | null;
+    customer_email: string | null;
+    notes: string | null;
+    user_id: string | null;
+    tenant_id: string;
+    discount_amount: number;
+    coupon_code: string | null;
+  };
+  return {
+    ...base,
+    customer_name: o.customer_name,
+    customer_phone: o.customer_phone,
+    customer_address: o.customer_address,
+    customer_email: o.customer_email,
+    notes: o.notes,
+    user_id: o.user_id,
+    tenant_id: o.tenant_id,
+    discount_amount: Number(o.discount_amount ?? 0),
+    coupon_code: o.coupon_code,
+  };
 }
 
 /**
@@ -164,8 +233,8 @@ export async function getGuestOrder(
 
   if (error || !order) return null;
 
-  const items = await loadItems(admin, orderId);
-  return buildDetails(order as OrderHead, items);
+  const [items, history] = await Promise.all([loadItems(admin, orderId), loadHistory(admin, orderId)]);
+  return buildDetails(order as OrderHead, items, history);
 }
 
 // ---------- internal helpers ----------
@@ -209,7 +278,21 @@ async function loadItems(db: DB, orderId: string): Promise<MyOrderItem[]> {
   }));
 }
 
-function buildDetails(order: OrderHead, items: MyOrderItem[]): MyOrderDetails {
+async function loadHistory(db: DB, orderId: string): Promise<OrderTimelineEntry[]> {
+  const { data, error } = await db
+    .from("order_status_history")
+    .select("id, from_status, to_status, note, created_at")
+    .eq("order_id", orderId)
+    .order("created_at", { ascending: true });
+  if (error || !data) return [];
+  return data as OrderTimelineEntry[];
+}
+
+function buildDetails(
+  order: OrderHead,
+  items: MyOrderItem[],
+  history: OrderTimelineEntry[] = [],
+): MyOrderDetails {
   return {
     id: order.id,
     order_number: formatOrderNumber(order.id),
@@ -219,5 +302,6 @@ function buildDetails(order: OrderHead, items: MyOrderItem[]): MyOrderDetails {
     total: Number(order.total ?? 0),
     currency: order.currency ?? "YER",
     items,
+    history,
   };
 }

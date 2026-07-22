@@ -1,0 +1,163 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  getOrderDetailsForStaff,
+  type StaffOrderDetails,
+} from "@/lib/services/order-history.service";
+import type { Database } from "@/integrations/supabase/types";
+
+/**
+ * Admin/staff order-management server functions.
+ *
+ * Authorization model: every function runs with the caller's RLS-SCOPED client
+ * (requireSupabaseAuth). The database policies are the security boundary:
+ *   - SELECT/UPDATE on orders  → can_manage_tenant(tenant_id, auth.uid())
+ *   - INSERT on order_status_history → staff-only policy
+ * No service role is used here — a non-staff caller simply sees zero rows.
+ */
+
+type OrderStatus = Database["public"]["Enums"]["order_status"];
+
+const ORDER_STATUSES = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "refunded",
+] as const;
+
+const statusEnum = z.enum(ORDER_STATUSES);
+
+export interface TenantOrderRow {
+  id: string;
+  created_at: string;
+  status: OrderStatus;
+  payment_status: Database["public"]["Enums"]["payment_status"];
+  total: number;
+  currency: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+}
+
+export interface TenantOrdersPage {
+  rows: TenantOrderRow[];
+  count: number;
+  limit: number;
+  offset: number;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const listInput = z
+  .object({
+    status: statusEnum.optional(),
+    search: z.string().trim().max(120).optional(),
+    limit: z.number().int().min(1).max(100).optional(),
+    offset: z.number().int().min(0).optional(),
+  })
+  .optional();
+
+/** List orders the caller may manage (RLS-scoped), newest first. */
+export const listTenantOrders = createServerFn({ method: "GET" })
+  .inputValidator((raw: unknown) => listInput.parse(raw))
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }): Promise<TenantOrdersPage> => {
+    const { supabase } = context as unknown as { supabase: any };
+    const limit = data?.limit ?? 20;
+    const offset = data?.offset ?? 0;
+
+    let q = supabase
+      .from("orders")
+      .select(
+        "id, created_at, status, payment_status, total, currency, customer_name, customer_phone",
+        { count: "exact" },
+      )
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (data?.status) q = q.eq("status", data.status);
+    if (data?.search) {
+      const s = data.search;
+      if (UUID_RE.test(s)) {
+        q = q.eq("id", s);
+      } else {
+        const like = `%${s.replace(/[%_]/g, "")}%`;
+        q = q.or(`customer_phone.ilike.${like},customer_name.ilike.${like}`);
+      }
+    }
+
+    const { data: rows, error, count } = await q;
+    if (error) throw new Error("تعذّر تحميل الطلبات.");
+    return { rows: (rows ?? []) as TenantOrderRow[], count: count ?? 0, limit, offset };
+  });
+
+/** Full order details for staff (items + timeline + customer contact). */
+export const getTenantOrderDetails = createServerFn({ method: "GET" })
+  .inputValidator((raw: unknown) => z.object({ orderId: z.string().uuid() }).parse(raw))
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }): Promise<StaffOrderDetails | null> => {
+    const { supabase } = context as unknown as { supabase: any };
+    return getOrderDetailsForStaff(supabase, data.orderId);
+  });
+
+/**
+ * Change an order's status and append an audit entry to order_status_history.
+ * Both writes run under the caller's RLS (staff policies) — no service role.
+ */
+export const updateOrderStatus = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z
+      .object({
+        orderId: z.string().uuid(),
+        toStatus: statusEnum,
+        note: z.string().trim().max(500).optional(),
+      })
+      .parse(raw),
+  )
+  .middleware([requireSupabaseAuth])
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ ok: true; from: OrderStatus; to: OrderStatus }> => {
+      const { supabase, userId } = context as unknown as { supabase: any; userId: string };
+
+      // Read under RLS: proves the caller can manage this order's tenant.
+      const { data: order, error: readErr } = await supabase
+        .from("orders")
+        .select("id, status, tenant_id")
+        .eq("id", data.orderId)
+        .maybeSingle();
+      if (readErr || !order) {
+        throw new Error("الطلب غير موجود أو لا تملك صلاحية إدارته.");
+      }
+
+      const fromStatus = order.status as OrderStatus;
+      if (fromStatus === data.toStatus) {
+        return { ok: true, from: fromStatus, to: data.toStatus };
+      }
+
+      const { error: updErr } = await supabase
+        .from("orders")
+        .update({ status: data.toStatus })
+        .eq("id", data.orderId);
+      if (updErr) throw new Error("تعذّر تحديث حالة الطلب.");
+
+      const { error: histErr } = await supabase.from("order_status_history").insert({
+        order_id: data.orderId,
+        tenant_id: order.tenant_id,
+        from_status: fromStatus,
+        to_status: data.toStatus,
+        changed_by: userId,
+        note: data.note ?? null,
+      });
+      if (histErr) {
+        console.warn("[updateOrderStatus] history notice:", histErr.message);
+      }
+
+      return { ok: true, from: fromStatus, to: data.toStatus };
+    },
+  );
