@@ -14,6 +14,26 @@ import { supabase } from "@/integrations/supabase/client";
 
 const CMS_SYNC_CHANNEL = "storefront-cms-sync";
 const CMS_SYNC_EVENT = "settings_published";
+const FINANCIAL_EVENT = "financial_updated";
+
+/** Shared low-level broadcast sender (fire-and-forget). */
+async function sendBroadcast(event: string): Promise<void> {
+  try {
+    const channel = supabase.channel(CMS_SYNC_CHANNEL);
+    await new Promise<void>((resolve) => {
+      channel.subscribe((status) => {
+        if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          resolve();
+        }
+      });
+      setTimeout(resolve, 3000);
+    });
+    await channel.send({ type: "broadcast", event, payload: { at: Date.now() } });
+    setTimeout(() => supabase.removeChannel(channel), 1500);
+  } catch (err) {
+    console.warn("[realtime] broadcast notice:", err);
+  }
+}
 
 export const StorefrontRealtimeService = {
   /**
@@ -21,27 +41,28 @@ export const StorefrontRealtimeService = {
    * Fire-and-forget: failures never break the admin save flow.
    */
   async notifyPublished(): Promise<void> {
+    return sendBroadcast(CMS_SYNC_EVENT);
+  },
+
+  /** P4: notify dashboards that store financials changed (order delivered/refunded). */
+  async notifyFinancialUpdated(): Promise<void> {
+    return sendBroadcast(FINANCIAL_EVENT);
+  },
+
+  /** Subscribe to financial updates. Returns an unsubscribe function. */
+  subscribeFinancial(onChange: () => void): () => void {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     try {
-      const channel = supabase.channel(CMS_SYNC_CHANNEL);
-      await new Promise<void>((resolve) => {
-        channel.subscribe((status) => {
-          if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            resolve();
-          }
-        });
-        // Safety net so the admin UI never hangs on a slow socket.
-        setTimeout(resolve, 3000);
-      });
-      await channel.send({
-        type: "broadcast",
-        event: CMS_SYNC_EVENT,
-        payload: { at: Date.now() },
-      });
-      // Give the message a moment to flush before tearing the socket down.
-      setTimeout(() => supabase.removeChannel(channel), 1500);
+      channel = supabase
+        .channel(CMS_SYNC_CHANNEL)
+        .on("broadcast", { event: FINANCIAL_EVENT }, () => onChange())
+        .subscribe();
     } catch (err) {
-      console.warn("[cms-sync] broadcast notice:", err);
+      console.warn("[realtime] subscribe notice:", err);
     }
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   },
 
   /**
