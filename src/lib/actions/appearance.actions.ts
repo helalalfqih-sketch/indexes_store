@@ -128,26 +128,15 @@ export const getStorefrontAppearance = createServerFn({ method: "GET" })
       if (previewMode) {
         const adminClient = await getAdminClientIfAuthorized();
         if (adminClient) {
-          const { data: rows, error } = await adminClient
-            .from("storefront_settings")
-            .select("key, value, draft_value");
-          if (!error && rows && rows.length > 0) {
-            return rowsToSettings(rows, true);
-          }
+          const rows = await storefrontService.fetchRowsWithDrafts(adminClient);
+          if (rows) return rowsToSettings(rows, true);
         }
         // fall through → published values
       }
 
       // Public storefront read: published values only (never draft_value).
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: rows, error } = await (supabase as any)
-        .from("storefront_settings")
-        .select("key, value");
-
-      if (error || !rows || rows.length === 0) {
-        return DEFAULT_STOREFRONT_SETTINGS;
-      }
-
+      const rows = await storefrontService.fetchPublishedRows(supabase);
+      if (!rows) return DEFAULT_STOREFRONT_SETTINGS;
       return rowsToSettings(rows, false);
     } catch (err) {
       console.warn("[getStorefrontAppearance] Returning fallback defaults:", err);
@@ -354,7 +343,21 @@ export const restoreStorefrontVersion = createServerFn({ method: "POST" })
         return { success: false, message: "غير مسموح: يجب أن تكون مديراً لاستعادة النسخ" };
       }
 
-      const res = await storefrontService.restoreVersion(authSupabase, data.logId);
+      // 1) Read the snapshot, 2) zod-validate it against the key's CURRENT
+      // schema (corrupt/legacy snapshots are rejected before any write),
+      // 3) apply as the live value.
+      const snap = await storefrontService.getLogSnapshot(authSupabase, data.logId);
+      if (!snap.ok) return { success: false, message: snap.message };
+
+      const validated = validateSettingValue(snap.key, snap.oldValue);
+      if (!validated.ok) {
+        return {
+          success: false,
+          message: `تعذّرت الاستعادة — اللقطة لا تطابق مخطط الإعدادات الحالي: ${validated.message}`,
+        };
+      }
+
+      const res = await storefrontService.applyRestore(authSupabase, snap.key, validated.value);
       if (!res.ok) return { success: false, message: res.message };
 
       const { data: userData } = await authSupabase.auth.getUser();
@@ -362,12 +365,12 @@ export const restoreStorefrontVersion = createServerFn({ method: "POST" })
         userId,
         userEmail: userData?.user?.email ?? null,
         actionType: "restore",
-        key: res.key!,
+        key: snap.key,
         oldValue: res.previousValue,
-        newValue: res.restoredValue,
+        newValue: validated.value,
       });
 
-      return { success: true, key: res.key };
+      return { success: true, key: snap.key };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "حدث خطأ أثناء الاستعادة";
       return { success: false, message: msg };

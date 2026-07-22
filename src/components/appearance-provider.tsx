@@ -3,36 +3,16 @@ import {
   DEFAULT_STOREFRONT_SETTINGS,
   type StorefrontSettingsShape,
 } from "@/lib/domain/appearance";
-import { supabase } from "@/integrations/supabase/client";
 import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
-
-/** Realtime broadcast channel shared by admin CMS (sender) and storefront (listener). */
-const CMS_SYNC_CHANNEL = "storefront-cms-sync";
-const CMS_SYNC_EVENT = "settings_published";
+import { StorefrontRealtimeService } from "@/lib/services/storefront-realtime.service";
 
 /**
  * Notify all open storefront tabs that CMS settings changed.
- * Called by admin pages after a successful save/publish — listeners refetch
- * the published settings and re-render without a page refresh.
- * Fire-and-forget: failures never break the admin save flow.
+ * Stable public API — delegates to StorefrontRealtimeService so the sync
+ * transport can be swapped without touching admin pages.
  */
 export async function notifyStorefrontPublished(): Promise<void> {
-  try {
-    const channel = supabase.channel(CMS_SYNC_CHANNEL);
-    await new Promise<void>((resolve) => {
-      channel.subscribe((status) => {
-        if (status === "SUBSCRIBED") resolve();
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") resolve();
-      });
-      // Safety net so the admin UI never hangs on a slow socket.
-      setTimeout(resolve, 3000);
-    });
-    await channel.send({ type: "broadcast", event: CMS_SYNC_EVENT, payload: { at: Date.now() } });
-    // Give the message a moment to flush before tearing the socket down.
-    setTimeout(() => supabase.removeChannel(channel), 1500);
-  } catch (err) {
-    console.warn("[cms-sync] broadcast notice:", err);
-  }
+  return StorefrontRealtimeService.notifyPublished();
 }
 
 interface AppearanceContextType {
@@ -78,32 +58,23 @@ export function AppearanceProvider({
   }, [settings.theme]);
 
   // Realtime sync: when the admin publishes CMS changes, refetch the published
-  // settings so every open storefront tab updates WITHOUT a refresh.
-  // Broadcast-only (no postgres_changes): no DB payload reaches clients, so
-  // unpublished drafts can never leak through the realtime socket, and no
-  // publication changes are needed. supabase-js handles reconnection.
+  // settings so every open storefront tab updates WITHOUT a refresh. Transport
+  // details live in StorefrontRealtimeService (currently broadcast-only: no DB
+  // payload reaches clients → unpublished drafts can never leak).
   useEffect(() => {
     if (typeof window === "undefined") return;
     let active = true;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    try {
-      channel = supabase
-        .channel(CMS_SYNC_CHANNEL)
-        .on("broadcast", { event: CMS_SYNC_EVENT }, async () => {
-          try {
-            const fresh = await getStorefrontAppearance();
-            if (active && fresh) setSettings(fresh);
-          } catch {
-            /* keep current settings on fetch failure */
-          }
-        })
-        .subscribe();
-    } catch (err) {
-      console.warn("[cms-sync] subscribe notice:", err);
-    }
+    const unsubscribe = StorefrontRealtimeService.subscribe(async () => {
+      try {
+        const fresh = await getStorefrontAppearance();
+        if (active && fresh) setSettings(fresh);
+      } catch {
+        /* keep current settings on fetch failure */
+      }
+    });
     return () => {
       active = false;
-      if (channel) supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, []);
 

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { countPendingDrafts } from "@/lib/services/storefront.service";
 
 /**
  * Admin dashboard statistics — REAL numbers from the database (replacing the
@@ -112,11 +113,8 @@ export const getAdminDashboardStats = createServerFn({ method: "GET" })
       .order("stock", { ascending: true })
       .limit(5);
 
-    // Pending CMS drafts (storefront_settings) — full column access as authenticated.
-    const { count: cmsDraftCount } = await supabase
-      .from("storefront_settings")
-      .select("*", { count: "exact", head: true })
-      .not("draft_value", "is", null);
+    // Pending CMS drafts — via the unified storefront service layer.
+    const cmsDraftCount = await countPendingDrafts(supabase);
 
     return {
       revenue7d,
