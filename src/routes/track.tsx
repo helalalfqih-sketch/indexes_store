@@ -10,12 +10,13 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useSession } from "@/hooks/use-session";
-import { getMyOrderDetails, getGuestOrder } from "@/lib/order.functions";
+import { getMyOrderDetails, getTrackedOrder } from "@/lib/order.functions";
 import type { MyOrderDetails } from "@/lib/services/order-history.service";
 import {
   orderStatusLabel,
   orderStatusTone,
   paymentStatusLabel,
+  normalizeOrderNumber,
   type OrderStatus,
 } from "@/lib/order-status";
 import { formatPrice } from "@/lib/store-data";
@@ -49,35 +50,37 @@ function TrackPage() {
     setError(null);
     setOrder(null);
 
-    const id = orderId.trim().toLowerCase();
-    if (!UUID_RE.test(id)) {
-      setError("معرّف الطلب غير صالح — انسخه كاملاً من رسالة تأكيد الطلب في واتساب.");
+    const input = orderId.trim();
+    const orderNumber = normalizeOrderNumber(input);
+    if (!orderNumber) {
+      setError("رقم الطلب غير صالح — الصيغة: ORD-XXXXXXXX كما في رسالة تأكيد الطلب.");
       return;
     }
-    const cleanPhone = phone.trim();
-    if (!user && cleanPhone.length < 3) {
-      setError("أدخل رقم الهاتف المستخدم عند الطلب.");
-      return;
-    }
+    const last4 = phone.trim();
 
     setBusy(true);
     try {
       let found: MyOrderDetails | null = null;
-      // Signed-in customers: try their own orders first (RLS-scoped).
-      if (user) {
+      // Signed-in customers who pasted a full order id: try their own orders
+      // first (RLS-scoped, no phone needed).
+      if (user && UUID_RE.test(input)) {
         try {
-          found = await getMyOrderDetails({ data: { orderId: id } });
+          found = await getMyOrderDetails({ data: { orderId: input.toLowerCase() } });
         } catch {
           found = null;
         }
       }
-      // Guest path: secure server-side lookup (order must be a guest order
-      // AND the phone must match — never an open read).
-      if (!found && cleanPhone.length >= 3) {
-        found = await getGuestOrder({ data: { orderId: id, phone: cleanPhone } });
+      // Public path: order number + last-4 phone digits, verified server-side
+      // (never an open read; response carries no personal data).
+      if (!found) {
+        if (!/^\d{4}$/.test(last4)) {
+          setError("أدخل آخر 4 أرقام من رقم الهاتف المستخدم عند الطلب.");
+          return;
+        }
+        found = await getTrackedOrder({ data: { orderNumber, phoneLast4: last4 } });
       }
       if (!found) {
-        setError("لم نعثر على الطلب — تأكد من المعرّف ورقم الهاتف المستخدم عند الشراء.");
+        setError("لم نعثر على الطلب — تأكد من رقم الطلب وآخر 4 أرقام من هاتفك.");
       } else {
         setOrder(found);
       }
@@ -109,7 +112,7 @@ function TrackPage() {
         <div>
           <h1 className="text-base font-black">تتبع الطلب</h1>
           <p className="text-xs text-primary-foreground/80">
-            أدخل معرّف الطلب من رسالة التأكيد {user ? "" : "ورقم هاتفك"} لعرض حالة طلبك.
+            أدخل رقم الطلب من رسالة التأكيد وآخر 4 أرقام من هاتفك لعرض حالة طلبك.
           </p>
         </div>
       </section>
@@ -120,29 +123,29 @@ function TrackPage() {
         className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-5 shadow-card backdrop-blur-md space-y-3"
       >
         <label className="block text-xs font-bold space-y-1">
-          معرّف الطلب
+          رقم الطلب
           <input
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
-            placeholder="مثال: 3f9a2b1c-...."
+            placeholder="ORD-XXXXXXXX"
             dir="ltr"
             className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-mono outline-none focus:border-primary"
             required
           />
         </label>
-        {!user && (
-          <label className="block text-xs font-bold space-y-1">
-            رقم الهاتف المستخدم عند الطلب
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="7xxxxxxxx"
-              dir="ltr"
-              type="tel"
-              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
-            />
-          </label>
-        )}
+        <label className="block text-xs font-bold space-y-1">
+          آخر 4 أرقام من رقم الهاتف
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="مثال: 0740"
+            dir="ltr"
+            type="tel"
+            inputMode="numeric"
+            maxLength={4}
+            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+          />
+        </label>
         {error && (
           <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {error}

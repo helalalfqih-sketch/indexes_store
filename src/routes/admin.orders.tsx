@@ -22,9 +22,11 @@ import {
 } from "@/lib/orders-admin.functions";
 import {
   ORDER_STATUS_LABELS_AR,
+  ORDER_STATUS_TRANSITIONS,
   orderStatusLabel,
   orderStatusTone,
   paymentStatusLabel,
+  paymentProviderLabel,
   formatOrderNumber,
   type OrderStatus,
 } from "@/lib/order-status";
@@ -221,6 +223,9 @@ function AdminOrdersPage() {
                             الدفع: <span className="font-bold text-foreground">{paymentStatusLabel(d.payment_status)}</span>
                           </div>
                           <div className="text-muted-foreground">
+                            طريقة الدفع: <span className="font-bold text-foreground">{paymentProviderLabel(d.payment_provider)}</span>
+                          </div>
+                          <div className="text-muted-foreground">
                             النوع: <span className="font-bold text-foreground">{d.user_id ? "عميل مسجَّل" : "ضيف"}</span>
                           </div>
                         </div>
@@ -262,37 +267,52 @@ function AdminOrdersPage() {
                           </div>
                         )}
 
-                        {/* Status change */}
-                        <div className="border-t border-border/50 pt-3 flex flex-wrap items-center gap-2">
-                          <select
-                            defaultValue={d.status}
-                            id={`status-${d.id}`}
-                            className="rounded-xl border border-border bg-surface px-3 py-2 text-xs font-bold outline-none focus:border-primary"
-                          >
-                            {(Object.keys(ORDER_STATUS_LABELS_AR) as OrderStatus[]).map((s) => (
-                              <option key={s} value={s}>
-                                {ORDER_STATUS_LABELS_AR[s]}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            value={note}
-                            onChange={(e) => setNote(e.target.value)}
-                            placeholder="ملاحظة (اختياري)"
-                            className="flex-1 min-w-[160px] rounded-xl border border-border bg-surface px-3 py-2 text-xs outline-none focus:border-primary"
-                          />
-                          <button
-                            disabled={statusMut.isPending}
-                            onClick={() => {
-                              const sel = document.getElementById(`status-${d.id}`) as HTMLSelectElement | null;
-                              const toStatus = (sel?.value ?? d.status) as OrderStatus;
-                              statusMut.mutate({ orderId: d.id, toStatus });
-                            }}
-                            className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60 hover:bg-primary/90 transition"
-                          >
-                            {statusMut.isPending ? "جارٍ..." : "تحديث الحالة"}
-                          </button>
-                        </div>
+                        {/* Status change — allowed transitions only (server enforces the same map) */}
+                        {(() => {
+                          const allowed = ORDER_STATUS_TRANSITIONS[d.status] ?? [];
+                          if (allowed.length === 0) {
+                            return (
+                              <p className="border-t border-border/50 pt-3 text-xs text-muted-foreground">
+                                حالة نهائية «{orderStatusLabel(d.status)}» — لا انتقالات متاحة.
+                              </p>
+                            );
+                          }
+                          return (
+                            <div className="border-t border-border/50 pt-3 flex flex-wrap items-center gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                نقل «{orderStatusLabel(d.status)}» إلى:
+                              </span>
+                              <select
+                                defaultValue={allowed[0]}
+                                id={`status-${d.id}`}
+                                className="rounded-xl border border-border bg-surface px-3 py-2 text-xs font-bold outline-none focus:border-primary"
+                              >
+                                {allowed.map((s) => (
+                                  <option key={s} value={s}>
+                                    {ORDER_STATUS_LABELS_AR[s]}
+                                  </option>
+                                ))}
+                              </select>
+                              <input
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                placeholder="ملاحظة (اختياري)"
+                                className="flex-1 min-w-[160px] rounded-xl border border-border bg-surface px-3 py-2 text-xs outline-none focus:border-primary"
+                              />
+                              <button
+                                disabled={statusMut.isPending}
+                                onClick={() => {
+                                  const sel = document.getElementById(`status-${d.id}`) as HTMLSelectElement | null;
+                                  const toStatus = (sel?.value ?? allowed[0]) as OrderStatus;
+                                  statusMut.mutate({ orderId: d.id, toStatus });
+                                }}
+                                className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60 hover:bg-primary/90 transition"
+                              >
+                                {statusMut.isPending ? "جارٍ..." : "تحديث الحالة"}
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </>
                     )}
                   </div>

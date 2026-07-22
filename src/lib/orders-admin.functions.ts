@@ -5,6 +5,11 @@ import {
   getOrderDetailsForStaff,
   type StaffOrderDetails,
 } from "@/lib/services/order-history.service";
+import {
+  ORDER_STATUS_TRANSITIONS,
+  ORDER_STATUS_LABELS_AR,
+  normalizeOrderNumber,
+} from "@/lib/order-status";
 import type { Database } from "@/integrations/supabase/types";
 
 /**
@@ -81,8 +86,11 @@ export const listTenantOrders = createServerFn({ method: "GET" })
     if (data?.status) q = q.eq("status", data.status);
     if (data?.search) {
       const s = data.search;
+      const orderNumber = normalizeOrderNumber(s);
       if (UUID_RE.test(s)) {
         q = q.eq("id", s);
+      } else if (orderNumber) {
+        q = q.eq("order_number", orderNumber);
       } else {
         const like = `%${s.replace(/[%_]/g, "")}%`;
         q = q.or(`customer_phone.ilike.${like},customer_name.ilike.${like}`);
@@ -138,6 +146,16 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       const fromStatus = order.status as OrderStatus;
       if (fromStatus === data.toStatus) {
         return { ok: true, from: fromStatus, to: data.toStatus };
+      }
+
+      // Enforce the allowed status flow (e.g. never delivered → processing,
+      // never cancelled → any active state). UI mirrors this map, but the
+      // server is the authority.
+      const allowed = ORDER_STATUS_TRANSITIONS[fromStatus] ?? [];
+      if (!allowed.includes(data.toStatus)) {
+        throw new Error(
+          `انتقال غير مسموح: من "${ORDER_STATUS_LABELS_AR[fromStatus]}" إلى "${ORDER_STATUS_LABELS_AR[data.toStatus]}".`,
+        );
       }
 
       const { error: updErr } = await supabase

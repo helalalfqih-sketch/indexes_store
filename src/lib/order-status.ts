@@ -56,11 +56,58 @@ export function orderStatusTone(status: string | null | undefined): string {
 }
 
 /**
- * Human-friendly order number. The schema has no dedicated order_number column,
- * so we derive a stable short code from the UUID (uppercased first segment).
+ * Human-friendly order number, derived deterministically from the UUID.
+ * Matches the DB generated column `orders.order_number` exactly.
  * Example: "3f9a2b1c-..." -> "ORD-3F9A2B1C".
  */
 export function formatOrderNumber(id: string): string {
   const head = (id ?? "").replace(/-/g, "").slice(0, 8).toUpperCase();
   return head ? `ORD-${head}` : "ORD-—";
+}
+
+/**
+ * Normalize user input into a canonical order number ("ORD-XXXXXXXX").
+ * Accepts: "ORD-3F9A2B1C", "ord3f9a2b1c", "3f9a2b1c", or a full order UUID.
+ * Returns null when the input can't be a valid order number.
+ */
+export function normalizeOrderNumber(input: string): string | null {
+  const s = (input ?? "").trim();
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) {
+    return formatOrderNumber(s);
+  }
+  const m = s.replace(/\s/g, "").match(/^(?:ORD-?)?([0-9a-fA-F]{8})$/);
+  return m ? `ORD-${m[1].toUpperCase()}` : null;
+}
+
+/**
+ * Allowed status transitions (enforced server-side in updateOrderStatus and
+ * mirrored in the admin UI):
+ *   pending → confirmed → processing → shipped → delivered
+ *   cancellation allowed from pending/confirmed/processing/shipped
+ *   delivered → refunded (post-delivery refunds)
+ *   cancelled / refunded are terminal (never back to an active state)
+ */
+export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  pending: ["confirmed", "cancelled"],
+  confirmed: ["processing", "cancelled"],
+  processing: ["shipped", "cancelled"],
+  shipped: ["delivered", "cancelled"],
+  delivered: ["refunded"],
+  cancelled: [],
+  refunded: [],
+};
+
+const PAYMENT_PROVIDER_LABELS_AR: Record<string, string> = {
+  cod: "الدفع عند الاستلام",
+  "bank-transfer": "تحويل بنكي",
+  bank_transfer: "تحويل بنكي",
+  hawala: "حوالة",
+  kuraimi: "الكريمي",
+  "mtn-cash": "MTN كاش",
+  "sabafon-cash": "سبأفون كاش",
+};
+
+export function paymentProviderLabel(provider?: string | null): string {
+  if (!provider) return "—";
+  return PAYMENT_PROVIDER_LABELS_AR[provider] ?? provider;
 }

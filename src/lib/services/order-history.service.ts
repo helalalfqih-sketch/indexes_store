@@ -72,6 +72,7 @@ export interface StaffOrderDetails extends MyOrderDetails {
   tenant_id: string;
   discount_amount: number;
   coupon_code: string | null;
+  payment_provider: string | null;
 }
 
 /** Count items per order id without relying on fragile aggregate embeds. */
@@ -172,7 +173,7 @@ export async function getOrderDetailsForStaff(
   const { data: order, error } = await db
     .from("orders")
     .select(
-      "id, status, payment_status, created_at, total, currency, customer_name, customer_phone, customer_address, customer_email, notes, user_id, tenant_id, discount_amount, coupon_code",
+      "id, status, payment_status, created_at, total, currency, customer_name, customer_phone, customer_address, customer_email, notes, user_id, tenant_id, discount_amount, coupon_code, payment_provider",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -191,6 +192,7 @@ export async function getOrderDetailsForStaff(
     tenant_id: string;
     discount_amount: number;
     coupon_code: string | null;
+    payment_provider: string | null;
   };
   return {
     ...base,
@@ -203,38 +205,54 @@ export async function getOrderDetailsForStaff(
     tenant_id: o.tenant_id,
     discount_amount: Number(o.discount_amount ?? 0),
     coupon_code: o.coupon_code,
+    payment_provider: o.payment_provider,
   };
 }
 
 /**
- * Guest order lookup for the confirmation flow. Uses the SERVICE-ROLE client
- * (RLS bypassed) so it MUST enforce ownership itself:
- *   - the order must be a guest order (user_id IS NULL), and
- *   - the caller must supply the matching customer phone.
- * This avoids opening a permissive RLS read for anonymous users.
- * NOTE: phone-matching mitigates but does not fully prevent id+phone guessing;
- * a per-order opaque confirmation token is a recommended future hardening.
+ * Public tracking lookup: order_number + last 4 digits of the customer phone.
+ * Uses the SERVICE-ROLE client (RLS bypassed) so it MUST enforce ownership
+ * itself — this avoids any permissive RLS read for anonymous users.
+ *
+ * Response contains NO PII: status, payment status, items snapshot, timeline,
+ * totals — never name / email / address / full phone / tenant data.
+ *
+ * order_number is non-unique by design (8-hex prefix); on collision the phone
+ * suffix disambiguates, and an ambiguous match returns null rather than
+ * guessing. NOTE: number+last4 is intentionally guest-friendly and therefore
+ * lower-entropy than uuid+full-phone — platform-level rate limiting on this
+ * endpoint is the recommended complement.
  */
-export async function getGuestOrder(
+export async function trackOrder(
   admin: DB,
-  orderId: string,
-  phone: string,
+  orderNumber: string,
+  phoneLast4: string,
 ): Promise<MyOrderDetails | null> {
-  const normalizedPhone = (phone ?? "").trim();
-  if (!orderId || !normalizedPhone) return null;
+  if (!/^\d{4}$/.test(phoneLast4)) return null;
 
-  const { data: order, error } = await admin
+  const { data: candidates, error } = await admin
     .from("orders")
-    .select("id, status, payment_status, created_at, total, currency, customer_phone, user_id")
-    .eq("id", orderId)
-    .is("user_id", null)
-    .eq("customer_phone", normalizedPhone)
-    .maybeSingle();
+    .select("id, status, payment_status, created_at, total, currency, customer_phone")
+    .eq("order_number", orderNumber)
+    .limit(5);
 
-  if (error || !order) return null;
+  if (error || !candidates || candidates.length === 0) return null;
 
-  const [items, history] = await Promise.all([loadItems(admin, orderId), loadHistory(admin, orderId)]);
-  return buildDetails(order as OrderHead, items, history);
+  const matches = (candidates as Array<OrderHead & { customer_phone: string | null }>).filter(
+    (o) => {
+      const digits = (o.customer_phone ?? "").replace(/\D/g, "");
+      return digits.length >= 4 && digits.endsWith(phoneLast4);
+    },
+  );
+  // Exactly one owner match — an ambiguous result is treated as not found.
+  if (matches.length !== 1) return null;
+  const order = matches[0];
+
+  const [items, history] = await Promise.all([
+    loadItems(admin, order.id),
+    loadHistory(admin, order.id),
+  ]);
+  return buildDetails(order, items, history);
 }
 
 // ---------- internal helpers ----------
