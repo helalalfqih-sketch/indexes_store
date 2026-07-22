@@ -157,6 +157,7 @@ export type Database = {
           tags: string[];
           tenant_id: string;
           updated_at: string;
+          vendor_id: string | null;
           video_playback_id: string | null;
         };
         Insert: {
@@ -193,6 +194,7 @@ export type Database = {
           tags?: string[];
           tenant_id: string;
           updated_at?: string;
+          vendor_id?: string | null;
           video_playback_id?: string | null;
         };
         Update: {
@@ -229,6 +231,7 @@ export type Database = {
           tags?: string[];
           tenant_id?: string;
           updated_at?: string;
+          vendor_id?: string | null;
           video_playback_id?: string | null;
         };
         Relationships: [

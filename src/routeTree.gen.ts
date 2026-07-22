@@ -21,6 +21,8 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
+import { Route as VendorSlugRouteImport } from './routes/vendor.$slug'
 import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
 import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
@@ -101,6 +103,16 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const VendorDashboardRoute = VendorDashboardRouteImport.update({
+  id: '/vendor/dashboard',
+  path: '/vendor/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorSlugRoute = VendorSlugRouteImport.update({
+  id: '/vendor/$slug',
+  path: '/vendor/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapXmlRoute = SitemapXmlRouteImport.update({
   id: '/sitemap/xml',
@@ -232,6 +244,8 @@ export interface FileRoutesByFullPath {
   '/product/$slug': typeof ProductSlugRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
+  '/vendor/$slug': typeof VendorSlugRoute
+  '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
@@ -265,6 +279,8 @@ export interface FileRoutesByTo {
   '/product/$slug': typeof ProductSlugRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
+  '/vendor/$slug': typeof VendorSlugRoute
+  '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin': typeof AdminIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
@@ -300,6 +316,8 @@ export interface FileRoutesById {
   '/product/$slug': typeof ProductSlugRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
+  '/vendor/$slug': typeof VendorSlugRoute
+  '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
@@ -336,6 +354,8 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/robots/txt'
     | '/sitemap/xml'
+    | '/vendor/$slug'
+    | '/vendor/dashboard'
     | '/admin/'
     | '/admin/product/$id'
     | '/api/ai/analyze-product'
@@ -369,6 +389,8 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/robots/txt'
     | '/sitemap/xml'
+    | '/vendor/$slug'
+    | '/vendor/dashboard'
     | '/admin'
     | '/admin/product/$id'
     | '/api/ai/analyze-product'
@@ -403,6 +425,8 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/robots/txt'
     | '/sitemap/xml'
+    | '/vendor/$slug'
+    | '/vendor/dashboard'
     | '/admin/'
     | '/admin/product/$id'
     | '/api/ai/analyze-product'
@@ -427,6 +451,8 @@ export interface RootRouteChildren {
   ProductSlugRoute: typeof ProductSlugRoute
   RobotsTxtRoute: typeof RobotsTxtRoute
   SitemapXmlRoute: typeof SitemapXmlRoute
+  VendorSlugRoute: typeof VendorSlugRoute
+  VendorDashboardRoute: typeof VendorDashboardRoute
   ApiAiAnalyzeProductRoute: typeof ApiAiAnalyzeProductRoute
   ApiPublicImageProxyRoute: typeof ApiPublicImageProxyRoute
 }
@@ -516,6 +542,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/vendor/dashboard': {
+      id: '/vendor/dashboard'
+      path: '/vendor/dashboard'
+      fullPath: '/vendor/dashboard'
+      preLoaderRoute: typeof VendorDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/$slug': {
+      id: '/vendor/$slug'
+      path: '/vendor/$slug'
+      fullPath: '/vendor/$slug'
+      preLoaderRoute: typeof VendorSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/sitemap/xml': {
       id: '/sitemap/xml'
@@ -712,6 +752,8 @@ const rootRouteChildren: RootRouteChildren = {
   ProductSlugRoute: ProductSlugRoute,
   RobotsTxtRoute: RobotsTxtRoute,
   SitemapXmlRoute: SitemapXmlRoute,
+  VendorSlugRoute: VendorSlugRoute,
+  VendorDashboardRoute: VendorDashboardRoute,
   ApiAiAnalyzeProductRoute: ApiAiAnalyzeProductRoute,
   ApiPublicImageProxyRoute: ApiPublicImageProxyRoute,
 }

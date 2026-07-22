@@ -118,7 +118,7 @@ export const createOrder = createServerFn({ method: "POST" })
     const productIds = Array.from(new Set(data.items.map((i) => i.productId)));
     const { data: products, error: prodErr } = await supabaseAdmin
       .from("products")
-      .select("id, name, price, currency, sku, is_published, tenant_id")
+      .select("id, name, price, currency, sku, is_published, tenant_id, vendor_id")
       .in("id", productIds)
       .eq("tenant_id", tenantId)
       .eq("is_published", true);
@@ -132,6 +132,7 @@ export const createOrder = createServerFn({ method: "POST" })
         price: number;
         currency: string | null;
         sku: string | null;
+        vendor_id: string | null;
       }>).map((p) => [p.id, p]),
     );
 
@@ -157,6 +158,7 @@ export const createOrder = createServerFn({ method: "POST" })
         total_price: lineTotal,
         product_name_snapshot: p.name,
         product_sku_snapshot: p.sku ?? null,
+        vendor_id: p.vendor_id ?? null,
       };
     });
 
@@ -164,7 +166,6 @@ export const createOrder = createServerFn({ method: "POST" })
     // send any value (including the full subtotal). Until a server-side coupon
     // service exists, the applied discount is ALWAYS 0; `couponCode` is stored
     // as metadata only and grants nothing.
-    // TODO: Apply verified coupon discount after coupon service implementation
     const validatedDiscount = 0;
     const total = Math.max(0, subtotal - validatedDiscount);
 
@@ -193,18 +194,38 @@ export const createOrder = createServerFn({ method: "POST" })
     if (orderErr || !order) throw new Error("تعذّر إنشاء الطلب.");
 
     // 6. Insert order items.
-    const { error: itemsErr } = await supabaseAdmin
+    const { data: insertedItems, error: itemsErr } = await supabaseAdmin
       .from("order_items")
-      .insert(itemRows.map((r) => ({ ...r, order_id: order.id })));
+      .insert(itemRows.map(({ vendor_id, ...r }) => ({ ...r, order_id: order.id })))
+      .select("id, order_id, product_id, quantity, unit_price, total_price");
 
-    if (itemsErr) {
+    if (itemsErr || !insertedItems) {
       // Best-effort cleanup so we don't leave an order with no items.
       await supabaseAdmin.from("orders").delete().eq("id", order.id);
       throw new Error("تعذّر حفظ عناصر الطلب.");
     }
 
+    // 6b. Multi-Vendor Sub-Orders splitting (best-effort)
+    try {
+      const { splitOrderIntoVendorOrders } = await import("@/lib/services/vendor-order.service");
+      const orderItemsWithVendor = insertedItems.map((item) => {
+        const matchingRow = itemRows.find((r) => r.product_id === item.product_id);
+        return {
+          ...item,
+          vendor_id: matchingRow?.vendor_id ?? null,
+        };
+      });
+
+      await splitOrderIntoVendorOrders(supabaseAdmin as any, {
+        tenantId,
+        orderId: order.id,
+        items: orderItemsWithVendor,
+      });
+    } catch (splitEx) {
+      console.warn("[createOrder] multi-vendor order split notice:", splitEx);
+    }
+
     // 7. Initial audit entry (Task 4) — best-effort: never fails the order.
-    //    Uses the service role (staff-only RLS INSERT policy does not apply).
     try {
       const { error: histErr } = await supabaseAdmin.from("order_status_history").insert({
         order_id: order.id,

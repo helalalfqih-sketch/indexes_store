@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   listTenants,
   createTenant,
   updateTenantPlan,
   updateTenantStatus,
 } from "@/lib/tenants.functions";
-import { Building2, Plus, Pause, Play, Package as PackageIcon, Users } from "lucide-react";
+import { Building2, Plus, Pause, Play, Package as PackageIcon, Users, Store } from "lucide-react";
 
 export const Route = createFileRoute("/admin/platform")({
   head: () => ({
@@ -199,6 +199,109 @@ function PlatformPage() {
           <p className="text-sm text-muted-foreground">No tenants yet.</p>
         )}
       </div>
+
+      {/* Marketplace Vendors Section */}
+      <section className="pt-8 border-t border-border space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-blue-500/10 p-3 text-blue-500">
+            <Store className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">Marketplace Vendors (التجار)</h2>
+            <p className="text-xs text-muted-foreground">
+              Review vendor applications, set commissions, and approve marketplace seller stores.
+            </p>
+          </div>
+        </div>
+
+        <VendorManagementList />
+      </section>
+    </div>
+  );
+}
+
+function VendorManagementList() {
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchVendors = async () => {
+    setLoading(true);
+    const { listAllVendorsForAdmin } = await import("@/lib/services/vendor.service");
+    const { supabase } = await import("@/integrations/supabase/client");
+    const data = await listAllVendorsForAdmin(supabase);
+    setVendors(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchVendors();
+  }, []);
+
+  const handleUpdateStatus = async (vendorId: string, status: any, rate?: number) => {
+    const { updateVendorStatusByAdmin } = await import("@/lib/services/vendor.service");
+    const { supabase } = await import("@/integrations/supabase/client");
+    await updateVendorStatusByAdmin(supabase, vendorId, status, rate);
+    fetchVendors();
+  };
+
+  if (loading) return <p className="text-xs text-muted-foreground">Loading vendors...</p>;
+
+  return (
+    <div className="space-y-3">
+      {vendors.map((v) => (
+        <div
+          key={v.id}
+          className="p-4 rounded-xl border border-border bg-surface flex flex-wrap items-center justify-between gap-4"
+        >
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm">{v.name}</span>
+              <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{v.slug}</code>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                  v.status === "active"
+                    ? "bg-emerald-500/10 text-emerald-500"
+                    : v.status === "pending"
+                      ? "bg-amber-500/10 text-amber-500"
+                      : "bg-red-500/10 text-red-500"
+                }`}
+              >
+                {v.status}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              العمولة: {v.commission_rate}% ({v.commission_type}) • التقييم: ★ {v.rating ?? 5.0}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {v.status === "pending" && (
+              <button
+                onClick={() => handleUpdateStatus(v.id, "active")}
+                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold"
+              >
+                موافقة وتفعيل
+              </button>
+            )}
+            {v.status === "active" ? (
+              <button
+                onClick={() => handleUpdateStatus(v.id, "suspended")}
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold"
+              >
+                إيقاف مؤقت
+              </button>
+            ) : (
+              <button
+                onClick={() => handleUpdateStatus(v.id, "active")}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold"
+              >
+                تفعيل المتجر
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+      {vendors.length === 0 && <p className="text-xs text-muted-foreground">لا يوجد تجار حالياً.</p>}
     </div>
   );
 }
