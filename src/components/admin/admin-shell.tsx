@@ -292,7 +292,8 @@ function ShellInner() {
       label: "المنصة",
       emoji: "⚙️",
       items: [
-        { to: "/admin/platform", label: "Platform (SaaS)", icon: Store },
+        { to: "/admin/stores", label: "المتاجر", icon: Store },
+        { to: "/admin/platform", label: "Platform (SaaS)", icon: Globe },
         { to: "#users", label: "المستخدمون والصلاحيات", icon: Users, soon: true },
         { to: "/admin/settings", label: t("nav.settings"), icon: Settings },
       ],
