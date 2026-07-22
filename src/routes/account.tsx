@@ -22,13 +22,14 @@ import { useAppearance } from "@/components/appearance-provider";
 import { whatsappLink } from "@/lib/whatsapp";
 import { formatPrice } from "@/lib/store-data";
 import {
-  getUserOrders,
   getUserAddresses,
   saveUserAddress,
   deleteUserAddress,
-  type UserOrder,
   type UserAddress,
 } from "@/lib/actions/order.actions";
+import { getMyOrders, getMyOrderDetails } from "@/lib/order.functions";
+import type { MyOrderSummary, MyOrderDetails } from "@/lib/services/order-history.service";
+import { orderStatusLabel, orderStatusTone, paymentStatusLabel } from "@/lib/order-status";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/account")({
@@ -52,8 +53,11 @@ function AccountPage() {
   const [loadingUser, setLoadingUser] = useState(true);
 
   // Orders state
-  const [orders, setOrders] = useState<UserOrder[]>([]);
+  const [orders, setOrders] = useState<MyOrderSummary[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null);
+  const [orderDetails, setOrderDetails] = useState<Record<string, MyOrderDetails | null>>({});
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Addresses state
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
@@ -85,8 +89,9 @@ function AccountPage() {
 
     if (activeTab === "orders" || activeTab === "overview") {
       setLoadingOrders(true);
-      getUserOrders()
+      getMyOrders()
         .then((res) => setOrders(res))
+        .catch(() => setOrders([]))
         .finally(() => setLoadingOrders(false));
     }
 
@@ -130,6 +135,25 @@ function AccountPage() {
       setAddresses((prev) => prev.filter((a) => a.id !== id));
     }
   };
+
+  async function toggleDetails(id: string) {
+    if (openOrderId === id) {
+      setOpenOrderId(null);
+      return;
+    }
+    setOpenOrderId(id);
+    if (!(id in orderDetails)) {
+      setLoadingDetails(true);
+      try {
+        const d = await getMyOrderDetails({ data: { orderId: id } });
+        setOrderDetails((m) => ({ ...m, [id]: d }));
+      } catch {
+        setOrderDetails((m) => ({ ...m, [id]: null }));
+      } finally {
+        setLoadingDetails(false);
+      }
+    }
+  }
 
   const handleUpdatePassword = async () => {
     if (!newPassword || newPassword.length < 6) {
@@ -330,23 +354,76 @@ function AccountPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {orders.map((ord) => (
-                <div key={ord.id} className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-4 shadow-card space-y-2 backdrop-blur-md">
-                  <div className="flex items-center justify-between border-b border-showcase-border/50 pb-2 text-xs">
-                    <span className="font-mono font-bold text-primary">{ord.id}</span>
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                      {ord.status === "pending" ? "قيد الانتظار" : ord.status === "delivered" ? "تم التسليم" : ord.status}
-                    </span>
+              {orders.map((ord) => {
+                const open = openOrderId === ord.id;
+                const detail = orderDetails[ord.id];
+                return (
+                  <div key={ord.id} className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-4 shadow-card space-y-2 backdrop-blur-md">
+                    <div className="flex items-center justify-between border-b border-showcase-border/50 pb-2 text-xs">
+                      <span className="font-mono font-bold text-primary">{ord.order_number}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusTone(ord.status)}`}>
+                        {orderStatusLabel(ord.status)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <span className="text-showcase-muted">التاريخ: {new Date(ord.created_at).toLocaleDateString("ar-EG")}</span>
+                      <span className="font-black text-showcase-foreground">{formatPrice(ord.total || 0)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-showcase-muted">
+                      <span>{ord.items_count} منتج</span>
+                      <button
+                        onClick={() => toggleDetails(ord.id)}
+                        className="rounded-lg bg-primary/10 px-3 py-1 font-bold text-primary transition hover:bg-primary/20"
+                      >
+                        {open ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+                      </button>
+                    </div>
+
+                    {open && (
+                      <div className="mt-2 space-y-2 border-t border-showcase-border/50 pt-3">
+                        {loadingDetails && !detail ? (
+                          <div className="flex h-16 items-center justify-center">
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          </div>
+                        ) : detail ? (
+                          <>
+                            <div className="flex items-center justify-between text-[11px] text-showcase-muted">
+                              <span>حالة الدفع: {paymentStatusLabel(detail.payment_status)}</span>
+                              <span>{new Date(detail.created_at).toLocaleString("ar-EG")}</span>
+                            </div>
+                            <ul className="space-y-2">
+                              {detail.items.map((it) => (
+                                <li key={it.id} className="flex items-center gap-3">
+                                  {it.image ? (
+                                    <img
+                                      src={it.image}
+                                      alt={it.name}
+                                      className="h-12 w-12 rounded-lg border border-showcase-border/50 object-cover"
+                                    />
+                                  ) : (
+                                    <div className="grid h-12 w-12 place-items-center rounded-lg bg-showcase-foreground/10 text-showcase-muted">
+                                      <Package className="h-5 w-5" />
+                                    </div>
+                                  )}
+                                  <div className="flex flex-1 flex-col">
+                                    <span className="line-clamp-1 text-xs font-bold text-showcase-foreground">{it.name}</span>
+                                    <span className="text-[11px] text-showcase-muted">
+                                      {it.quantity} × {formatPrice(it.unit_price)}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs font-black text-showcase-foreground">{formatPrice(it.total_price)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        ) : (
+                          <p className="text-[11px] text-showcase-muted">تعذّر تحميل تفاصيل الطلب.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="text-showcase-muted">التاريخ: {new Date(ord.created_at).toLocaleDateString("ar-EG")}</span>
-                    <span className="font-black text-showcase-foreground">{formatPrice(ord.total_amount || 0)}</span>
-                  </div>
-                  {ord.customer_address && (
-                    <p className="text-[11px] text-showcase-muted">العنوان: {ord.customer_address}</p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -353,6 +353,7 @@ export type Database = {
         Row: {
           id: string;
           tenant_id: string;
+          user_id: string | null;
           customer_name: string | null;
           customer_phone: string | null;
           customer_address: string | null;
@@ -371,6 +372,7 @@ export type Database = {
         Insert: {
           id?: string;
           tenant_id: string;
+          user_id?: string | null;
           customer_name?: string | null;
           customer_phone?: string | null;
           customer_address?: string | null;
@@ -389,6 +391,7 @@ export type Database = {
         Update: {
           id?: string;
           tenant_id?: string;
+          user_id?: string | null;
           customer_name?: string | null;
           customer_phone?: string | null;
           customer_address?: string | null;

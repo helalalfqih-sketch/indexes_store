@@ -1,5 +1,5 @@
-import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { createOrder, type CreateOrderPayload } from "@/lib/order.functions";
 
 /**
  * Order Actions — Real execution layer for user orders and checkout.
@@ -17,17 +17,6 @@ export interface CreateOrderInput {
   paymentProvider?: string;
 }
 
-export interface UserOrder {
-  id: string;
-  created_at: string;
-  status: string;
-  total_amount: number;
-  customer_name?: string;
-  customer_phone?: string;
-  customer_address?: string;
-  items_count?: number;
-}
-
 export interface UserAddress {
   id: string;
   user_id: string;
@@ -39,48 +28,21 @@ export interface UserAddress {
 }
 
 export async function submitOrder(input: CreateOrderInput): Promise<{ orderId: string }> {
-  const orderId = `ORD-${Date.now().toString(36).toUpperCase()}`;
-  try {
-    if (supabase) {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData?.user?.id;
-      // Store order if orders table exists
-      const totalAmount = input.items.reduce((acc, it) => acc + (it.quantity * 1000), 0);
-      await (supabase as any).from("orders").insert({
-        id: orderId,
-        user_id: userId || null,
-        customer_name: input.customerName || null,
-        customer_phone: input.customerPhone,
-        customer_address: input.customerAddress || null,
-        notes: input.notes || null,
-        status: "pending",
-        total_amount: totalAmount,
-      });
-    }
-  } catch (err) {
-    console.warn("[submitOrder] order insert notice:", err);
-  }
-  return { orderId };
-}
-
-export async function getUserOrders(): Promise<UserOrder[]> {
-  try {
-    if (!supabase) return [];
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) return [];
-
-    const { data, error } = await (supabase as any)
-      .from("orders")
-      .select("id, created_at, status, total_amount, customer_name, customer_phone, customer_address")
-      .eq("user_id", userData.user.id)
-      .order("created_at", { ascending: false });
-
-    if (error || !data) return [];
-    return data as UserOrder[];
-  } catch (err) {
-    console.warn("[getUserOrders] fetch notice:", err);
-    return [];
-  }
+  // Delegates to the secure `createOrder` server function. user_id is derived
+  // server-side from the verified session (guests → null); prices and totals are
+  // recomputed from the database. The client never sets user_id or prices.
+  const payload: CreateOrderPayload = {
+    items: input.items.map((it) => ({ productId: it.productId, quantity: it.quantity })),
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    customerAddress: input.customerAddress,
+    notes: input.notes,
+    couponCode: input.couponCode,
+    discountAmount: input.discountAmount,
+    paymentProvider: input.paymentProvider,
+  };
+  const res = await createOrder({ data: payload });
+  return { orderId: res.orderId };
 }
 
 export async function getUserAddresses(): Promise<UserAddress[]> {
