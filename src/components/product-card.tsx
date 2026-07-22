@@ -49,7 +49,7 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
         ref={ref}
         to="/product/$slug"
         params={{ slug: product.slug }}
-        className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-card backdrop-blur-md transition active:scale-[0.98]"
+        className="group flex flex-col overflow-hidden rounded-2xl glass-dark shadow-card transition active:scale-[0.98]"
       >
         {lay.showImage !== false && (
           <motion.div style={{ filter }} className="relative aspect-square overflow-hidden bg-white/5">
