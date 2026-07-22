@@ -53,6 +53,10 @@
 
 :root {
   --radius: 0.875rem;
+  /* Dark Glassmorphism tokens (storefront cinematic glass) */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 20px;
   /* Noqta brand */
   --background: oklch(0.985 0.008 250); /* #EEF4FC-ish soft */
   --surface: oklch(1 0 0); /* card white */
@@ -156,6 +160,15 @@
   background: color-mix(in oklab, var(--surface) 55%, transparent);
   backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+
+/* Dark Glassmorphism design tokens — the storefront cinematic glass system.
+   Single source of truth for every dark-glass surface (cards, modals, bars). */
+@utility glass-dark {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
 }
 
 @utility glass-strong {
