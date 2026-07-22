@@ -52,6 +52,13 @@ function AccountPage() {
   const [user, setUser] = useState<any | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
+  // Profile card state (own row only — RLS enforces auth.uid() = id)
+  const [profile, setProfile] = useState<{
+    full_name: string | null;
+    phone: string | null;
+    avatar_url: string | null;
+  } | null>(null);
+
   // Orders state
   const [orders, setOrders] = useState<MyOrderSummary[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -83,6 +90,24 @@ function AccountPage() {
     initUser();
   }, []);
 
+  // Protected route: unauthenticated visitors are redirected to login.
+  useEffect(() => {
+    if (!loadingUser && !user) {
+      navigate({ to: "/auth", search: { next: "/account" }, replace: true });
+    }
+  }, [loadingUser, user, navigate]);
+
+  // Load own profile for the header card (RLS: own row only).
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("full_name, phone, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setProfile(data ?? null));
+  }, [user]);
+
   // Fetch orders and addresses if signed in
   useEffect(() => {
     if (!user) return;
@@ -106,8 +131,8 @@ function AccountPage() {
   const handleLogout = async () => {
     if (supabase) {
       await supabase.auth.signOut();
-      setUser(null);
       toast.success("تم تسجيل الخروج بنجاح");
+      navigate({ to: "/", replace: true });
     }
   };
 
@@ -179,20 +204,44 @@ function AccountPage() {
   const supportEmail = settings.navigation.supportEmail || "support@indexes-store.com";
   const waHref = whatsappLink("مرحباً، لدي استفسار من صفحة حسابي في " + storeName, supportPhone);
 
+  // Loading / unauthenticated → skeleton (redirect effect handles navigation).
+  if (loadingUser || !user) {
+    return (
+      <div className="flex flex-col gap-5 px-4 pt-4 max-w-2xl mx-auto pb-12" dir="rtl" aria-busy="true">
+        <div className="h-24 animate-pulse rounded-3xl bg-showcase-foreground/10" />
+        <div className="h-10 animate-pulse rounded-xl bg-showcase-foreground/10" />
+        <div className="h-40 animate-pulse rounded-2xl bg-showcase-foreground/10" />
+        <div className="h-40 animate-pulse rounded-2xl bg-showcase-foreground/10" />
+      </div>
+    );
+  }
+
+  const displayName = profile?.full_name || user.email || "عميل اندكس ستور";
+  const avatarInitial = (profile?.full_name || user.email || "؟").slice(0, 1).toUpperCase();
+
   return (
     <div className="flex flex-col gap-5 px-4 pt-4 max-w-2xl mx-auto pb-12" dir="rtl">
-      {/* User Header Badge */}
+      {/* Profile Header Card */}
       <section className="flex items-center gap-3.5 rounded-3xl bg-primary p-5 text-primary-foreground shadow-brand">
-        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary-foreground/20 text-xl font-black shrink-0">
-          {user?.email ? user.email.slice(0, 1).toUpperCase() : <UserIcon className="h-6 w-6" />}
-        </div>
+        {profile?.avatar_url ? (
+          <img
+            src={profile.avatar_url}
+            alt={displayName}
+            className="h-14 w-14 rounded-2xl object-cover shrink-0 border border-primary-foreground/20"
+          />
+        ) : (
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary-foreground/20 text-xl font-black shrink-0">
+            {avatarInitial || <UserIcon className="h-6 w-6" />}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
-          <p className="text-base font-black truncate">
-            {user?.email ? user.email : `مرحباً بك في ${storeName}`}
-          </p>
-          <p className="text-xs text-primary-foreground/80 truncate">
-            {user ? "حساب عميل مفعل" : "سجّل دخولك لمتابعة وإدارة طلباتك وعناوينك"}
-          </p>
+          <p className="text-base font-black truncate">{displayName}</p>
+          <p className="text-xs text-primary-foreground/80 truncate">{user.email}</p>
+          {profile?.phone && (
+            <p className="text-xs text-primary-foreground/70 truncate" dir="ltr">
+              {profile.phone}
+            </p>
+          )}
         </div>
         {loadingUser ? (
           <Loader2 className="h-5 w-5 animate-spin" />
