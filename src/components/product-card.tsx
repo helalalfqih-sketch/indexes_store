@@ -11,7 +11,14 @@ import { OptimizedImage } from "@/components/optimized-image";
 
 import { useAppearance } from "@/components/appearance-provider";
 
-export function ProductCard({ product }: { product: Product | LegacyProductShape }) {
+export function ProductCard({
+  product,
+  eager = false,
+}: {
+  product: Product | LegacyProductShape;
+  /** Above-the-fold cards: eager + high fetch priority (LCP optimization). */
+  eager?: boolean;
+}) {
   const { settings } = useAppearance();
   const lay = settings.products_layout;
   useModelViewer();
@@ -66,6 +73,7 @@ export function ProductCard({ product }: { product: Product | LegacyProductShape
                 src={product.image}
                 alt={product.name}
                 size="card"
+                eager={eager}
                 draggable={false}
                 className="h-full w-full object-contain p-2"
               />

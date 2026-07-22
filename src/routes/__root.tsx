@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, queryOptions } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { get, set, del } from "idb-keyval";
 import {
@@ -20,6 +20,7 @@ import { TenantProvider } from "@/components/tenant-provider";
 import { AppearanceProvider } from "@/components/appearance-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
+import type { StorefrontSettingsShape } from "@/lib/domain/appearance";
 import { NetworkManager } from "@/components/network-manager";
 import {
   generateOrganizationJsonLd,
@@ -117,6 +118,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+/** Storefront settings query — shared cache key for the root loader (5-min fresh). */
+const storefrontSettingsQueryOptions = queryOptions({
+  queryKey: ["storefront-settings"],
+  queryFn: async (): Promise<StorefrontSettingsShape> => getStorefrontAppearance(),
+  staleTime: 5 * 60 * 1000,
+});
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: ({ loaderData }) => {
     // loaderData may be undefined on first render — fall back gracefully
@@ -191,8 +199,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       ],
     };
   },
-  loader: async () => {
-    const settings = await getStorefrontAppearance();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  loader: async (ctx: any) => {
+    // PERF: route the settings fetch through react-query so navigation never
+    // repeats the server roundtrip — cached 5min, deduped, refreshed silently
+    // in the background. (Realtime publish events still refresh instantly via
+    // the AppearanceProvider broadcast subscription.)
+    const queryClient = ctx.context.queryClient as QueryClient;
+    const settings: StorefrontSettingsShape = await queryClient.ensureQueryData(
+      storefrontSettingsQueryOptions,
+    );
     return { settings };
   },
   shellComponent: RootShell,

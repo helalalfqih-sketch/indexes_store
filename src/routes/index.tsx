@@ -427,8 +427,8 @@ function HomePage() {
             </Link>
           </div>
           <div className={getGridClass(settings.products_layout)}>
-            {allProducts.slice(0, settings.products_layout.latestProductsLimit ?? settings.sections.latest.limit).map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {allProducts.slice(0, settings.products_layout.latestProductsLimit ?? settings.sections.latest.limit).map((p, i) => (
+              <ProductCard key={p.id} product={p} eager={i < 2} />
             ))}
           </div>
         </motion.section>
