@@ -5,7 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Settings, Store, Clock, Users, Palette, Search } from "lucide-react";
 import { updateStoreProfile, updateStoreSetting, listStoreMembers } from "@/lib/store.functions";
-import { notifyStorefrontPublished } from "@/components/appearance-provider";
+import { updateStorefrontAppearance } from "@/lib/actions/appearance.actions";
+import { notifyStorefrontPublished, useAppearance } from "@/components/appearance-provider";
 import { useStoreContext } from "@/components/store/store-shell";
 import { STORE_ROLE_LABELS } from "@/lib/store/store-gate";
 
@@ -170,25 +171,128 @@ function StoreSettingsPage() {
         <p className="text-[11px] text-muted-foreground">إدارة الأدوار والإضافة/الإزالة تتم حالياً عبر إدارة المنصّة.</p>
       </section>
 
-      {/* Appearance + SEO (platform CMS note) */}
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl glass p-5">
-          <h2 className="flex items-center gap-2 text-sm font-black">
-            <Palette className="h-4 w-4 text-primary" /> مظهر الواجهة (Hero / Theme / الأقسام)
-          </h2>
-          <p className="mt-2 text-xs text-muted-foreground">
-            يُدار حالياً عبر Storefront CMS في لوحة المنصّة، وسيُفتح لكل متجر مع مرحلة «CMS لكل متجر» (المخطط جاهز — عمود tenant_id مضاف).
-          </p>
-        </div>
-        <div className="rounded-2xl glass p-5">
-          <h2 className="flex items-center gap-2 text-sm font-black">
-            <Search className="h-4 w-4 text-primary" /> SEO
-          </h2>
-          <p className="mt-2 text-xs text-muted-foreground">
-            يعمل تلقائياً من نظام المنصّة (sitemap، google-shopping، بيانات منظَّمة) — إعدادات SEO لكل متجر تأتي مع نفس المرحلة.
-          </p>
-        </div>
-      </section>
+      {/* Appearance — per-store CMS overrides (P5) */}
+      <AppearanceQuickEditor />
+
+      <div className="rounded-2xl glass p-5">
+        <h2 className="flex items-center gap-2 text-sm font-black">
+          <Search className="h-4 w-4 text-primary" /> SEO
+        </h2>
+        <p className="mt-2 text-xs text-muted-foreground">
+          يعمل تلقائياً من نظام المنصّة (sitemap، google-shopping، بيانات منظَّمة). لتخصيص عنوان
+          ووصف الصفحة الرئيسية لمتجرك استخدم محرر المظهر أعلاه — تخصيص SEO المتقدم يأتي تباعاً.
+        </p>
+      </div>
     </div>
+  );
+}
+
+/**
+ * Quick per-store appearance editor (P5): writes TENANT-scoped CMS overrides
+ * via the unified appearance actions (owner scope resolved server-side).
+ * Fields are initialized from the currently effective (merged) settings and
+ * saved as a full section object, so untouched fields keep their values.
+ */
+function AppearanceQuickEditor() {
+  const { settings } = useAppearance();
+  const [theme, setTheme] = useState({ primaryColor: "", secondaryColor: "", backgroundColor: "" });
+  const [hero, setHero] = useState({ title: "", subtitle: "" });
+
+  useEffect(() => {
+    setTheme({
+      primaryColor: settings.theme.primaryColor ?? "#4f8cff",
+      secondaryColor: settings.theme.secondaryColor ?? "#a259ff",
+      backgroundColor: (settings.theme as any).backgroundColor ?? "#06091f",
+    });
+    setHero({ title: settings.hero.title ?? "", subtitle: settings.hero.subtitle ?? "" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const themeMut = useMutation({
+    mutationFn: () =>
+      updateStorefrontAppearance({ data: { key: "theme", value: { ...settings.theme, ...theme } } }),
+    onSuccess: (r) => {
+      if (r.success) {
+        toast.success("تم حفظ ثيم متجرك ونشره");
+        void notifyStorefrontPublished();
+      } else toast.error(r.message ?? "فشل الحفظ");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const heroMut = useMutation({
+    mutationFn: () =>
+      updateStorefrontAppearance({ data: { key: "hero", value: { ...settings.hero, ...hero } } }),
+    onSuccess: (r) => {
+      if (r.success) {
+        toast.success("تم حفظ واجهة متجرك ونشرها");
+        void notifyStorefrontPublished();
+      } else toast.error(r.message ?? "فشل الحفظ");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <section className="rounded-2xl glass p-5 space-y-4">
+      <h2 className="flex items-center gap-2 text-sm font-black">
+        <Palette className="h-4 w-4 text-primary" /> مظهر واجهة المتجر
+      </h2>
+      <p className="text-[11px] text-muted-foreground">
+        تخصيصاتك تُحفظ كطبقة خاصة بمتجرك فوق افتراضيات المنصّة، وتظهر للعملاء فوراً (Realtime).
+      </p>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {(
+          [
+            ["primaryColor", "اللون الأساسي"],
+            ["secondaryColor", "اللون الثانوي"],
+            ["backgroundColor", "لون الخلفية"],
+          ] as const
+        ).map(([k, label]) => (
+          <label key={k} className="space-y-1 text-xs font-bold">
+            {label}
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={(theme as any)[k]}
+                onChange={(e) => setTheme({ ...theme, [k]: e.target.value })}
+                className="h-9 w-12 cursor-pointer rounded-lg border border-border bg-surface"
+              />
+              <input
+                value={(theme as any)[k]}
+                onChange={(e) => setTheme({ ...theme, [k]: e.target.value })}
+                dir="ltr"
+                className={inputCls}
+              />
+            </div>
+          </label>
+        ))}
+      </div>
+      <button
+        onClick={() => themeMut.mutate()}
+        disabled={themeMut.isPending}
+        className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+      >
+        {themeMut.isPending ? "جارٍ الحفظ..." : "حفظ الثيم"}
+      </button>
+
+      <div className="grid gap-3 border-t border-border/50 pt-4 sm:grid-cols-2">
+        <label className="space-y-1 text-xs font-bold">
+          عنوان الواجهة (Hero)
+          <input value={hero.title} onChange={(e) => setHero({ ...hero, title: e.target.value })} className={inputCls} />
+        </label>
+        <label className="space-y-1 text-xs font-bold">
+          العنوان الفرعي
+          <input value={hero.subtitle} onChange={(e) => setHero({ ...hero, subtitle: e.target.value })} className={inputCls} />
+        </label>
+      </div>
+      <button
+        onClick={() => heroMut.mutate()}
+        disabled={heroMut.isPending}
+        className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+      >
+        {heroMut.isPending ? "جارٍ الحفظ..." : "حفظ الواجهة"}
+      </button>
+    </section>
   );
 }
