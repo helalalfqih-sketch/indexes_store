@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { formatPrice, type Product } from "@/lib/store-data";
 import type { LegacyProductShape, LegacyCategoryShape } from "@/lib/data-adapter";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   categoriesQueryOptions,
   bestSellersQueryOptions,
@@ -98,6 +98,29 @@ function HomePage() {
   const { data: bestSellersRaw } = useSuspenseQuery(bestSellersQueryOptions(4));
   const { data: dailyDealsRaw } = useSuspenseQuery(offersQueryOptions());
   const { data: allProductsRaw } = useSuspenseQuery(allProductsQueryOptions());
+  const diagQueryClient = useQueryClient();
+
+  // TEMPORARY DIAGNOSTICS (dev-only): proves whether a Home mount was served
+  // from memory (CACHE_HIT) or triggered a network fetch (NETWORK_FETCH logs
+  // from the queryFn in store.queries.ts).
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const state = diagQueryClient.getQueryState(["allProducts"]);
+    const isStale =
+      !state?.dataUpdatedAt || Date.now() - state.dataUpdatedAt > 5 * 60 * 1000;
+    // eslint-disable-next-line no-console
+    console.info("[PERF] PRODUCT_QUERY_MOUNT", {
+      status: state?.status,
+      fetchStatus: state?.fetchStatus,
+      dataUpdatedAt: state?.dataUpdatedAt,
+      isStale,
+    });
+    if (state?.data && state.fetchStatus === "idle") {
+      // eslint-disable-next-line no-console
+      console.info("[PERF] PRODUCT_QUERY_CACHE_HIT — rendered from memory, no fetch");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const categories = categoriesRaw as LegacyCategoryShape[];
   const bestSellers = bestSellersRaw as LegacyProductShape[];
