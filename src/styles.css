@@ -49,18 +49,30 @@
   --color-showcase-foreground: var(--showcase-foreground);
   --color-showcase-muted: var(--showcase-muted);
   --color-showcase-border: var(--showcase-border);
+  /* Cinematic accent palette (futuristic showroom) */
+  --color-copper: var(--accent-copper);
+  --color-neon: var(--neon-blue);
+  --color-teal-glow: var(--teal-glow);
 }
 
 :root {
   --radius: 0.875rem;
   /* Dark Glassmorphism tokens (storefront cinematic glass) */
-  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-bg: rgba(14, 32, 44, 0.55);
   --glass-border: rgba(255, 255, 255, 0.12);
   --glass-blur: 20px;
+  /* Cinematic showroom depth layers (deep emerald-navy) */
+  --showcase-deep: #050b14;
+  --showcase-mid: #06121e;
+  --showcase-high: #0a1c27;
+  /* Cinematic accents */
+  --accent-copper: #b87e52;
+  --neon-blue: #38bdf8;
+  --teal-glow: #2dd4bf;
   /* Noqta brand */
   --background: oklch(0.985 0.008 250); /* #EEF4FC-ish soft */
   --surface: oklch(1 0 0); /* card white */
-  --showcase: oklch(0.12 0.025 260);
+  --showcase: var(--showcase-mid);
   --showcase-foreground: oklch(0.95 0.01 255);
   --showcase-muted: oklch(0.75 0.025 258);
   --showcase-border: oklch(0.95 0.01 255 / 14%);
@@ -92,7 +104,7 @@
 .dark {
   --background: oklch(0.16 0.02 260);
   --surface: oklch(0.21 0.03 260);
-  --showcase: oklch(0.12 0.025 260);
+  --showcase: var(--showcase-mid);
   --showcase-foreground: oklch(0.97 0.01 255);
   --showcase-muted: oklch(0.75 0.025 258);
   --showcase-border: oklch(1 0 0 / 14%);
@@ -281,5 +293,78 @@
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* ============================================================
+   Cinematic Futuristic Showroom — accent glow + shimmer system
+   ============================================================ */
+
+/* Neon-blue glow (primary CTA / active nav / search button) */
+@utility glow-neon {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--neon-blue) 35%, transparent),
+    0 8px 30px -8px color-mix(in oklab, var(--neon-blue) 65%, transparent),
+    0 0 46px -8px color-mix(in oklab, var(--neon-blue) 45%, transparent);
+}
+
+/* Teal ambient glow (secondary accents) */
+@utility glow-teal {
+  box-shadow: 0 8px 32px -10px color-mix(in oklab, var(--teal-glow) 55%, transparent);
+}
+
+/* Copper warm glow (luxury highlights) */
+@utility glow-copper {
+  box-shadow: 0 8px 32px -10px color-mix(in oklab, var(--accent-copper) 55%, transparent);
+}
+
+/* Glass shimmer — slow light sweep across glass surfaces */
+@keyframes glass-shimmer-sweep {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 250% 0;
+  }
+}
+@utility glass-shimmer {
+  background-image: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.07) 50%,
+    transparent 58%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  animation: glass-shimmer-sweep 7s ease-in-out infinite;
+}
+
+/* Floating light particles (cinematic atmosphere) */
+@keyframes particle-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--particle-alpha, 0.5);
+  }
+  88% {
+    opacity: var(--particle-alpha, 0.5);
+  }
+  100% {
+    transform: translate3d(var(--particle-x, 8px), -46vh, 0) scale(0.6);
+    opacity: 0;
+  }
+}
+@utility animate-particle {
+  animation: particle-drift var(--particle-duration, 14s) linear infinite;
+  animation-delay: var(--particle-delay, 0s);
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-particle,
+  .glass-shimmer {
+    animation: none;
   }
 }

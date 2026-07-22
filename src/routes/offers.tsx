@@ -133,7 +133,10 @@ function OffersPage() {
   return (
     <div className="flex flex-col gap-4 px-4 pt-4">
       {/* Glass banner — flame in a glowing glass tile */}
-      <section className="flex items-center gap-3 rounded-3xl glass-dark p-4 text-showcase-foreground">
+      <section
+        className="flex items-center gap-3 rounded-[32px] glass-dark p-4 text-showcase-foreground"
+        style={{ boxShadow: "inset 0 1px 0 rgba(184,126,82,0.45), 0 14px 40px -18px rgba(0,0,0,0.7)" }}
+      >
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/10 bg-primary/20 shadow-[0_0_28px_-4px_hsl(var(--primary)/0.65)]">
           <Flame className="h-6 w-6 text-primary" />
         </div>

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import * as Icons from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring, useInView } from "framer-motion";
 import { formatPrice, type Product } from "@/lib/store-data";
 import type { LegacyProductShape, LegacyCategoryShape } from "@/lib/data-adapter";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import { lazy, Suspense } from "react";
 import { ProductCardSkeleton, Skeleton } from "@/components/ui/skeleton";
 
 const ProductSphereHero = lazy(() => import("@/components/product-sphere-hero").then(m => ({ default: m.ProductSphereHero })));
+const ProductStage = lazy(() => import("@/components/showroom/ProductStage"));
 const CinematicStory = lazy(() => import("@/components/cinematic-story").then(m => ({ default: m.CinematicStory })));
 import { OptimizedImage } from "@/components/optimized-image";
 import { quickOrderLink } from "@/lib/whatsapp";
@@ -94,6 +95,74 @@ const revealProps = {
   viewport: { once: true, amount: 0.05 },
   transition: { duration: 0.5, ease: "easeOut" as const },
 };
+
+/**
+ * 3D PRODUCT STAGE — cinematic showroom section (copper platform + reflection).
+ * three.js is lazy-loaded ONLY when this section approaches the viewport, so
+ * the main bundle and first paint are untouched (performance rule #7).
+ */
+function ShowroomStageSection({ product }: { product: LegacyProductShape }) {
+  const gateRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(gateRef, { once: true, margin: "500px 0px" });
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const showCanvas = mounted && inView;
+
+  return (
+    <motion.section {...revealProps} className="relative z-10 px-4">
+      <div className="mb-4 text-center">
+        <span className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em] text-teal-glow">
+          3D SHOWROOM
+        </span>
+        <h3 className="text-base font-black text-showcase-foreground">منصّة العرض ثلاثية الأبعاد</h3>
+      </div>
+      <div
+        ref={gateRef}
+        className="relative overflow-hidden rounded-[32px] glass-dark"
+        style={{ boxShadow: "inset 0 1px 0 rgba(184,126,82,0.35), 0 18px 50px -20px rgba(0,0,0,0.7)" }}
+      >
+        <div className="relative h-[340px] w-full">
+          {showCanvas ? (
+            <Suspense
+              fallback={
+                <div className="grid h-full w-full place-items-center">
+                  <div className="h-10 w-10 animate-spin rounded-full border-2 border-teal-glow/60 border-t-transparent" />
+                </div>
+              }
+            >
+              <ProductStage imageUrl={product.image} />
+            </Suspense>
+          ) : (
+            <div className="grid h-full w-full place-items-center">
+              <OptimizedImage
+                src={product.image}
+                alt={product.name}
+                size="large"
+                className="max-h-56 object-contain drop-shadow-[0_24px_28px_rgba(0,0,0,0.55)]"
+              />
+            </div>
+          )}
+        </div>
+        {/* Product info overlay */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/60 to-transparent p-4">
+          <div className="min-w-0 text-start">
+            <p className="truncate text-xs font-black text-white">{product.name}</p>
+            <p className="text-sm font-black text-neon drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">
+              {formatPrice(product.price)}
+            </p>
+          </div>
+          <Link
+            to="/product/$slug"
+            params={{ slug: product.slug }}
+            className="pointer-events-auto shrink-0 rounded-full bg-neon px-4 py-2 text-[11px] font-black text-[#04121d] glow-neon transition hover:brightness-110"
+          >
+            اكتشف المنتج
+          </Link>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
 
 function HomePage() {
   const { data: categoriesRaw } = useSuspenseQuery(categoriesQueryOptions());
@@ -270,7 +339,7 @@ function HomePage() {
         const featuredProduct = bestSellers[0] || allProducts[0];
         return (
           <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-            <div className="group relative overflow-hidden rounded-2xl border border-showcase-border p-4 shadow-xl min-h-[140px] flex items-center">
+            <div className="group relative overflow-hidden rounded-[32px] glass-float p-4 min-h-[150px] flex items-center">
               {/* Optimized Background Image with zoom transition */}
               <OptimizedImage
                 src={featuredProduct.image}
@@ -293,16 +362,16 @@ function HomePage() {
                   <span className="text-white/50">({featuredProduct.reviews} تقييم)</span>
                 </div>
                 <div className="flex items-baseline gap-2 mt-0.5">
-                  <span className="text-base font-black text-primary">{formatPrice(featuredProduct.price)}</span>
+                  <span className="text-base font-black text-neon drop-shadow-[0_0_8px_rgba(56,189,248,0.45)]">{formatPrice(featuredProduct.price)}</span>
                   {featuredProduct.oldPrice && (
                     <span className="text-[10px] line-through text-white/40">{formatPrice(featuredProduct.oldPrice)}</span>
                   )}
                 </div>
                 <div className="flex gap-2 mt-1">
-                  <Link to="/product/$slug" params={{ slug: featuredProduct.slug }} className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 px-3 py-1.5 text-[10px] font-bold text-white transition backdrop-blur-sm border border-white/5">
+                  <Link to="/product/$slug" params={{ slug: featuredProduct.slug }} className="inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 px-4 py-1.5 text-[10px] font-bold text-white transition backdrop-blur-sm border border-white/10">
                     تفاصيل
                   </Link>
-                  <a href={quickOrderLink(featuredProduct)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-success px-3 py-1.5 text-[10px] font-black text-success-foreground hover:bg-success/90 transition shadow-md">
+                  <a href={quickOrderLink(featuredProduct)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-success px-4 py-1.5 text-[10px] font-black text-success-foreground hover:bg-success/90 transition shadow-md">
                     <Icons.MessageCircle className="h-3.5 w-3.5" />
                     اطلب الآن
                   </a>
@@ -315,10 +384,10 @@ function HomePage() {
 
       {/* 3. AI SEARCH */}
       <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-        <div className="rounded-2xl glass-dark p-4 shadow-lg text-center space-y-3">
+        <div className="rounded-[32px] glass-dark glass-shimmer p-5 shadow-lg text-center space-y-3">
           <div className="text-center">
-            <h3 className="text-xs font-black text-showcase-foreground flex items-center justify-center gap-1">
-              <Icons.Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
+            <h3 className="text-xs font-black text-showcase-foreground flex items-center justify-center gap-1.5">
+              <Icons.Sparkles className="h-3.5 w-3.5 text-neon animate-pulse" />
               البحث الذكي بالذكاء الاصطناعي
             </h3>
             <p className="text-[10px] text-showcase-foreground/60 mt-0.5">اكتب مواصفات ما تبحث عنه، وسيقوم محرك البحث بإيجاده لك</p>
@@ -338,11 +407,11 @@ function HomePage() {
                 name="search"
                 type="text"
                 placeholder={settings.navigation.searchPlaceholder || "ابحث بالاسم، اللون، المواصفات..."}
-                className="w-full rounded-xl border border-showcase-border bg-black/40 py-2.5 pr-9 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-primary focus:outline-none transition-all"
+                className="w-full rounded-full border border-white/10 bg-black/40 py-2.5 pr-9 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-neon/50 focus:outline-none transition-all"
               />
-              <Icons.Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-showcase-muted" />
+              <Icons.Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-showcase-muted" />
             </div>
-            <button type="submit" className="rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground hover:bg-primary/95 transition shadow-brand">
+            <button type="submit" className="rounded-full bg-neon px-5 py-2.5 text-xs font-black text-[#04121d] glow-neon hover:brightness-110 transition">
               ابحث
             </button>
           </form>
@@ -394,8 +463,8 @@ function HomePage() {
                     show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
                   }}
                 >
-                  <Link to="/category/$id" params={{ id: c.id }} className="flex flex-col items-center gap-1.5">
-                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20 shadow-card transition overflow-hidden">
+                  <Link to="/category/$id" params={{ id: c.id }} className="group flex flex-col items-center gap-1.5">
+                    <div className="grid h-16 w-16 place-items-center rounded-full glass-dark text-neon transition-all duration-300 overflow-hidden group-hover:glow-neon group-hover:scale-105">
                       {c.imageUrl ? (
                         <OptimizedImage src={c.imageUrl} alt={c.name} size="thumbnail" className="h-full w-full object-cover" />
                       ) : (
@@ -476,7 +545,12 @@ function HomePage() {
         </motion.section>
       )}
 
-      {/* 8. VIRTUAL SHOWROOM */}
+      {/* 8. 3D PRODUCT STAGE — cinematic showroom platform */}
+      {(bestSellers[0] || allProducts[0]) && (
+        <ShowroomStageSection product={bestSellers[0] || allProducts[0]} />
+      )}
+
+      {/* 8b. VIRTUAL SHOWROOM */}
       {settings.sections.showroom.enabled && (
         <motion.section key="showroom" {...revealProps} className="relative z-10 px-4">
           <Link
@@ -549,7 +623,7 @@ function HomePage() {
           className="pointer-events-none fixed inset-x-0 z-30 mx-auto w-full max-w-md px-3 sm:inset-x-auto sm:end-4 sm:mx-0 sm:max-w-sm"
           style={{
             // Above the mobile bottom nav + notch-safe (env safe-area).
-            bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
+            bottom: "calc(6rem + env(safe-area-inset-bottom, 0px))",
           }}
         >
           {focusedProduct && (
