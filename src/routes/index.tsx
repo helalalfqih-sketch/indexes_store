@@ -283,7 +283,7 @@ function HomePage() {
         const featuredProduct = bestSellers[0] || allProducts[0];
         return (
           <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-            <div className="group relative overflow-hidden rounded-2xl border border-showcase-border p-4 shadow-xl min-h-[140px] flex items-center">
+            <div className="group relative overflow-hidden rounded-[32px] glass-float p-4 min-h-[150px] flex items-center">
               {/* Optimized Background Image with zoom transition */}
               <OptimizedImage
                 src={featuredProduct.image}
@@ -306,16 +306,16 @@ function HomePage() {
                   <span className="text-white/50">({featuredProduct.reviews} تقييم)</span>
                 </div>
                 <div className="flex items-baseline gap-2 mt-0.5">
-                  <span className="text-base font-black text-primary">{formatPrice(featuredProduct.price)}</span>
+                  <span className="text-base font-black text-neon drop-shadow-[0_0_8px_rgba(56,189,248,0.45)]">{formatPrice(featuredProduct.price)}</span>
                   {featuredProduct.oldPrice && (
                     <span className="text-[10px] line-through text-white/40">{formatPrice(featuredProduct.oldPrice)}</span>
                   )}
                 </div>
                 <div className="flex gap-2 mt-1">
-                  <Link to="/product/$slug" params={{ slug: featuredProduct.slug }} className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 px-3 py-1.5 text-[10px] font-bold text-white transition backdrop-blur-sm border border-white/5">
+                  <Link to="/product/$slug" params={{ slug: featuredProduct.slug }} className="inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 px-4 py-1.5 text-[10px] font-bold text-white transition backdrop-blur-sm border border-white/10">
                     تفاصيل
                   </Link>
-                  <a href={quickOrderLink(featuredProduct)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-success px-3 py-1.5 text-[10px] font-black text-success-foreground hover:bg-success/90 transition shadow-md">
+                  <a href={quickOrderLink(featuredProduct)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-success px-4 py-1.5 text-[10px] font-black text-success-foreground hover:bg-success/90 transition shadow-md">
                     <Icons.MessageCircle className="h-3.5 w-3.5" />
                     اطلب الآن
                   </a>
@@ -328,10 +328,10 @@ function HomePage() {
 
       {/* 3. AI SEARCH */}
       <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-        <div className="rounded-2xl glass-dark p-4 shadow-lg text-center space-y-3">
+        <div className="rounded-[32px] glass-dark glass-shimmer p-5 shadow-lg text-center space-y-3">
           <div className="text-center">
-            <h3 className="text-xs font-black text-showcase-foreground flex items-center justify-center gap-1">
-              <Icons.Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
+            <h3 className="text-xs font-black text-showcase-foreground flex items-center justify-center gap-1.5">
+              <Icons.Sparkles className="h-3.5 w-3.5 text-neon animate-pulse" />
               البحث الذكي بالذكاء الاصطناعي
             </h3>
             <p className="text-[10px] text-showcase-foreground/60 mt-0.5">اكتب مواصفات ما تبحث عنه، وسيقوم محرك البحث بإيجاده لك</p>
@@ -351,11 +351,11 @@ function HomePage() {
                 name="search"
                 type="text"
                 placeholder={settings.navigation.searchPlaceholder || "ابحث بالاسم، اللون، المواصفات..."}
-                className="w-full rounded-xl border border-showcase-border bg-black/40 py-2.5 pr-9 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-primary focus:outline-none transition-all"
+                className="w-full rounded-full border border-white/10 bg-black/40 py-2.5 pr-9 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-neon/50 focus:outline-none transition-all"
               />
-              <Icons.Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-showcase-muted" />
+              <Icons.Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-showcase-muted" />
             </div>
-            <button type="submit" className="rounded-xl bg-primary px-4 py-2.5 text-xs font-black text-primary-foreground hover:bg-primary/95 transition shadow-brand">
+            <button type="submit" className="rounded-full bg-neon px-5 py-2.5 text-xs font-black text-[#04121d] glow-neon hover:brightness-110 transition">
               ابحث
             </button>
           </form>
@@ -407,8 +407,8 @@ function HomePage() {
                     show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
                   }}
                 >
-                  <Link to="/category/$id" params={{ id: c.id }} className="flex flex-col items-center gap-1.5">
-                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20 shadow-card transition overflow-hidden">
+                  <Link to="/category/$id" params={{ id: c.id }} className="group flex flex-col items-center gap-1.5">
+                    <div className="grid h-16 w-16 place-items-center rounded-full glass-dark text-neon transition-all duration-300 overflow-hidden group-hover:glow-neon group-hover:scale-105">
                       {c.imageUrl ? (
                         <OptimizedImage src={c.imageUrl} alt={c.name} size="thumbnail" className="h-full w-full object-cover" />
                       ) : (
@@ -562,7 +562,7 @@ function HomePage() {
           className="pointer-events-none fixed inset-x-0 z-30 mx-auto w-full max-w-md px-3 sm:inset-x-auto sm:end-4 sm:mx-0 sm:max-w-sm"
           style={{
             // Above the mobile bottom nav + notch-safe (env safe-area).
-            bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
+            bottom: "calc(6rem + env(safe-area-inset-bottom, 0px))",
           }}
         >
           {focusedProduct && (

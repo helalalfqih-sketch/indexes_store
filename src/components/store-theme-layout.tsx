@@ -7,12 +7,20 @@ import noqtaLogo from "@/assets/noqta-logo.png";
 import { SiteFooter } from "@/components/site-footer";
 import { useAppearance } from "@/components/appearance-provider";
 import { NetworkManager } from "@/components/network-manager";
+import { ParticleField } from "@/components/design-system/glass";
 
-// Animated Cinematic Background Layer
+// Animated Cinematic Background Layer — futuristic showroom depth
 function CinematicBackground() {
   return (
-    <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden bg-showcase">
-      <div className="absolute inset-0 opacity-[0.12]">
+    <div
+      className="pointer-events-none fixed inset-0 -z-0 overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(120% 90% at 50% -10%, var(--showcase-high) 0%, var(--showcase-mid) 45%, var(--showcase-deep) 100%)",
+      }}
+    >
+      {/* Depth grid */}
+      <div className="absolute inset-0 opacity-[0.1]">
         <div
           className="absolute inset-0"
           style={{
@@ -23,32 +31,44 @@ function CinematicBackground() {
           }}
         />
       </div>
+      {/* Neon-blue orbital glow */}
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 150, repeat: Infinity, ease: "linear" }}
-        className="absolute -start-24 top-[20vh] h-[60vh] w-[60vh] rounded-full opacity-40 blur-3xl"
+        className="absolute -start-24 top-[18vh] h-[60vh] w-[60vh] rounded-full opacity-30 blur-3xl"
       >
         <div
           className="h-full w-full"
           style={{
             background:
-              "radial-gradient(circle, color-mix(in oklab, var(--primary) 55%, transparent) 0%, transparent 65%)",
+              "radial-gradient(circle, color-mix(in oklab, var(--neon-blue) 45%, transparent) 0%, transparent 65%)",
           }}
         />
       </motion.div>
+      {/* Teal ambient drift */}
       <motion.div
         animate={{ y: [0, -20, 0] }}
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -end-32 top-[60vh] h-[70vh] w-[70vh] rounded-full opacity-30 blur-3xl"
+        className="absolute -end-32 top-[58vh] h-[70vh] w-[70vh] rounded-full opacity-25 blur-3xl"
       >
         <div
           className="h-full w-full"
           style={{
             background:
-              "radial-gradient(circle, color-mix(in oklab, var(--primary-light) 45%, transparent) 0%, transparent 65%)",
+              "radial-gradient(circle, color-mix(in oklab, var(--teal-glow) 40%, transparent) 0%, transparent 65%)",
           }}
         />
       </motion.div>
+      {/* Copper luxury underglow */}
+      <div
+        className="absolute inset-x-0 bottom-[-20vh] h-[45vh] opacity-[0.16] blur-3xl"
+        style={{
+          background:
+            "radial-gradient(60% 100% at 50% 100%, color-mix(in oklab, var(--accent-copper) 55%, transparent) 0%, transparent 70%)",
+        }}
+      />
+      {/* Floating light particles */}
+      <ParticleField count={14} />
     </div>
   );
 }
@@ -107,10 +127,10 @@ function StoreTopBar() {
   const searchPlaceholder = settings.navigation.searchPlaceholder || "بحث ذكي...";
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-showcase-border/40 bg-showcase/80 py-3 backdrop-blur-xl saturate-150">
-      <div className="mx-auto flex w-full max-w-md items-center justify-between gap-4 px-4 md:max-w-6xl md:px-6 lg:max-w-7xl">
+    <header className="sticky top-0 z-40 w-full px-3 pt-3">
+      <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 rounded-full glass-dark glass-shimmer px-3 py-2 shadow-xl md:max-w-6xl md:px-5 lg:max-w-7xl">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="relative h-10 w-10 overflow-hidden rounded-xl shadow-brand transition-transform group-hover:scale-105">
+          <div className="relative h-10 w-10 overflow-hidden rounded-full glow-neon transition-transform group-hover:scale-105">
             <img src={storeLogo} alt={storeName} className="h-full w-full object-cover" />
           </div>
           <div className="leading-tight">
@@ -148,9 +168,9 @@ function StoreTopBar() {
 
         <Link
           to="/search"
-          className="flex flex-1 items-center gap-2 rounded-xl border border-showcase-border/50 bg-black/40 px-3 py-2.5 text-sm text-showcase-muted backdrop-blur-sm transition-colors hover:border-primary/50 hover:bg-black/60 hover:text-white md:max-w-xs"
+          className="flex flex-1 items-center gap-2 rounded-full border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-showcase-muted backdrop-blur-sm transition-all hover:border-neon/40 hover:bg-black/50 hover:text-white md:max-w-xs"
         >
-          <Search className="h-4 w-4 text-primary" />
+          <Search className="h-4 w-4 text-neon" />
           <span className="text-xs font-semibold">{searchPlaceholder}</span>
         </Link>
       </div>
@@ -175,8 +195,11 @@ function StoreBottomNav() {
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-showcase-border/40 bg-showcase/85 backdrop-blur-xl saturate-150 md:hidden">
-      <ul className="grid grid-cols-4 pb-safe">
+    <nav
+      className="fixed inset-x-3 z-40 mx-auto w-auto max-w-md md:hidden"
+      style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+    >
+      <ul className="grid grid-cols-4 items-center rounded-[28px] glass-dark px-2 py-1.5 shadow-2xl">
         {tabs.map((t) => {
           const active = pathname === t.to;
           const Icon = t.icon;
@@ -184,14 +207,14 @@ function StoreBottomNav() {
             <li key={t.to}>
               <Link
                 to={t.to}
-                className={`flex flex-col items-center gap-1.5 py-3 text-[10px] font-bold transition-all ${
+                className={`mx-auto flex w-fit flex-col items-center gap-1 rounded-2xl px-4 py-2 text-[10px] font-bold transition-all ${
                   active
-                    ? "text-primary drop-shadow-md"
+                    ? "bg-neon/15 text-neon glow-neon"
                     : "text-showcase-muted hover:text-white"
                 }`}
               >
                 <div className="relative">
-                  <Icon className={`h-5 w-5 ${active ? "fill-primary/20 stroke-[2.5]" : ""}`} />
+                  <Icon className={`h-5 w-5 ${active ? "stroke-[2.5]" : ""}`} />
                   {t.badge ? (
                     <span className="absolute -end-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[9px] font-black text-white shadow-sm">
                       {t.badge}

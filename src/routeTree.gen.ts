@@ -23,6 +23,8 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreIndexRouteImport } from './routes/store.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
+import { Route as VendorSlugRouteImport } from './routes/vendor.$slug'
 import { Route as StoreSettingsRouteImport } from './routes/store.settings'
 import { Route as StoreProductsRouteImport } from './routes/store.products'
 import { Route as StoreOrdersRouteImport } from './routes/store.orders'
@@ -124,6 +126,16 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const VendorDashboardRoute = VendorDashboardRouteImport.update({
+  id: '/vendor/dashboard',
+  path: '/vendor/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorSlugRoute = VendorSlugRouteImport.update({
+  id: '/vendor/$slug',
+  path: '/vendor/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const StoreSettingsRoute = StoreSettingsRouteImport.update({
   id: '/settings',
@@ -321,6 +333,8 @@ export interface FileRoutesByFullPath {
   '/store/orders': typeof StoreOrdersRoute
   '/store/products': typeof StoreProductsRoute
   '/store/settings': typeof StoreSettingsRoute
+  '/vendor/$slug': typeof VendorSlugRoute
+  '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/store/': typeof StoreIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
@@ -366,6 +380,8 @@ export interface FileRoutesByTo {
   '/store/orders': typeof StoreOrdersRoute
   '/store/products': typeof StoreProductsRoute
   '/store/settings': typeof StoreSettingsRoute
+  '/vendor/$slug': typeof VendorSlugRoute
+  '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin': typeof AdminIndexRoute
   '/store': typeof StoreIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
@@ -414,6 +430,8 @@ export interface FileRoutesById {
   '/store/orders': typeof StoreOrdersRoute
   '/store/products': typeof StoreProductsRoute
   '/store/settings': typeof StoreSettingsRoute
+  '/vendor/$slug': typeof VendorSlugRoute
+  '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/store/': typeof StoreIndexRoute
   '/admin/product/$id': typeof AdminProductIdRoute
@@ -463,6 +481,8 @@ export interface FileRouteTypes {
     | '/store/orders'
     | '/store/products'
     | '/store/settings'
+    | '/vendor/$slug'
+    | '/vendor/dashboard'
     | '/admin/'
     | '/store/'
     | '/admin/product/$id'
@@ -508,6 +528,8 @@ export interface FileRouteTypes {
     | '/store/orders'
     | '/store/products'
     | '/store/settings'
+    | '/vendor/$slug'
+    | '/vendor/dashboard'
     | '/admin'
     | '/store'
     | '/admin/product/$id'
@@ -555,6 +577,8 @@ export interface FileRouteTypes {
     | '/store/orders'
     | '/store/products'
     | '/store/settings'
+    | '/vendor/$slug'
+    | '/vendor/dashboard'
     | '/admin/'
     | '/store/'
     | '/admin/product/$id'
@@ -582,6 +606,8 @@ export interface RootRouteChildren {
   ProductSlugRoute: typeof ProductSlugRoute
   RobotsTxtRoute: typeof RobotsTxtRoute
   SitemapXmlRoute: typeof SitemapXmlRoute
+  VendorSlugRoute: typeof VendorSlugRoute
+  VendorDashboardRoute: typeof VendorDashboardRoute
   ApiAiAnalyzeProductRoute: typeof ApiAiAnalyzeProductRoute
   ApiPublicImageProxyRoute: typeof ApiPublicImageProxyRoute
 }
@@ -685,6 +711,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/vendor/dashboard': {
+      id: '/vendor/dashboard'
+      path: '/vendor/dashboard'
+      fullPath: '/vendor/dashboard'
+      preLoaderRoute: typeof VendorDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/$slug': {
+      id: '/vendor/$slug'
+      path: '/vendor/$slug'
+      fullPath: '/vendor/$slug'
+      preLoaderRoute: typeof VendorSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/store/settings': {
       id: '/store/settings'
@@ -1001,6 +1041,8 @@ const rootRouteChildren: RootRouteChildren = {
   ProductSlugRoute: ProductSlugRoute,
   RobotsTxtRoute: RobotsTxtRoute,
   SitemapXmlRoute: SitemapXmlRoute,
+  VendorSlugRoute: VendorSlugRoute,
+  VendorDashboardRoute: VendorDashboardRoute,
   ApiAiAnalyzeProductRoute: ApiAiAnalyzeProductRoute,
   ApiPublicImageProxyRoute: ApiPublicImageProxyRoute,
 }
