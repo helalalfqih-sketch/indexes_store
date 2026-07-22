@@ -56,7 +56,7 @@ export function ProductCard({
         ref={ref}
         to="/product/$slug"
         params={{ slug: product.slug }}
-        className="group flex flex-col overflow-hidden rounded-2xl glass-dark shadow-card transition active:scale-[0.98]"
+        className="group flex flex-col overflow-hidden rounded-3xl glass-dark shadow-card transition-all duration-300 active:scale-[0.98] hover:-translate-y-1 hover:glow-neon"
       >
         {lay.showImage !== false && (
           <motion.div style={{ filter }} className="relative aspect-square overflow-hidden bg-white/5">
@@ -120,7 +120,7 @@ export function ProductCard({
           )}
           {lay.showPrice !== false && (
             <div className="mt-auto flex items-baseline gap-1.5">
-              <span className="text-sm font-black text-primary">{formatPrice(product.price)}</span>
+              <span className="text-sm font-black text-neon drop-shadow-[0_0_7px_rgba(56,189,248,0.4)]">{formatPrice(product.price)}</span>
               {product.oldPrice && (
                 <span className="text-[10px] text-showcase-foreground/50 line-through">
                   {formatPrice(product.oldPrice)}
