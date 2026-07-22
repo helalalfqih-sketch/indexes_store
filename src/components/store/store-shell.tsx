@@ -9,6 +9,7 @@ import {
   Boxes,
   Users,
   Megaphone,
+  Wallet,
   BarChart3,
   Settings,
   Store,
@@ -138,7 +139,10 @@ function ShellInner() {
     },
     {
       label: "النمو",
-      items: [{ to: "/store/marketing", label: "التسويق", icon: Megaphone, min: "manager" }],
+      items: [
+        { to: "/store/earnings", label: "الأرباح", icon: Wallet, min: "manager" },
+        { to: "/store/marketing", label: "التسويق", icon: Megaphone, min: "manager" },
+      ],
     },
     {
       label: "الإدارة",

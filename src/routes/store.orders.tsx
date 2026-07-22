@@ -14,6 +14,7 @@ import {
   type OrderStatus,
 } from "@/lib/order-status";
 import { useStoreContext } from "@/components/store/store-shell";
+import { StorefrontRealtimeService } from "@/lib/services/storefront-realtime.service";
 import { formatPrice } from "@/lib/store-data";
 
 export const Route = createFileRoute("/store/orders")({
@@ -46,6 +47,11 @@ function StoreOrdersPage() {
       toast.success(`الحالة: ${orderStatusLabel(r.from)} ← ${orderStatusLabel(r.to)}`);
       qc.invalidateQueries({ queryKey: ["store-orders"] });
       if (openId) qc.invalidateQueries({ queryKey: ["store-order-details", openId] });
+      // P4: delivered/refunded writes the financial ledger — notify dashboards.
+      if (r.to === "delivered" || r.to === "refunded") {
+        void StorefrontRealtimeService.notifyFinancialUpdated();
+        qc.invalidateQueries({ queryKey: ["store-earnings"] });
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });

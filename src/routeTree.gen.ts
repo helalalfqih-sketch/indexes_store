@@ -28,6 +28,7 @@ import { Route as StoreProductsRouteImport } from './routes/store.products'
 import { Route as StoreOrdersRouteImport } from './routes/store.orders'
 import { Route as StoreMarketingRouteImport } from './routes/store.marketing'
 import { Route as StoreInventoryRouteImport } from './routes/store.inventory'
+import { Route as StoreEarningsRouteImport } from './routes/store.earnings'
 import { Route as StoreDashboardRouteImport } from './routes/store.dashboard'
 import { Route as StoreCustomersRouteImport } from './routes/store.customers'
 import { Route as StoreAnalyticsRouteImport } from './routes/store.analytics'
@@ -147,6 +148,11 @@ const StoreMarketingRoute = StoreMarketingRouteImport.update({
 const StoreInventoryRoute = StoreInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreEarningsRoute = StoreEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
   getParentRoute: () => StoreRoute,
 } as any)
 const StoreDashboardRoute = StoreDashboardRouteImport.update({
@@ -309,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
+  '/store/earnings': typeof StoreEarningsRoute
   '/store/inventory': typeof StoreInventoryRoute
   '/store/marketing': typeof StoreMarketingRoute
   '/store/orders': typeof StoreOrdersRoute
@@ -353,6 +360,7 @@ export interface FileRoutesByTo {
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
+  '/store/earnings': typeof StoreEarningsRoute
   '/store/inventory': typeof StoreInventoryRoute
   '/store/marketing': typeof StoreMarketingRoute
   '/store/orders': typeof StoreOrdersRoute
@@ -400,6 +408,7 @@ export interface FileRoutesById {
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
+  '/store/earnings': typeof StoreEarningsRoute
   '/store/inventory': typeof StoreInventoryRoute
   '/store/marketing': typeof StoreMarketingRoute
   '/store/orders': typeof StoreOrdersRoute
@@ -448,6 +457,7 @@ export interface FileRouteTypes {
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
+    | '/store/earnings'
     | '/store/inventory'
     | '/store/marketing'
     | '/store/orders'
@@ -492,6 +502,7 @@ export interface FileRouteTypes {
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
+    | '/store/earnings'
     | '/store/inventory'
     | '/store/marketing'
     | '/store/orders'
@@ -538,6 +549,7 @@ export interface FileRouteTypes {
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
+    | '/store/earnings'
     | '/store/inventory'
     | '/store/marketing'
     | '/store/orders'
@@ -707,6 +719,13 @@ declare module '@tanstack/react-router' {
       path: '/inventory'
       fullPath: '/store/inventory'
       preLoaderRoute: typeof StoreInventoryRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/earnings': {
+      id: '/store/earnings'
+      path: '/earnings'
+      fullPath: '/store/earnings'
+      preLoaderRoute: typeof StoreEarningsRouteImport
       parentRoute: typeof StoreRoute
     }
     '/store/dashboard': {
@@ -939,6 +958,7 @@ interface StoreRouteChildren {
   StoreAnalyticsRoute: typeof StoreAnalyticsRoute
   StoreCustomersRoute: typeof StoreCustomersRoute
   StoreDashboardRoute: typeof StoreDashboardRoute
+  StoreEarningsRoute: typeof StoreEarningsRoute
   StoreInventoryRoute: typeof StoreInventoryRoute
   StoreMarketingRoute: typeof StoreMarketingRoute
   StoreOrdersRoute: typeof StoreOrdersRoute
@@ -951,6 +971,7 @@ const StoreRouteChildren: StoreRouteChildren = {
   StoreAnalyticsRoute: StoreAnalyticsRoute,
   StoreCustomersRoute: StoreCustomersRoute,
   StoreDashboardRoute: StoreDashboardRoute,
+  StoreEarningsRoute: StoreEarningsRoute,
   StoreInventoryRoute: StoreInventoryRoute,
   StoreMarketingRoute: StoreMarketingRoute,
   StoreOrdersRoute: StoreOrdersRoute,
