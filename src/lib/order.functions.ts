@@ -6,10 +6,11 @@ import { resolveCurrentTenant } from "@/lib/saas/tenant-resolver";
 import {
   getMyOrders as getMyOrdersFromDb,
   getMyOrderDetails as getMyOrderDetailsFromDb,
-  getGuestOrder as getGuestOrderFromDb,
+  trackOrder as trackOrderFromDb,
   type MyOrderSummary,
   type MyOrderDetails,
 } from "@/lib/services/order-history.service";
+import { normalizeOrderNumber } from "@/lib/order-status";
 
 /**
  * Order server functions — the AUTH BOUNDARY for orders (spec Phase 5).
@@ -20,8 +21,9 @@ import {
  *                        recomputed from the DB, never trusted from the client.
  *  - getMyOrders:        signed-in customer's own orders (RLS-scoped client).
  *  - getMyOrderDetails:  one of the caller's own orders (RLS-scoped client).
- *  - getGuestOrder:      confirmation-flow lookup for a guest order, via the
- *                        service role with explicit ownership checks (NOT open RLS).
+ *  - getTrackedOrder:    public tracking lookup (order number + phone last-4)
+ *                        via the service role with explicit ownership checks
+ *                        (NOT open RLS); response carries no PII.
  *
  * The service-role client is imported dynamically INSIDE handlers so it never
  * reaches the browser bundle.
@@ -242,14 +244,23 @@ export const getMyOrderDetails = createServerFn({ method: "GET" })
   });
 
 /**
- * Guest confirmation lookup (Phase 4 condition #4): service-role read with
- * explicit ownership checks, never an open RLS policy.
+ * Public tracking lookup: order number (ORD-XXXXXXXX / 8 hex / full uuid) +
+ * last 4 digits of the customer phone. Service-role read with explicit
+ * ownership checks inside the service — never an open RLS policy. The
+ * response never contains name / email / address / full phone / tenant data.
  */
-export const getGuestOrder = createServerFn({ method: "POST" })
+export const getTrackedOrder = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) =>
-    z.object({ orderId: z.string().uuid(), phone: z.string().trim().min(3).max(40) }).parse(raw),
+    z
+      .object({
+        orderNumber: z.string().trim().min(8).max(45),
+        phoneLast4: z.string().trim().regex(/^\d{4}$/, "أدخل آخر 4 أرقام من هاتفك"),
+      })
+      .parse(raw),
   )
   .handler(async ({ data }): Promise<MyOrderDetails | null> => {
+    const normalized = normalizeOrderNumber(data.orderNumber);
+    if (!normalized) return null;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    return getGuestOrderFromDb(supabaseAdmin as any, data.orderId, data.phone);
+    return trackOrderFromDb(supabaseAdmin as any, normalized, data.phoneLast4);
   });

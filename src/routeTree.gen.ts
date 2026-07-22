@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrackRouteImport } from './routes/track'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OffersRouteImport } from './routes/offers'
@@ -32,6 +33,7 @@ import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminSessionsRouteImport } from './routes/admin.sessions'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminPlatformRouteImport } from './routes/admin.platform'
+import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminBranchesRouteImport } from './routes/admin.branches'
@@ -40,6 +42,11 @@ import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.ima
 import { Route as ApiAiAnalyzeProductRouteImport } from './routes/api/ai.analyze-product'
 import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
 
+const TrackRoute = TrackRouteImport.update({
+  id: '/track',
+  path: '/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -155,6 +162,11 @@ const AdminPlatformRoute = AdminPlatformRouteImport.update({
   path: '/platform',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminOrdersRoute = AdminOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminInventoryRoute = AdminInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
@@ -202,10 +214,12 @@ export interface FileRoutesByFullPath {
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
+  '/track': typeof TrackRoute
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/orders': typeof AdminOrdersRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/sessions': typeof AdminSessionsRoute
@@ -233,10 +247,12 @@ export interface FileRoutesByTo {
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
+  '/track': typeof TrackRoute
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/orders': typeof AdminOrdersRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/sessions': typeof AdminSessionsRoute
@@ -266,10 +282,12 @@ export interface FileRoutesById {
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/search': typeof SearchRoute
+  '/track': typeof TrackRoute
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/orders': typeof AdminOrdersRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/sessions': typeof AdminSessionsRoute
@@ -300,10 +318,12 @@ export interface FileRouteTypes {
     | '/offers'
     | '/onboarding'
     | '/search'
+    | '/track'
     | '/admin/appearance'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
+    | '/admin/orders'
     | '/admin/platform'
     | '/admin/products'
     | '/admin/sessions'
@@ -331,10 +351,12 @@ export interface FileRouteTypes {
     | '/offers'
     | '/onboarding'
     | '/search'
+    | '/track'
     | '/admin/appearance'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
+    | '/admin/orders'
     | '/admin/platform'
     | '/admin/products'
     | '/admin/sessions'
@@ -363,10 +385,12 @@ export interface FileRouteTypes {
     | '/offers'
     | '/onboarding'
     | '/search'
+    | '/track'
     | '/admin/appearance'
     | '/admin/branches'
     | '/admin/categories'
     | '/admin/inventory'
+    | '/admin/orders'
     | '/admin/platform'
     | '/admin/products'
     | '/admin/sessions'
@@ -396,6 +420,7 @@ export interface RootRouteChildren {
   OffersRoute: typeof OffersRoute
   OnboardingRoute: typeof OnboardingRoute
   SearchRoute: typeof SearchRoute
+  TrackRoute: typeof TrackRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
   GoogleShoppingXmlRoute: typeof GoogleShoppingXmlRoute
@@ -408,6 +433,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/track': {
+      id: '/track'
+      path: '/track'
+      fullPath: '/track'
+      preLoaderRoute: typeof TrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -569,6 +601,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPlatformRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/orders': {
+      id: '/admin/orders'
+      path: '/orders'
+      fullPath: '/admin/orders'
+      preLoaderRoute: typeof AdminOrdersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/inventory': {
       id: '/admin/inventory'
       path: '/inventory'
@@ -626,6 +665,7 @@ interface AdminRouteChildren {
   AdminBranchesRoute: typeof AdminBranchesRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
+  AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPlatformRoute: typeof AdminPlatformRoute
   AdminProductsRoute: typeof AdminProductsRoute
   AdminSessionsRoute: typeof AdminSessionsRoute
@@ -641,6 +681,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBranchesRoute: AdminBranchesRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminInventoryRoute: AdminInventoryRoute,
+  AdminOrdersRoute: AdminOrdersRoute,
   AdminPlatformRoute: AdminPlatformRoute,
   AdminProductsRoute: AdminProductsRoute,
   AdminSessionsRoute: AdminSessionsRoute,
@@ -664,6 +705,7 @@ const rootRouteChildren: RootRouteChildren = {
   OffersRoute: OffersRoute,
   OnboardingRoute: OnboardingRoute,
   SearchRoute: SearchRoute,
+  TrackRoute: TrackRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
   GoogleShoppingXmlRoute: GoogleShoppingXmlRoute,

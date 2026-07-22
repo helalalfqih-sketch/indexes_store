@@ -6,6 +6,7 @@ import {
   Activity,
   Settings,
   Store,
+  ShoppingBag,
   Menu,
   X,
   Languages,
@@ -213,6 +214,7 @@ function ShellInner() {
     [
       { to: "/admin", label: t("nav.dashboard"), icon: LayoutDashboard, exact: true },
       { to: "/admin/studio", label: t("nav.studio"), icon: Sparkles },
+      { to: "/admin/orders", label: "الطلبات", icon: ShoppingBag },
       { to: "/admin/products", label: t("nav.products"), icon: Package },
       { to: "/admin/categories", label: "التصنيفات", icon: FolderTree },
       { to: "/admin/inventory", label: "المخزون", icon: Boxes },
