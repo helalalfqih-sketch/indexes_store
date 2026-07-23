@@ -45,6 +45,7 @@ export function PersistentShowcaseCanvas() {
           cardShape={settings.hero.sphereCardShape}
           showName={settings.hero.sphereShowName}
           showPrice={settings.hero.sphereShowPrice}
+          showParticles={settings.hero.showParticles}
         />
       </Suspense>
     </div>

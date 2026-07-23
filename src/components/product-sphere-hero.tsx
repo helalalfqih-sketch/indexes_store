@@ -206,6 +206,7 @@ function ProductTile({
   onSelect,
   isHovered,
   cardShape = "rectangle",
+  tileScale = TILE,
 }: {
   data: TileData;
   onHover: (p: LegacyProductShape) => void;
@@ -213,6 +214,7 @@ function ProductTile({
   onSelect: (p: LegacyProductShape) => void;
   isHovered: boolean;
   cardShape?: "rectangle" | "circle";
+  tileScale?: number;
 }) {
   const rawUrl = data.product.image;
   const hasVideo = !!data.product.videoPlaybackId;
@@ -257,9 +259,9 @@ function ProductTile({
       {/* Glow backing ring */}
       <RMesh ref={glowRef}>
         {cardShape === "circle" ? (
-          <RCircleGeometry args={[(TILE * 1.18) / 2, 32]} />
+          <RCircleGeometry args={[(tileScale * 1.18) / 2, 32]} />
         ) : (
-          <RPlaneGeometry args={[TILE * 1.18, TILE * 1.18]} />
+          <RPlaneGeometry args={[tileScale * 1.18, tileScale * 1.18]} />
         )}
         <RMeshBasicMaterial color={ACCENT} transparent opacity={0} side={THREE.DoubleSide} />
       </RMesh>
@@ -279,9 +281,9 @@ function ProductTile({
         }}
       >
         {cardShape === "circle" ? (
-          <RCircleGeometry args={[TILE / 2, 32]} />
+          <RCircleGeometry args={[tileScale / 2, 32]} />
         ) : (
-          <RPlaneGeometry args={[TILE, TILE]} />
+          <RPlaneGeometry args={[tileScale, tileScale]} />
         )}
         <RMeshBasicMaterial
           map={texture}
@@ -366,6 +368,7 @@ function ProductSphere({
   radius = 2.2,
   tileScale = 0.8,
   cardShape = "rectangle",
+  showParticles = true,
 }: {
   products: LegacyProductShape[];
   onHoverAny: (p: LegacyProductShape | null) => void;
@@ -374,6 +377,7 @@ function ProductSphere({
   radius?: number;
   tileScale?: number;
   cardShape?: "rectangle" | "circle";
+  showParticles?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const { isDragging, autoRotate, velocity } = useDragRotation(
@@ -421,9 +425,9 @@ function ProductSphere({
 
   return (
     <RGroup ref={groupRef}>
-      {/* Core glow sphere */}
+      {/* Core glow sphere — scales with radius prop */}
       <RMesh>
-        <RSphereGeometry args={[RADIUS * 0.78, 40, 40]} />
+        <RSphereGeometry args={[radius * 0.78, 40, 40]} />
         <RMeshStandardMaterial
           color={"#0a0e2a"}
           emissive={ACCENT}
@@ -439,14 +443,17 @@ function ProductSphere({
       <OrbitalRing />
       <OrbitalRing2 />
 
+      {/* Ambient particles — only if enabled */}
+      {showParticles && <AmbientParticles count={60} />}
+
       {/* Product tiles */}
       {tiles.map((t) => {
         const fb = (
           <RMesh key={t.product.id} position={t.position} quaternion={t.quaternion}>
             {cardShape === "circle" ? (
-              <RCircleGeometry args={[TILE / 2, 32]} />
+              <RCircleGeometry args={[tileScale / 2, 32]} />
             ) : (
-              <RPlaneGeometry args={[TILE, TILE]} />
+              <RPlaneGeometry args={[tileScale, tileScale]} />
             )}
             {fallbackMat}
           </RMesh>
@@ -458,6 +465,7 @@ function ProductSphere({
                 data={t}
                 isHovered={hoveredId === t.product.id}
                 cardShape={cardShape}
+                tileScale={tileScale}
                 onHover={() => {}}
                 onLeave={() => {}}
                 onSelect={(p) => {
@@ -482,6 +490,7 @@ function Scene({
   radius = 2.2,
   tileScale = 0.8,
   cardShape = "rectangle",
+  showParticles = true,
 }: {
   products: LegacyProductShape[];
   onHoverAny: (p: LegacyProductShape | null) => void;
@@ -490,6 +499,7 @@ function Scene({
   radius?: number;
   tileScale?: number;
   cardShape?: "rectangle" | "circle";
+  showParticles?: boolean;
 }) {
   const { size, camera } = useThree();
 
@@ -541,6 +551,7 @@ function Scene({
           radius={radius}
           tileScale={tileScale}
           cardShape={cardShape}
+          showParticles={showParticles}
         />,
       )}
     </>
@@ -623,6 +634,7 @@ export function ProductSphereHero({
   cardShape = "rectangle",
   showName = true,
   showPrice = true,
+  showParticles = true,
 }: {
   products: LegacyProductShape[];
   badgeText?: string;
@@ -634,6 +646,7 @@ export function ProductSphereHero({
   cardShape?: "rectangle" | "circle";
   showName?: boolean;
   showPrice?: boolean;
+  showParticles?: boolean;
 }) {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
@@ -703,7 +716,7 @@ export function ProductSphereHero({
               }}
             >
               <Suspense fallback={null}>
-                <Scene
+              <Scene
                   products={pool}
                   onHoverAny={setHovered}
                   onSelect={handleSelect}
@@ -711,6 +724,7 @@ export function ProductSphereHero({
                   radius={radius}
                   tileScale={tileScale}
                   cardShape={cardShape}
+                  showParticles={showParticles}
                 />
               </Suspense>
             </Canvas>
