@@ -165,11 +165,13 @@ export const NavigationConfigSchema = z.object({
     .object({
       facebook: z.string().catch("https://facebook.com"),
       instagram: z.string().catch("https://instagram.com"),
+      tiktok: z.string().catch("https://tiktok.com"),
       twitter: z.string().catch("https://x.com"),
     })
     .catch({
       facebook: "https://facebook.com",
       instagram: "https://instagram.com",
+      tiktok: "https://tiktok.com",
       twitter: "https://x.com",
     }),
   headerLinks: z
@@ -228,6 +230,51 @@ const SectionItemSchema = z.object({
   title: z.string().catch(""),
   subtitle: z.string().catch(""),
   limit: z.number().catch(6),
+  sort_order: z.number().catch(0),
+  data_source: z.enum(["all", "bestsellers", "offers", "custom"]).catch("all"),
+  customProductIds: z.array(z.string()).catch([]),
+});
+
+const DealsSectionSchema = SectionItemSchema.extend({
+  deal_start: z.string().catch(""),
+  deal_end: z.string().catch(""),
+  discount_percent: z.number().catch(0),
+});
+
+const FeaturedProductSectionSchema = z.object({
+  enabled: z.boolean().catch(true),
+  productId: z.string().catch(""),
+  title: z.string().catch("المنتج المميز ⭐"),
+  subtitle: z.string().catch("اختيارنا الخاص لهذا اليوم"),
+  badge: z.string().catch("أفضل قيمة"),
+});
+
+const TestimonialsSectionSchema = z.object({
+  enabled: z.boolean().catch(true),
+  title: z.string().catch("آراء العملاء"),
+  subtitle: z.string().catch("ماذا يقول عملاؤنا عن اندكس ستور"),
+  items: z
+    .array(
+      z.object({
+        name: z.string().catch(""),
+        city: z.string().catch(""),
+        comment: z.string().catch(""),
+        rating: z.number().catch(5),
+      })
+    )
+    .catch([
+      { name: "أحمد باحارث", city: "صنعاء", comment: "متجر رائع جداً والتوصيل سريع جداً إلى باب البيت!", rating: 5 },
+      { name: "محمد العولقي", city: "عدن", comment: "تجربة التسوق ثلاثية الأبعاد خيالية وممتازة.", rating: 5 },
+      { name: "سارة الحيمي", city: "تعز", comment: "منتجات ذات جودة عالية وتغليف ممتاز.", rating: 5 },
+    ]),
+});
+
+const WhatsappCtaSectionSchema = z.object({
+  enabled: z.boolean().catch(true),
+  title: z.string().catch("هل تحتاج مساعدة في الطلب؟"),
+  subtitle: z.string().catch("فريق خدمة العملاء متواجد على مدار الساعة على واتساب"),
+  buttonText: z.string().catch("تواصل معنا عبر واتساب 💬"),
+  phone: z.string().catch("967771370740"),
 });
 
 const ShowroomSectionSchema = z.object({
@@ -256,11 +303,14 @@ const TrustBadgesSectionSchema = z.object({
 export const SectionsConfigSchema = z.object({
   sectionOrder: z
     .array(z.string())
-    .catch(["hero", "categories", "latest", "showroom", "deals", "cinematic", "recommended"]),
-  latest: SectionItemSchema.catch({ enabled: true, title: "أحدث المنتجات", subtitle: "", limit: 12 }),
-  categories: SectionItemSchema.catch({ enabled: true, title: "التصنيفات", subtitle: "", limit: 8 }),
-  deals: SectionItemSchema.catch({ enabled: true, title: "عروض اليوم 🔥", subtitle: "", limit: 6 }),
-  recommended: SectionItemSchema.catch({ enabled: true, title: "الأكثر مبيعاً", subtitle: "", limit: 6 }),
+    .catch(["hero", "featured_product", "categories", "latest", "showroom", "deals", "recommended", "testimonials", "whatsapp_cta", "cinematic"]),
+  latest: SectionItemSchema.catch({ enabled: true, title: "أحدث المنتجات", subtitle: "", limit: 12, sort_order: 3, data_source: "all", customProductIds: [] }),
+  categories: SectionItemSchema.catch({ enabled: true, title: "التصنيفات", subtitle: "", limit: 8, sort_order: 2, data_source: "all", customProductIds: [] }),
+  deals: DealsSectionSchema.catch({ enabled: true, title: "عروض اليوم 🔥", subtitle: "خصومات لفترة محدودة", limit: 6, sort_order: 5, data_source: "offers", customProductIds: [], deal_start: "", deal_end: "", discount_percent: 0 }),
+  recommended: SectionItemSchema.catch({ enabled: true, title: "الأكثر مبيعاً", subtitle: "", limit: 6, sort_order: 6, data_source: "bestsellers", customProductIds: [] }),
+  featuredProduct: FeaturedProductSectionSchema.catch({ enabled: true, productId: "", title: "المنتج المميز ⭐", subtitle: "اختيارنا الخاص لهذا اليوم", badge: "أفضل قيمة" }),
+  testimonials: TestimonialsSectionSchema.catch({ enabled: true, title: "آراء العملاء", subtitle: "ماذا يقول عملاؤنا عن اندكس ستور", items: [] }),
+  whatsappCta: WhatsappCtaSectionSchema.catch({ enabled: true, title: "هل تحتاج مساعدة في الطلب؟", subtitle: "تواصل معنا عبر واتساب", buttonText: "تواصل معنا عبر واتساب 💬", phone: "967771370740" }),
   showroom: ShowroomSectionSchema.catch({
     enabled: true,
     title: "المعرض الافتراضي",

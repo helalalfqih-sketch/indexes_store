@@ -45,6 +45,12 @@ export type ProductDTO = {
   gtin13?: string | null;
   /** Explicit GTIN-14 (overrides barcode-length detection) */
   gtin14?: string | null;
+
+  // V3 CMS fields
+  featured?: boolean | null;
+  is_deal?: boolean | null;
+  deal_start?: string | null;
+  deal_end?: string | null;
 };
 
 export type CategoryDTO = {

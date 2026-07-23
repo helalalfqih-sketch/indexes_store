@@ -1291,12 +1291,15 @@ function NavigationTab({
 
         <div className="pt-2 border-t border-border/40">
           <span className="text-xs font-bold text-muted-foreground block mb-2">روابط صفحات التواصل الاجتماعي</span>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <Field label="فيسبوك (Facebook)">
               <input value={nav.socialLinks.facebook} onChange={(e) => set("socialLinks", { ...nav.socialLinks, facebook: e.target.value })} className={fieldCls} dir="ltr" />
             </Field>
             <Field label="انستغرام (Instagram)">
               <input value={nav.socialLinks.instagram} onChange={(e) => set("socialLinks", { ...nav.socialLinks, instagram: e.target.value })} className={fieldCls} dir="ltr" />
+            </Field>
+            <Field label="تيك توك (TikTok)">
+              <input value={nav.socialLinks.tiktok ?? ""} onChange={(e) => set("socialLinks", { ...nav.socialLinks, tiktok: e.target.value })} className={fieldCls} dir="ltr" />
             </Field>
             <Field label="تويتر / منصة إكس (X)">
               <input value={nav.socialLinks.twitter} onChange={(e) => set("socialLinks", { ...nav.socialLinks, twitter: e.target.value })} className={fieldCls} dir="ltr" />

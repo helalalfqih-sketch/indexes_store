@@ -82,6 +82,32 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
           تواصل معنا الآن
         </a>
 
+        {/* Social Links */}
+        {settings.navigation.socialLinks && (
+          <div className="flex items-center justify-center gap-4 pt-2 border-t border-border/20 text-xs">
+            {settings.navigation.socialLinks.facebook && (
+              <a href={settings.navigation.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
+                فيسبوك
+              </a>
+            )}
+            {settings.navigation.socialLinks.instagram && (
+              <a href={settings.navigation.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
+                إنستغرام
+              </a>
+            )}
+            {settings.navigation.socialLinks.tiktok && (
+              <a href={settings.navigation.socialLinks.tiktok} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
+                تيك توك
+              </a>
+            )}
+            {settings.navigation.socialLinks.twitter && (
+              <a href={settings.navigation.socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
+                إكس (تويتر)
+              </a>
+            )}
+          </div>
+        )}
+
         <p
           className={`pt-2 text-center text-[10px] ${isHome ? "text-showcase-muted" : "text-muted-foreground"}`}
         >

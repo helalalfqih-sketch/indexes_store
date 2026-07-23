@@ -87,6 +87,12 @@ type FormState = {
   google_product_category: string;
   fb_product_category: string;
   meta_sync_status: string;
+
+  // V3 CMS fields
+  featured: boolean;
+  is_deal: boolean;
+  deal_start: string;
+  deal_end: string;
 };
 
 const emptyForm: FormState = {
@@ -105,6 +111,12 @@ const emptyForm: FormState = {
   badge: "",
   is_published: true,
 
+  // V3 CMS fields
+  featured: false,
+  is_deal: false,
+  deal_start: "",
+  deal_end: "",
+
   // V2 fields default values
   sku: "",
   barcode: "",
@@ -118,7 +130,7 @@ const emptyForm: FormState = {
   model_3d_thumbnail: "",
   model_3d_status: "pending",
 
-  // Metadata tags fields default values
+  // Metadata tags default values
   color: "",
   size: "",
   gender: "",
@@ -278,6 +290,12 @@ function ProductDetailPage() {
       badge: p.badge ?? "",
       is_published: p.is_published,
 
+      // V3 CMS fields
+      featured: Boolean((p as any).featured),
+      is_deal: Boolean((p as any).is_deal),
+      deal_start: (p as any).deal_start ?? "",
+      deal_end: (p as any).deal_end ?? "",
+
       // V2 fields
       sku: p.sku ?? "",
       barcode: p.barcode ?? "",
@@ -355,6 +373,10 @@ function ProductDetailPage() {
       tags: finalTags,
       is_published: form.is_published,
       badge: form.badge || undefined,
+      featured: form.featured,
+      is_deal: form.is_deal,
+      deal_start: form.deal_start.trim() || null,
+      deal_end: form.deal_end.trim() || null,
 
       sku: form.sku.trim() || null,
       barcode: form.barcode.trim() || null,
@@ -1090,6 +1112,52 @@ function ProductDetailPage() {
                       className={inputCls}
                     />
                   </FormField>
+                </div>
+
+                {/* CMS Flags & Deal Period */}
+                <div className="rounded-xl border border-border bg-surface/20 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.featured}
+                        onChange={(e) => setForm({ ...form, featured: e.target.checked })}
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4"
+                      />
+                      <span>⭐ منتج مميز (Featured Product)</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.is_deal}
+                        onChange={(e) => setForm({ ...form, is_deal: e.target.checked })}
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4"
+                      />
+                      <span>🔥 عرض خاص (Daily Deal)</span>
+                    </label>
+                  </div>
+
+                  {(form.is_deal || (form.old_price != null && form.old_price > form.price)) && (
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/40">
+                      <FormField label="تاريخ بداية العرض">
+                        <input
+                          type="datetime-local"
+                          value={form.deal_start}
+                          onChange={(e) => setForm({ ...form, deal_start: e.target.value })}
+                          className={inputCls}
+                        />
+                      </FormField>
+                      <FormField label="تاريخ نهاية العرض (العد التنازلي)">
+                        <input
+                          type="datetime-local"
+                          value={form.deal_end}
+                          onChange={(e) => setForm({ ...form, deal_end: e.target.value })}
+                          className={inputCls}
+                        />
+                      </FormField>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

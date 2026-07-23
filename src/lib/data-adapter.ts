@@ -126,6 +126,14 @@ export type LegacyProductShape = {
   gtin14?: string | null;
   /** Manufacturer Part Number */
   mpn?: string | null;
+  /** Featured Product Flag */
+  featured?: boolean;
+  /** Deal Product Flag */
+  isDeal?: boolean;
+  /** Deal start datetime ISO */
+  dealStart?: string | null;
+  /** Deal end datetime ISO */
+  dealEnd?: string | null;
 };
 
 export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
@@ -152,6 +160,10 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   availability: p.availability ?? null,
   barcode: p.barcode ?? null,
   mpn: p.mpn ?? null,
+  featured: p.featured ?? false,
+  isDeal: p.is_deal ?? false,
+  dealStart: p.deal_start ?? null,
+  dealEnd: p.deal_end ?? null,
 });
 
 export type LegacyCategoryShape = {

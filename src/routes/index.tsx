@@ -584,35 +584,71 @@ function HomePage() {
         </motion.section>
       )}
 
-      {/* 9. SOCIAL PROOF */}
-      <motion.section {...revealProps} className="relative z-10 px-4 mt-4 pb-4 border-t border-showcase-border/40 pt-6">
-        <div className="mb-4 text-center">
-          <span className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em] text-primary">REVIEWS & TESTIMONIALS</span>
-          <h3 className="text-base font-black text-showcase-foreground">ماذا يقول عملاؤنا؟ ❤️</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { name: "أحمد الحميري", role: "صنعاء", text: "تجربة شراء رائعة جداً، المنتج وصل مغلف تماماً والمعاينة ثلاثية الأبعاد ساعدتني أقرر بسرعة.", rating: 5 },
-            { name: "جميل الشرعبي", role: "تعز", text: "أفضل خدمة توصيل وتعامل محترم من الدعم الفني، الجودة ممتازة والأسعار منافسة.", rating: 5 },
-            { name: "سامي الذبحاني", role: "عدن", text: "الطلب عبر الواتساب سهل وسريع، والكرة ثلاثية الأبعاد فكرة مبتكرة جداً في متجر يمني.", rating: 5 }
-          ].map((item, idx) => (
-            <div key={idx} className="rounded-2xl border border-showcase-border bg-surface/50 p-4 space-y-2 text-start">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-black text-showcase-foreground">{item.name}</h4>
-                  <p className="text-[9px] text-showcase-foreground/50">{item.role}</p>
+      {/* 9. SOCIAL PROOF & TESTIMONIALS */}
+      {settings.sections.testimonials.enabled !== false && (
+        <motion.section {...revealProps} className="relative z-10 px-4 mt-4 pb-4 border-t border-showcase-border/40 pt-6">
+          <div className="mb-4 text-center">
+            <span className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em] text-primary">REVIEWS & TESTIMONIALS</span>
+            <h3 className="text-base font-black text-showcase-foreground">
+              {settings.sections.testimonials.title || "ماذا يقول عملاؤنا؟ ❤️"}
+            </h3>
+            {settings.sections.testimonials.subtitle && (
+              <p className="text-[11px] text-showcase-foreground/60 mt-0.5">{settings.sections.testimonials.subtitle}</p>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {(settings.sections.testimonials.items?.length
+              ? settings.sections.testimonials.items
+              : [
+                  { name: "أحمد الحميري", city: "صنعاء", comment: "تجربة شراء رائعة جداً، المنتج وصل مغلف تماماً والمعاينة ثلاثية الأبعاد ساعدتني أقرر بسرعة.", rating: 5 },
+                  { name: "جميل الشرعبي", city: "تعز", comment: "أفضل خدمة توصيل وتعامل محترم من الدعم الفني، الجودة ممتازة والأسعار منافسة.", rating: 5 },
+                  { name: "سامي الذبحاني", city: "عدن", comment: "الطلب عبر الواتساب سهل وسريع، والكرة ثلاثية الأبعاد فكرة مبتكرة جداً في متجر يمني.", rating: 5 },
+                ]
+            ).map((item, idx) => (
+              <div key={idx} className="rounded-2xl border border-showcase-border bg-surface/50 p-4 space-y-2 text-start">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-black text-showcase-foreground">{item.name}</h4>
+                    <p className="text-[9px] text-showcase-foreground/50">{item.city}</p>
+                  </div>
+                  <div className="flex gap-0.5 text-amber-400">
+                    {Array.from({ length: item.rating || 5 }).map((_, i) => (
+                      <Icons.Star key={i} className="h-3 w-3 fill-amber-400" />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex gap-0.5 text-amber-400">
-                  {Array.from({ length: item.rating }).map((_, i) => (
-                    <Icons.Star key={i} className="h-3 w-3 fill-amber-400" />
-                  ))}
-                </div>
+                <p className="text-xs text-showcase-foreground/80 leading-relaxed italic">"{item.comment}"</p>
               </div>
-              <p className="text-xs text-showcase-foreground/80 leading-relaxed italic">"{item.text}"</p>
+            ))}
+          </div>
+        </motion.section>
+      )}
+
+      {/* 10. WHATSAPP CTA BANNER */}
+      {settings.sections.whatsappCta?.enabled !== false && (
+        <motion.section {...revealProps} className="relative z-10 px-4">
+          <div className="rounded-[32px] glass-dark p-6 text-center space-y-3 border border-success/30 bg-gradient-to-r from-success/10 via-surface/40 to-primary/10">
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-success/20 text-success border border-success/30">
+              <Icons.MessageCircle className="h-6 w-6" />
             </div>
-          ))}
-        </div>
-      </motion.section>
+            <h3 className="text-base font-black text-showcase-foreground">
+              {settings.sections.whatsappCta?.title || "هل تحتاج مساعدة في الطلب؟"}
+            </h3>
+            <p className="text-xs text-showcase-foreground/70 max-w-md mx-auto">
+              {settings.sections.whatsappCta?.subtitle || "فريق خدمة العملاء متواجد على مدار الساعة على واتساب"}
+            </p>
+            <a
+              href={`https://wa.me/${settings.sections.whatsappCta?.phone || settings.navigation.whatsappPhone || "967771370740"}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-success px-6 py-2.5 text-xs font-black text-success-foreground hover:bg-success/90 transition shadow-lg"
+            >
+              <Icons.MessageCircle className="h-4 w-4" />
+              {settings.sections.whatsappCta?.buttonText || "تواصل معنا عبر واتساب 💬"}
+            </a>
+          </div>
+        </motion.section>
+      )}
 
       {/* ============= STICKY MOBILE CHECKOUT ============= */}
       {settings.cart_config.floatingBarEnabled && (
