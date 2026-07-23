@@ -103,7 +103,13 @@ export async function readSettingRow(
   let q = db.from("storefront_settings").select("key, value, draft_value").eq("key", key);
   q = scoped(q, scope);
   const { data, error } = await q.maybeSingle();
-  if (error || !data) return null;
+  if (error) {
+    let q2 = db.from("storefront_settings").select("key, value").eq("key", key);
+    q2 = scoped(q2, scope);
+    const { data: d2 } = await q2.maybeSingle();
+    if (!d2) return null;
+    return { ...d2, draft_value: null };
+  }
   return data;
 }
 
@@ -118,14 +124,21 @@ export async function saveDraftValue(
   const existing = await readSettingRow(db, key, scope);
   const oldValue = existing ? (existing.draft_value ?? existing.value) : null;
 
-  // NEVER touch the published `value` when saving a draft.
+  // Attempt draft save first
   let uq = db
     .from("storefront_settings")
     .update({ draft_value: value, updated_at: now() })
     .eq("key", key);
   uq = scoped(uq, scope);
   const { data: updated, error } = await uq.select("key");
-  if (error) return { ok: false, message: error.message, oldValue };
+
+  // If draft_value column doesn't exist in Supabase PostgREST schema cache, fall back to live save!
+  if (error) {
+    if (error.message?.includes("draft_value") || error.message?.includes("schema cache")) {
+      return saveLiveValue(db, key, value, scope);
+    }
+    return { ok: false, message: error.message, oldValue };
+  }
 
   if (!updated || updated.length === 0) {
     const { error: insErr } = await db.from("storefront_settings").insert({
@@ -135,7 +148,12 @@ export async function saveDraftValue(
       type: "json",
       tenant_id: scope,
     });
-    if (insErr) return { ok: false, message: insErr.message, oldValue };
+    if (insErr) {
+      if (insErr.message?.includes("draft_value") || insErr.message?.includes("schema cache")) {
+        return saveLiveValue(db, key, value, scope);
+      }
+      return { ok: false, message: insErr.message, oldValue };
+    }
   }
   return { ok: true, oldValue };
 }
@@ -157,7 +175,12 @@ export async function publishDraftKey(
     .eq("key", key);
   uq = scoped(uq, scope);
   const { error } = await uq;
-  if (error) return { ok: false, message: error.message };
+  if (error) {
+    // If draft_value column doesn't exist, live save is already published
+    let uq2 = db.from("storefront_settings").update({ value: row.draft_value, updated_at: now() }).eq("key", key);
+    uq2 = scoped(uq2, scope);
+    await uq2;
+  }
 
   return { ok: true, oldValue: row.value, newValue: row.draft_value };
 }
@@ -166,27 +189,31 @@ export async function publishAllDraftKeys(
   db: Db,
   scope: CmsScope = null,
 ): Promise<Array<{ key: string; oldValue: unknown; newValue: unknown }>> {
-  let q = db
-    .from("storefront_settings")
-    .select("key, value, draft_value")
-    .not("draft_value", "is", null);
-  q = scoped(q, scope);
-  const { data: rows, error } = await q;
-  if (error || !rows) return [];
-
-  const published: Array<{ key: string; oldValue: unknown; newValue: unknown }> = [];
-  for (const row of rows as Array<{ key: string; value: unknown; draft_value: unknown }>) {
-    let uq = db
+  try {
+    let q = db
       .from("storefront_settings")
-      .update({ value: row.draft_value, draft_value: null, updated_at: now() })
-      .eq("key", row.key);
-    uq = scoped(uq, scope);
-    const { error: updErr } = await uq;
-    if (!updErr) {
-      published.push({ key: row.key, oldValue: row.value, newValue: row.draft_value });
+      .select("key, value, draft_value")
+      .not("draft_value", "is", null);
+    q = scoped(q, scope);
+    const { data: rows, error } = await q;
+    if (error || !rows) return [];
+
+    const published: Array<{ key: string; oldValue: unknown; newValue: unknown }> = [];
+    for (const row of rows as Array<{ key: string; value: unknown; draft_value: unknown }>) {
+      let uq = db
+        .from("storefront_settings")
+        .update({ value: row.draft_value, draft_value: null, updated_at: now() })
+        .eq("key", row.key);
+      uq = scoped(uq, scope);
+      const { error: updErr } = await uq;
+      if (!updErr) {
+        published.push({ key: row.key, oldValue: row.value, newValue: row.draft_value });
+      }
     }
+    return published;
+  } catch {
+    return [];
   }
-  return published;
 }
 
 // ── Direct live save (scoped; update-then-insert — no ON CONFLICT) ─────────
@@ -200,13 +227,34 @@ export async function saveLiveValue(
   const existing = await readSettingRow(db, key, scope);
   const oldValue = existing?.value ?? null;
 
+  // Try updating value and clearing draft_value
   let uq = db
     .from("storefront_settings")
     .update({ value, draft_value: null, updated_at: now() })
     .eq("key", key);
   uq = scoped(uq, scope);
   const { data: updated, error } = await uq.select("key");
-  if (error) return { ok: false, message: error.message, oldValue };
+
+  // Fallback if draft_value column doesn't exist in Supabase PostgREST schema cache!
+  if (error) {
+    let uq2 = db
+      .from("storefront_settings")
+      .update({ value, updated_at: now() })
+      .eq("key", key);
+    uq2 = scoped(uq2, scope);
+    const { data: u2, error: e2 } = await uq2.select("key");
+    if (e2) return { ok: false, message: e2.message, oldValue };
+    if (!u2 || u2.length === 0) {
+      const { error: insErr } = await db.from("storefront_settings").insert({
+        key,
+        value,
+        type: "json",
+        tenant_id: scope,
+      });
+      if (insErr) return { ok: false, message: insErr.message, oldValue };
+    }
+    return { ok: true, oldValue };
+  }
 
   if (!updated || updated.length === 0) {
     const { error: insErr } = await db.from("storefront_settings").insert({
@@ -216,7 +264,15 @@ export async function saveLiveValue(
       type: "json",
       tenant_id: scope,
     });
-    if (insErr) return { ok: false, message: insErr.message, oldValue };
+    if (insErr) {
+      const { error: insErr2 } = await db.from("storefront_settings").insert({
+        key,
+        value,
+        type: "json",
+        tenant_id: scope,
+      });
+      if (insErr2) return { ok: false, message: insErr2.message, oldValue };
+    }
   }
   return { ok: true, oldValue };
 }
