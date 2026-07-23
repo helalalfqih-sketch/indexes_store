@@ -10,6 +10,7 @@ import {
   deleteAdminCategory,
   listAdminProducts,
 } from "@/lib/actions/admin.actions";
+import { inferCategorySlug } from "@/lib/catalog.functions";
 import { Reorder } from "framer-motion";
 
 export const Route = createFileRoute("/admin/categories")({
@@ -292,9 +293,13 @@ function CategoriesPage() {
             >
               {categories.map((c) => {
                 const editing = editingId === c.id;
-                const productCount = products.filter(
-                  (product) => product.category_id === c.id,
-                ).length;
+                const productCount = products.filter((product) => {
+                  if (product.category_id === c.id || product.category_id === c.slug) return true;
+                  if (!product.category_id) {
+                    return inferCategorySlug(product.name, product.tags, product.description) === c.slug;
+                  }
+                  return false;
+                }).length;
                 return editing ? (
                   <tr key={c.id} className="border-b border-border/40 align-top bg-surface/30">
                     <td colSpan={6} className="p-4">
