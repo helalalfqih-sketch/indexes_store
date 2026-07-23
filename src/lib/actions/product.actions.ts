@@ -117,21 +117,26 @@ export async function fetchProductsByCategory(
   categoryIdOrSlug: string,
 ): Promise<LegacyProductShape[]> {
   const key = categoryIdOrSlug.trim();
+  const cleanKey = key.toLowerCase().replace(/_/g, "-");
+
   let categories: any[] = [];
   try {
     categories = await fetchCategories();
   } catch (e) {
     /* ignore */
   }
-  const matchedCat = categories.find((c) => c.id === key || c.slug === key);
-  const targetSlug = matchedCat ? matchedCat.slug : key;
+
+  const matchedCat = categories.find(
+    (c) => c.id === key || c.slug === key || c.slug === cleanKey || c.id === cleanKey
+  );
+  const targetSlug = matchedCat ? matchedCat.slug : cleanKey;
   const targetId = matchedCat ? matchedCat.id : key;
 
   const all = await fetchProducts();
   return all.filter((p) => {
-    if (p.categoryId === targetId || p.categoryId === targetSlug) return true;
+    if (p.categoryId === targetId || p.categoryId === targetSlug || p.categoryId === cleanKey) return true;
     const inferred = inferCategorySlug(p.name, [], p.description ?? "");
-    return inferred === targetSlug;
+    return inferred === targetSlug || inferred === cleanKey;
   });
 }
 
