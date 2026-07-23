@@ -4,16 +4,12 @@ import {
   Search,
   Loader2,
   ShoppingBag,
-  TrendingUp,
   Phone,
-  ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { getAdminDashboardStats } from "@/lib/admin-dashboard.functions";
-import { formatPrice } from "@/lib/store-data";
 import { listTenantOrders } from "@/lib/orders-admin.functions";
+import { formatPrice } from "@/lib/store-data";
 
 export const Route = createFileRoute("/admin/customers")({
   component: CustomersPage,
@@ -57,10 +53,9 @@ function buildCustomersFromOrders(orders: any[]): Customer[] {
 function CustomersPage() {
   const [search, setSearch] = useState("");
 
-  const fetchOrders = useServerFn(listTenantOrders);
   const ordersQ = useQuery({
     queryKey: ["admin-orders-for-customers"],
-    queryFn: () => fetchOrders({ data: { limit: 100, offset: 0 } }),
+    queryFn: () => listTenantOrders({ data: { limit: 100, offset: 0 } }),
   });
 
   const customers = buildCustomersFromOrders(ordersQ.data?.rows ?? []).filter(

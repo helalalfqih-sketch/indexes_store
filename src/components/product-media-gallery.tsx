@@ -51,26 +51,74 @@ interface Props {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Helpers                                                              */
+/*  Video URL detection                                                 */
 /* ------------------------------------------------------------------ */
+
+/** Returns true if the URL looks like a direct video file or stream */
+function isVideoUrl(url: string): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  // Common video extensions
+  if (/\.(mp4|webm|ogg|mov|avi|mkv|m3u8)(\?.*)?$/.test(lower)) return true;
+  // Mux stream URLs
+  if (lower.includes("stream.mux.com") || lower.includes("player.mux.com")) return true;
+  // YouTube / Vimeo embeds
+  if (lower.includes("youtube.com") || lower.includes("youtu.be")) return true;
+  if (lower.includes("vimeo.com")) return true;
+  return false;
+}
+
+/** Extract Mux playback ID from a stream.mux.com URL */
+function extractMuxId(url: string): string | null {
+  const m = url.match(/stream\.mux\.com\/([A-Za-z0-9]+)/);
+  return m ? m[1] : null;
+}
 
 function buildMediaList(product: Props["product"], has3D: boolean): MediaItem[] {
   const items: MediaItem[] = [];
 
-  // All images
-  const imgs =
+  // Split images[] into actual images vs video URLs
+  const allUrls =
     Array.isArray(product.images) && product.images.length > 0
       ? product.images
       : [product.image].filter(Boolean);
-  imgs.forEach((url, i) => items.push({ kind: "image", url, index: i }));
 
-  // Direct video URLs
-  const vids = Array.isArray(product.videos) ? product.videos.filter(Boolean) : [];
-  vids.forEach((url, i) => items.push({ kind: "video-url", url, index: i }));
+  let imgCounter = 0;
+  let vidCounter = 0;
 
-  // Mux video
+  for (const url of allUrls) {
+    if (isVideoUrl(url)) {
+      const muxId = extractMuxId(url);
+      if (muxId) {
+        items.push({ kind: "video-mux", playbackId: muxId });
+      } else {
+        items.push({ kind: "video-url", url, index: vidCounter++ });
+      }
+    } else {
+      items.push({ kind: "image", url, index: imgCounter++ });
+    }
+  }
+
+  // Explicit videos[] array (direct URLs, not in images)
+  const explicitVids = Array.isArray(product.videos) ? product.videos.filter(Boolean) : [];
+  for (const url of explicitVids) {
+    const muxId = extractMuxId(url);
+    if (muxId) {
+      items.push({ kind: "video-mux", playbackId: muxId });
+    } else {
+      items.push({ kind: "video-url", url, index: vidCounter++ });
+    }
+  }
+
+  // Mux videoPlaybackId field (classic Mux integration)
   if (product.videoPlaybackId) {
-    items.push({ kind: "video-mux", playbackId: product.videoPlaybackId });
+    // Avoid duplicate if already added from images[]
+    const alreadyAdded = items.some(
+      (m) => m.kind === "video-mux" && m.playbackId === product.videoPlaybackId
+    );
+    if (!alreadyAdded) {
+      items.push({ kind: "video-mux", playbackId: product.videoPlaybackId });
+    }
   }
 
   // 3D model
@@ -85,6 +133,17 @@ function buildMediaList(product: Props["product"], has3D: boolean): MediaItem[] 
 /*  Sub-components                                                       */
 /* ------------------------------------------------------------------ */
 
+/** Convert watch URL → embed URL for YouTube/Vimeo */
+function toEmbedUrl(url: string): string | null {
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]+)/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+  // Vimeo
+  const vmMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vmMatch) return `https://player.vimeo.com/video/${vmMatch[1]}?autoplay=1`;
+  return null;
+}
+
 function VideoModal({
   src,
   muxId,
@@ -96,7 +155,9 @@ function VideoModal({
   title: string;
   onClose: () => void;
 }) {
-  const videoSrc = src || (muxId ? `https://stream.mux.com/${muxId}.m3u8` : undefined);
+  const embedUrl = src ? toEmbedUrl(src) : null;
+  const isDirectVideo = src && !embedUrl;
+  const muxPlayerUrl = muxId ? `https://player.mux.com/${muxId}` : null;
 
   return (
     <motion.div
@@ -123,17 +184,25 @@ function VideoModal({
         </button>
 
         <div className="aspect-video w-full bg-black">
-          {videoSrc ? (
+          {isDirectVideo ? (
             <video
-              src={videoSrc}
+              src={src}
               autoPlay
               controls
               className="h-full w-full"
               title={title}
             />
-          ) : muxId ? (
+          ) : embedUrl ? (
             <iframe
-              src={`https://player.mux.com/${muxId}`}
+              src={embedUrl}
+              title={title}
+              className="h-full w-full"
+              allow="autoplay; fullscreen; encrypted-media"
+              allowFullScreen
+            />
+          ) : muxPlayerUrl ? (
+            <iframe
+              src={muxPlayerUrl}
               title={title}
               className="h-full w-full"
               allow="autoplay; fullscreen"
