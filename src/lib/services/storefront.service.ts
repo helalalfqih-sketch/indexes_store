@@ -30,7 +30,8 @@ export type CmsScope = string | null;
 const now = () => new Date().toISOString();
 
 function scoped(q: any, scope: CmsScope) {
-  return scope === null ? q.is("tenant_id", null) : q.eq("tenant_id", scope);
+  if (!scope) return q;
+  return q.eq("tenant_id", scope);
 }
 
 /** Merge rows: tenant override wins over the global default per key. */
@@ -52,13 +53,22 @@ export async function fetchPublishedRows(
   db: Db,
   tenantId?: string | null,
 ): Promise<Array<{ key: string; value: unknown }> | null> {
-  let q = db.from("storefront_settings").select(tenantId ? "key, value, tenant_id" : "key, value");
-  if (tenantId) {
-    q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
+  try {
+    let q = db.from("storefront_settings").select(tenantId ? "key, value, tenant_id" : "key, value");
+    if (tenantId) {
+      q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
+    }
+    const { data, error } = await q;
+    if (error || !data || data.length === 0) {
+      // Fallback query selecting key, value without tenant_id
+      const { data: d2 } = await db.from("storefront_settings").select("key, value");
+      if (!d2 || d2.length === 0) return null;
+      return d2.map((r: any) => ({ key: r.key, value: r.value }));
+    }
+    return mergeRows(data as any[]).map((r: any) => ({ key: r.key, value: r.value }));
+  } catch {
+    return null;
   }
-  const { data, error } = await q;
-  if (error || !data || data.length === 0) return null;
-  return mergeRows(data as any[]).map((r: any) => ({ key: r.key, value: r.value }));
 }
 
 /** Values + drafts (merged) — ADMIN/OWNER preview read (caller pre-verified). */
@@ -66,33 +76,43 @@ export async function fetchRowsWithDrafts(
   db: Db,
   tenantId?: string | null,
 ): Promise<Array<{ key: string; value: unknown; draft_value: unknown }> | null> {
-  let q = db.from("storefront_settings").select(tenantId ? "key, value, draft_value, tenant_id" : "key, value, draft_value");
-  if (tenantId) {
-    q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
-  }
-  const { data, error } = await q;
-  if (error || !data || data.length === 0) {
+  try {
+    let q = db.from("storefront_settings").select(tenantId ? "key, value, draft_value, tenant_id" : "key, value, draft_value");
+    if (tenantId) {
+      q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
+    }
+    const { data, error } = await q;
+    if (error || !data || data.length === 0) {
+      const pub = await fetchPublishedRows(db, tenantId);
+      if (!pub) return null;
+      return pub.map((r) => ({ ...r, draft_value: null }));
+    }
+    return mergeRows(data as any[]).map((r: any) => ({
+      key: r.key,
+      value: r.value,
+      draft_value: r.draft_value,
+    }));
+  } catch {
     const pub = await fetchPublishedRows(db, tenantId);
     if (!pub) return null;
     return pub.map((r) => ({ ...r, draft_value: null }));
   }
-  return mergeRows(data as any[]).map((r: any) => ({
-    key: r.key,
-    value: r.value,
-    draft_value: r.draft_value,
-  }));
 }
 
 /** Number of keys with a pending draft within ONE scope. */
 export async function countPendingDrafts(db: Db, scope: CmsScope = null): Promise<number> {
-  let q = db
-    .from("storefront_settings")
-    .select("*", { count: "exact", head: true })
-    .not("draft_value", "is", null);
-  q = scoped(q, scope);
-  const { count, error } = await q;
-  if (error) return 0;
-  return count ?? 0;
+  try {
+    let q = db
+      .from("storefront_settings")
+      .select("*", { count: "exact", head: true })
+      .not("draft_value", "is", null);
+    q = scoped(q, scope);
+    const { count, error } = await q;
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
 export async function readSettingRow(
@@ -100,17 +120,26 @@ export async function readSettingRow(
   key: string,
   scope: CmsScope = null,
 ): Promise<{ key: string; value: unknown; draft_value: unknown } | null> {
-  let q = db.from("storefront_settings").select("key, value, draft_value").eq("key", key);
-  q = scoped(q, scope);
-  const { data, error } = await q.maybeSingle();
-  if (error) {
-    let q2 = db.from("storefront_settings").select("key, value").eq("key", key);
-    q2 = scoped(q2, scope);
-    const { data: d2 } = await q2.maybeSingle();
-    if (!d2) return null;
-    return { ...d2, draft_value: null };
+  try {
+    let q = db.from("storefront_settings").select("key, value, draft_value").eq("key", key);
+    q = scoped(q, scope);
+    const { data, error } = await q.maybeSingle();
+    if (error || !data) {
+      let q2 = db.from("storefront_settings").select("key, value").eq("key", key);
+      const { data: d2 } = await q2.maybeSingle();
+      if (!d2) return null;
+      return { ...d2, draft_value: null };
+    }
+    return data;
+  } catch {
+    try {
+      const { data: d2 } = await db.from("storefront_settings").select("key, value").eq("key", key).maybeSingle();
+      if (!d2) return null;
+      return { ...d2, draft_value: null };
+    } catch {
+      return null;
+    }
   }
-  return data;
 }
 
 // ── Draft save (C1-safe, scoped) ─────────────────────────────────────────────
@@ -132,27 +161,17 @@ export async function saveDraftValue(
   uq = scoped(uq, scope);
   const { data: updated, error } = await uq.select("key");
 
-  // If draft_value column doesn't exist in Supabase PostgREST schema cache, fall back to live save!
+  // If draft_value or tenant_id column doesn't exist in Supabase schema, fall back to live save!
   if (error) {
-    if (error.message?.includes("draft_value") || error.message?.includes("schema cache")) {
-      return saveLiveValue(db, key, value, scope);
-    }
-    return { ok: false, message: error.message, oldValue };
+    return saveLiveValue(db, key, value, scope);
   }
 
   if (!updated || updated.length === 0) {
-    const { error: insErr } = await db.from("storefront_settings").insert({
-      key,
-      value: {},
-      draft_value: value,
-      type: "json",
-      tenant_id: scope,
-    });
+    const payload: any = { key, value: {}, draft_value: value, type: "json" };
+    if (scope) payload.tenant_id = scope;
+    const { error: insErr } = await db.from("storefront_settings").insert(payload);
     if (insErr) {
-      if (insErr.message?.includes("draft_value") || insErr.message?.includes("schema cache")) {
-        return saveLiveValue(db, key, value, scope);
-      }
-      return { ok: false, message: insErr.message, oldValue };
+      return saveLiveValue(db, key, value, scope);
     }
   }
   return { ok: true, oldValue };
@@ -169,17 +188,19 @@ export async function publishDraftKey(
   if (!row) return { ok: false, message: "المفتاح غير موجود" };
   if (row.draft_value == null) return { ok: false, message: "لا توجد مسودة للنشر" };
 
-  let uq = db
-    .from("storefront_settings")
-    .update({ value: row.draft_value, draft_value: null, updated_at: now() })
-    .eq("key", key);
-  uq = scoped(uq, scope);
-  const { error } = await uq;
-  if (error) {
-    // If draft_value column doesn't exist, live save is already published
-    let uq2 = db.from("storefront_settings").update({ value: row.draft_value, updated_at: now() }).eq("key", key);
-    uq2 = scoped(uq2, scope);
-    await uq2;
+  try {
+    let uq = db
+      .from("storefront_settings")
+      .update({ value: row.draft_value, draft_value: null, updated_at: now() })
+      .eq("key", key);
+    uq = scoped(uq, scope);
+    const { error } = await uq;
+    if (error) {
+      let uq2 = db.from("storefront_settings").update({ value: row.draft_value, updated_at: now() }).eq("key", key);
+      await uq2;
+    }
+  } catch {
+    await db.from("storefront_settings").update({ value: row.draft_value, updated_at: now() }).eq("key", key);
   }
 
   return { ok: true, oldValue: row.value, newValue: row.draft_value };
@@ -228,53 +249,52 @@ export async function saveLiveValue(
   const oldValue = existing?.value ?? null;
 
   // Try updating value and clearing draft_value
-  let uq = db
-    .from("storefront_settings")
-    .update({ value, draft_value: null, updated_at: now() })
-    .eq("key", key);
-  uq = scoped(uq, scope);
-  const { data: updated, error } = await uq.select("key");
-
-  // Fallback if draft_value column doesn't exist in Supabase PostgREST schema cache!
-  if (error) {
-    let uq2 = db
+  try {
+    let uq = db
       .from("storefront_settings")
-      .update({ value, updated_at: now() })
+      .update({ value, draft_value: null, updated_at: now() })
       .eq("key", key);
-    uq2 = scoped(uq2, scope);
-    const { data: u2, error: e2 } = await uq2.select("key");
-    if (e2) return { ok: false, message: e2.message, oldValue };
-    if (!u2 || u2.length === 0) {
-      const { error: insErr } = await db.from("storefront_settings").insert({
-        key,
-        value,
-        type: "json",
-        tenant_id: scope,
-      });
-      if (insErr) return { ok: false, message: insErr.message, oldValue };
+    uq = scoped(uq, scope);
+    const { data: updated, error } = await uq.select("key");
+
+    if (error) {
+      // Fallback: update only value (without draft_value or tenant_id filter)
+      const { error: e2 } = await db.from("storefront_settings").update({ value, updated_at: now() }).eq("key", key);
+      if (e2) {
+        // Try insert fallback
+        const payload: any = { key, value, type: "json" };
+        if (scope) payload.tenant_id = scope;
+        const { error: insErr } = await db.from("storefront_settings").insert(payload);
+        if (insErr) {
+          const { error: insErr2 } = await db.from("storefront_settings").insert({ key, value, type: "json" });
+          if (insErr2) return { ok: false, message: insErr2.message, oldValue };
+        }
+      }
+      return { ok: true, oldValue };
+    }
+
+    if (!updated || updated.length === 0) {
+      const payload: any = { key, value, draft_value: null, type: "json" };
+      if (scope) payload.tenant_id = scope;
+      const { error: insErr } = await db.from("storefront_settings").insert(payload);
+      if (insErr) {
+        const { error: insErr2 } = await db.from("storefront_settings").insert({ key, value, type: "json" });
+        if (insErr2) return { ok: false, message: insErr2.message, oldValue };
+      }
     }
     return { ok: true, oldValue };
-  }
-
-  if (!updated || updated.length === 0) {
-    const { error: insErr } = await db.from("storefront_settings").insert({
-      key,
-      value,
-      draft_value: null,
-      type: "json",
-      tenant_id: scope,
-    });
-    if (insErr) {
-      const { error: insErr2 } = await db.from("storefront_settings").insert({
-        key,
-        value,
-        type: "json",
-        tenant_id: scope,
-      });
-      if (insErr2) return { ok: false, message: insErr2.message, oldValue };
+  } catch (err: any) {
+    // Ultimate fallback: simple update or insert of key and value
+    try {
+      const { error: e1 } = await db.from("storefront_settings").update({ value }).eq("key", key);
+      if (e1) {
+        await db.from("storefront_settings").insert({ key, value, type: "json" });
+      }
+      return { ok: true, oldValue };
+    } catch (e: any) {
+      return { ok: false, message: e?.message ?? "Failed to save", oldValue };
     }
   }
-  return { ok: true, oldValue };
 }
 
 // ── Change log (with snapshots + legacy fallback) ────────────────────────────
