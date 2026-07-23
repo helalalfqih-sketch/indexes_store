@@ -257,7 +257,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
             }`}
           >
             {addedToCartToast ? <Check className="h-3 w-3" /> : <ShoppingCart className="h-3 w-3 text-cyan-400" />}
-            <span className="truncate">أضف للسلة</span>
+            <span className="truncate"> سلة</span>
           </button>
 
           <button
@@ -270,7 +270,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
             className="flex items-center justify-center gap-1 rounded-xl border border-white/15 bg-[#112233] px-1.5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold text-white transition hover:bg-white/15 hover:border-cyan-400/50"
           >
             <Eye className="h-3 w-3 text-cyan-400" />
-            <span className="truncate">معاينة سريعة</span>
+            <span className="truncate">معاينة </span>
           </button>
         </div>
       </div>

@@ -8,6 +8,7 @@ export type ProductDTO = {
   category_id: string | null;
   brand: string | null;
   images: string[];
+  videos?: string[] | null;
   model_url: string | null;
   stock: number;
   reserved_stock: number;

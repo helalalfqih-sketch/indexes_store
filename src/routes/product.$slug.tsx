@@ -15,23 +15,20 @@ import {
   Package,
   Sparkles,
   Zap,
-  Play,
-  Box,
-  Image as ImageIcon,
   CheckCircle2,
   Home,
   ChevronLeft,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { formatPrice } from "@/lib/store-data";
 import { fetchProductBySlug } from "@/lib/actions/product.actions";
 import { useCart } from "@/lib/cart-store";
 import { quickOrderLink } from "@/lib/whatsapp";
-import { Product3DTile, modelFor, useModelViewer, useMounted } from "@/lib/model-viewer";
-import { OptimizedImage } from "@/components/optimized-image";
+import { useModelViewer } from "@/lib/model-viewer";
 import { useAppearance } from "@/components/appearance-provider";
 import { buildProductHead } from "@/lib/seo";
+import { ProductMediaGallery } from "@/components/product-media-gallery";
 
 const DARK = "var(--showcase)";
 const LIGHT = "var(--showcase-foreground)";
@@ -127,21 +124,10 @@ function ProductPage() {
   const add = useCart((s) => s.add);
   const [added, setAdded] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
-  const mounted = useMounted();
+  const [showStickyBar, setShowStickyBar] = useState(false);
+
   useModelViewer();
 
-  // Multi-media gallery state
-  const rawImages: string[] = Array.isArray(product.images) && product.images.length > 0
-    ? product.images
-    : [product.image];
-  
-  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
-  const [activeMode, setActiveMode] = useState<"image" | "video" | "3d">("image");
-
-  const hasVideo = !!product.videoPlaybackId && pageCfg.showVideo !== false;
-  const has3D = mounted && !!modelFor(product.id) && pageCfg.show3DModel !== false;
-
-  const [showStickyBar, setShowStickyBar] = useState(false);
   useEffect(() => {
     const el = heroRef.current;
     if (!el) return;
@@ -159,6 +145,7 @@ function ProductPage() {
   };
 
   const orderHref = quickOrderLink(product);
+
 
   return (
     <div
@@ -215,113 +202,18 @@ function ProductPage() {
       <div ref={heroRef} className="mx-auto max-w-7xl px-4 pt-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           
-          {/* Right/Top Column: Interactive Gallery (6 columns on Desktop) */}
+          {/* Right/Top Column: Interactive Gallery (7 columns on Desktop) */}
           <div className="lg:col-span-7 flex flex-col gap-4">
-            
-            {/* Active Media Viewer */}
-            <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-showcase-border bg-black/40 shadow-2xl">
-              <AnimatePresence mode="wait">
-                {activeMode === "3d" && has3D ? (
-                  <motion.div
-                    key="3d-mode"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="h-full w-full"
-                  >
-                    <Product3DTile
-                      modelSrc={modelFor(product.id)}
-                      poster={product.image}
-                      alt={product.name}
-                    />
-                  </motion.div>
-                ) : activeMode === "video" && hasVideo ? (
-                  <motion.div
-                    key="video-mode"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="h-full w-full"
-                  >
-                    <iframe
-                      src={`https://stream.mux.com/${product.videoPlaybackId}.m3u8`}
-                      title={product.name}
-                      className="h-full w-full object-cover"
-                      allow="autoplay; encrypted-media"
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key={rawImages[activeMediaIndex] || product.image}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="h-full w-full"
-                  >
-                    <OptimizedImage
-                      src={rawImages[activeMediaIndex] || product.image}
-                      alt={product.name}
-                      size="large"
-                      className="h-full w-full object-contain p-4"
-                      eager={activeMediaIndex === 0}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Mode Badges */}
-              <div className="absolute start-4 bottom-4 z-20 flex items-center gap-2">
-                {has3D && (
-                  <button
-                    onClick={() => setActiveMode("3d")}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold backdrop-blur-md transition ${
-                      activeMode === "3d"
-                        ? "border-primary bg-primary text-white shadow-lg"
-                        : "border-showcase-border bg-black/60 text-showcase-foreground hover:bg-black/80"
-                    }`}
-                  >
-                    <Box className="h-3.5 w-3.5" />
-                    <span>عرض 3D</span>
-                  </button>
-                )}
-                {hasVideo && (
-                  <button
-                    onClick={() => setActiveMode("video")}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold backdrop-blur-md transition ${
-                      activeMode === "video"
-                        ? "border-primary bg-primary text-white shadow-lg"
-                        : "border-showcase-border bg-black/60 text-showcase-foreground hover:bg-black/80"
-                    }`}
-                  >
-                    <Play className="h-3.5 w-3.5" />
-                    <span>فيديو</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Thumbnails Carousel Bar */}
-            {rawImages.length > 1 && (
-              <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
-                {rawImages.map((imgUrl, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setActiveMediaIndex(idx);
-                      setActiveMode("image");
-                    }}
-                    className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border transition-all ${
-                      activeMode === "image" && activeMediaIndex === idx
-                        ? "border-primary ring-2 ring-primary/40 scale-105"
-                        : "border-showcase-border opacity-70 hover:opacity-100"
-                    }`}
-                  >
-                    <OptimizedImage src={imgUrl} alt={`${product.name} ${idx + 1}`} size="thumbnail" className="h-full w-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
+            <ProductMediaGallery
+              product={{
+                id: product.id,
+                name: product.name,
+                image: product.image,
+                images: product.images,
+                videos: product.videos,
+                videoPlaybackId: product.videoPlaybackId,
+              }}
+            />
           </div>
 
           {/* Left/Bottom Column: Product Details & Buy Box (5 columns on Desktop) */}

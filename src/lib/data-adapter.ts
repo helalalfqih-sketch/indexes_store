@@ -98,6 +98,8 @@ export type LegacyProductShape = {
   stock: number;
   image: string;
   images?: string[];
+  /** Direct video URLs (mp4/webm) — separate from Mux videoPlaybackId */
+  videos?: string[] | null;
   rating: number;
   reviews: number;
   categoryId: string;
@@ -146,6 +148,7 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   stock: p.stock,
   image: p.images[0] ?? "",
   images: p.images,
+  videos: p.videos ?? null,
   rating: p.rating,
   reviews: p.reviews_count,
   categoryId: p.category_id ?? "",
