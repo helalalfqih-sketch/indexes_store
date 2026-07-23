@@ -698,13 +698,13 @@ export function inferCategorySlug(title: string, tags: string[] = [], descriptio
   if (text.includes("_gcat:automotive") || text.includes("car")) return "automotive";
   if (text.includes("_gcat:toys") || text.includes("baby") || text.includes("kids")) return "kids-toys";
 
-  if (/سيار|طلاء|سيارات|داش|كشاف سيارة|صنفرة|فحص سمك|مسدس غسيل/i.test(text)) return "automotive";
-  if (/مساج|تدليك|رقبة|مشد|صحة|موسع الأنف|قفاز|عكس|ركبة/i.test(text)) return "health-massage";
-  if (/حلاقة|شعر|مجفف|تبييض|ليزر|تجميل|بشرة|عين|ساونا|مربط/i.test(text)) return "beauty-care";
-  if (/مطبخ|خبازة|قهوة|شواية|برجر|ثلج|فرن|قطاعة|موقد|عصارة/i.test(text)) return "kitchen";
-  if (/رف|ستارة|منظم|دولاب|حامل|تخزين|منشر|ممسحة|لاصق|معجون/i.test(text)) return "storage-organization";
-  if (/رياض|لياقة|قبضة|تمرين|سير|دراجة|عصا القوة|الة رياضة/i.test(text)) return "sports-fitness";
-  if (/طفل|أطفال|لعبة|العاب|سرير أطفال|ناموسية|أسد|يوفو|كرسي أطفال/i.test(text)) return "kids-toys";
+  if (/سيار|طلاء|سيارات|داش|كشاف سيارة|صنفرة|فحص سمك|مسدس غسيل|ملمع|خدوش|إطارات|عزم|رافع|رافعة|طوارئ|مكشاف/i.test(text)) return "automotive";
+  if (/مساج|تدليك|رقبة|كتف|مشد|صحة|أنف|تنفس|موسع|قفاز|تأهيل|ركبة|راحة|استرخاء|مرتبة هوائية|طوق|كهربائي للمقاعد/i.test(text)) return "health-massage";
+  if (/حلاقة|شعر|مجفف|تبييض|ليزر|تجميل|بشرة|عين|ساونا|مربط|استحمام|فوارة|تصفيف|تمليس|تنعيم|شفط الدهون|حب الشباب|مكينة حلاقة/i.test(text)) return "beauty-care";
+  if (/مطبخ|مطابخ|خبازة|قهوة|شواية|برجر|ثلج|فرن|قطاعة|موقد|عصارة|ساندويتش|طعام|أواني|قلاية|خلاط|حافظة طعام/i.test(text)) return "kitchen";
+  if (/رف|رفوف|ستارة|منظم|دولاب|حامل|تخزين|منشر|ممسحة|لاصق|معجون|سيليكون|عازل|سحري|قماشي|محفظة|مثبتات/i.test(text)) return "storage-organization";
+  if (/رياض|لياقة|قبضة|تمرين|تمارين|سير|دراجة|عصا القوة|الة رياضة|تسلق|واقي ركبة|بدلة ساونا/i.test(text)) return "sports-fitness";
+  if (/طفل|أطفال|لعبة|العاب|سرير أطفال|ناموسية|أسد|يوفو|كرسي أطفال|سيارة التحكم|مقياس طول الأرنب/i.test(text)) return "kids-toys";
   
   return "electronics";
 }
