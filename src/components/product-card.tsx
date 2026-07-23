@@ -124,38 +124,18 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -3 }}
       transition={{ type: "spring", stiffness: 260, damping: 22 }}
       data-product-id={product.id}
       data-product-slug={product.slug}
       data-product-name={product.name}
       data-product-price={product.price}
-      className="group relative flex flex-col h-full overflow-hidden rounded-3xl border border-white/10 bg-[#091522]/90 backdrop-blur-xl p-3 shadow-xl transition-all duration-300"
+      className="group relative flex flex-col h-full overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 bg-[#070f1e]/95 backdrop-blur-xl p-2 sm:p-3 shadow-xl transition-all duration-300 hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.2)]"
     >
-      <div className={`flex flex-col h-full justify-between gap-2.5 rounded-2xl ${themeStyle.cardGlow}`}>
-        {/* ================= 1. MEDIA & OVERLAYS AREA ================= */}
-        <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-black/40">
-          {/* Top Status Bar Badge (e.g. الأكثر مبيعاً / صفقة اليوم / جديد) */}
-          <div className="absolute start-2 top-2 z-20 flex items-center gap-1">
-            <span className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-black backdrop-blur-md shadow-md ${themeStyle.badgeBg}`}>
-              {badgeIcon}
-              <span>{badgeLabel}</span>
-              {isDeal && <span className="font-mono text-[9px] opacity-80 ms-1">08:34:12</span>}
-            </span>
-          </div>
-
-          {/* Top Left Video Badge Button */}
-          <button
-            type="button"
-            onClick={handleVideoClick}
-            className="absolute start-2 top-9 z-20 flex items-center gap-1 rounded-full border border-white/20 bg-black/50 px-2.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-md transition hover:bg-primary hover:border-primary active:scale-95 shadow-md"
-            title="مشاهدة الفيديو"
-          >
-            <Video className="h-3 w-3 text-cyan-400" />
-            <span>فيديو</span>
-          </button>
-
-          {/* Top Right Favorite Heart Capsule */}
+      <div className="flex flex-col h-full justify-between gap-2">
+        
+        {/* ================= 1. TOP PURPLE FLOATING STATUS CAPSULE ================= */}
+        <div className="flex items-center justify-between gap-1 rounded-full border border-purple-500/40 bg-purple-950/70 px-2 py-1 backdrop-blur-md text-[10px] text-purple-200">
           <button
             type="button"
             onClick={(e) => {
@@ -163,11 +143,47 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               e.stopPropagation();
               toggleFavorite(product.id);
             }}
-            className="absolute end-2 top-2 z-20 flex items-center gap-1 rounded-full border border-white/20 bg-black/40 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md transition hover:scale-105 active:scale-95 shadow-md"
+            className="flex items-center justify-center h-5 w-5 rounded-full bg-white/10 hover:bg-white/20 transition active:scale-95"
             title={isFav ? "إزالة من المفضلة" : "إضافة للمفضلة"}
           >
-            <Heart className={`h-3.5 w-3.5 ${isFav ? "fill-red-500 text-red-500" : "text-white/80"}`} />
-            <span className="hidden sm:inline">مفضلة</span>
+            <Heart className={`h-3 w-3 ${isFav ? "fill-purple-400 text-purple-400" : "text-purple-300"}`} />
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            <span className="rounded-md bg-purple-600/80 px-1.5 py-0.5 text-[9px] font-extrabold text-white">
+              Video
+            </span>
+            <div className="flex items-center gap-0.5">
+              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+              <span className="font-bold text-white text-[10px]">{product.rating || 4.5}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavorite(product.id);
+            }}
+            className="flex items-center justify-center h-5 w-5 rounded-full bg-white/10 hover:bg-white/20 transition active:scale-95"
+            title={isFav ? "إزالة من المفضلة" : "إضافة للمفضلة"}
+          >
+            <Heart className={`h-3 w-3 ${isFav ? "fill-red-500 text-red-500" : "text-purple-300"}`} />
+          </button>
+        </div>
+
+        {/* ================= 2. MEDIA & OVERLAY BADGES ================= */}
+        <div className="relative aspect-square w-full overflow-hidden rounded-xl sm:rounded-2xl bg-black/40">
+          {/* Top Right Video Badge Overlay */}
+          <button
+            type="button"
+            onClick={handleVideoClick}
+            className="absolute start-2 top-2 z-20 flex items-center gap-1 rounded-full border border-cyan-400/40 bg-black/60 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-white backdrop-blur-md transition hover:bg-cyan-500 hover:text-slate-950 active:scale-95 shadow-md"
+            title="مشاهدة الفيديو"
+          >
+            <Video className="h-3 w-3 text-cyan-400" />
+            <span>فيديو</span>
           </button>
 
           {/* Main Product Image / 3D Viewer */}
@@ -186,82 +202,62 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
             )}
           </Link>
 
-          {/* Bottom Left Views Count Badge */}
-          <div className="absolute start-2 bottom-2 z-10 rounded-full bg-black/60 border border-white/10 px-2 py-0.5 text-[9px] font-medium text-slate-300 backdrop-blur-md">
+          {/* Bottom Center Views Count Badge */}
+          <div className="absolute start-1/2 -translate-x-1/2 bottom-2 z-10 rounded-full bg-black/70 border border-white/15 px-2.5 py-0.5 text-[9px] font-medium text-slate-200 backdrop-blur-md whitespace-nowrap">
             {viewsText}
           </div>
 
           {/* Discount Tag */}
           {discount > 0 && (
-            <div className="absolute end-2 bottom-2 z-10 rounded-full bg-red-600/90 border border-red-400/30 px-2 py-0.5 text-[9px] font-black text-white backdrop-blur-md">
+            <div className="absolute end-2 top-2 z-10 rounded-full bg-red-600/90 border border-red-400/30 px-2 py-0.5 text-[9px] font-black text-white backdrop-blur-md">
               خصم {discount}%
             </div>
           )}
         </div>
 
-        {/* ================= 2. PRODUCT INFORMATION ================= */}
-        <div className="flex flex-col gap-1 text-start px-1">
-          {/* Category Label (No emojis, clean text) */}
-          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
-            {categoryName}
+        {/* ================= 3. PRODUCT INFORMATION ================= */}
+        <div className="flex flex-col gap-0.5 text-start px-0.5">
+          {/* Uppercase Brand/Code Label */}
+          <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
+            {(product as any).brand || (product as any).sku || categoryName}
           </span>
 
-          {/* Product Name (line-clamp-2 + tooltip) */}
+          {/* Product Title (2-line clamp) */}
           <Link to="/product/$slug" params={{ slug: product.slug }}>
             <h3
               title={product.name}
-              className="line-clamp-2 text-xs font-bold leading-snug text-white transition-colors group-hover:text-cyan-300"
+              className="line-clamp-2 text-xs font-bold leading-snug text-white transition-colors group-hover:text-cyan-300 min-h-[32px]"
             >
               {product.name}
             </h3>
           </Link>
 
-          {/* Rating */}
-          {(product.rating > 0 || (product as any).reviews > 0) && (
-            <div className="flex items-center gap-1 text-[11px] text-amber-400 mt-0.5">
-              <div className="flex text-amber-400">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-3 w-3 ${
-                      i < Math.floor(product.rating || 5)
-                        ? "fill-amber-400 text-amber-400"
-                        : "text-slate-600"
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="font-bold text-white ms-0.5">{product.rating || 4.8}</span>
-              <span className="text-[10px] text-slate-400">({(product as any).reviews || 42})</span>
-            </div>
-          )}
-
-          {/* Price Section */}
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-base font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]">
+          {/* Price Tag */}
+          <div className="mt-0.5 flex items-baseline gap-1.5">
+            <span className="text-xs sm:text-sm font-black text-cyan-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]">
               {formatPrice(product.price)}
             </span>
             {product.oldPrice && (
-              <span className="text-xs font-medium text-slate-500 line-through">
+              <span className="text-[10px] font-medium text-slate-500 line-through">
                 {formatPrice(product.oldPrice)}
               </span>
             )}
           </div>
         </div>
 
-        {/* ================= 3. CARD ACTIONS ================= */}
-        <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-white/10">
+        {/* ================= 4. CARD ACTIONS (2 EQUAL BUTTONS) ================= */}
+        <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-white/10">
           <button
             type="button"
             onClick={handleAddToCart}
-            className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-bold transition shadow-md ${
+            className={`flex items-center justify-center gap-1 rounded-xl px-1.5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold transition shadow-md ${
               addedToCartToast
                 ? "bg-emerald-500 text-white"
-                : "bg-cyan-500 hover:bg-cyan-400 text-slate-950"
+                : "bg-[#112233] hover:bg-cyan-500 hover:text-slate-950 border border-white/15 text-white"
             }`}
           >
-            {addedToCartToast ? <Check className="h-3.5 w-3.5" /> : <ShoppingCart className="h-3.5 w-3.5" />}
-            <span>أضف للسلة</span>
+            {addedToCartToast ? <Check className="h-3 w-3" /> : <ShoppingCart className="h-3 w-3 text-cyan-400" />}
+            <span className="truncate">أضف للسلة</span>
           </button>
 
           <button
@@ -271,10 +267,10 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               e.stopPropagation();
               setShowQuickViewModal(true);
             }}
-            className="flex items-center justify-center gap-1 rounded-xl border border-white/20 bg-white/5 px-2 py-2 text-xs font-bold text-white transition hover:bg-white/10 hover:border-cyan-400/50"
+            className="flex items-center justify-center gap-1 rounded-xl border border-white/15 bg-[#112233] px-1.5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold text-white transition hover:bg-white/15 hover:border-cyan-400/50"
           >
-            <Eye className="h-3.5 w-3.5 text-cyan-400" />
-            <span>معاينة سريعة</span>
+            <Eye className="h-3 w-3 text-cyan-400" />
+            <span className="truncate">معاينة سريعة</span>
           </button>
         </div>
       </div>
