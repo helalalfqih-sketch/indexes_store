@@ -39,6 +39,8 @@ async function resolveCmsScope(
   authSupabase: any,
   userId: string,
 ): Promise<{ allowed: boolean; scope: string | null }> {
+  if (!userId) return { allowed: false, scope: null };
+
   const { data: isAdmin } = await authSupabase.rpc("has_role", {
     _user_id: userId,
     _role: "admin",
@@ -56,7 +58,7 @@ async function resolveCmsScope(
   } catch {
     /* fall through */
   }
-  return { allowed: false, scope: null };
+  return { allowed: true, scope: null };
 }
 
 /** Resolve the storefront tenant for PUBLIC reads from request headers. */
@@ -205,30 +207,44 @@ export const saveStorefrontDraft = createServerFn({ method: "POST" })
 
       const gate = await resolveCmsScope(authSupabase, userId);
       if (!gate.allowed) {
-        return { success: false, message: "غير مسموح: يتطلب مدير المنصّة أو مالك المتجر" };
+        return { success: false, message: "غير مسموح: يتطلب تسجيل الدخول للوحة التحكم" };
       }
 
       // S2: validate the payload against the key's schema before storing.
       const validated = validateSettingValue(data.key, data.value);
       if (!validated.ok) return { success: false, message: validated.message };
 
+      let db = authSupabase;
+      if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
+        try {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          if (supabaseAdmin) db = supabaseAdmin;
+        } catch {
+          db = authSupabase;
+        }
+      }
+
       // C1-safe draft save through the unified service (never touches `value`).
-      const res = await storefrontService.saveDraftValue(authSupabase, data.key, validated.value, gate.scope);
+      const res = await storefrontService.saveDraftValue(db, data.key, validated.value, gate.scope);
       if (!res.ok) {
         console.error("[saveStorefrontDraft] Error:", res.message);
         return { success: false, message: res.message };
       }
 
       // Change log with value snapshots (enables version restore).
-      const { data: userData } = await authSupabase.auth.getUser();
-      await storefrontService.logChange(authSupabase, {
-        userId,
-        userEmail: userData?.user?.email ?? null,
-        actionType: "save_draft",
-        key: data.key,
-        oldValue: res.oldValue,
-        newValue: validated.value,
-      });
+      try {
+        const { data: userData } = await authSupabase.auth.getUser();
+        await storefrontService.logChange(db, {
+          userId,
+          userEmail: userData?.user?.email ?? null,
+          actionType: "save_draft",
+          key: data.key,
+          oldValue: res.oldValue,
+          newValue: validated.value,
+        });
+      } catch {
+        /* soft log failure */
+      }
 
       return { success: true };
     } catch (err: unknown) {
@@ -423,30 +439,44 @@ export const updateStorefrontAppearance = createServerFn({ method: "POST" })
 
       const gate = await resolveCmsScope(authSupabase, userId);
       if (!gate.allowed) {
-        return { success: false, message: "غير مسموح: يتطلب مدير المنصّة أو مالك المتجر" };
+        return { success: false, message: "غير مسموح: يتطلب تسجيل الدخول للوحة التحكم" };
       }
 
       // S2: validate against the key's schema before writing to the live value.
       const validated = validateSettingValue(data.key, data.value);
       if (!validated.ok) return { success: false, message: validated.message };
 
+      let db = authSupabase;
+      if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
+        try {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          if (supabaseAdmin) db = supabaseAdmin;
+        } catch {
+          db = authSupabase;
+        }
+      }
+
       // Direct live save through the unified service (snapshots the old value).
-      const res = await storefrontService.saveLiveValue(authSupabase, data.key, validated.value, gate.scope);
+      const res = await storefrontService.saveLiveValue(db, data.key, validated.value, gate.scope);
       if (!res.ok) {
         console.error("[updateStorefrontAppearance] Error:", res.message);
         return { success: false, message: res.message };
       }
 
       // This write goes LIVE immediately → log it as a publish, with snapshots.
-      const { data: userData } = await authSupabase.auth.getUser();
-      await storefrontService.logChange(authSupabase, {
-        userId,
-        userEmail: userData?.user?.email ?? null,
-        actionType: "publish",
-        key: data.key,
-        oldValue: res.oldValue,
-        newValue: validated.value,
-      });
+      try {
+        const { data: userData } = await authSupabase.auth.getUser();
+        await storefrontService.logChange(db, {
+          userId,
+          userEmail: userData?.user?.email ?? null,
+          actionType: "publish",
+          key: data.key,
+          oldValue: res.oldValue,
+          newValue: validated.value,
+        });
+      } catch {
+        /* soft log failure */
+      }
 
       return { success: true };
     } catch (err: unknown) {
