@@ -33,6 +33,7 @@ import {
   deleteAdminProduct,
   createAdminProduct,
   importCatalogFromUrl,
+  autoCategorizeProducts,
 } from "@/lib/actions/admin.actions";
 import {
   DropdownMenu,
@@ -136,6 +137,27 @@ function ProductsPage() {
     onSuccess: (r) => {
       toast.success(`تم الاستيراد: ${r.processed}/${r.total}`);
       invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const autoCategorizeMut = useMutation({
+    mutationFn: () => autoCategorizeProducts(),
+    onSuccess: (res) => {
+      toast.success(`تم توزيع وتصنيف ${res.categorizedCount} منتج تلقائياً بنجاح 🚀✨`);
+      invalidate();
+      qc.invalidateQueries({ queryKey: ["admin-categories"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const changeProductCategoryMut = useMutation({
+    mutationFn: ({ id, category_id }: { id: string; category_id: string }) =>
+      updateAdminProduct({ id, category_id }),
+    onSuccess: () => {
+      toast.success("تم التحديث والتخصيص الفوري للتصنيف");
+      invalidate();
+      qc.invalidateQueries({ queryKey: ["admin-categories"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -274,6 +296,22 @@ function ProductsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              if (confirm("هل تريد توزيع وتصنيف جميع المنتجات تلقائياً حسب الفئات المناسبة؟")) {
+                autoCategorizeMut.mutate();
+              }
+            }}
+            disabled={autoCategorizeMut.isPending}
+            className="inline-flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 disabled:opacity-60 transition"
+          >
+            {autoCategorizeMut.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            تصنيف المنتجات تلقائياً 🪄
+          </button>
           <button
             onClick={() => {
               const url = window.prompt("رابط ملف CSV للاستيراد:", DEFAULT_CATALOG_URL);
@@ -598,11 +636,22 @@ function ProductsPage() {
                     </DropdownMenu>
                   </div>
 
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <div>
-                      {categories.find((c) => c.id === p.category_id)?.name ?? "بدون تصنيف"}
-                    </div>
-                    {p.sku && <div className="font-mono text-[10px]">SKU: {p.sku}</div>}
+                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground gap-2">
+                    <select
+                      value={p.category_id || ""}
+                      onChange={(e) =>
+                        changeProductCategoryMut.mutate({ id: p.id, category_id: e.target.value })
+                      }
+                      className="rounded-lg border border-border/60 bg-background/80 px-2 py-0.5 text-[11px] font-bold text-foreground outline-none focus:border-primary cursor-pointer hover:border-primary/50 transition max-w-[170px] truncate"
+                    >
+                      <option value="">📂 بدون تصنيف</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          📁 {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    {p.sku && <div className="font-mono text-[10px] shrink-0">SKU: {p.sku}</div>}
                   </div>
 
                   <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2.5">

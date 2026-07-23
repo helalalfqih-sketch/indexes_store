@@ -686,6 +686,147 @@ export const adminDeleteProduct = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export function inferCategorySlug(title: string, tags: string[] = [], description: string = ""): string {
+  const text = `${title} ${tags.join(" ")} ${description}`.toLowerCase();
+
+  if (text.includes("_gcat:electronics") || text.includes("_gcat:cell phones") || text.includes("_gcat:cameras")) return "electronics";
+  if (text.includes("_gcat:beauty") || text.includes("_gcat:personal care")) return "beauty-care";
+  if (text.includes("_gcat:kitchen") || text.includes("_gcat:cookware")) return "kitchen";
+  if (text.includes("_gcat:home") || text.includes("storage") || text.includes("organization")) return "storage-organization";
+  if (text.includes("_gcat:health") || text.includes("massage")) return "health-massage";
+  if (text.includes("_gcat:sports") || text.includes("fitness")) return "sports-fitness";
+  if (text.includes("_gcat:automotive") || text.includes("car")) return "automotive";
+  if (text.includes("_gcat:toys") || text.includes("baby") || text.includes("kids")) return "kids-toys";
+
+  if (/سيار|طلاء|سيارات|داش|كشاف سيارة|صنفرة|فحص سمك|مسدس غسيل/i.test(text)) return "automotive";
+  if (/مساج|تدليك|رقبة|مشد|صحة|موسع الأنف|قفاز|عكس|ركبة/i.test(text)) return "health-massage";
+  if (/حلاقة|شعر|مجفف|تبييض|ليزر|تجميل|بشرة|عين|ساونا|مربط/i.test(text)) return "beauty-care";
+  if (/مطبخ|خبازة|قهوة|شواية|برجر|ثلج|فرن|قطاعة|موقد|عصارة/i.test(text)) return "kitchen";
+  if (/رف|ستارة|منظم|دولاب|حامل|تخزين|منشر|ممسحة|لاصق|معجون/i.test(text)) return "storage-organization";
+  if (/رياض|لياقة|قبضة|تمرين|سير|دراجة|عصا القوة|الة رياضة/i.test(text)) return "sports-fitness";
+  if (/طفل|أطفال|لعبة|العاب|سرير أطفال|ناموسية|أسد|يوفو|كرسي أطفال/i.test(text)) return "kids-toys";
+  
+  return "electronics";
+}
+
+export const adminAutoCategorizeProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) =>
+    z.object({ tenantId: z.string().uuid().optional() }).parse(raw ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const ctx = context as any;
+    await assertAdmin(ctx);
+    const tenantId = await resolveAdminTenant(ctx, data.tenantId);
+
+    // 1. Fetch categories from DB
+    let dbCategories = await categoriesRepo.list(ctx.supabase, { tenantId, includeInactive: true });
+    
+    // Seed default categories if empty
+    if (!dbCategories || dbCategories.length === 0) {
+      const defaultCats = [
+        { name: "إلكترونيات", slug: "electronics", icon: "Smartphone", color: "purple" },
+        { name: "الجمال والعناية", slug: "beauty-care", icon: "Sparkles", color: "pink" },
+        { name: "المطبخ والأواني", slug: "kitchen", icon: "Utensils", color: "orange" },
+        { name: "التنظيم والتخزين", slug: "storage-organization", icon: "Archive", color: "yellow" },
+        { name: "الصحة والمساج", slug: "health-massage", icon: "Activity", color: "red" },
+        { name: "الرياضة واللياقة", slug: "sports-fitness", icon: "Flame", color: "emerald" },
+        { name: "السيارات والإكسسوارات", slug: "automotive", icon: "Car", color: "blue" },
+        { name: "الأطفال والألعاب", slug: "kids-toys", icon: "Baby", color: "cyan" },
+      ];
+      for (let i = 0; i < defaultCats.length; i++) {
+        const cat = defaultCats[i];
+        try {
+          await categoriesRepo.create(ctx.supabase, tenantId, {
+            name: cat.name,
+            slug: cat.slug,
+            icon: cat.icon,
+            color: cat.color,
+            is_active: true,
+            sort: i,
+          });
+        } catch { /* ignore */ }
+      }
+      dbCategories = await categoriesRepo.list(ctx.supabase, { tenantId, includeInactive: true });
+    }
+
+    const catMap = new Map<string, string>();
+    for (const c of dbCategories) {
+      catMap.set(c.slug.toLowerCase(), c.id);
+    }
+    const defaultCatId = dbCategories[0]?.id;
+
+    // 2. Fetch CSV products
+    const csvProducts = await fetchCsvProducts();
+    
+    // 3. For each CSV product, compute category and upsert into Supabase
+    let categorizedCount = 0;
+    const recordsToUpsert = csvProducts.map((p) => {
+      const slugMatch = inferCategorySlug(p.name, p.tags ?? [], p.description ?? "");
+      const catId = catMap.get(slugMatch) ?? defaultCatId;
+      categorizedCount++;
+
+      return {
+        tenant_id: tenantId,
+        slug: p.slug,
+        name: p.name,
+        description: p.description ?? "",
+        price: p.price,
+        compare_at_price: p.compare_at_price ?? null,
+        cost_price: p.cost_price ?? null,
+        currency: p.currency || "YER",
+        images: p.images ?? [],
+        stock: p.stock ?? 1,
+        brand: p.brand ?? null,
+        is_published: true,
+        external_id: p.id ?? null,
+        availability: p.availability ?? null,
+        condition: p.condition ?? null,
+        source_url: p.source_url ?? null,
+        sku: p.sku ?? null,
+        barcode: p.barcode ?? null,
+        tags: p.tags ?? [],
+        category_id: catId,
+      };
+    });
+
+    if (recordsToUpsert.length > 0) {
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < recordsToUpsert.length; i += BATCH_SIZE) {
+        const batch = recordsToUpsert.slice(i, i + BATCH_SIZE);
+        await ctx.supabase
+          .from("products")
+          .upsert(batch as any, { onConflict: "tenant_id,slug" });
+      }
+    }
+
+    return { total: csvProducts.length, categorizedCount };
+  });
+
+export const adminBulkAssignCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) =>
+    z.object({
+      productIds: z.array(z.string()),
+      categoryId: z.string().uuid(),
+      tenantId: z.string().uuid().optional(),
+    }).parse(raw),
+  )
+  .handler(async ({ data, context }) => {
+    const ctx = context as any;
+    await assertAdmin(ctx);
+    const tenantId = await resolveAdminTenant(ctx, data.tenantId);
+
+    const { error } = await ctx.supabase
+      .from("products")
+      .update({ category_id: data.categoryId })
+      .eq("tenant_id", tenantId)
+      .in("id", data.productIds);
+
+    if (error) throw error;
+    return { ok: true, count: data.productIds.length };
+  });
+
 // ============ ADMIN WRITES — CATEGORIES ============
 
 export const adminCreateCategory = createServerFn({ method: "POST" })

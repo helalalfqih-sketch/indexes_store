@@ -19,6 +19,8 @@ import {
   adminDeleteCategory,
   adminRecordInventory,
   adminListInventory,
+  adminAutoCategorizeProducts,
+  adminBulkAssignCategory,
 } from "@/lib/catalog.functions";
 import { adminImportCatalogFromUrl } from "@/lib/catalog-import.functions";
 import {
@@ -83,4 +85,14 @@ export const importCatalogFromUrl = (input: { url: string; publish?: boolean }) 
     data: z
       .object({ url: z.string().url(), publish: z.boolean().default(true) })
       .parse(input),
+  });
+
+export const autoCategorizeProducts = () => adminAutoCategorizeProducts({});
+
+export const bulkAssignCategory = (productIds: string[], categoryId: string) =>
+  adminBulkAssignCategory({
+    data: {
+      productIds: z.array(z.string()).parse(productIds),
+      categoryId: z.string().uuid().parse(categoryId),
+    },
   });
