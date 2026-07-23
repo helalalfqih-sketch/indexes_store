@@ -91,8 +91,8 @@ export const recordMediaFile = createServerFn({ method: "POST" })
     dimensions?: { width?: number; height?: number };
     metadata?: Record<string, string | number | boolean | null>;
   }) => data)
-  .handler(async ({ data }): Promise<MediaFileRecord> => {
-    const hasPerm = await checkTenantPermission("cms");
+  .handler(async ({ data, context }): Promise<MediaFileRecord> => {
+    const hasPerm = await checkTenantPermission("cms", context);
     if (!hasPerm) {
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية رفع ومكتبة الوسائط.");
     }
@@ -123,8 +123,8 @@ export const recordMediaFile = createServerFn({ method: "POST" })
 /** Server Fn: Delete media file */
 export const deleteMediaFile = createServerFn({ method: "POST" })
   .validator((data: { id: string; filePath?: string }) => data)
-  .handler(async ({ data: { id } }) => {
-    const hasPerm = await checkTenantPermission("cms");
+  .handler(async ({ data: { id }, context }) => {
+    const hasPerm = await checkTenantPermission("cms", context);
     if (!hasPerm) {
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية حذف الوسائط.");
     }

@@ -64,11 +64,12 @@ export const getSeoSettings = createServerFn({ method: "GET" }).handler(async ()
 /** Server Fn: Save SEO Config for current tenant */
 export const saveSeoSettings = createServerFn({ method: "POST" })
   .validator((data: GlobalSeoConfig) => data)
-  .handler(async ({ data }) => {
-    const hasPerm = await checkTenantPermission("cms");
+  .handler(async ({ data, context }) => {
+    const hasPerm = await checkTenantPermission("cms", context);
     if (!hasPerm) {
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة SEO و CMS.");
     }
+
 
     const tenantId = await resolveTenantId(supabase);
     const { data: userData } = await supabase.auth.getUser();

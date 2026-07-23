@@ -187,8 +187,8 @@ export const saveCmsPage = createServerFn({ method: "POST" })
     og_image?: string;
     canonical_url?: string;
   }) => data)
-  .handler(async ({ data }) => {
-    const hasPerm = await checkTenantPermission("cms");
+  .handler(async ({ data, context }) => {
+    const hasPerm = await checkTenantPermission("cms", context);
     if (!hasPerm) {
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة محتوى (CMS).");
     }
@@ -273,8 +273,8 @@ export const getPageVersions = createServerFn({ method: "GET" })
 /** Server Fn: Restore a page to a previous version */
 export const restorePageVersion = createServerFn({ method: "POST" })
   .validator((data: { versionId: string; pageId: string }) => data)
-  .handler(async ({ data: { versionId, pageId } }) => {
-    const hasPerm = await checkTenantPermission("cms");
+  .handler(async ({ data: { versionId, pageId }, context }) => {
+    const hasPerm = await checkTenantPermission("cms", context);
     if (!hasPerm) {
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة محتوى (CMS).");
     }
@@ -307,8 +307,8 @@ export const restorePageVersion = createServerFn({ method: "POST" })
 /** Server Fn: Delete CMS Page */
 export const deleteCmsPage = createServerFn({ method: "POST" })
   .validator((data: { id: string }) => data)
-  .handler(async ({ data: { id } }) => {
-    const hasPerm = await checkTenantPermission("cms");
+  .handler(async ({ data: { id }, context }) => {
+    const hasPerm = await checkTenantPermission("cms", context);
     if (!hasPerm) {
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة محتوى (CMS).");
     }
