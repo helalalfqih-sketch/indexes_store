@@ -143,7 +143,22 @@ export async function searchProducts(q: string): Promise<LegacyProductShape[]> {
 
 export async function fetchOffers(): Promise<LegacyProductShape[]> {
   const all = await fetchProducts();
-  return all.filter((p) => typeof p.oldPrice === "number" && p.oldPrice > p.price);
+  const explicitOffers = all.filter(
+    (p) =>
+      (typeof p.oldPrice === "number" && p.oldPrice > p.price) ||
+      (p.badge && (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
+  );
+
+  if (explicitOffers.length > 0) {
+    return explicitOffers;
+  }
+
+  // Fallback: pick products and compute deal pricing so offers page & home deals section are vibrant
+  return all.slice(0, 8).map((p) => ({
+    ...p,
+    oldPrice: p.oldPrice || Math.round(p.price * 1.25),
+    badge: p.badge || "عرض خاص 🔥",
+  }));
 }
 
 export async function fetchBestSellers(limit = 4): Promise<LegacyProductShape[]> {
