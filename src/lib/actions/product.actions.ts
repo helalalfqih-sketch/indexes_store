@@ -150,6 +150,7 @@ export async function fetchOffers(): Promise<LegacyProductShape[]> {
   const all = await fetchProducts();
   const explicitOffers = all.filter(
     (p) =>
+      p.isDeal ||
       (typeof p.oldPrice === "number" && p.oldPrice > p.price) ||
       (p.badge && (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
   );

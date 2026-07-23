@@ -404,6 +404,11 @@ export const getProductsByIds = createServerFn({ method: "GET" })
       condition: r.condition,
       source_url: r.source_url,
       meta_sync_status: r.meta_sync_status,
+      // V3 CMS fields
+      featured: r.featured ?? false,
+      is_deal: r.is_deal ?? false,
+      deal_start: r.deal_start ?? null,
+      deal_end: r.deal_end ?? null,
     });
 
     // Partition: UUIDs → primary key; non-UUIDs → external_id / slug
@@ -557,7 +562,7 @@ export const adminListProducts = createServerFn({ method: "GET" })
     const { data: dbRows } = await ctx.supabase
       .from("products")
       .select(
-        "id, external_id, slug, meta_sync_status, is_published, updated_at, old_price, badge, video_playback_id, model_url, model_3d_url, model_3d_thumbnail, model_3d_status, sku, barcode, compare_at_price, cost_price, availability, condition, source_url, tags, currency, category_id, brand",
+        "id, external_id, slug, meta_sync_status, is_published, updated_at, old_price, badge, video_playback_id, model_url, model_3d_url, model_3d_thumbnail, model_3d_status, sku, barcode, compare_at_price, cost_price, availability, condition, source_url, tags, currency, category_id, brand, featured, is_deal, deal_start, deal_end",
       )
       .eq("tenant_id", tenantId);
 
@@ -610,6 +615,11 @@ export const adminListProducts = createServerFn({ method: "GET" })
         created_at: csv.created_at,
         updated_at: db?.updated_at ?? csv.updated_at,
         tenant_id: tenantId,
+        // V3 CMS fields
+        featured: db?.featured ?? false,
+        is_deal: db?.is_deal ?? false,
+        deal_start: db?.deal_start ?? null,
+        deal_end: db?.deal_end ?? null,
       };
     });
 

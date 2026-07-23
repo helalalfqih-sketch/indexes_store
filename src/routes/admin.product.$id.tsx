@@ -291,10 +291,10 @@ function ProductDetailPage() {
       is_published: p.is_published,
 
       // V3 CMS fields
-      featured: Boolean((p as any).featured),
-      is_deal: Boolean((p as any).is_deal),
-      deal_start: (p as any).deal_start ?? "",
-      deal_end: (p as any).deal_end ?? "",
+      featured: Boolean(p.featured),
+      is_deal: Boolean(p.is_deal),
+      deal_start: p.deal_start ?? "",
+      deal_end: p.deal_end ?? "",
 
       // V2 fields
       sku: p.sku ?? "",

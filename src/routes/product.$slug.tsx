@@ -432,19 +432,58 @@ function ProductPage() {
               )}
             </div>
 
-            {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-2 pt-2">
-              <div className="flex flex-col items-center gap-1.5 rounded-xl border border-showcase-border/60 p-3 text-center">
-                <Truck className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-bold">شحن سريع</span>
+            {/* Trust Badges & Delivery Estimate */}
+            <div className="space-y-3 pt-2">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col items-center gap-1.5 rounded-xl border border-showcase-border/60 p-3 text-center">
+                  <Truck className="h-4 w-4 text-primary" />
+                  <span className="text-[11px] font-bold">شحن سريع</span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5 rounded-xl border border-showcase-border/60 p-3 text-center">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <span className="text-[11px] font-bold">ضمان الجودة</span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5 rounded-xl border border-showcase-border/60 p-3 text-center">
+                  <RefreshCcw className="h-4 w-4 text-primary" />
+                  <span className="text-[11px] font-bold">إرجاع سهل</span>
+                </div>
               </div>
-              <div className="flex flex-col items-center gap-1.5 rounded-xl border border-showcase-border/60 p-3 text-center">
-                <Shield className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-bold">ضمان الجودة</span>
+
+              {/* Delivery Time Estimate Banner */}
+              <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 p-3 text-xs text-primary font-bold">
+                <Truck className="h-4 w-4 shrink-0" />
+                <span>توصيل متوقع خلال 24 - 48 ساعة إلى كافة المحافظات 🚚</span>
               </div>
-              <div className="flex flex-col items-center gap-1.5 rounded-xl border border-showcase-border/60 p-3 text-center">
-                <RefreshCcw className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-bold">إرجاع سهل</span>
+
+              {/* Social Share Buttons */}
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-showcase-border/40">
+                <span className="text-showcase-foreground/60 font-bold">مشاركة المنتج:</span>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${product.name}\n${typeof window !== "undefined" ? window.location.href : ""}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg bg-success/20 text-success border border-success/30 px-2.5 py-1 font-bold hover:bg-success/30 transition"
+                  >
+                    واتساب
+                  </a>
+                  <a
+                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 px-2.5 py-1 font-bold hover:bg-blue-600/30 transition"
+                  >
+                    فيسبوك
+                  </a>
+                  <a
+                    href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}&text=${encodeURIComponent(product.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg bg-white/10 text-white border border-white/20 px-2.5 py-1 font-bold hover:bg-white/20 transition"
+                  >
+                    إكس
+                  </a>
+                </div>
               </div>
             </div>
 

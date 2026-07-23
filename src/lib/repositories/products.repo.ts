@@ -42,7 +42,13 @@ const toDTO = (r: Row): ProductDTO => ({
   condition: r.condition,
   source_url: r.source_url,
   meta_sync_status: r.meta_sync_status,
+  // V3 CMS fields
+  featured: r.featured ?? false,
+  is_deal: r.is_deal ?? false,
+  deal_start: r.deal_start ?? null,
+  deal_end: r.deal_end ?? null,
 });
+
 
 export interface ProductFilters {
   tenantId?: string;
