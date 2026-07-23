@@ -16,7 +16,9 @@ import {
   listProducts,
   getProductBySlug as getProductBySlugFn,
   getProductsByIds as getProductsByIdsFn,
+  inferCategorySlug,
 } from "@/lib/catalog.functions";
+import { fetchCategories } from "@/lib/actions/category.actions";
 import {
   fallbackProducts,
   toLegacyProduct,
@@ -115,14 +117,22 @@ export async function fetchProductsByCategory(
   categoryIdOrSlug: string,
 ): Promise<LegacyProductShape[]> {
   const key = categoryIdOrSlug.trim();
-  const isUuid = /^[0-9a-f-]{36}$/i.test(key);
-  if (isUuid) {
-    return fetchProducts({ categoryId: key });
+  let categories: any[] = [];
+  try {
+    categories = await fetchCategories();
+  } catch (e) {
+    /* ignore */
   }
-  // Legacy slug — filter after fetching all products since DB category_id
-  // is UUID but seed uses slug-as-id.
+  const matchedCat = categories.find((c) => c.id === key || c.slug === key);
+  const targetSlug = matchedCat ? matchedCat.slug : key;
+  const targetId = matchedCat ? matchedCat.id : key;
+
   const all = await fetchProducts();
-  return all.filter((p) => p.categoryId === key);
+  return all.filter((p) => {
+    if (p.categoryId === targetId || p.categoryId === targetSlug) return true;
+    const inferred = inferCategorySlug(p.name, [], p.description ?? "");
+    return inferred === targetSlug;
+  });
 }
 
 export async function searchProducts(q: string): Promise<LegacyProductShape[]> {
