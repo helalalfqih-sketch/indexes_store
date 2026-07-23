@@ -674,6 +674,13 @@ function HomepageTab({
               </select>
             </Field>
           </div>
+          <Field label="مصدر منتجات الكرة">
+            <select value={hero.sphereProductSource || "all"} onChange={(e) => setHero("sphereProductSource", e.target.value as HeroConfig["sphereProductSource"])} className={fieldCls}>
+              <option value="all">📦 جميع المنتجات المتوفرة</option>
+              <option value="bestsellers">⭐ المنتجات الأكثر مبيعاً</option>
+              <option value="offers">🔥 منتجات قسم العروض والخصومات</option>
+            </select>
+          </Field>
           <div className="flex flex-wrap gap-4 mt-2 pt-2 border-t border-border/40">
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground font-bold font-sans">عرض الاسم</span>
@@ -727,6 +734,55 @@ function HomepageTab({
               </div>
             </div>
           ))}
+        </div>
+      </SectionCard>
+
+      {/* Section Titles & Limits Editor */}
+      <SectionCard title="عناوين وحدود عرض الأقسام" badge="Section Titles">
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2 p-3 rounded-xl border border-border bg-background/40">
+            <div className="col-span-2">
+              <Field label="عنوان قسم أحدث المنتجات">
+                <input value={sections.latest.title} onChange={(e) => onSectionsChange({ ...sections, latest: { ...sections.latest, title: e.target.value } })} className={fieldCls} placeholder="أحدث المنتجات" />
+              </Field>
+            </div>
+            <Field label="العدد الأقصى">
+              <input type="number" min={4} max={48} value={sections.latest.limit} onChange={(e) => onSectionsChange({ ...sections, latest: { ...sections.latest, limit: Number(e.target.value) } })} className={fieldCls} dir="ltr" />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 p-3 rounded-xl border border-border bg-background/40">
+            <div className="col-span-2">
+              <Field label="عنوان قسم عروض اليوم 🔥">
+                <input value={sections.deals.title} onChange={(e) => onSectionsChange({ ...sections, deals: { ...sections.deals, title: e.target.value } })} className={fieldCls} placeholder="عروض اليوم 🔥" />
+              </Field>
+            </div>
+            <Field label="العدد الأقصى">
+              <input type="number" min={2} max={24} value={sections.deals.limit} onChange={(e) => onSectionsChange({ ...sections, deals: { ...sections.deals, limit: Number(e.target.value) } })} className={fieldCls} dir="ltr" />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 p-3 rounded-xl border border-border bg-background/40">
+            <div className="col-span-2">
+              <Field label="عنوان قسم الأكثر مبيعاً ⭐">
+                <input value={sections.recommended.title} onChange={(e) => onSectionsChange({ ...sections, recommended: { ...sections.recommended, title: e.target.value } })} className={fieldCls} placeholder="الأكثر مبيعاً" />
+              </Field>
+            </div>
+            <Field label="العدد الأقصى">
+              <input type="number" min={2} max={24} value={sections.recommended.limit} onChange={(e) => onSectionsChange({ ...sections, recommended: { ...sections.recommended, limit: Number(e.target.value) } })} className={fieldCls} dir="ltr" />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 p-3 rounded-xl border border-border bg-background/40">
+            <div className="col-span-2">
+              <Field label="عنوان قسم التصنيفات">
+                <input value={sections.categories.title} onChange={(e) => onSectionsChange({ ...sections, categories: { ...sections.categories, title: e.target.value } })} className={fieldCls} placeholder="التصنيفات" />
+              </Field>
+            </div>
+            <Field label="العدد الأقصى">
+              <input type="number" min={2} max={16} value={sections.categories.limit} onChange={(e) => onSectionsChange({ ...sections, categories: { ...sections.categories, limit: Number(e.target.value) } })} className={fieldCls} dir="ltr" />
+            </Field>
+          </div>
         </div>
       </SectionCard>
 
@@ -1003,7 +1059,7 @@ function CheckoutTab({
   return (
     <div className="space-y-4">
       {/* Cart Builder */}
-      <SectionCard title="إعدادات وتصميم سلة التسوق" badge="Cart Builder">
+      <SectionCard title="إعدادات وتصميم سلة التسوق والواتساب" badge="Cart Builder">
         <div className="grid grid-cols-2 gap-3">
           <Field label="شكل السلة">
             <select value={cart.cartStyle} onChange={(e) => setCart("cartStyle", e.target.value as CartConfig["cartStyle"])} className={fieldCls}>
@@ -1019,6 +1075,20 @@ function CheckoutTab({
             </select>
           </Field>
         </div>
+
+        <div className="grid grid-cols-2 gap-3 mt-2">
+          <Field label="رقم واتساب استقبال الطلبات">
+            <input value={cart.whatsappPhone} onChange={(e) => setCart("whatsappPhone", e.target.value)} className={fieldCls} placeholder="967771370740" dir="ltr" />
+          </Field>
+          <Field label="حد الشحن المجاني (0 = معطّل)">
+            <input type="number" min={0} value={cart.freeShippingThreshold} onChange={(e) => setCart("freeShippingThreshold", Number(e.target.value))} className={fieldCls} dir="ltr" placeholder="مثال: 50000" />
+          </Field>
+        </div>
+
+        <Field label="قالب رسالة طلب الواتساب (تستخدم متغيرات: {products}, {total}, {name}, {address})">
+          <textarea value={cart.whatsappOrderTemplate} onChange={(e) => setCart("whatsappOrderTemplate", e.target.value)} rows={3} className={`${fieldCls} resize-none font-mono text-xs`} dir="rtl" />
+        </Field>
+
         <div className="flex flex-wrap gap-4 pt-3 border-t border-border mt-3">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground font-bold font-sans">تمكين طلب واتساب السريع</span>
@@ -1196,18 +1266,47 @@ function NavigationTab({
       </SectionCard>
 
       {/* Footer Builder */}
-      <SectionCard title="بيانات وعناصر الفوتر (مذيل الصفحة)" badge="Footer Builder">
+      <SectionCard title="بيانات وعناصر الفوتر (مذيل الصفحة) والتواصل" badge="Footer Builder">
         <Field label="وصف المتجر في التذييل">
           <textarea value={nav.footerDescription} onChange={(e) => set("footerDescription", e.target.value)} rows={3} className={`${fieldCls} resize-none`} />
         </Field>
+
         <div className="grid grid-cols-2 gap-3">
+          <Field label="عنوان المتجر المباشر (Address)">
+            <input value={nav.addressText} onChange={(e) => set("addressText", e.target.value)} className={fieldCls} placeholder="صنعاء - شارع بينون..." />
+          </Field>
+          <Field label="نص خدمة الشحن والتوصيل">
+            <input value={nav.deliveryInfoText} onChange={(e) => set("deliveryInfoText", e.target.value)} className={fieldCls} placeholder="متوفر خدمة التوصيل لجميع المحافظات..." />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="رقم واتساب للتواصل السريع">
+            <input value={nav.whatsappPhone} onChange={(e) => set("whatsappPhone", e.target.value)} className={fieldCls} dir="ltr" placeholder="967771370740" />
+          </Field>
           <Field label="البريد الإلكتروني للدعم">
             <input value={nav.supportEmail} onChange={(e) => set("supportEmail", e.target.value)} className={fieldCls} dir="ltr" />
           </Field>
-          <Field label="حقوق النشر والملكية">
-            <input value={nav.copyrightText} onChange={(e) => set("copyrightText", e.target.value)} className={fieldCls} />
-          </Field>
         </div>
+
+        <div className="pt-2 border-t border-border/40">
+          <span className="text-xs font-bold text-muted-foreground block mb-2">روابط صفحات التواصل الاجتماعي</span>
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="فيسبوك (Facebook)">
+              <input value={nav.socialLinks.facebook} onChange={(e) => set("socialLinks", { ...nav.socialLinks, facebook: e.target.value })} className={fieldCls} dir="ltr" />
+            </Field>
+            <Field label="انستغرام (Instagram)">
+              <input value={nav.socialLinks.instagram} onChange={(e) => set("socialLinks", { ...nav.socialLinks, instagram: e.target.value })} className={fieldCls} dir="ltr" />
+            </Field>
+            <Field label="تويتر / منصة إكس (X)">
+              <input value={nav.socialLinks.twitter} onChange={(e) => set("socialLinks", { ...nav.socialLinks, twitter: e.target.value })} className={fieldCls} dir="ltr" />
+            </Field>
+          </div>
+        </div>
+
+        <Field label="حقوق النشر والملكية">
+          <input value={nav.copyrightText} onChange={(e) => set("copyrightText", e.target.value)} className={fieldCls} />
+        </Field>
       </SectionCard>
     </div>
   );

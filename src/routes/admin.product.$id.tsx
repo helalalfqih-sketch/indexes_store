@@ -1034,7 +1034,7 @@ function ProductDetailPage() {
             >
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
-                  <FormField label="السعر *" required>
+                  <FormField label="السعر الحالي *" required>
                     <input
                       type="number"
                       value={form.price || ""}
@@ -1044,6 +1044,32 @@ function ProductDetailPage() {
                       dir="ltr"
                     />
                   </FormField>
+                  <FormField label="السعر القديم (قبل الخصم) 🔥" hint="يظهر التخفيض وتكشف العروض عند التعبئة">
+                    <input
+                      type="number"
+                      value={form.old_price ?? ""}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          old_price: e.target.value ? Number(e.target.value) : null,
+                        })
+                      }
+                      placeholder="مثال: 75000"
+                      className={inputCls}
+                      dir="ltr"
+                    />
+                  </FormField>
+                </div>
+
+                {/* Show calculated discount badge if valid */}
+                {form.old_price != null && form.old_price > form.price && form.price > 0 && (
+                  <div className="flex items-center justify-between rounded-xl bg-success/10 border border-success/30 px-3 py-2 text-xs font-bold text-success">
+                    <span>خصم محتسب تلقائياً: {Math.round((1 - form.price / form.old_price) * 100)}%</span>
+                    <span>سوف يظهر المنتج تلقائياً في قسم "عروض اليوم 🔥"</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
                   <FormField label="العملة">
                     <select
                       value={form.currency}
@@ -1055,6 +1081,14 @@ function ProductDetailPage() {
                       <option value="USD">USD (دولار أمريكي)</option>
                       <option value="AED">AED (درهم إماراتي)</option>
                     </select>
+                  </FormField>
+                  <FormField label="شارة المنتج (Badge)" hint="مثال: عرض خاص 🏷️ / جديد ⭐">
+                    <input
+                      value={form.badge}
+                      onChange={(e) => setForm({ ...form, badge: e.target.value })}
+                      placeholder="مثال: عرض اليوم 🔥"
+                      className={inputCls}
+                    />
                   </FormField>
                 </div>
 
