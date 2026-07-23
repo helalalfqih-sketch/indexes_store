@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import {
   getStorefrontAppearance,
+  saveStorefrontDraft,
   updateStorefrontAppearance,
   getStorefrontChangeLogs,
   restoreStorefrontVersion,
@@ -1539,6 +1540,7 @@ function StudioTab() {
 // ── Main Page Layout Component ────────────────────────────────────────────────
 function StorefrontCMSPage() {
   const getSettings = useServerFn(getStorefrontAppearance);
+  const saveDraft = useServerFn(saveStorefrontDraft);
   const saveSettings = useServerFn(updateStorefrontAppearance);
 
   const [activeTab, setActiveTab] = useState<TabId>("homepage");
@@ -1549,7 +1551,7 @@ function StorefrontCMSPage() {
 
   const settingsQ = useQuery({
     queryKey: ["storefront-settings-cms-premium"],
-    queryFn: () => getSettings(),
+    queryFn: () => getSettings({ data: { previewMode: true } }),
     staleTime: 10_000,
   });
 
@@ -1581,19 +1583,20 @@ function StorefrontCMSPage() {
 
       const keysToSave = tabKeys[activeTab];
       const results = await Promise.all(
-        keysToSave.map((key) => saveSettings({ data: { key, value: local[key] } }))
+        keysToSave.map((key) => saveDraft({ data: { key, value: local[key] } }))
       );
       return results;
     },
     onSuccess: (res) => {
-      if (res.every((r) => r.success)) {
-        toast.success("✅ تم حفظ تغييرات التبويب بنجاح!");
+      const firstError = res.find((r) => !r.success);
+      if (!firstError) {
+        toast.success("📝 تم حفظ مسودة هذا القسم بنجاح!");
         setSavedAt(new Date());
         dirty.current = false;
-        // Realtime: push the change to every open storefront tab instantly.
+        void settingsQ.refetch();
         void notifyStorefrontPublished();
       } else {
-        toast.error("حدث خطأ أثناء حفظ بعض الإعدادات");
+        toast.error(firstError.message ?? "حدث خطأ أثناء حفظ المسودة");
       }
     },
     onError: (e: Error) => toast.error(e.message),
@@ -1621,12 +1624,17 @@ function StorefrontCMSPage() {
       );
       return results;
     },
-    onSuccess: () => {
-      toast.success("🚀 تم نشر جميع الإعدادات وتطبيقها حياً على المتجر!");
-      setSavedAt(new Date());
-      dirty.current = false;
-      // Realtime: push the change to every open storefront tab instantly.
-      void notifyStorefrontPublished();
+    onSuccess: (res) => {
+      const firstError = res.find((r) => !r.success);
+      if (!firstError) {
+        toast.success("🚀 تم نشر جميع الإعدادات وتطبيقها حياً على المتجر!");
+        setSavedAt(new Date());
+        dirty.current = false;
+        void settingsQ.refetch();
+        void notifyStorefrontPublished();
+      } else {
+        toast.error(firstError.message ?? "حدث خطأ أثناء نشر الإعدادات");
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });

@@ -161,28 +161,27 @@ export const getStorefrontAppearance = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<StorefrontSettingsShape> => {
     const previewMode = data?.previewMode ?? false;
     try {
-      if (!supabase) return DEFAULT_STOREFRONT_SETTINGS;
-
-      // Preview (drafts) is ADMIN-ONLY: draft_value is no longer readable by
-      // the anon role (column-scoped grant, S1), so the preview path verifies
-      // the caller's bearer token and reads via the service role. An
-      // unauthorized previewMode request silently degrades to published values.
-      // P5: resolve the storefront's tenant (subdomain / x-tenant headers /
-      // default) — reads merge tenant overrides over platform defaults.
-      const publicTenantId = await resolvePublicCmsTenant(supabase);
-
-      if (previewMode) {
-        const adminClient = await getAdminClientIfAuthorized();
-        if (adminClient) {
-          const rows = await storefrontService.fetchRowsWithDrafts(adminClient, publicTenantId);
-          if (rows) return rowsToSettings(rows, true);
+      let db = supabase;
+      if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
+        try {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          if (supabaseAdmin) db = supabaseAdmin;
+        } catch {
+          db = supabase;
         }
-        // fall through → published values
       }
 
-      // Public storefront read: published values only (never draft_value).
-      const rows = await storefrontService.fetchPublishedRows(supabase, publicTenantId);
-      if (!rows) return DEFAULT_STOREFRONT_SETTINGS;
+      if (!db) return DEFAULT_STOREFRONT_SETTINGS;
+
+      const publicTenantId = await resolvePublicCmsTenant(db);
+
+      if (previewMode) {
+        const rows = await storefrontService.fetchRowsWithDrafts(db, publicTenantId);
+        if (rows && rows.length > 0) return rowsToSettings(rows, true);
+      }
+
+      const rows = await storefrontService.fetchPublishedRows(db, publicTenantId);
+      if (!rows || rows.length === 0) return DEFAULT_STOREFRONT_SETTINGS;
       return rowsToSettings(rows, false);
     } catch (err) {
       console.warn("[getStorefrontAppearance] Returning fallback defaults:", err);

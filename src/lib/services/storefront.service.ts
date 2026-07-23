@@ -52,8 +52,10 @@ export async function fetchPublishedRows(
   db: Db,
   tenantId?: string | null,
 ): Promise<Array<{ key: string; value: unknown }> | null> {
-  let q = db.from("storefront_settings").select("key, value, tenant_id");
-  q = tenantId ? q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`) : q.is("tenant_id", null);
+  let q = db.from("storefront_settings").select(tenantId ? "key, value, tenant_id" : "key, value");
+  if (tenantId) {
+    q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
+  }
   const { data, error } = await q;
   if (error || !data || data.length === 0) return null;
   return mergeRows(data as any[]).map((r: any) => ({ key: r.key, value: r.value }));
@@ -64,10 +66,16 @@ export async function fetchRowsWithDrafts(
   db: Db,
   tenantId?: string | null,
 ): Promise<Array<{ key: string; value: unknown; draft_value: unknown }> | null> {
-  let q = db.from("storefront_settings").select("key, value, draft_value, tenant_id");
-  q = tenantId ? q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`) : q.is("tenant_id", null);
+  let q = db.from("storefront_settings").select(tenantId ? "key, value, draft_value, tenant_id" : "key, value, draft_value");
+  if (tenantId) {
+    q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
+  }
   const { data, error } = await q;
-  if (error || !data || data.length === 0) return null;
+  if (error || !data || data.length === 0) {
+    const pub = await fetchPublishedRows(db, tenantId);
+    if (!pub) return null;
+    return pub.map((r) => ({ ...r, draft_value: null }));
+  }
   return mergeRows(data as any[]).map((r: any) => ({
     key: r.key,
     value: r.value,
@@ -194,7 +202,7 @@ export async function saveLiveValue(
 
   let uq = db
     .from("storefront_settings")
-    .update({ value, updated_at: now() })
+    .update({ value, draft_value: null, updated_at: now() })
     .eq("key", key);
   uq = scoped(uq, scope);
   const { data: updated, error } = await uq.select("key");
@@ -204,6 +212,7 @@ export async function saveLiveValue(
     const { error: insErr } = await db.from("storefront_settings").insert({
       key,
       value,
+      draft_value: null,
       type: "json",
       tenant_id: scope,
     });
