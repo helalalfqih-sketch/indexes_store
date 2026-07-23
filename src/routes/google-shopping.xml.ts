@@ -98,7 +98,7 @@ export const Route = createFileRoute("/google-shopping/xml")({
         }
 
         const items = products
-          .filter((p) => p.stock > 0 || p.availability !== "out_of_stock")
+          .filter((p) => p.is_published !== false && p.availability !== "disabled")
           .map((p) => buildProductItem(p, baseUrl))
           .join("\n");
 

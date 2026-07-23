@@ -13,6 +13,8 @@ export const Route = createFileRoute("/admin/inventory")({
   component: InventoryPage,
 });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function InventoryPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -28,7 +30,7 @@ function InventoryPage() {
   const movementsQ = useQuery({
     queryKey: ["inventory-movements", selectedId],
     queryFn: () => listInventoryMovements(selectedId!),
-    enabled: !!selectedId,
+    enabled: !!selectedId && UUID_RE.test(selectedId),
   });
 
   const products = useMemo(() => {

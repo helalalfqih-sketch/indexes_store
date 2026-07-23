@@ -12,6 +12,7 @@ import {
   allProductsQueryOptions,
 } from "@/lib/store.queries";
 import { ProductCard } from "@/components/product-card";
+import { CategoryCard } from "@/components/category-card";
 import { lazy, Suspense } from "react";
 import { ProductCardSkeleton, Skeleton } from "@/components/ui/skeleton";
 
@@ -435,15 +436,19 @@ function HomePage() {
       {settings.sections.categories.enabled && (
         <motion.section key="categories" {...revealProps} className="relative z-10 px-4">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-black" style={{ color: LIGHT }}>
-              {settings.sections.categories.title || "التصنيفات الذكية"}
-            </h3>
+            <div>
+              <span className="mb-0.5 inline-block text-[10px] font-bold tracking-[0.3em] text-cyan-400">
+                CATEGORIES
+              </span>
+              <h3 className="text-xl font-black" style={{ color: LIGHT }}>
+                {settings.sections.categories.title || "التصنيفات"}
+              </h3>
+            </div>
             <Link
               to="/search"
-              className="text-xs font-bold"
-              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
+              className="text-xs font-bold text-cyan-400 hover:underline"
             >
-              الكل
+              استكشف الكل ➔
             </Link>
           </div>
           <motion.div
@@ -451,33 +456,19 @@ function HomePage() {
             whileInView="show"
             viewport={{ once: true, amount: 0.05 }}
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
-            className="grid grid-cols-4 gap-3"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
           >
-            {categories.slice(0, settings.sections.categories.limit ?? 8).map((c) => {
-              const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[c.icon] ?? Icons.Package;
-              return (
-                <motion.div
-                  key={c.id}
-                  variants={{
-                    hidden: { opacity: 0, y: 30 },
-                    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
-                  }}
-                >
-                  <Link to="/category/$id" params={{ id: c.id }} className="group flex flex-col items-center gap-1.5">
-                    <div className="grid h-16 w-16 place-items-center rounded-full glass-dark text-neon transition-all duration-300 overflow-hidden group-hover:glow-neon group-hover:scale-105">
-                      {c.imageUrl ? (
-                        <OptimizedImage src={c.imageUrl} alt={c.name} size="thumbnail" className="h-full w-full object-cover" />
-                      ) : (
-                        <Icon className="h-6 w-6" />
-                      )}
-                    </div>
-                    <span className="text-center text-[10px] font-semibold leading-tight" style={{ color: "color-mix(in oklab, var(--showcase-foreground) 85%, transparent)" }}>
-                      {c.name}
-                    </span>
-                  </Link>
-                </motion.div>
-              );
-            })}
+            {categories.slice(0, settings.sections.categories.limit ?? 8).map((c) => (
+              <motion.div
+                key={c.id}
+                variants={{
+                  hidden: { opacity: 0, y: 30 },
+                  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+                }}
+              >
+                <CategoryCard category={c} />
+              </motion.div>
+            ))}
           </motion.div>
         </motion.section>
       )}

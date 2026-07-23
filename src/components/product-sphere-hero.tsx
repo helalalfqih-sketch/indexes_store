@@ -1059,7 +1059,7 @@ export function ProductSphereHero({
                 </div>
                 <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
                   <span className="text-white/40 block">حالة التوفر</span>
-                  <span className="text-sm font-bold text-emerald-400 mt-0.5 block">{activeSpecsProduct.stock > 0 ? `متوفر (${activeSpecsProduct.stock} قطع)` : "نفذت الكمية"}</span>
+                  <span className="text-sm font-bold text-emerald-400 mt-0.5 block">متوفر في المتجر</span>
                 </div>
               </div>
 

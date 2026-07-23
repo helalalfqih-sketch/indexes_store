@@ -300,6 +300,7 @@ export type Database = {
           role: Database["public"]["Enums"]["tenant_role"];
           tenant_id: string;
           user_id: string;
+          permissions: Json;
         };
         Insert: {
           created_at?: string;
@@ -307,6 +308,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["tenant_role"];
           tenant_id: string;
           user_id: string;
+          permissions?: Json;
         };
         Update: {
           created_at?: string;
@@ -314,6 +316,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["tenant_role"];
           tenant_id?: string;
           user_id?: string;
+          permissions?: Json;
         };
         Relationships: [
           {
@@ -324,6 +327,219 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      cms_pages: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          slug: string;
+          title: string;
+          content: string;
+          is_published: boolean;
+          meta_title: string | null;
+          meta_description: string | null;
+          og_image: string | null;
+          canonical_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          slug: string;
+          title: string;
+          content?: string;
+          is_published?: boolean;
+          meta_title?: string | null;
+          meta_description?: string | null;
+          og_image?: string | null;
+          canonical_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          slug?: string;
+          title?: string;
+          content?: string;
+          is_published?: boolean;
+          meta_title?: string | null;
+          meta_description?: string | null;
+          og_image?: string | null;
+          canonical_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      cms_page_versions: {
+        Row: {
+          id: string;
+          page_id: string;
+          tenant_id: string;
+          title_snapshot: string;
+          content_snapshot: string;
+          edited_by: string | null;
+          editor_email: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          page_id: string;
+          tenant_id: string;
+          title_snapshot: string;
+          content_snapshot: string;
+          edited_by?: string | null;
+          editor_email?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          page_id?: string;
+          tenant_id?: string;
+          title_snapshot?: string;
+          content_snapshot?: string;
+          edited_by?: string | null;
+          editor_email?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      media_files: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          file_name: string;
+          file_path: string;
+          file_url: string;
+          file_type: string;
+          mime_type: string;
+          size_bytes: number;
+          dimensions: Json | null;
+          metadata: Json;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          file_name: string;
+          file_path: string;
+          file_url: string;
+          file_type: string;
+          mime_type: string;
+          size_bytes?: number;
+          dimensions?: Json | null;
+          metadata?: Json;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          file_name?: string;
+          file_path?: string;
+          file_url?: string;
+          file_type?: string;
+          mime_type?: string;
+          size_bytes?: number;
+          dimensions?: Json | null;
+          metadata?: Json;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      tenant_audit_logs: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          actor_id: string | null;
+          actor_email: string | null;
+          action: string;
+          details: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          actor_id?: string | null;
+          actor_email?: string | null;
+          action: string;
+          details?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          actor_id?: string | null;
+          actor_email?: string | null;
+          action?: string;
+          details?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      storefront_settings: {
+        Row: {
+          id: string;
+          key: string;
+          value: Json;
+          draft_value: Json | null;
+          tenant_id: string | null;
+          type: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          value: Json;
+          draft_value?: Json | null;
+          tenant_id?: string | null;
+          type?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          key?: string;
+          value?: Json;
+          draft_value?: Json | null;
+          tenant_id?: string | null;
+          type?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      product_video_requests: {
+        Row: {
+          id: string;
+          tenant_id: string | null;
+          product_id: string;
+          product_name: string;
+          customer_id: string | null;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id?: string | null;
+          product_id: string;
+          product_name: string;
+          customer_id?: string | null;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string | null;
+          product_id?: string;
+          product_name?: string;
+          customer_id?: string | null;
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       tenants: {
         Row: {

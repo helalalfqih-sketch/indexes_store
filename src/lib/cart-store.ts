@@ -24,7 +24,10 @@ export const useCart = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      add: (p, qty = 1) =>
+      add: (p, qty = 1) => {
+        const isPublished = (p as any).is_published !== false && (p as any).status !== "archived";
+        if (!isPublished) return;
+
         set((s) => {
           const existing = s.items.find((i) => i.productId === p.id);
           if (existing) {
@@ -40,7 +43,8 @@ export const useCart = create<CartState>()(
               { productId: p.id, name: p.name, price: p.price, image: p.image, qty },
             ],
           };
-        }),
+        });
+      },
       remove: (productId) =>
         set((s) => ({ items: s.items.filter((i) => i.productId !== productId) })),
       setQty: (productId, qty) =>

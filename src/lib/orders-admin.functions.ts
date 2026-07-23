@@ -45,6 +45,7 @@ export interface TenantOrderRow {
   currency: string;
   customer_name: string | null;
   customer_phone: string | null;
+  notes: string | null;
 }
 
 export interface TenantOrdersPage {
@@ -77,7 +78,7 @@ export const listTenantOrders = createServerFn({ method: "GET" })
     let q = supabase
       .from("orders")
       .select(
-        "id, created_at, status, payment_status, total, currency, customer_name, customer_phone",
+        "id, created_at, status, payment_status, total, currency, customer_name, customer_phone, notes",
         { count: "exact" },
       )
       .order("created_at", { ascending: false })

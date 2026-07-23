@@ -587,10 +587,10 @@ export function formatMerchantPrice(price: number): string {
 }
 
 /** Maps internal availability to Google Merchant values */
-export function merchantAvailability(stock: number, rawAvailability?: string | null): string {
+export function merchantAvailability(_stock: number, rawAvailability?: string | null): string {
   if (rawAvailability === "preorder") return "preorder";
   if (rawAvailability === "backorder") return "backorder";
-  if (stock <= 0) return "out_of_stock";
+  if (rawAvailability === "out_of_stock" || rawAvailability === "disabled") return "out_of_stock";
   return "in_stock";
 }
 
@@ -615,10 +615,10 @@ export function xmlEscape(str: string): string {
 // Internal helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function resolveAvailability(stock: number, rawAvailability?: string | null): string {
+function resolveAvailability(_stock: number, rawAvailability?: string | null): string {
   if (rawAvailability === "preorder") return "https://schema.org/PreOrder";
   if (rawAvailability === "backorder") return "https://schema.org/BackOrder";
-  if (stock <= 0) return "https://schema.org/OutOfStock";
+  if (rawAvailability === "out_of_stock" || rawAvailability === "disabled") return "https://schema.org/OutOfStock";
   return "https://schema.org/InStock";
 }
 

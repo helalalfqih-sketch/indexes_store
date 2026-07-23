@@ -574,14 +574,62 @@ export const adminListProducts = createServerFn({ method: "GET" })
       if (row.slug) dbBySlug.set(row.slug, row);
     }
 
+    // ── Step 2.5: Auto-ensure missing CSV products exist in Supabase DB with valid UUIDs ──
+    const missingInDb = csvList.filter(
+      (csv) => !dbByExtId.has(csv.id) && !dbBySlug.has(csv.slug),
+    );
+
+    if (missingInDb.length > 0) {
+      const recordsToUpsert = missingInDb.map((csv) => ({
+        tenant_id: tenantId,
+        slug: csv.slug,
+        name: csv.name,
+        description: csv.description ?? "",
+        price: csv.price,
+        currency: csv.currency || "YER",
+        images: csv.images ?? [],
+        stock: csv.stock ?? 0,
+        brand: csv.brand ?? null,
+        is_published: true,
+        external_id: csv.id ?? null,
+        sku: csv.sku ?? null,
+        barcode: csv.barcode ?? null,
+        tags: csv.tags ?? [],
+      }));
+
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < recordsToUpsert.length; i += BATCH_SIZE) {
+        const batch = recordsToUpsert.slice(i, i + BATCH_SIZE);
+        const { data: insertedRows } = await ctx.supabase
+          .from("products")
+          .upsert(batch as any, { onConflict: "tenant_id,slug" })
+          .select(
+            "id, external_id, slug, meta_sync_status, is_published, updated_at, old_price, badge, video_playback_id, model_url, model_3d_url, model_3d_thumbnail, model_3d_status, sku, barcode, compare_at_price, cost_price, availability, condition, source_url, tags, currency, category_id, brand, featured, is_deal, deal_start, deal_end",
+          );
+
+        if (insertedRows) {
+          for (const row of insertedRows) {
+            if (row.external_id) dbByExtId.set(row.external_id, row);
+            if (row.slug) dbBySlug.set(row.slug, row);
+          }
+        }
+      }
+    }
+
     // ── Step 3: Merge CSV + Supabase metadata ───────────────────────────────
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const merged = csvList.map((csv) => {
       // Match by external_id first, then by slug
       const db = dbByExtId.get(csv.id) ?? dbBySlug.get(csv.slug) ?? null;
 
+      // Ensure id is ALWAYS a valid PostgreSQL UUID
+      const finalId = (db?.id && UUID_RE.test(db.id))
+        ? db.id
+        : (UUID_RE.test(csv.id) ? csv.id : db?.id ?? csv.id);
+
       return {
         // Core product data from CSV
-        id: db?.id ?? csv.id,          // Use Supabase UUID when available (for edit/delete)
+        id: finalId,          // Guaranteed valid Supabase UUID (for edit/delete/movements)
         slug: csv.slug,
         name: csv.name,
         description: csv.description ?? "",

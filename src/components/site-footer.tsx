@@ -108,6 +108,33 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
           </div>
         )}
 
+        {/* CMS Pages Footer Links */}
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border/20 pt-3 text-[11px] font-semibold text-muted-foreground">
+          <Link to="/pages/$slug" params={{ slug: "about-us" }} className="hover:text-primary transition">
+            من نحن
+          </Link>
+          <span>•</span>
+          <Link to="/pages/$slug" params={{ slug: "privacy-policy" }} className="hover:text-primary transition">
+            سياسة الخصوصية
+          </Link>
+          <span>•</span>
+          <Link to="/pages/$slug" params={{ slug: "terms" }} className="hover:text-primary transition">
+            الشروط والأحكام
+          </Link>
+          <span>•</span>
+          <Link to="/pages/$slug" params={{ slug: "return-policy" }} className="hover:text-primary transition">
+            سياسة الإرجاع
+          </Link>
+          <span>•</span>
+          <Link to="/pages/$slug" params={{ slug: "shipping-policy" }} className="hover:text-primary transition">
+            سياسة الشحن
+          </Link>
+          <span>•</span>
+          <Link to="/pages/$slug" params={{ slug: "faq" }} className="hover:text-primary transition">
+            الأسئلة الشائعة
+          </Link>
+        </div>
+
         <p
           className={`pt-2 text-center text-[10px] ${isHome ? "text-showcase-muted" : "text-muted-foreground"}`}
         >

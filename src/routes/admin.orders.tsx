@@ -174,6 +174,11 @@ function AdminOrdersPage() {
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusTone(ord.status)}`}>
                     {orderStatusLabel(ord.status)}
                   </span>
+                  {ord.notes?.includes("طلب توفير كمية") && (
+                    <span className="rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold">
+                      📦 طلب توفير كمية
+                    </span>
+                  )}
                   <span className="text-xs text-muted-foreground">
                     {ord.customer_name || "ضيف"} {ord.customer_phone ? `· ${ord.customer_phone}` : ""}
                   </span>

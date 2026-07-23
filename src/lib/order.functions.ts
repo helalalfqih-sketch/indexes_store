@@ -118,7 +118,7 @@ export const createOrder = createServerFn({ method: "POST" })
     const productIds = Array.from(new Set(data.items.map((i) => i.productId)));
     const { data: products, error: prodErr } = await supabaseAdmin
       .from("products")
-      .select("id, name, price, currency, sku, is_published, tenant_id, vendor_id")
+      .select("id, name, price, currency, sku, is_published, tenant_id, vendor_id, stock")
       .in("id", productIds)
       .eq("tenant_id", tenantId)
       .eq("is_published", true);
@@ -133,6 +133,7 @@ export const createOrder = createServerFn({ method: "POST" })
         currency: string | null;
         sku: string | null;
         vendor_id: string | null;
+        stock: number | null;
       }>).map((p) => [p.id, p]),
     );
 
@@ -144,12 +145,17 @@ export const createOrder = createServerFn({ method: "POST" })
     // 4. Build line items + totals from DB values.
     let currency = "YER";
     let subtotal = 0;
+    let hasRestockNeededItem = false;
+
     const itemRows = data.items.map((i) => {
       const p = byId.get(i.productId)!;
       currency = p.currency ?? currency;
       const unitPrice = Number(p.price ?? 0);
       const lineTotal = unitPrice * i.quantity;
       subtotal += lineTotal;
+      if ((p.stock ?? 0) <= 0 || (p.stock ?? 0) < i.quantity) {
+        hasRestockNeededItem = true;
+      }
       return {
         tenant_id: tenantId,
         product_id: p.id,
@@ -162,12 +168,14 @@ export const createOrder = createServerFn({ method: "POST" })
       };
     });
 
-    // SECURITY (F1): never trust a client-provided discount. The client may
-    // send any value (including the full subtotal). Until a server-side coupon
-    // service exists, the applied discount is ALWAYS 0; `couponCode` is stored
-    // as metadata only and grants nothing.
     const validatedDiscount = 0;
     const total = Math.max(0, subtotal - validatedDiscount);
+
+    // Build notes with restock request flag if stock is 0
+    let finalNotes = data.notes ?? "";
+    if (hasRestockNeededItem) {
+      finalNotes = finalNotes ? `${finalNotes} | [طلب توفير كمية - المخزون 0]` : "[طلب توفير كمية - المخزون 0]";
+    }
 
     // 5. Insert the order (service role). user_id is our verified value or null.
     const { data: order, error: orderErr } = await supabaseAdmin
@@ -179,7 +187,7 @@ export const createOrder = createServerFn({ method: "POST" })
         customer_phone: data.customerPhone,
         customer_address: data.customerAddress ?? null,
         customer_email: data.customerEmail ?? null,
-        notes: data.notes ?? null,
+        notes: finalNotes || null,
         status: "pending",
         payment_status: "pending",
         payment_provider: data.paymentProvider ?? null,
@@ -233,7 +241,7 @@ export const createOrder = createServerFn({ method: "POST" })
         from_status: null,
         to_status: "pending",
         changed_by: userId,
-        note: "Order created via checkout",
+        note: hasRestockNeededItem ? "Order created — يحتوي على طلب توفير كمية (المخزون 0)" : "Order created via checkout",
       });
       if (histErr) console.warn("[createOrder] status history notice:", histErr.message);
     } catch (histEx) {

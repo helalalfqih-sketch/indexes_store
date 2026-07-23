@@ -333,14 +333,10 @@ function ProductPage() {
                 <span className="rounded-md bg-primary/15 px-2.5 py-0.5 text-xs font-bold text-primary border border-primary/20">
                   {product.categoryId || "عام"}
                 </span>
-                {product.stock > 0 ? (
-                  <span className="flex items-center gap-1 text-xs font-bold text-success">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    متوفر في المخزون
-                  </span>
-                ) : (
-                  <span className="text-xs font-bold text-destructive">نفذت الكمية</span>
-                )}
+                <span className="flex items-center gap-1 text-xs font-bold text-success">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  متوفر في المتجر
+                </span>
               </div>
 
               <h1 className="text-2xl font-black leading-tight sm:text-3xl lg:text-4xl text-showcase-foreground">
@@ -399,7 +395,7 @@ function ProductPage() {
                 </button>
                 <span className="w-6 text-center text-sm font-black">{qty}</span>
                 <button
-                  onClick={() => setQty(Math.min(product.stock, qty + 1))}
+                  onClick={() => setQty(qty + 1)}
                   className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition"
                 >
                   <Plus className="h-3.5 w-3.5" />

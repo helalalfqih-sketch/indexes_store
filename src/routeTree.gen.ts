@@ -37,18 +37,26 @@ import { Route as StoreAnalyticsRouteImport } from './routes/store.analytics'
 import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
 import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
+import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
 import { Route as GoogleShoppingXmlRouteImport } from './routes/google-shopping.xml'
 import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminStudioRouteImport } from './routes/admin.studio'
 import { Route as AdminStoresRouteImport } from './routes/admin.stores'
 import { Route as AdminStorefrontRouteImport } from './routes/admin.storefront'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminSessionsRouteImport } from './routes/admin.sessions'
+import { Route as AdminSeoRouteImport } from './routes/admin.seo'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminPlatformRouteImport } from './routes/admin.platform'
+import { Route as AdminPagesRouteImport } from './routes/admin.pages'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminMediaRouteImport } from './routes/admin.media'
 import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
+import { Route as AdminDealsRouteImport } from './routes/admin.deals'
+import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminBranchesRouteImport } from './routes/admin.branches'
 import { Route as AdminAppearanceRouteImport } from './routes/admin.appearance'
@@ -197,6 +205,11 @@ const ProductSlugRoute = ProductSlugRouteImport.update({
   path: '/product/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PagesSlugRoute = PagesSlugRouteImport.update({
+  id: '/pages/$slug',
+  path: '/pages/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GoogleShoppingXmlRoute = GoogleShoppingXmlRouteImport.update({
   id: '/google-shopping/xml',
   path: '/google-shopping/xml',
@@ -211,6 +224,11 @@ const CategoryIdRoute = CategoryIdRouteImport.update({
   id: '/category/$id',
   path: '/category/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminStudioRoute = AdminStudioRouteImport.update({
   id: '/studio',
@@ -237,6 +255,11 @@ const AdminSessionsRoute = AdminSessionsRouteImport.update({
   path: '/sessions',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSeoRoute = AdminSeoRouteImport.update({
+  id: '/seo',
+  path: '/seo',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminProductsRoute = AdminProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -247,14 +270,39 @@ const AdminPlatformRoute = AdminPlatformRouteImport.update({
   path: '/platform',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPagesRoute = AdminPagesRouteImport.update({
+  id: '/pages',
+  path: '/pages',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminMediaRoute = AdminMediaRouteImport.update({
+  id: '/media',
+  path: '/media',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminInventoryRoute = AdminInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDealsRoute = AdminDealsRouteImport.update({
+  id: '/deals',
+  path: '/deals',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCustomersRoute = AdminCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCouponsRoute = AdminCouponsRouteImport.update({
+  id: '/coupons',
+  path: '/coupons',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
@@ -309,18 +357,26 @@ export interface FileRoutesByFullPath {
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/coupons': typeof AdminCouponsRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/deals': typeof AdminDealsRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/media': typeof AdminMediaRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/pages': typeof AdminPagesRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/stores': typeof AdminStoresRouteWithChildren
   '/admin/studio': typeof AdminStudioRoute
+  '/admin/users': typeof AdminUsersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
   '/google-shopping/xml': typeof GoogleShoppingXmlRoute
+  '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
@@ -356,18 +412,26 @@ export interface FileRoutesByTo {
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/coupons': typeof AdminCouponsRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/deals': typeof AdminDealsRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/media': typeof AdminMediaRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/pages': typeof AdminPagesRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/stores': typeof AdminStoresRouteWithChildren
   '/admin/studio': typeof AdminStudioRoute
+  '/admin/users': typeof AdminUsersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
   '/google-shopping/xml': typeof GoogleShoppingXmlRoute
+  '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
@@ -406,18 +470,26 @@ export interface FileRoutesById {
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/branches': typeof AdminBranchesRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/coupons': typeof AdminCouponsRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/deals': typeof AdminDealsRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/media': typeof AdminMediaRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/pages': typeof AdminPagesRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/storefront': typeof AdminStorefrontRoute
   '/admin/stores': typeof AdminStoresRouteWithChildren
   '/admin/studio': typeof AdminStudioRoute
+  '/admin/users': typeof AdminUsersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
   '/google-shopping/xml': typeof GoogleShoppingXmlRoute
+  '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
@@ -457,18 +529,26 @@ export interface FileRouteTypes {
     | '/admin/appearance'
     | '/admin/branches'
     | '/admin/categories'
+    | '/admin/coupons'
+    | '/admin/customers'
+    | '/admin/deals'
     | '/admin/inventory'
+    | '/admin/media'
     | '/admin/orders'
+    | '/admin/pages'
     | '/admin/platform'
     | '/admin/products'
+    | '/admin/seo'
     | '/admin/sessions'
     | '/admin/settings'
     | '/admin/storefront'
     | '/admin/stores'
     | '/admin/studio'
+    | '/admin/users'
     | '/category/$id'
     | '/demo/3d-viewer'
     | '/google-shopping/xml'
+    | '/pages/$slug'
     | '/product/$slug'
     | '/robots/txt'
     | '/sitemap/xml'
@@ -504,18 +584,26 @@ export interface FileRouteTypes {
     | '/admin/appearance'
     | '/admin/branches'
     | '/admin/categories'
+    | '/admin/coupons'
+    | '/admin/customers'
+    | '/admin/deals'
     | '/admin/inventory'
+    | '/admin/media'
     | '/admin/orders'
+    | '/admin/pages'
     | '/admin/platform'
     | '/admin/products'
+    | '/admin/seo'
     | '/admin/sessions'
     | '/admin/settings'
     | '/admin/storefront'
     | '/admin/stores'
     | '/admin/studio'
+    | '/admin/users'
     | '/category/$id'
     | '/demo/3d-viewer'
     | '/google-shopping/xml'
+    | '/pages/$slug'
     | '/product/$slug'
     | '/robots/txt'
     | '/sitemap/xml'
@@ -553,18 +641,26 @@ export interface FileRouteTypes {
     | '/admin/appearance'
     | '/admin/branches'
     | '/admin/categories'
+    | '/admin/coupons'
+    | '/admin/customers'
+    | '/admin/deals'
     | '/admin/inventory'
+    | '/admin/media'
     | '/admin/orders'
+    | '/admin/pages'
     | '/admin/platform'
     | '/admin/products'
+    | '/admin/seo'
     | '/admin/sessions'
     | '/admin/settings'
     | '/admin/storefront'
     | '/admin/stores'
     | '/admin/studio'
+    | '/admin/users'
     | '/category/$id'
     | '/demo/3d-viewer'
     | '/google-shopping/xml'
+    | '/pages/$slug'
     | '/product/$slug'
     | '/robots/txt'
     | '/sitemap/xml'
@@ -603,6 +699,7 @@ export interface RootRouteChildren {
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
   GoogleShoppingXmlRoute: typeof GoogleShoppingXmlRoute
+  PagesSlugRoute: typeof PagesSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
   RobotsTxtRoute: typeof RobotsTxtRoute
   SitemapXmlRoute: typeof SitemapXmlRoute
@@ -810,6 +907,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pages/$slug': {
+      id: '/pages/$slug'
+      path: '/pages/$slug'
+      fullPath: '/pages/$slug'
+      preLoaderRoute: typeof PagesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/google-shopping/xml': {
       id: '/google-shopping/xml'
       path: '/google-shopping/xml'
@@ -830,6 +934,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/category/$id'
       preLoaderRoute: typeof CategoryIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/studio': {
       id: '/admin/studio'
@@ -866,6 +977,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSessionsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/seo': {
+      id: '/admin/seo'
+      path: '/seo'
+      fullPath: '/admin/seo'
+      preLoaderRoute: typeof AdminSeoRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/products': {
       id: '/admin/products'
       path: '/products'
@@ -880,6 +998,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPlatformRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/pages': {
+      id: '/admin/pages'
+      path: '/pages'
+      fullPath: '/admin/pages'
+      preLoaderRoute: typeof AdminPagesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/orders': {
       id: '/admin/orders'
       path: '/orders'
@@ -887,11 +1012,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/media': {
+      id: '/admin/media'
+      path: '/media'
+      fullPath: '/admin/media'
+      preLoaderRoute: typeof AdminMediaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/inventory': {
       id: '/admin/inventory'
       path: '/inventory'
       fullPath: '/admin/inventory'
       preLoaderRoute: typeof AdminInventoryRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/deals': {
+      id: '/admin/deals'
+      path: '/deals'
+      fullPath: '/admin/deals'
+      preLoaderRoute: typeof AdminDealsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/customers': {
+      id: '/admin/customers'
+      path: '/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AdminCustomersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/coupons': {
+      id: '/admin/coupons'
+      path: '/coupons'
+      fullPath: '/admin/coupons'
+      preLoaderRoute: typeof AdminCouponsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/categories': {
@@ -962,15 +1115,22 @@ interface AdminRouteChildren {
   AdminAppearanceRoute: typeof AdminAppearanceRoute
   AdminBranchesRoute: typeof AdminBranchesRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
+  AdminCouponsRoute: typeof AdminCouponsRoute
+  AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminDealsRoute: typeof AdminDealsRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
+  AdminMediaRoute: typeof AdminMediaRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
+  AdminPagesRoute: typeof AdminPagesRoute
   AdminPlatformRoute: typeof AdminPlatformRoute
   AdminProductsRoute: typeof AdminProductsRoute
+  AdminSeoRoute: typeof AdminSeoRoute
   AdminSessionsRoute: typeof AdminSessionsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminStorefrontRoute: typeof AdminStorefrontRoute
   AdminStoresRoute: typeof AdminStoresRouteWithChildren
   AdminStudioRoute: typeof AdminStudioRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminProductIdRoute: typeof AdminProductIdRoute
 }
@@ -979,15 +1139,22 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAppearanceRoute: AdminAppearanceRoute,
   AdminBranchesRoute: AdminBranchesRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
+  AdminCouponsRoute: AdminCouponsRoute,
+  AdminCustomersRoute: AdminCustomersRoute,
+  AdminDealsRoute: AdminDealsRoute,
   AdminInventoryRoute: AdminInventoryRoute,
+  AdminMediaRoute: AdminMediaRoute,
   AdminOrdersRoute: AdminOrdersRoute,
+  AdminPagesRoute: AdminPagesRoute,
   AdminPlatformRoute: AdminPlatformRoute,
   AdminProductsRoute: AdminProductsRoute,
+  AdminSeoRoute: AdminSeoRoute,
   AdminSessionsRoute: AdminSessionsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminStorefrontRoute: AdminStorefrontRoute,
   AdminStoresRoute: AdminStoresRouteWithChildren,
   AdminStudioRoute: AdminStudioRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminProductIdRoute: AdminProductIdRoute,
 }
@@ -1038,6 +1205,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
   GoogleShoppingXmlRoute: GoogleShoppingXmlRoute,
+  PagesSlugRoute: PagesSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
   RobotsTxtRoute: RobotsTxtRoute,
   SitemapXmlRoute: SitemapXmlRoute,

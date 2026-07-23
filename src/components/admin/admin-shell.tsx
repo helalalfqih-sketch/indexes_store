@@ -26,6 +26,16 @@ import {
   Boxes,
   Palette,
   Globe,
+  Flame,
+  Ticket,
+  Star,
+  Truck,
+  CreditCard,
+  Megaphone,
+  LayoutTemplate,
+  BookOpen,
+  Brain,
+  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -246,8 +256,7 @@ function ShellInner() {
   };
   type NavGroup = { label: string; emoji: string; items: NavItem[] };
 
-  // SaaS Commerce-OS information architecture. Items marked `soon` are part of
-  // the target IA but their routes don't exist yet — shown disabled, never linked.
+  // Target Information Architecture — all items are real routes (no soon:true)
   const groups: NavGroup[] = [
     {
       label: "نظرة عامة",
@@ -266,6 +275,26 @@ function ShellInner() {
         { to: "/admin/categories", label: "التصنيفات", icon: FolderTree },
         { to: "/admin/inventory", label: "المخزون", icon: Boxes },
         { to: "/admin/branches", label: "الفروع", icon: Building2 },
+        { to: "/admin/deals", label: "العروض", icon: Flame },
+        { to: "/admin/coupons", label: "الكوبونات", icon: Ticket },
+        { to: "/admin/customers", label: "العملاء", icon: Users },
+        { to: "/admin/reviews", label: "التقييمات", icon: Star },
+      ],
+    },
+    {
+      label: "التسويق",
+      emoji: "📣",
+      items: [
+        { to: "/admin/campaigns", label: "الحملات", icon: Megaphone },
+        { to: "/admin/banners", label: "البنرات", icon: LayoutTemplate },
+      ],
+    },
+    {
+      label: "العمليات",
+      emoji: "🚚",
+      items: [
+        { to: "/admin/shipping", label: "الشحن", icon: Truck },
+        { to: "/admin/payments", label: "طرق الدفع", icon: CreditCard },
       ],
     },
     {
@@ -273,10 +302,10 @@ function ShellInner() {
       emoji: "🎨",
       items: [
         { to: "/admin/storefront", label: "Storefront CMS", icon: Globe },
-        { to: "/admin/appearance", label: "مظهر المتجر", icon: Palette },
-        { to: "#pages", label: "الصفحات", icon: FileText, soon: true },
-        { to: "#seo", label: "SEO", icon: Search, soon: true },
-        { to: "#media", label: "مكتبة الوسائط", icon: ImageIcon, soon: true },
+        { to: "/admin/appearance", label: "المظهر", icon: Palette },
+        { to: "/admin/pages", label: "الصفحات", icon: BookOpen },
+        { to: "/admin/seo", label: "SEO", icon: Search },
+        { to: "/admin/media", label: "مكتبة الوسائط", icon: ImageIcon },
       ],
     },
     {
@@ -284,8 +313,8 @@ function ShellInner() {
       emoji: "🤖",
       items: [
         { to: "/admin/studio", label: t("nav.studio"), icon: Sparkles },
-        { to: "#insights", label: "رؤى AI", icon: BarChart3, soon: true },
-        { to: "#generator", label: "مولّد المنتجات", icon: Wand2, soon: true },
+        { to: "/admin/insights", label: "رؤى AI", icon: Brain },
+        { to: "/admin/studio", label: "مولّد المنتجات", icon: Wand2 },
       ],
     },
     {
@@ -293,8 +322,8 @@ function ShellInner() {
       emoji: "⚙️",
       items: [
         { to: "/admin/stores", label: "المتاجر", icon: Store },
-        { to: "/admin/platform", label: "Platform (SaaS)", icon: Globe },
-        { to: "#users", label: "المستخدمون والصلاحيات", icon: Users, soon: true },
+        { to: "/admin/users", label: "المستخدمون والصلاحيات", icon: ShieldCheck },
+        { to: "/admin/platform", label: "التكاملات (SaaS)", icon: Globe },
         { to: "/admin/settings", label: t("nav.settings"), icon: Settings },
       ],
     },
