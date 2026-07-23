@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { supabase } from "@/integrations/supabase/client";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
@@ -63,6 +62,7 @@ async function resolveCmsScope(
 /** Resolve the storefront tenant for PUBLIC reads from request headers. */
 async function resolvePublicCmsTenant(db: any): Promise<string | null> {
   try {
+    const { getRequest } = await import("@tanstack/react-start/server");
     const headers = getRequest()?.headers ?? null;
     return await resolveTenantId(db, { headers });
   } catch {
@@ -77,6 +77,7 @@ async function resolvePublicCmsTenant(db: any): Promise<string | null> {
  */
 async function getAdminClientIfAuthorized() {
   try {
+    const { getRequest } = await import("@tanstack/react-start/server");
     const authHeader = getRequest()?.headers?.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) return null;
     const token = authHeader.slice("Bearer ".length).trim();
