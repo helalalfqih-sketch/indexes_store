@@ -2,6 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Moon, Sun, Zap, Check } from "lucide-react";
 import { useI18n, type Lang } from "@/lib/i18n";
+import { useAppearance } from "@/components/appearance-provider";
+import { saveStorefrontDraft } from "@/lib/actions/appearance.actions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/settings")({
   component: SettingsPage,
@@ -11,9 +14,25 @@ type Theme = "light" | "dark" | "neon";
 
 function SettingsPage() {
   const { t, lang, setLang } = useI18n();
+  const { settings, setSettings } = useAppearance();
   const [theme, setTheme] = useState<Theme>("light");
   const [api, setApi] = useState("");
   const [saved, setSaved] = useState(false);
+
+  const [storeIdentity, setStoreIdentity] = useState({
+    storeName: settings.navigation.storeName || "اندكس ستور",
+    storeDescription: settings.navigation.footerDescription || "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد.",
+    logo: settings.navigation.logoUrl || "",
+    favicon: "/favicon.ico",
+    country: "اليمن 🇾🇪",
+    currency: "YER",
+    timezone: "Asia/Aden",
+    language: "ar",
+    email: settings.navigation.supportEmail || "info@indexes-store.com",
+    phone: settings.navigation.whatsappPhone || "967771370740",
+    address: settings.navigation.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية",
+    workingHours: "يومياً 9:00 ص - 10:00 م",
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -30,10 +49,29 @@ function SettingsPage() {
     if (th === "neon") root.classList.add("dark", "neon");
   };
 
-  const save = () => {
+  const save = async () => {
     localStorage.setItem("noqta:theme", theme);
     localStorage.setItem("noqta:api", api);
     applyTheme(theme);
+
+    const newNav = {
+      ...settings.navigation,
+      storeName: storeIdentity.storeName,
+      footerDescription: storeIdentity.storeDescription,
+      logoUrl: storeIdentity.logo,
+      whatsappPhone: storeIdentity.phone,
+      supportEmail: storeIdentity.email,
+      addressText: storeIdentity.address,
+    };
+
+    setSettings({ ...settings, navigation: newNav });
+    try {
+      await saveStorefrontDraft({ data: { key: "navigation", value: newNav } });
+      toast.success("تم حفظ إعدادات الهوية والمتجر بنجاح");
+    } catch {
+      /* ignore */
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 1600);
   };
@@ -72,33 +110,142 @@ function SettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-surface p-5">
-        <h2 className="text-sm font-black">{t("settings.lang")}</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          {(["ar", "en"] as Lang[]).map((l) => (
-            <button
-              key={l}
-              onClick={() => setLang(l)}
-              className={`rounded-xl border p-4 text-sm font-bold transition ${
-                lang === l
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:bg-accent"
-              }`}
-            >
-              {l === "ar" ? "العربية" : "English"}
-            </button>
-          ))}
+      {/* Store Identity (Phase 1) */}
+      <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
+        <div>
+          <h2 className="text-base font-black text-foreground">هوية وإعدادات المتجر (Store Identity)</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">البيانات الأساسية التي تظهر في الهيدر والفوتر والصفحات التعريفية</p>
         </div>
-      </div>
 
-      <div className="rounded-2xl border border-border bg-surface p-5">
-        <h2 className="text-sm font-black">{t("settings.api")}</h2>
-        <input
-          value={api}
-          onChange={(e) => setApi(e.target.value)}
-          placeholder="https://api.example.com"
-          className="mt-3 w-full rounded-xl border border-border bg-surface p-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">اسم المتجر (storeName)</label>
+            <input
+              value={storeIdentity.storeName}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, storeName: e.target.value })}
+              placeholder="اندكس ستور"
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">وصف المتجر (storeDescription)</label>
+            <input
+              value={storeIdentity.storeDescription}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, storeDescription: e.target.value })}
+              placeholder="المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد."
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">رابط الشعار (logo)</label>
+            <input
+              value={storeIdentity.logo}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, logo: e.target.value })}
+              placeholder="https://..."
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+              dir="ltr"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">أيقونة المتجر (favicon)</label>
+            <input
+              value={storeIdentity.favicon}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, favicon: e.target.value })}
+              placeholder="https://.../favicon.ico"
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+              dir="ltr"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">الدولة (country)</label>
+            <input
+              value={storeIdentity.country}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, country: e.target.value })}
+              placeholder="اليمن 🇾🇪"
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">العملة (currency)</label>
+            <select
+              value={storeIdentity.currency}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, currency: e.target.value })}
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="YER">YER (ريال يمني)</option>
+              <option value="SAR">SAR (ريال سعودي)</option>
+              <option value="USD">USD (دولار أمريكي)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">المنطقة الزمنية (timezone)</label>
+            <input
+              value={storeIdentity.timezone}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, timezone: e.target.value })}
+              placeholder="Asia/Aden"
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+              dir="ltr"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">اللغة الافتراضية (language)</label>
+            <select
+              value={storeIdentity.language}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, language: e.target.value })}
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="ar">العربية (Arabic)</option>
+              <option value="en">English (الإنجليزية)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">رقم الهاتف والواتساب (phone)</label>
+            <input
+              value={storeIdentity.phone}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, phone: e.target.value })}
+              placeholder="967771370740"
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+              dir="ltr"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">البريد الإلكتروني (email)</label>
+            <input
+              value={storeIdentity.email}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, email: e.target.value })}
+              placeholder="info@indexes-store.com"
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+              dir="ltr"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">العنوان (address)</label>
+            <input
+              value={storeIdentity.address}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, address: e.target.value })}
+              placeholder="صنعاء - شارع بينون..."
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">ساعات العمل (workingHours)</label>
+            <input
+              value={storeIdentity.workingHours}
+              onChange={(e) => setStoreIdentity({ ...storeIdentity, workingHours: e.target.value })}
+              placeholder="يومياً 9:00 ص - 10:00 م"
+              className="w-full rounded-xl border border-border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
