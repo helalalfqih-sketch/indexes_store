@@ -166,7 +166,7 @@ export async function checkTenantPermission(permission: PermissionKey): Promise<
 
     const tenantId = await resolveTenantId(supabase);
 
-    // Platform admin bypass
+    // 1. Platform admin bypass (user_roles table)
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
@@ -174,7 +174,17 @@ export async function checkTenantPermission(permission: PermissionKey): Promise<
 
     if (roles?.some((r) => r.role === "admin")) return true;
 
-    // Tenant member permission check
+    // 2. Tenant owner bypass — owner_user_id in tenants table
+    //    The store creator may never have been inserted into tenant_members.
+    const { data: tenantRow } = await supabase
+      .from("tenants")
+      .select("owner_user_id")
+      .eq("id", tenantId)
+      .maybeSingle();
+
+    if (tenantRow?.owner_user_id === authUser.user.id) return true;
+
+    // 3. Tenant member permission check
     const { data: member } = await supabase
       .from("tenant_members")
       .select("role, permissions")
