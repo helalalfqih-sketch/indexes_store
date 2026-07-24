@@ -13,6 +13,11 @@ export interface WhatsAppConfig {
   phoneNumber: string;
   wabaId: string;
   phoneNumberId?: string;
+  metaAppId?: string;
+  contactEmail?: string;
+  privacyPolicyUrl?: string;
+  termsOfServiceUrl?: string;
+  dataDeletionUrl?: string;
   verifyToken: string;
   apiToken: string;
   autoAiProcess: boolean;
@@ -32,6 +37,11 @@ export const DEFAULT_WHATSAPP_CONFIG: WhatsAppConfig = {
   phoneNumber: "+967738609222",
   wabaId: "28459237033683884",
   phoneNumberId: "1307082469145976",
+  metaAppId: "1403080371744739",
+  contactEmail: "smartaccuont@gmail.com",
+  privacyPolicyUrl: "https://indexes-store.vercel.app/privacy-policy",
+  termsOfServiceUrl: "https://indexes-store.vercel.app/terms",
+  dataDeletionUrl: "https://indexes-store.vercel.app/data-deletion",
   verifyToken: "indexes_wa_secret_verify_2026",
   apiToken: "",
   autoAiProcess: true,

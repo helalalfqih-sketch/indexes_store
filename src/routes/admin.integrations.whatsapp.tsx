@@ -211,6 +211,30 @@ function WhatsAppIntegrationComponent() {
           </div>
 
           <div>
+            <label className="block text-xs font-bold mb-1">معرّف تطبيق فيسبوك (Meta App ID)</label>
+            <input
+              type="text"
+              value={formData.metaAppId || "1403080371744739"}
+              onChange={(e) => setFormData({ ...formData, metaAppId: e.target.value })}
+              placeholder="1403080371744739"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-mono text-emerald-400"
+              dir="ltr"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold mb-1">البريد الإلكتروني للاتصال بالمسؤول (Contact Email)</label>
+            <input
+              type="email"
+              value={formData.contactEmail || "smartaccuont@gmail.com"}
+              onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+              placeholder="smartaccuont@gmail.com"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-mono"
+              dir="ltr"
+            />
+          </div>
+
+          <div>
             <label className="block text-xs font-bold mb-1">معرّف رقم الهاتف (Phone Number ID)</label>
             <input
               type="text"

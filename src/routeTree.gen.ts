@@ -10,11 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrackRouteImport } from './routes/track'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StoreRouteImport } from './routes/store'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OffersRouteImport } from './routes/offers'
 import { Route as ImmersiveStoreRouteImport } from './routes/immersive-store'
+import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -78,6 +81,11 @@ const TrackRoute = TrackRouteImport.update({
   path: '/track',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoreRoute = StoreRouteImport.update({
   id: '/store',
   path: '/store',
@@ -86,6 +94,11 @@ const StoreRoute = StoreRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -101,6 +114,11 @@ const OffersRoute = OffersRouteImport.update({
 const ImmersiveStoreRoute = ImmersiveStoreRouteImport.update({
   id: '/immersive-store',
   path: '/immersive-store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataDeletionRoute = DataDeletionRouteImport.update({
+  id: '/data-deletion',
+  path: '/data-deletion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -397,11 +415,14 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/data-deletion': typeof DataDeletionRoute
   '/immersive-store': typeof ImmersiveStoreRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/search': typeof SearchRoute
   '/store': typeof StoreRouteWithChildren
+  '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/banners': typeof AdminBannersRoute
@@ -461,10 +482,13 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/data-deletion': typeof DataDeletionRoute
   '/immersive-store': typeof ImmersiveStoreRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/search': typeof SearchRoute
+  '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/banners': typeof AdminBannersRoute
@@ -526,11 +550,14 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/data-deletion': typeof DataDeletionRoute
   '/immersive-store': typeof ImmersiveStoreRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/search': typeof SearchRoute
   '/store': typeof StoreRouteWithChildren
+  '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/admin/appearance': typeof AdminAppearanceRoute
   '/admin/banners': typeof AdminBannersRoute
@@ -593,11 +620,14 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
+    | '/data-deletion'
     | '/immersive-store'
     | '/offers'
     | '/onboarding'
+    | '/privacy-policy'
     | '/search'
     | '/store'
+    | '/terms'
     | '/track'
     | '/admin/appearance'
     | '/admin/banners'
@@ -657,10 +687,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
+    | '/data-deletion'
     | '/immersive-store'
     | '/offers'
     | '/onboarding'
+    | '/privacy-policy'
     | '/search'
+    | '/terms'
     | '/track'
     | '/admin/appearance'
     | '/admin/banners'
@@ -721,11 +754,14 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
+    | '/data-deletion'
     | '/immersive-store'
     | '/offers'
     | '/onboarding'
+    | '/privacy-policy'
     | '/search'
     | '/store'
+    | '/terms'
     | '/track'
     | '/admin/appearance'
     | '/admin/banners'
@@ -787,11 +823,14 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
+  DataDeletionRoute: typeof DataDeletionRoute
   ImmersiveStoreRoute: typeof ImmersiveStoreRoute
   OffersRoute: typeof OffersRoute
   OnboardingRoute: typeof OnboardingRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   SearchRoute: typeof SearchRoute
   StoreRoute: typeof StoreRouteWithChildren
+  TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
@@ -816,6 +855,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/store': {
       id: '/store'
       path: '/store'
@@ -828,6 +874,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -849,6 +902,13 @@ declare module '@tanstack/react-router' {
       path: '/immersive-store'
       fullPath: '/immersive-store'
       preLoaderRoute: typeof ImmersiveStoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-deletion': {
+      id: '/data-deletion'
+      path: '/data-deletion'
+      fullPath: '/data-deletion'
+      preLoaderRoute: typeof DataDeletionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -1364,11 +1424,14 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
+  DataDeletionRoute: DataDeletionRoute,
   ImmersiveStoreRoute: ImmersiveStoreRoute,
   OffersRoute: OffersRoute,
   OnboardingRoute: OnboardingRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   SearchRoute: SearchRoute,
   StoreRoute: StoreRouteWithChildren,
+  TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
