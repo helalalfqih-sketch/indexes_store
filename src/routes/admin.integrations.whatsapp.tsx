@@ -187,12 +187,12 @@ function WhatsAppIntegrationComponent() {
           </h3>
 
           <div>
-            <label className="block text-xs font-bold mb-1">رقم WhatsApp Business الرسمي</label>
+            <label className="block text-xs font-bold mb-1">رقم WhatsApp Business الرئيسي</label>
             <input
               type="text"
               value={formData.phoneNumber}
               onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-              placeholder="+967771370740"
+              placeholder="+967738609222"
               className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
               dir="ltr"
             />
@@ -204,8 +204,20 @@ function WhatsAppIntegrationComponent() {
               type="text"
               value={formData.wabaId}
               onChange={(e) => setFormData({ ...formData, wabaId: e.target.value })}
-              placeholder="waba_123456789"
+              placeholder="28459237033683884"
               className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+              dir="ltr"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold mb-1">معرّف رقم الهاتف (Phone Number ID)</label>
+            <input
+              type="text"
+              value={formData.phoneNumberId || "1307082469145976"}
+              onChange={(e) => setFormData({ ...formData, phoneNumberId: e.target.value })}
+              placeholder="1307082469145976"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-mono"
               dir="ltr"
             />
           </div>
@@ -282,6 +294,41 @@ function WhatsAppIntegrationComponent() {
               <li>انسخ <strong>Verify Token</strong> وضعه في خانة Verification Token.</li>
               <li>فعّل اشتراك الأحدث على: <strong className="text-foreground font-mono">messages</strong>.</li>
             </ol>
+          </div>
+        </div>
+      </div>
+
+      {/* Meta WhatsApp Accounts List */}
+      <div className="rounded-2xl border border-border bg-surface p-5 space-y-4 shadow-sm">
+        <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+          <MessageSquare className="h-5 w-5 text-emerald-500" /> حسابات واتساب للأعمال المسجلة في Meta (Meta WABA Accounts)
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Account 1: اندكس للتجارة */}
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-black text-sm text-foreground">اندكس للتجارة</span>
+              <span className="text-[11px] font-bold bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-full">مسجّل ✅</span>
+            </div>
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p><strong className="text-foreground">معرف حساب الواتساب (WABA ID):</strong> <code className="font-mono text-emerald-400">28459237033683884</code></p>
+              <p><strong className="text-foreground">رقم الهاتف:</strong> <span className="font-mono" dir="ltr">+967 738 609 222</span></p>
+              <p><strong className="text-foreground">معرف رقم الهاتف (Phone ID):</strong> <code className="font-mono">1307082469145976</code></p>
+            </div>
+          </div>
+
+          {/* Account 2: اندكس للتجارة 1 */}
+          <div className="rounded-xl border border-border bg-background p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-black text-sm text-foreground">اندكس للتجارة 1</span>
+              <span className="text-[11px] font-bold bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full">لم يتم التحقق ⚠️</span>
+            </div>
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p><strong className="text-foreground">معرف حساب الواتساب (WABA ID):</strong> <code className="font-mono text-muted-foreground">2347070759160644</code></p>
+              <p><strong className="text-foreground">رقم الهاتف:</strong> <span className="font-mono" dir="ltr">+967 785 574 271</span></p>
+              <p><strong className="text-foreground">معرف رقم الهاتف (Phone ID):</strong> <code className="font-mono">1282161161642455</code></p>
+            </div>
           </div>
         </div>
       </div>

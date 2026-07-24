@@ -12,23 +12,48 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 export interface WhatsAppConfig {
   phoneNumber: string;
   wabaId: string;
+  phoneNumberId?: string;
   verifyToken: string;
   apiToken: string;
   autoAiProcess: boolean;
   status: "active" | "disconnected" | "pending";
   lastSyncAt: string | null;
   mediaCount: number;
+  accounts?: Array<{
+    name: string;
+    wabaId: string;
+    phone: string;
+    phoneNumberId: string;
+    status: string;
+  }>;
 }
 
 export const DEFAULT_WHATSAPP_CONFIG: WhatsAppConfig = {
-  phoneNumber: "+967771370740",
-  wabaId: "waba_indexes_prod_967",
+  phoneNumber: "+967738609222",
+  wabaId: "28459237033683884",
+  phoneNumberId: "1307082469145976",
   verifyToken: "indexes_wa_secret_verify_2026",
   apiToken: "",
   autoAiProcess: true,
   status: "active",
   lastSyncAt: new Date().toISOString(),
   mediaCount: 14,
+  accounts: [
+    {
+      name: "اندكس للتجارة",
+      wabaId: "28459237033683884",
+      phone: "+967738609222",
+      phoneNumberId: "1307082469145976",
+      status: "مسجّل",
+    },
+    {
+      name: "اندكس للتجارة 1",
+      wabaId: "2347070759160644",
+      phone: "+967785574271",
+      phoneNumberId: "1282161161642455",
+      status: "لم يتم التحقق",
+    },
+  ],
 };
 
 const AiSuggestionSchema = z.object({
