@@ -138,9 +138,14 @@ export const listMediaFiles = createServerFn({ method: "GET" })
         q = q.eq("file_type", type);
       }
 
-      const { data: rows, error } = await q;
-      if (error) {
-        console.error("Error fetching media files:", error);
+      // Add 3-second timeout protection for Supabase REST query
+      const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: new Error("Supabase query timeout fallback") }), 3000)
+      );
+
+      const { data: rows, error } = await Promise.race([q, timeoutPromise]);
+      if (error && error.message !== "Supabase query timeout fallback") {
+        console.warn("Supabase media_files query info:", error.message);
       }
 
       let results = (rows as unknown as MediaFileRecord[]) || [];
