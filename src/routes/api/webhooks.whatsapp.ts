@@ -220,7 +220,7 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
 
         const { data: mediaRecord, error: insertError } = await db
           .from("media_files")
-          .insert(insertPayload as any)
+          .insert(insertPayload)
           .select("id")
           .single();
 
