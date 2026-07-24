@@ -164,28 +164,31 @@ export async function saveDraftValue(
   const existing = await readSettingRow(db, key, scope);
   const oldValue = existing ? (existing.draft_value ?? existing.value) : null;
 
-  // Attempt draft save first
-  let uq = db
-    .from("storefront_settings")
-    .update({ draft_value: value, updated_at: now() })
-    .eq("key", key);
-  uq = scoped(uq, scope);
-  const { data: updated, error } = await uq.select("key");
+  // Check if a row matching key AND exact scope exists
+  let checkQ = db.from("storefront_settings").select("id").eq("key", key);
+  checkQ = scoped(checkQ, scope);
+  const { data: rowExists } = await checkQ.maybeSingle();
 
-  // If draft_value or tenant_id column doesn't exist in Supabase schema, fall back to live save!
-  if (error) {
-    return saveLiveValue(db, key, value, scope);
-  }
-
-  if (!updated || updated.length === 0) {
+  if (rowExists) {
+    let uq = db
+      .from("storefront_settings")
+      .update({ draft_value: value, updated_at: now() })
+      .eq("key", key);
+    uq = scoped(uq, scope);
+    const { error } = await uq;
+    if (error) {
+      return saveLiveValue(db, key, value, scope);
+    }
+    return { ok: true, oldValue };
+  } else {
     const payload: any = { key, value: {}, draft_value: value, type: "json" };
     if (scope !== null) payload.tenant_id = scope;
     const { error: insErr } = await db.from("storefront_settings").insert(payload);
     if (insErr) {
       return saveLiveValue(db, key, value, scope);
     }
+    return { ok: true, oldValue };
   }
-  return { ok: true, oldValue };
 }
 
 // ── Publish (scoped) ─────────────────────────────────────────────────────────
@@ -262,37 +265,37 @@ export async function saveLiveValue(
   const existing = await readSettingRow(db, key, scope);
   const oldValue = existing?.value ?? null;
 
-  // Try updating value and clearing draft_value
-  try {
+  // Check if a row matching key AND exact scope exists
+  let checkQ = db.from("storefront_settings").select("id").eq("key", key);
+  checkQ = scoped(checkQ, scope);
+  const { data: rowExists } = await checkQ.maybeSingle();
+
+  if (rowExists) {
     let uq = db
       .from("storefront_settings")
       .update({ value, draft_value: null, updated_at: now() })
       .eq("key", key);
     uq = scoped(uq, scope);
-    const { data: updated, error } = await uq.select("key");
-
+    const { error } = await uq;
     if (error) {
-      let uq2 = db.from("storefront_settings").update({ value, updated_at: now() }).eq("key", key);
-      uq2 = scoped(uq2, scope);
-      const { error: e2 } = await uq2;
-      if (e2) {
-        const payload: any = { key, value, type: "json" };
-        if (scope !== null) payload.tenant_id = scope;
-        const { error: insErr } = await db.from("storefront_settings").insert(payload);
-        if (insErr) return { ok: false, message: insErr.message, oldValue };
-      }
-      return { ok: true, oldValue };
-    }
-
-    if (!updated || updated.length === 0) {
-      const payload: any = { key, value, draft_value: null, type: "json" };
-      if (scope !== null) payload.tenant_id = scope;
-      const { error: insErr } = await db.from("storefront_settings").insert(payload);
-      if (insErr) return { ok: false, message: insErr.message, oldValue };
+      return { ok: false, message: error.message, oldValue };
     }
     return { ok: true, oldValue };
-  } catch (err: any) {
-    return { ok: false, message: err?.message ?? "Failed to save", oldValue };
+  } else {
+    const payload: any = { key, value, draft_value: null, type: "json" };
+    if (scope !== null) payload.tenant_id = scope;
+    const { error: insErr } = await db.from("storefront_settings").insert(payload);
+    if (insErr) {
+      // Fallback: attempt update if created concurrently
+      let uq = db
+        .from("storefront_settings")
+        .update({ value, draft_value: null, updated_at: now() })
+        .eq("key", key);
+      uq = scoped(uq, scope);
+      const { error: updErr } = await uq;
+      if (updErr) return { ok: false, message: insErr.message, oldValue };
+    }
+    return { ok: true, oldValue };
   }
 }
 

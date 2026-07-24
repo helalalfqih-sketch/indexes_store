@@ -542,140 +542,67 @@ export const adminListProducts = createServerFn({ method: "GET" })
     await assertAdmin(ctx);
     const tenantId = await resolveAdminTenant(ctx, data.tenantId);
 
-    // ── Step 1: CSV catalog = source of truth for product listings ──────────
-    let csvList = await fetchCsvProducts();
+    // ── 1. Fetch Supabase products (PRIMARY SOURCE OF TRUTH) ──────────────────
+    let dbProducts = await productsRepo.list(ctx.supabase, {
+      tenantId,
+      search: data.search,
+      categoryId: data.categoryId,
+    });
 
-    // Apply text search and category filters on CSV data
-    if (data.search) {
-      const s = data.search.toLowerCase();
-      csvList = csvList.filter(
-        (p) =>
-          p.name.toLowerCase().includes(s) ||
-          (p.description ?? "").toLowerCase().includes(s),
-      );
-    }
-    // Note: data.categoryId is a UUID but CSV category_id is a slug —
-    // skip UUID-based category filter here (handled client-side in admin page).
-
-    // ── Step 2: Fetch Supabase rows (admin metadata only) ───────────────────
-    // We only need fields used in the admin UI: UUID, sync status, publish state.
-    const { data: dbRows } = await ctx.supabase
-      .from("products")
-      .select(
-        "id, external_id, slug, meta_sync_status, is_published, updated_at, old_price, badge, video_playback_id, model_url, model_3d_url, model_3d_thumbnail, model_3d_status, sku, barcode, compare_at_price, cost_price, availability, condition, source_url, tags, currency, category_id, brand, featured, is_deal, deal_start, deal_end",
-      )
-      .eq("tenant_id", tenantId);
-
-    // Build quick-lookup maps: external_id → row, slug → row
-    const dbByExtId = new Map<string, any>();
-    const dbBySlug = new Map<string, any>();
-    for (const row of dbRows ?? []) {
-      if (row.external_id) dbByExtId.set(row.external_id, row);
-      if (row.slug) dbBySlug.set(row.slug, row);
+    // ── 2. Fetch CSV catalog feed (LEGACY FALLBACK / SEED) ────────────────────
+    let csvList: any[] = [];
+    try {
+      csvList = await fetchCsvProducts();
+    } catch (e) {
+      console.warn("Failed to fetch legacy CSV products feed:", e);
     }
 
-    // ── Step 2.5: Auto-ensure missing CSV products exist in Supabase DB with valid UUIDs ──
-    const missingInDb = csvList.filter(
-      (csv) => !dbByExtId.has(csv.id) && !dbBySlug.has(csv.slug),
-    );
+    // ── 3. Merge: Supabase products ALWAYS take precedence over CSV ──────────
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-    if (missingInDb.length > 0) {
-      const recordsToUpsert = missingInDb.map((csv) => ({
-        tenant_id: tenantId,
-        slug: csv.slug,
-        name: csv.name,
-        description: csv.description ?? "",
-        price: csv.price,
-        currency: csv.currency || "YER",
-        images: csv.images ?? [],
-        stock: csv.stock ?? 0,
-        brand: csv.brand ?? null,
-        is_published: true,
-        external_id: csv.id ?? null,
-        sku: csv.sku ?? null,
-        barcode: csv.barcode ?? null,
-        tags: csv.tags ?? [],
-      }));
+    // Track IDs and Slugs existing in Supabase
+    const dbProductMap = new Map<string, any>();
+    const dbSlugSet = new Set<string>();
 
-      const BATCH_SIZE = 50;
-      for (let i = 0; i < recordsToUpsert.length; i += BATCH_SIZE) {
-        const batch = recordsToUpsert.slice(i, i + BATCH_SIZE);
-        const { data: insertedRows } = await ctx.supabase
-          .from("products")
-          .upsert(batch as any, { onConflict: "tenant_id,slug" })
-          .select(
-            "id, external_id, slug, meta_sync_status, is_published, updated_at, old_price, badge, video_playback_id, model_url, model_3d_url, model_3d_thumbnail, model_3d_status, sku, barcode, compare_at_price, cost_price, availability, condition, source_url, tags, currency, category_id, brand, featured, is_deal, deal_start, deal_end",
-          );
+    for (const p of dbProducts) {
+      dbProductMap.set(p.id, p);
+      if (p.slug) dbSlugSet.add(p.slug);
+    }
 
-        if (insertedRows) {
-          for (const row of insertedRows) {
-            if (row.external_id) dbByExtId.set(row.external_id, row);
-            if (row.slug) dbBySlug.set(row.slug, row);
-          }
-        }
+    const mergedList: any[] = [...dbProducts];
+
+    // Append CSV products that do not exist in Supabase DB yet
+    for (const csv of csvList) {
+      const alreadyInDb =
+        dbProductMap.has(csv.id) ||
+        dbSlugSet.has(csv.slug);
+
+      if (!alreadyInDb) {
+        const finalId = UUID_RE.test(csv.id) ? csv.id : csv.id;
+        mergedList.push({
+          ...csv,
+          id: finalId,
+          tenant_id: tenantId,
+        });
       }
     }
 
-    // ── Step 3: Merge CSV + Supabase metadata ───────────────────────────────
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const merged = csvList.map((csv) => {
-      // Match by external_id first, then by slug
-      const db = dbByExtId.get(csv.id) ?? dbBySlug.get(csv.slug) ?? null;
+    // ── 4. Apply filters ──────────────────────────────────────────────────────
+    let filtered = mergedList;
+    if (data.search) {
+      const s = data.search.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          (p.name && p.name.toLowerCase().includes(s)) ||
+          (p.description && p.description.toLowerCase().includes(s)) ||
+          (p.sku && p.sku.toLowerCase().includes(s)) ||
+          (p.brand && p.brand.toLowerCase().includes(s)),
+      );
+    }
 
-      // Ensure id is ALWAYS a valid PostgreSQL UUID
-      const finalId = (db?.id && UUID_RE.test(db.id))
-        ? db.id
-        : (UUID_RE.test(csv.id) ? csv.id : db?.id ?? csv.id);
-
-      return {
-        // Core product data from CSV
-        id: finalId,          // Guaranteed valid Supabase UUID (for edit/delete/movements)
-        slug: csv.slug,
-        name: csv.name,
-        description: csv.description ?? "",
-        price: csv.price,
-        currency: db?.currency ?? csv.currency ?? "YER",
-        images: csv.images ?? [],
-        stock: csv.stock ?? 0,
-        reserved_stock: csv.reserved_stock ?? 0,
-        rating: csv.rating ?? 5,
-        reviews_count: csv.reviews_count ?? 0,
-        tags: db?.tags ?? csv.tags ?? [],
-        category_id: db?.category_id ?? null,
-        brand: db?.brand ?? csv.brand ?? null,
-        availability: db?.availability ?? csv.availability ?? null,
-        condition: db?.condition ?? csv.condition ?? null,
-        source_url: db?.source_url ?? csv.source_url ?? null,
-        sku: db?.sku ?? csv.sku ?? null,
-        barcode: db?.barcode ?? csv.barcode ?? null,
-        compare_at_price: db?.compare_at_price ?? csv.compare_at_price ?? null,
-        cost_price: db?.cost_price ?? csv.cost_price ?? null,
-        model_url: db?.model_url ?? null,
-        model_3d_url: db?.model_3d_url ?? null,
-        model_3d_thumbnail: db?.model_3d_thumbnail ?? null,
-        model_3d_status: db?.model_3d_status ?? null,
-        video_playback_id: db?.video_playback_id ?? null,
-        old_price: db?.old_price ?? null,
-        badge: db?.badge ?? null,
-        // Admin metadata from Supabase (or defaults for CSV-only products)
-        is_published: db?.is_published ?? true,
-        meta_sync_status: db?.meta_sync_status ?? "not_synced",
-        created_at: csv.created_at,
-        updated_at: db?.updated_at ?? csv.updated_at,
-        tenant_id: tenantId,
-        // V3 CMS fields
-        featured: db?.featured ?? false,
-        is_deal: db?.is_deal ?? false,
-        deal_start: db?.deal_start ?? null,
-        deal_end: db?.deal_end ?? null,
-      };
-    });
-
-    // ── Step 4: Apply publish/stock filters ─────────────────────────────────
-    let filtered = merged;
-    if (data.publishedOnly) filtered = filtered.filter((r) => r.is_published);
-    if (data.unpublishedOnly) filtered = filtered.filter((r) => !r.is_published);
-    if (data.outOfStock) filtered = filtered.filter((r) => r.stock <= 0);
+    if (data.publishedOnly) filtered = filtered.filter((r) => r.is_published !== false);
+    if (data.unpublishedOnly) filtered = filtered.filter((r) => r.is_published === false);
+    if (data.outOfStock) filtered = filtered.filter((r) => (r.stock ?? 0) <= 0);
 
     return filtered;
   });

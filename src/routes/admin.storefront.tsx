@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Layout,
@@ -1641,6 +1641,7 @@ function StudioTab() {
 
 // ── Main Page Layout Component ────────────────────────────────────────────────
 function StorefrontCMSPage() {
+  const queryClient = useQueryClient();
   const getSettings = useServerFn(getStorefrontAppearance);
   const saveDraft = useServerFn(saveStorefrontDraft);
   const saveSettings = useServerFn(updateStorefrontAppearance);
@@ -1658,8 +1659,8 @@ function StorefrontCMSPage() {
   });
 
   useEffect(() => {
-    if (settingsQ.data) {
-      setLocal(settingsQ.data);
+    if (settingsQ.data && typeof settingsQ.data === "object" && "theme" in settingsQ.data) {
+      setLocal(settingsQ.data as StorefrontSettingsShape);
       dirty.current = false;
     }
   }, [settingsQ.data]);
@@ -1695,6 +1696,9 @@ function StorefrontCMSPage() {
         toast.success("📝 تم حفظ مسودة هذا القسم بنجاح!");
         setSavedAt(new Date());
         dirty.current = false;
+        queryClient.invalidateQueries({ queryKey: ["admin-seo-config"] });
+        queryClient.invalidateQueries({ queryKey: ["storefront-settings"] });
+        queryClient.invalidateQueries({ queryKey: ["storefront-settings-cms-premium"] });
         void settingsQ.refetch();
         void notifyStorefrontPublished();
       } else {
@@ -1732,6 +1736,9 @@ function StorefrontCMSPage() {
         toast.success("🚀 تم نشر جميع الإعدادات وتطبيقها حياً على المتجر!");
         setSavedAt(new Date());
         dirty.current = false;
+        queryClient.invalidateQueries({ queryKey: ["admin-seo-config"] });
+        queryClient.invalidateQueries({ queryKey: ["storefront-settings"] });
+        queryClient.invalidateQueries({ queryKey: ["storefront-settings-cms-premium"] });
         void settingsQ.refetch();
         void notifyStorefrontPublished();
       } else {

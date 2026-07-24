@@ -86,8 +86,9 @@ async function resolveCmsScope(
 export const getSeoSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const authSupabase = context?.supabase;
-    const userId = context?.userId || null;
+    const ctx = context as any;
+    const authSupabase = ctx?.supabase;
+    const userId = ctx?.userId || null;
     const db = await getDbClient(authSupabase);
     const { scope } = await resolveCmsScope(authSupabase, userId);
 
@@ -103,13 +104,14 @@ export const saveSeoSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: GlobalSeoConfig) => data)
   .handler(async ({ data, context }) => {
-    const hasPerm = await checkTenantPermission("cms", context);
+    const ctx = context as any;
+    const hasPerm = await checkTenantPermission("cms", ctx);
     if (!hasPerm) {
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة SEO و CMS.");
     }
 
-    const authSupabase = context?.supabase;
-    const userId = context?.userId || null;
+    const authSupabase = ctx?.supabase;
+    const userId = ctx?.userId || null;
     const db = await getDbClient(authSupabase);
     const { scope } = await resolveCmsScope(authSupabase, userId);
 
@@ -136,7 +138,7 @@ export const saveSeoSettings = createServerFn({ method: "POST" })
       if (authSupabase && userId) {
         await storefrontService.logChange(db, {
           userId,
-          userEmail: context?.claims?.email || null,
+          userEmail: ctx?.claims?.email || null,
           actionType: "publish",
           key: "seo",
           oldValue: res.oldValue,
@@ -146,7 +148,7 @@ export const saveSeoSettings = createServerFn({ method: "POST" })
         await db.from("tenant_audit_logs").insert({
           tenant_id: scope,
           actor_id: userId || null,
-          actor_email: context?.claims?.email || null,
+          actor_email: ctx?.claims?.email || null,
           action: "seo_update",
           details: { meta_title: data.metaTitle } as any,
         });

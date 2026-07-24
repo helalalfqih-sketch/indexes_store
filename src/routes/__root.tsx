@@ -122,7 +122,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 /** Storefront settings query — shared cache key for the root loader (5-min fresh). */
 const storefrontSettingsQueryOptions = queryOptions({
   queryKey: ["storefront-settings"],
-  queryFn: async (): Promise<StorefrontSettingsShape> => getStorefrontAppearance(),
+  queryFn: async (): Promise<StorefrontSettingsShape> => {
+    const res = await getStorefrontAppearance();
+    return res as unknown as StorefrontSettingsShape;
+  },
   staleTime: 5 * 60 * 1000,
 });
 

@@ -50,13 +50,18 @@ export function validateMediaFile(file: { name: string; size: number; type: stri
   return { valid: true };
 }
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 /** Server Fn: List media files with search & filter */
 export const listMediaFiles = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .validator((data: { search?: string; type?: string; limit?: number }) => data)
-  .handler(async ({ data: { search, type, limit = 100 } }): Promise<MediaFileRecord[]> => {
-    const tenantId = await resolveTenantId(supabase);
+  .handler(async ({ data: { search, type, limit = 100 }, context }): Promise<MediaFileRecord[]> => {
+    const ctx = context as any;
+    const db = ctx.supabase || supabase;
+    const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
-    let q = supabase
+    let q = db
       .from("media_files")
       .select("*")
       .eq("tenant_id", tenantId)
@@ -81,6 +86,7 @@ export const listMediaFiles = createServerFn({ method: "GET" })
 
 /** Server Fn: Record newly uploaded media file */
 export const recordMediaFile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: {
     file_name: string;
     file_path: string;
@@ -92,13 +98,14 @@ export const recordMediaFile = createServerFn({ method: "POST" })
     metadata?: Record<string, string | number | boolean | null>;
   }) => data)
   .handler(async ({ data, context }): Promise<MediaFileRecord> => {
-    const hasPerm = await checkTenantPermission("cms", context);
+    const ctx = context as any;
+    const hasPerm = await checkTenantPermission("cms", ctx);
     if (!hasPerm) {
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية رفع ومكتبة الوسائط.");
     }
 
-    const tenantId = await resolveTenantId(supabase);
-    const { data: userData } = await supabase.auth.getUser();
+    const db = ctx.supabase || supabase;
+    const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
     const payload: any = {
       tenant_id: tenantId,
@@ -110,10 +117,10 @@ export const recordMediaFile = createServerFn({ method: "POST" })
       size_bytes: data.size_bytes,
       dimensions: data.dimensions || null,
       metadata: data.metadata || {},
-      created_by: userData.user?.id || null,
+      created_by: ctx.userId || null,
     };
 
-    const { data: record, error } = await supabase.from("media_files").insert(payload).select("*").single();
+    const { data: record, error } = await db.from("media_files").insert(payload).select("*").single();
 
     if (error) throw new Error(error.message);
 
@@ -122,24 +129,26 @@ export const recordMediaFile = createServerFn({ method: "POST" })
 
 /** Server Fn: Delete media file */
 export const deleteMediaFile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: { id: string; filePath?: string }) => data)
   .handler(async ({ data: { id }, context }) => {
-    const hasPerm = await checkTenantPermission("cms", context);
+    const ctx = context as any;
+    const hasPerm = await checkTenantPermission("cms", ctx);
     if (!hasPerm) {
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية حذف الوسائط.");
     }
 
-    const tenantId = await resolveTenantId(supabase);
-    const { data: userData } = await supabase.auth.getUser();
+    const db = ctx.supabase || supabase;
+    const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
-    const { error } = await supabase.from("media_files").delete().eq("id", id).eq("tenant_id", tenantId);
+    const { error } = await db.from("media_files").delete().eq("id", id).eq("tenant_id", tenantId);
     if (error) throw new Error(error.message);
 
     // Audit log
-    await supabase.from("tenant_audit_logs").insert({
+    await db.from("tenant_audit_logs").insert({
       tenant_id: tenantId,
-      actor_id: userData.user?.id || null,
-      actor_email: userData.user?.email || null,
+      actor_id: ctx.userId || null,
+      actor_email: ctx.claims?.email || null,
       action: "media_delete",
       details: { file_id: id } as any,
     });
@@ -148,31 +157,35 @@ export const deleteMediaFile = createServerFn({ method: "POST" })
   });
 
 /** Server Fn: Find unused media files scanner */
-export const findUnusedMediaFiles = createServerFn({ method: "GET" }).handler(async (): Promise<MediaFileRecord[]> => {
-  const tenantId = await resolveTenantId(supabase);
+export const findUnusedMediaFiles = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<MediaFileRecord[]> => {
+    const ctx = context as any;
+    const db = ctx.supabase || supabase;
+    const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
-  // 1. Fetch all media files for tenant
-  const { data: mediaRows } = await supabase.from("media_files").select("*").eq("tenant_id", tenantId);
-  if (!mediaRows || mediaRows.length === 0) return [];
+    // 1. Fetch all media files for tenant
+    const { data: mediaRows } = await db.from("media_files").select("*").eq("tenant_id", tenantId);
+    if (!mediaRows || mediaRows.length === 0) return [];
 
-  // 2. Fetch used product images
-  const { data: products } = await supabase.from("products").select("images, model_3d_url").eq("tenant_id", tenantId);
-  const usedUrls = new Set<string>();
+    // 2. Fetch used product images
+    const { data: products } = await db.from("products").select("images, model_3d_url").eq("tenant_id", tenantId);
+    const usedUrls = new Set<string>();
 
-  products?.forEach((p) => {
-    if (Array.isArray(p.images)) {
-      p.images.forEach((img: string) => usedUrls.add(img));
-    }
-    if (p.model_3d_url) usedUrls.add(p.model_3d_url);
+    products?.forEach((p: any) => {
+      if (Array.isArray(p.images)) {
+        p.images.forEach((img: string) => usedUrls.add(img));
+      }
+      if (p.model_3d_url) usedUrls.add(p.model_3d_url);
+    });
+
+    // 3. Fetch category images
+    const { data: categories } = await db.from("categories").select("image_url").eq("tenant_id", tenantId);
+    categories?.forEach((c: any) => {
+      if (c.image_url) usedUrls.add(c.image_url);
+    });
+
+    // Filter media files that are not referenced anywhere
+    const unused = mediaRows.filter((m: any) => !usedUrls.has(m.file_url) && !usedUrls.has(m.file_path));
+    return unused as unknown as MediaFileRecord[];
   });
-
-  // 3. Fetch category images
-  const { data: categories } = await supabase.from("categories").select("image_url").eq("tenant_id", tenantId);
-  categories?.forEach((c) => {
-    if (c.image_url) usedUrls.add(c.image_url);
-  });
-
-  // Filter media files that are not referenced anywhere
-  const unused = mediaRows.filter((m) => !usedUrls.has(m.file_url) && !usedUrls.has(m.file_path));
-  return unused as unknown as MediaFileRecord[];
-});

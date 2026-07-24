@@ -67,7 +67,9 @@ export function AppearanceProvider({
     const unsubscribe = StorefrontRealtimeService.subscribe(async () => {
       try {
         const fresh = await getStorefrontAppearance();
-        if (active && fresh) setSettings(fresh);
+        if (active && fresh && typeof fresh === "object" && "theme" in fresh) {
+          setSettings(fresh as StorefrontSettingsShape);
+        }
       } catch {
         /* keep current settings on fetch failure */
       }

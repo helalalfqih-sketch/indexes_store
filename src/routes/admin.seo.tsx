@@ -16,6 +16,7 @@ import {
   Bot,
 } from "lucide-react";
 import { toast } from "sonner";
+import { notifyStorefrontPublished } from "@/components/appearance-provider";
 import {
   getSeoSettings,
   saveSeoSettings,
@@ -55,6 +56,9 @@ function AdminSeoComponent() {
     onSuccess: () => {
       toast.success("تم حفظ إعدادات SEO بنجاح ✨");
       queryClient.invalidateQueries({ queryKey: ["admin-seo-config"] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-settings-cms-premium"] });
+      void notifyStorefrontPublished();
     },
     onError: (err: Error) => {
       toast.error(err.message || "حدث خطأ أثناء حفظ الإعدادات");
