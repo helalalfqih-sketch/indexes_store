@@ -35,7 +35,8 @@ export const productInputSchema = z.object({
 });
 
 export const productUpdateSchema = productInputSchema.partial().extend({
-  id: z.string().uuid(),
+  // Accept both UUID (Supabase rows) and legacy CSV IDs like "product-5"
+  id: z.string().min(1),
 });
 
 

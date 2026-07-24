@@ -178,6 +178,7 @@ export async function saveDraftValue(
   const { data: rowExists } = await checkQ.maybeSingle();
 
   if (rowExists) {
+    // Try with draft_value first; fall back to value-only if column missing
     let uq = db
       .from("storefront_settings")
       .update({ draft_value: value, updated_at: now() })
@@ -185,15 +186,24 @@ export async function saveDraftValue(
     uq = scoped(uq, scope);
     const { error } = await uq;
     if (error) {
+      // draft_value column may not exist — fall back to live save
       return saveLiveValue(db, key, value, scope);
     }
     return { ok: true, oldValue };
   } else {
+    // Try inserting with draft_value; fall back without it
     const payload: any = { key, value: {}, draft_value: value, type: "json" };
     if (scope !== null) payload.tenant_id = scope;
     const { error: insErr } = await db.from("storefront_settings").insert(payload);
     if (insErr) {
-      return saveLiveValue(db, key, value, scope);
+      // Retry insert without draft_value (column may not exist)
+      const fallbackPayload: any = { key, value, type: "json" };
+      if (scope !== null) fallbackPayload.tenant_id = scope;
+      const { error: fbErr } = await db.from("storefront_settings").insert(fallbackPayload);
+      if (fbErr) {
+        // Last resort: update existing row
+        return saveLiveValue(db, key, value, scope);
+      }
     }
     return { ok: true, oldValue };
   }
@@ -279,6 +289,7 @@ export async function saveLiveValue(
   const { data: rowExists } = await checkQ.maybeSingle();
 
   if (rowExists) {
+    // Try with draft_value first
     let uq = db
       .from("storefront_settings")
       .update({ value, draft_value: null, updated_at: now() })
@@ -286,22 +297,36 @@ export async function saveLiveValue(
     uq = scoped(uq, scope);
     const { error } = await uq;
     if (error) {
-      return { ok: false, message: error.message, oldValue };
+      // Retry without draft_value (column may not exist in production)
+      let uq2 = db
+        .from("storefront_settings")
+        .update({ value, updated_at: now() })
+        .eq("key", key);
+      uq2 = scoped(uq2, scope);
+      const { error: e2 } = await uq2;
+      if (e2) return { ok: false, message: e2.message, oldValue };
     }
     return { ok: true, oldValue };
   } else {
+    // Try insert with draft_value
     const payload: any = { key, value, draft_value: null, type: "json" };
     if (scope !== null) payload.tenant_id = scope;
     const { error: insErr } = await db.from("storefront_settings").insert(payload);
     if (insErr) {
-      // Fallback: attempt update if created concurrently
-      let uq = db
-        .from("storefront_settings")
-        .update({ value, draft_value: null, updated_at: now() })
-        .eq("key", key);
-      uq = scoped(uq, scope);
-      const { error: updErr } = await uq;
-      if (updErr) return { ok: false, message: insErr.message, oldValue };
+      // Retry insert without draft_value (column may not exist)
+      const fbPayload: any = { key, value, type: "json" };
+      if (scope !== null) fbPayload.tenant_id = scope;
+      const { error: fbErr } = await db.from("storefront_settings").insert(fbPayload);
+      if (fbErr) {
+        // Last resort: attempt update if row created concurrently
+        let uq = db
+          .from("storefront_settings")
+          .update({ value, updated_at: now() })
+          .eq("key", key);
+        uq = scoped(uq, scope);
+        const { error: updErr } = await uq;
+        if (updErr) return { ok: false, message: fbErr.message, oldValue };
+      }
     }
     return { ok: true, oldValue };
   }
