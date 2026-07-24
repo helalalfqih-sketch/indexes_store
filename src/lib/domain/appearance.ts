@@ -335,21 +335,36 @@ export const SectionsConfigSchema = z.object({
 export type SectionsConfig = z.infer<typeof SectionsConfigSchema>;
 
 // ── 12. SEO Schema ────────────────────────────────────────────────────────────
-export const SeoConfigSchema = z.object({
-  metaTitle: z.string().catch("اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن"),
-  metaDescription: z
-    .string()
-    .catch("اكتشف أحدث المنتجات والعروض في اندكس ستور — تجربة تسوق ثلاثية الأبعاد فريدة في اليمن."),
-  ogImage: z.string().catch(""),
-  ogImageWidth: z.number().catch(1200),
-  ogImageHeight: z.number().catch(630),
-  twitterCard: z.enum(["summary", "summary_large_image"]).catch("summary_large_image"),
-  themeColor: z.string().catch("#06091f"),
-  googleAnalyticsId: z.string().catch(""),
-  facebookPixelId: z.string().catch(""),
-  sitemapEnabled: z.boolean().catch(true),
-  robotsEnabled: z.boolean().catch(true),
-});
+export const SeoConfigSchema = z
+  .object({
+    metaTitle: z.string().catch("اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن"),
+    metaDescription: z
+      .string()
+      .catch("اكتشف أحدث المنتجات والعروض في اندكس ستور — تجربة تسوق ثلاثية الأبعاد فريدة في اليمن."),
+    ogImage: z.string().catch(""),
+    ogImageWidth: z.number().catch(1200),
+    ogImageHeight: z.number().catch(630),
+    twitterCard: z.enum(["summary", "summary_large_image"]).catch("summary_large_image"),
+    themeColor: z.string().catch("#06091f"),
+    googleAnalyticsId: z.string().catch(""),
+    facebookPixelId: z.string().catch(""),
+    sitemapEnabled: z.boolean().catch(true),
+    robotsEnabled: z.boolean().catch(true),
+    canonicalBaseUrl: z.string().catch(""),
+    robotsCustomDirectives: z
+      .string()
+      .catch(
+        "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /checkout/\nDisallow: /account/\nSitemap: /sitemap.xml"
+      ),
+    schemaOrgName: z.string().catch("اندكس ستور"),
+    schemaOrgLogo: z.string().catch(""),
+    schemaPhone: z.string().catch("+967771370740"),
+    schemaEmail: z.string().catch("support@indexes-store.com"),
+    schemaAddressStreet: z.string().catch("شارع بينون"),
+    schemaAddressCity: z.string().catch("صنعاء"),
+    schemaPriceRange: z.string().catch("$$"),
+  })
+  .passthrough();
 export type SeoConfig = z.infer<typeof SeoConfigSchema>;
 
 // ── 13. Advanced Config Schema ─────────────────────────────────────────────────

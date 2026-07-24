@@ -30,7 +30,8 @@ export type CmsScope = string | null;
 const now = () => new Date().toISOString();
 
 function scoped(q: any, scope: CmsScope) {
-  if (!scope) return q;
+  if (scope === undefined) return q;
+  if (scope === null) return q.is("tenant_id", null);
   return q.eq("tenant_id", scope);
 }
 
@@ -124,18 +125,28 @@ export async function readSettingRow(
     let q = db.from("storefront_settings").select("key, value, draft_value").eq("key", key);
     q = scoped(q, scope);
     const { data, error } = await q.maybeSingle();
-    if (error || !data) {
-      let q2 = db.from("storefront_settings").select("key, value").eq("key", key);
-      const { data: d2 } = await q2.maybeSingle();
-      if (!d2) return null;
-      return { ...d2, draft_value: null };
+    if (!error && data) return data;
+
+    // Fallback: if tenant scope didn't find a row, try global scope (tenant_id IS NULL)
+    if (scope !== null) {
+      const { data: globalData } = await db
+        .from("storefront_settings")
+        .select("key, value, draft_value")
+        .eq("key", key)
+        .is("tenant_id", null)
+        .maybeSingle();
+      if (globalData) return globalData;
     }
-    return data;
+    return null;
   } catch {
     try {
-      const { data: d2 } = await db.from("storefront_settings").select("key, value").eq("key", key).maybeSingle();
-      if (!d2) return null;
-      return { ...d2, draft_value: null };
+      const { data: d2 } = await db
+        .from("storefront_settings")
+        .select("key, value, draft_value")
+        .eq("key", key)
+        .is("tenant_id", null)
+        .maybeSingle();
+      return d2 ?? null;
     } catch {
       return null;
     }
@@ -168,7 +179,7 @@ export async function saveDraftValue(
 
   if (!updated || updated.length === 0) {
     const payload: any = { key, value: {}, draft_value: value, type: "json" };
-    if (scope) payload.tenant_id = scope;
+    if (scope !== null) payload.tenant_id = scope;
     const { error: insErr } = await db.from("storefront_settings").insert(payload);
     if (insErr) {
       return saveLiveValue(db, key, value, scope);
@@ -197,10 +208,13 @@ export async function publishDraftKey(
     const { error } = await uq;
     if (error) {
       let uq2 = db.from("storefront_settings").update({ value: row.draft_value, updated_at: now() }).eq("key", key);
+      uq2 = scoped(uq2, scope);
       await uq2;
     }
   } catch {
-    await db.from("storefront_settings").update({ value: row.draft_value, updated_at: now() }).eq("key", key);
+    let uq3 = db.from("storefront_settings").update({ value: row.draft_value, updated_at: now() }).eq("key", key);
+    uq3 = scoped(uq3, scope);
+    await uq3;
   }
 
   return { ok: true, oldValue: row.value, newValue: row.draft_value };
@@ -258,42 +272,27 @@ export async function saveLiveValue(
     const { data: updated, error } = await uq.select("key");
 
     if (error) {
-      // Fallback: update only value (without draft_value or tenant_id filter)
-      const { error: e2 } = await db.from("storefront_settings").update({ value, updated_at: now() }).eq("key", key);
+      let uq2 = db.from("storefront_settings").update({ value, updated_at: now() }).eq("key", key);
+      uq2 = scoped(uq2, scope);
+      const { error: e2 } = await uq2;
       if (e2) {
-        // Try insert fallback
         const payload: any = { key, value, type: "json" };
-        if (scope) payload.tenant_id = scope;
+        if (scope !== null) payload.tenant_id = scope;
         const { error: insErr } = await db.from("storefront_settings").insert(payload);
-        if (insErr) {
-          const { error: insErr2 } = await db.from("storefront_settings").insert({ key, value, type: "json" });
-          if (insErr2) return { ok: false, message: insErr2.message, oldValue };
-        }
+        if (insErr) return { ok: false, message: insErr.message, oldValue };
       }
       return { ok: true, oldValue };
     }
 
     if (!updated || updated.length === 0) {
       const payload: any = { key, value, draft_value: null, type: "json" };
-      if (scope) payload.tenant_id = scope;
+      if (scope !== null) payload.tenant_id = scope;
       const { error: insErr } = await db.from("storefront_settings").insert(payload);
-      if (insErr) {
-        const { error: insErr2 } = await db.from("storefront_settings").insert({ key, value, type: "json" });
-        if (insErr2) return { ok: false, message: insErr2.message, oldValue };
-      }
+      if (insErr) return { ok: false, message: insErr.message, oldValue };
     }
     return { ok: true, oldValue };
   } catch (err: any) {
-    // Ultimate fallback: simple update or insert of key and value
-    try {
-      const { error: e1 } = await db.from("storefront_settings").update({ value }).eq("key", key);
-      if (e1) {
-        await db.from("storefront_settings").insert({ key, value, type: "json" });
-      }
-      return { ok: true, oldValue };
-    } catch (e: any) {
-      return { ok: false, message: e?.message ?? "Failed to save", oldValue };
-    }
+    return { ok: false, message: err?.message ?? "Failed to save", oldValue };
   }
 }
 

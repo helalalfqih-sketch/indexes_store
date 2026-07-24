@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveTenantId } from "@/lib/saas/tenant-context";
 import { checkTenantPermission } from "@/lib/users.functions";
+import * as storefrontService from "@/lib/services/storefront.service";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export interface GlobalSeoConfig {
   metaTitle: string;
@@ -38,31 +40,67 @@ export const DEFAULT_SEO_CONFIG: GlobalSeoConfig = {
   robotsEnabled: true,
   robotsCustomDirectives: "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /checkout/\nDisallow: /account/\nSitemap: /sitemap.xml",
   schemaOrgName: "اندكس ستور",
-  schemaPhone: "+967770000000",
+  schemaPhone: "+967771370740",
   schemaEmail: "support@indexes-store.com",
   schemaAddressStreet: "شارع بينون",
   schemaAddressCity: "صنعاء",
   schemaPriceRange: "$$",
 };
 
-/** Server Fn: Fetch SEO Config for current tenant */
-export const getSeoSettings = createServerFn({ method: "GET" }).handler(async () => {
-  const tenantId = await resolveTenantId(supabase);
-  const { data } = await supabase
-    .from("storefront_settings")
-    .select("value")
-    .eq("key", "seo")
-    .or(`tenant_id.is.null,tenant_id.eq.${tenantId}`)
-    .order("tenant_id", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+/** Helper to get database client with service-role fallback */
+async function getDbClient(authSupabase?: any) {
+  let db = authSupabase || supabase;
+  if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      if (supabaseAdmin) db = supabaseAdmin;
+    } catch {
+      db = authSupabase || supabase;
+    }
+  }
+  return db;
+}
 
-  if (!data || !data.value) return DEFAULT_SEO_CONFIG;
-  return { ...DEFAULT_SEO_CONFIG, ...(data.value as Partial<GlobalSeoConfig>) };
-});
+/** Helper to resolve CMS Scope (platform admin -> null (global), store owner -> tenantId) */
+async function resolveCmsScope(
+  authSupabase: any,
+  userId: string | null,
+): Promise<{ scope: string | null }> {
+  if (!userId || !authSupabase) return { scope: null };
 
-/** Server Fn: Save SEO Config for current tenant */
+  try {
+    const { data: isAdmin } = await authSupabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    if (isAdmin) return { scope: null };
+
+    const tenantId = await resolveTenantId(authSupabase, { userId });
+    return { scope: tenantId };
+  } catch {
+    return { scope: null };
+  }
+}
+
+/** Server Fn: Fetch SEO Config for current tenant / global */
+export const getSeoSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const authSupabase = context?.supabase;
+    const userId = context?.userId || null;
+    const db = await getDbClient(authSupabase);
+    const { scope } = await resolveCmsScope(authSupabase, userId);
+
+    const row = await storefrontService.readSettingRow(db, "seo", scope);
+    const val = row?.draft_value || row?.value;
+
+    if (!val) return DEFAULT_SEO_CONFIG;
+    return { ...DEFAULT_SEO_CONFIG, ...(val as Partial<GlobalSeoConfig>) };
+  });
+
+/** Server Fn: Save SEO Config for current tenant / global */
 export const saveSeoSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: GlobalSeoConfig) => data)
   .handler(async ({ data, context }) => {
     const hasPerm = await checkTenantPermission("cms", context);
@@ -70,32 +108,52 @@ export const saveSeoSettings = createServerFn({ method: "POST" })
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة SEO و CMS.");
     }
 
+    const authSupabase = context?.supabase;
+    const userId = context?.userId || null;
+    const db = await getDbClient(authSupabase);
+    const { scope } = await resolveCmsScope(authSupabase, userId);
 
-    const tenantId = await resolveTenantId(supabase);
-    const { data: userData } = await supabase.auth.getUser();
+    // Save live value with resolved scope
+    let res = await storefrontService.saveLiveValue(db, "seo", data, scope);
 
-    // Check existing row
-    const { data: existing } = await supabase
-      .from("storefront_settings")
-      .select("id")
-      .eq("key", "seo")
-      .eq("tenant_id", tenantId)
-      .maybeSingle();
-
-    if (existing) {
-      await supabase.from("storefront_settings").update({ value: data as any, updated_at: new Date().toISOString() }).eq("id", existing.id);
-    } else {
-      await supabase.from("storefront_settings").insert({ key: "seo", tenant_id: tenantId, value: data as any, type: "json" });
+    // Synchronize to global scope as well if platform admin to prevent stale row overrides
+    if (scope === null) {
+      await storefrontService.saveLiveValue(db, "seo", data, null);
+    } else if (!res.ok) {
+      // Fallback to global scope if tenant save failed
+      res = await storefrontService.saveLiveValue(db, "seo", data, null);
     }
 
-    // Audit log
-    await supabase.from("tenant_audit_logs").insert({
-      tenant_id: tenantId,
-      actor_id: userData.user?.id || null,
-      actor_email: userData.user?.email || null,
-      action: "seo_update",
-      details: { meta_title: data.metaTitle } as any,
-    });
+    if (!res.ok) {
+      throw new Error(res.message || "حدث خطأ أثناء حفظ إعدادات SEO في قاعدة البيانات.");
+    }
+
+    // Keep draft_value synchronized too
+    await storefrontService.saveDraftValue(db, "seo", data, scope).catch(() => {});
+
+    // Audit and change logs
+    try {
+      if (authSupabase && userId) {
+        await storefrontService.logChange(db, {
+          userId,
+          userEmail: context?.claims?.email || null,
+          actionType: "publish",
+          key: "seo",
+          oldValue: res.oldValue,
+          newValue: data,
+        });
+
+        await db.from("tenant_audit_logs").insert({
+          tenant_id: scope,
+          actor_id: userId || null,
+          actor_email: context?.claims?.email || null,
+          action: "seo_update",
+          details: { meta_title: data.metaTitle } as any,
+        });
+      }
+    } catch (err) {
+      console.warn("Soft failure logging audit for SEO update:", err);
+    }
 
     return { ok: true };
   });
