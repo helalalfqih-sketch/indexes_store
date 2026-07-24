@@ -29,6 +29,7 @@ import { useModelViewer } from "@/lib/model-viewer";
 import { useAppearance } from "@/components/appearance-provider";
 import { buildProductHead } from "@/lib/seo";
 import { ProductMediaGallery } from "@/components/product-media-gallery";
+import { ProductRecommendations } from "@/components/product-recommendations";
 import { trackEvent } from "@/lib/analytics";
 
 const DARK = "var(--showcase)";
@@ -425,6 +426,9 @@ function ProductPage() {
             ))}
           </div>
         </div>
+
+        {/* Product Recommendations ("قد يعجبك أيضاً") */}
+        <ProductRecommendations currentProductId={product.id} categoryId={product.categoryId} />
       </div>
 
       {/* Sticky Conversion Bar when scrolling */}

@@ -289,6 +289,37 @@ function AccountPage() {
         )}
       </section>
 
+      {/* Role Selection System (Shopper vs Seller) */}
+      <div className="rounded-3xl border border-showcase-border/60 bg-showcase-foreground/5 p-4 shadow-card backdrop-blur-md space-y-3">
+        <p className="text-xs font-bold text-showcase-muted">حدد نوع وسياق الحساب المفتاح:</p>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => {
+              localStorage.setItem("noqta:user_role", "shopper");
+              toast.success("تم التبديل إلى وضع المتسوق 🛒");
+            }}
+            className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-primary/40 bg-primary/10 text-primary font-bold text-xs hover:bg-primary/20 transition text-center"
+          >
+            <span className="text-xl">🛒</span>
+            <span className="font-black text-white">أنا متسوق (Shopper)</span>
+            <span className="text-[10px] text-showcase-muted">شراء المنتجات ومتابعة الطلبات</span>
+          </button>
+
+          <button
+            onClick={() => {
+              localStorage.setItem("noqta:user_role", "seller");
+              toast.success("تم التبديل إلى وضع البائع 🏪");
+              navigate({ to: "/admin" });
+            }}
+            className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-bold text-xs hover:bg-emerald-500/20 transition text-center"
+          >
+            <span className="text-xl">🏪</span>
+            <span className="font-black text-white">أنا بائع (Seller)</span>
+            <span className="text-[10px] text-emerald-300">إنشاء متجر وإدارة المنتجات ➔</span>
+          </button>
+        </div>
+      </div>
+
       {/* Tabs Bar */}
       <div className="flex w-full max-w-full border-b border-showcase-border/40 overflow-x-auto gap-2 pb-1 scrollbar-none">
         <button

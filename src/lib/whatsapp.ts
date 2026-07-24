@@ -64,7 +64,12 @@ export function whatsappLink(message: string, phone = STORE_CONTACT) {
 }
 
 /** Quick single-product order link matching the exact brand template. */
-export function quickOrderLink(product: Pick<Product, "name" | "price">, phone = STORE_CONTACT) {
-  const text = `مرحباً، أريد طلب ${product.name} بسعر ${formatPrice(product.price)}`;
+export function quickOrderLink(
+  product: Pick<Product, "name" | "price" | "slug">,
+  phone = STORE_CONTACT,
+) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const productUrl = product.slug ? `${origin}/product/${product.slug}` : origin;
+  const text = `السلام عليكم،\nأريد طلب:\n${product.name}\n\nالسعر:\n${formatPrice(product.price)}\n\nالرابط:\n${productUrl}`;
   return whatsappLink(text, phone);
 }
