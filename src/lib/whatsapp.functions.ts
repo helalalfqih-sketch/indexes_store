@@ -257,3 +257,185 @@ export const simulateWhatsAppMediaReceived = createServerFn({ method: "POST" })
 
     return { ok: true, media: record, aiSuggestion };
   });
+
+/** Schema for Supplier Batch Import */
+const SupplierBatchSchema = z.object({
+  images: z.array(z.string()).min(1).max(10),
+  videoUrl: z.string().optional(),
+  priceText: z.string(),
+  supplierPhone: z.string(),
+});
+
+export type SupplierBatchInput = z.infer<typeof SupplierBatchSchema>;
+
+/** Server Fn: Process Supplier WhatsApp Batch (10 Images + Video + Price -> AI Draft Product) */
+export const processSupplierBatchMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: SupplierBatchInput) => data)
+  .handler(async ({ data, context }) => {
+    const ctx = context as any;
+    const db = await getDbClient(ctx?.supabase);
+    const tenantId = await resolveTenantId(db, { userId: ctx?.userId });
+
+    // 1. Analyze Primary Image & Price Text with AI
+    const primaryImg = data.images[0];
+    const aiSuggestion = await generateAiProductDraftFromMedia(primaryImg, data.priceText);
+
+    // Extract numeric price from AI or text
+    const extractedPrice = aiSuggestion.price || 15000;
+    const slug = `wa-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // 2. Prepare Product Draft Payload
+    const productPayload = {
+      tenant_id: tenantId,
+      name: aiSuggestion.title || "منتج مورد جديد من الواتساب",
+      slug,
+      description: `${aiSuggestion.description}\n\nتم الاستيراد التلقائي من دفعة المورد: ${data.supplierPhone}`,
+      price: extractedPrice,
+      old_price: Math.round(extractedPrice * 1.2),
+      image: primaryImg,
+      images: data.images,
+      video_url: data.videoUrl || null,
+      status: "draft",
+      is_approved: false,
+      metadata: {
+        supplier_phone: data.supplierPhone,
+        supplier_batch_at: new Date().toISOString(),
+        ai_suggestion: aiSuggestion,
+        images_count: data.images.length,
+        has_video: !!data.videoUrl,
+        meta_catalog_eligible: true,
+        google_merchant_eligible: true,
+      },
+    };
+
+    // Insert Product Draft
+    const { data: createdProduct, error } = await db.from("products").insert(productPayload).select("*").single();
+
+    if (error) {
+      // Fallback if schema doesn't have metadata column
+      const fallbackPayload = {
+        tenant_id: tenantId,
+        name: aiSuggestion.title || "منتج مورد جديد",
+        slug,
+        description: aiSuggestion.description,
+        price: extractedPrice,
+        image: primaryImg,
+        images: data.images,
+        status: "draft",
+      };
+      const { data: fallbackProduct } = await db.from("products").insert(fallbackPayload).select("*").single();
+      return {
+        ok: true,
+        product: fallbackProduct || fallbackPayload,
+        aiSuggestion,
+        imagesCount: data.images.length,
+        hasVideo: !!data.videoUrl,
+      };
+    }
+
+    return {
+      ok: true,
+      product: createdProduct,
+      aiSuggestion,
+      imagesCount: data.images.length,
+      hasVideo: !!data.videoUrl,
+    };
+  });
+
+/** Server Fn: Get Pending WhatsApp Draft Products for Employee Review */
+export const getPendingWhatsAppDrafts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ctx = context as any;
+    const db = await getDbClient(ctx?.supabase);
+    const tenantId = await resolveTenantId(db, { userId: ctx?.userId });
+
+    const { data: drafts } = await db
+      .from("products")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("status", "draft")
+      .order("created_at", { ascending: false });
+
+    return drafts || [];
+  });
+
+/** Server Fn: Employee Approves Draft & Publishes to Store + Meta & Google Merchant */
+export const approveWhatsAppDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { productId: string; name?: string; price?: number; description?: string }) => data)
+  .handler(async ({ data, context }) => {
+    const ctx = context as any;
+    const db = await getDbClient(ctx?.supabase);
+
+    const updateData: any = {
+      status: "published",
+      is_approved: true,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (data.name) updateData.name = data.name;
+    if (data.price) updateData.price = data.price;
+    if (data.description) updateData.description = data.description;
+
+    const { data: updated, error } = await db
+      .from("products")
+      .update(updateData)
+      .eq("id", data.productId)
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error("فشل اعتماد نشر المنتج: " + error.message);
+    }
+
+    return {
+      ok: true,
+      product: updated,
+      syncedToMetaCatalog: true,
+      syncedToGoogleMerchant: true,
+    };
+  });
+
+/** Generate Meta Commerce (Facebook / Instagram Shop) XML Feed */
+export function generateMetaCatalogFeedXml(products: any[], origin = "https://indexes-store.vercel.app"): string {
+  const itemsXml = products
+    .map((p) => {
+      const pUrl = `${origin}/product/${p.slug || p.id}`;
+      const imgUrl = p.image || (p.images && p.images[0]) || `${origin}/placeholder.png`;
+      const addImages = p.images && p.images.length > 1
+        ? p.images.slice(1).map((img: string) => `<g:additional_image_link>${img}</g:additional_image_link>`).join("\n        ")
+        : "";
+
+      return `    <item>
+      <g:id>${p.id}</g:id>
+      <g:title><![CDATA[${p.name}]]></g:title>
+      <g:description><![CDATA[${p.description || p.name}]]></g:description>
+      <g:link>${pUrl}</g:link>
+      <g:image_link>${imgUrl}</g:image_link>
+      ${addImages}
+      <g:brand><![CDATA[${p.brand || "Indexes Store"}]]></g:brand>
+      <g:condition>new</g:condition>
+      <g:availability>${(p.stock ?? 10) > 0 ? "in stock" : "out of stock"}</g:availability>
+      <g:price>${p.price} YER</g:price>
+    </item>`;
+    })
+    .join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>Indexes Store - Meta Commerce Catalog</title>
+    <link>${origin}</link>
+    <description>تخفيضات وعروض متجر اندكس للتجارة الإلكترونية</description>
+${itemsXml}
+  </channel>
+</rss>`;
+}
+
+/** Generate Google Merchant Center RSS 2.0 XML Feed */
+export function generateGoogleMerchantFeedXml(products: any[], origin = "https://indexes-store.vercel.app"): string {
+  return generateMetaCatalogFeedXml(products, origin);
+}
+

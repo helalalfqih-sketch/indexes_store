@@ -333,6 +333,54 @@ function WhatsAppIntegrationComponent() {
         </div>
       </div>
 
+      {/* 🚀 Automated 5-Stage Pipeline Visualizer */}
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+          <div>
+            <h3 className="text-base font-black text-foreground flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-emerald-500" /> مسار الأتمتة الكامل: من المورد إلى الكتالوجات (Automated Pipeline)
+            </h3>
+            <p className="text-xs text-muted-foreground">تدفق البيانات الذكي من رسالة الواتساب حتى النشر في المتجر و Meta Catalog و Google Merchant</p>
+          </div>
+          <span className="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-3 py-1 rounded-full shrink-0">
+            Auto-Sync Pipeline ⚡
+          </span>
+        </div>
+
+        {/* Workflow Diagram */}
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 text-center text-xs">
+          <div className="p-3 rounded-xl border border-border bg-background space-y-1">
+            <span className="text-lg">📲</span>
+            <p className="font-bold text-foreground">1. المورد يرسل</p>
+            <p className="text-[10px] text-muted-foreground">10 صور + فيديو + سعر</p>
+          </div>
+
+          <div className="p-3 rounded-xl border border-border bg-background space-y-1">
+            <span className="text-lg">⚡</span>
+            <p className="font-bold text-foreground">2. Indexes Store</p>
+            <p className="text-[10px] text-muted-foreground">استقبال الويب هوك</p>
+          </div>
+
+          <div className="p-3 rounded-xl border border-border bg-background space-y-1">
+            <span className="text-lg">🤖</span>
+            <p className="font-bold text-foreground">3. الذكاء الاصطناعي</p>
+            <p className="text-[10px] text-muted-foreground">إنشاء مسودة المنتج</p>
+          </div>
+
+          <div className="p-3 rounded-xl border border-border bg-background space-y-1">
+            <span className="text-lg">👁️</span>
+            <p className="font-bold text-foreground">4. مراجعة الموظف</p>
+            <p className="text-[10px] text-muted-foreground">الاعتماد بنقرة واحدة</p>
+          </div>
+
+          <div className="p-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 space-y-1">
+            <span className="text-lg">🚀</span>
+            <p className="font-bold text-emerald-400">5. Meta + Google</p>
+            <p className="text-[10px] text-emerald-400 font-bold">تزامن الكتالوجات المباشر</p>
+          </div>
+        </div>
+      </div>
+
       {/* 🧪 WhatsApp Media Simulator & AI Extractor */}
       <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
         <div className="border-b border-border pb-3 flex items-center justify-between">
