@@ -55,8 +55,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 /** Server Fn: List media files with search & filter */
 export const listMediaFiles = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { search?: string; type?: string; source?: string; limit?: number }) => data)
-  .handler(async ({ data: { search, type, source, limit = 100 }, context }): Promise<MediaFileRecord[]> => {
+  .validator((data: { search?: string; type?: string; source?: string; category?: string; sort?: string; limit?: number }) => data)
+  .handler(async ({ data: { search, type, source, category, sort = "newest", limit = 200 }, context }): Promise<MediaFileRecord[]> => {
     const ctx = context as any;
     const db = ctx.supabase || supabase;
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
@@ -65,15 +65,10 @@ export const listMediaFiles = createServerFn({ method: "GET" })
       .from("media_files")
       .select("*")
       .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: false })
       .limit(limit);
 
     if (type && type !== "all") {
       q = q.eq("file_type", type);
-    }
-
-    if (search) {
-      q = q.ilike("file_name", `%${search}%`);
     }
 
     const { data: rows, error } = await q;
@@ -84,13 +79,54 @@ export const listMediaFiles = createServerFn({ method: "GET" })
 
     let results = (rows as unknown as MediaFileRecord[]) || [];
 
-    // Filter by source if requested
+    // Filter by Search (Name or Tags)
+    if (search && search.trim()) {
+      const query = search.trim().toLowerCase();
+      results = results.filter((file: any) => {
+        const nameMatch = file.file_name?.toLowerCase().includes(query);
+        const tags = (file.metadata?.tags as string[]) || [];
+        const tagsMatch = tags.some((tag) => tag.toLowerCase().includes(query));
+        const captionMatch = (file.metadata?.caption as string)?.toLowerCase().includes(query);
+        return nameMatch || tagsMatch || captionMatch;
+      });
+    }
+
+    // Filter by Source
     if (source && source !== "all") {
       results = results.filter((file: any) => {
-        const itemSource = file.metadata?.source || "upload";
+        const itemSource = file.source || file.metadata?.source || "upload";
         return itemSource === source;
       });
     }
+
+    // Filter by Category
+    if (category && category !== "all") {
+      results = results.filter((file: any) => {
+        const itemCategory = file.metadata?.category || "وسائط متنوعة";
+        return itemCategory === category;
+      });
+    }
+
+    // Sort Results
+    results.sort((a: any, b: any) => {
+      if (sort === "oldest") {
+        return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+      }
+      if (sort === "largest") {
+        return (b.size_bytes || 0) - (a.size_bytes || 0);
+      }
+      if (sort === "smallest") {
+        return (a.size_bytes || 0) - (b.size_bytes || 0);
+      }
+      if (sort === "name_asc") {
+        return (a.file_name || "").localeCompare(b.file_name || "", "ar");
+      }
+      if (sort === "name_desc") {
+        return (b.file_name || "").localeCompare(a.file_name || "", "ar");
+      }
+      // default: newest
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    });
 
     return results;
   });

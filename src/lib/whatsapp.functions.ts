@@ -206,35 +206,103 @@ export async function generateAiProductDraftFromMedia(
   }
 }
 
-/** Server Fn: Simulate Receiving a WhatsApp Media Message (for Testing & Admin Control) */
+/** Sanitize filename from caption without AI */
+export function sanitizeFileName(caption: string, mimeType: string): string {
+  const ext = getExtensionFromMime(mimeType);
+  if (!caption || !caption.trim()) {
+    return `wa_${Date.now()}.${ext}`;
+  }
+
+  const cleaned = caption
+    .trim()
+    .replace(/[^\u0600-\u06FFa-zA-Z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .substring(0, 40);
+
+  const finalSlug = cleaned || `wa_${Date.now()}`;
+  return `${finalSlug}.${ext}`;
+}
+
+/** Extract category & tags directly from Caption (No AI) */
+export function extractCategoryAndTagsFromCaption(caption: string): { category: string; tags: string[] } {
+  if (!caption || !caption.trim()) {
+    return { category: "وسائط متنوعة", tags: ["واتساب"] };
+  }
+
+  const text = caption.trim();
+  const words = text
+    .replace(/[^\u0600-\u06FFa-zA-Z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 2);
+
+  const tags = Array.from(new Set(words));
+
+  let category = "وسائط متنوعة";
+  const lower = text.toLowerCase();
+
+  if (/منشار|مفك|طقم|عده|معدات|مولد|بطارية|شاحن|أدوات|تثقيب/.test(lower)) {
+    category = "معدات وأدوات";
+  } else if (/كاميرا|هاتف|جوال|سماعة|شاشة|تلفزيون|ساعة|الكترونيات|ذكي|فحص|أنابيب/.test(lower)) {
+    category = "إلكترونيات";
+  } else if (/ساعة|خاتم|مجوهرات|عطر|بخور|فاخر/.test(lower)) {
+    category = "ساعات ومجوهرات";
+  } else if (/قميص|ثوب|فستان|حذاء|حقيبة|ملابس/.test(lower)) {
+    category = "أزياء وموضة";
+  }
+
+  return { category, tags };
+}
+
+function getExtensionFromMime(mimeType: string): string {
+  if (mimeType.includes("video")) return "mp4";
+  if (mimeType.includes("png")) return "png";
+  if (mimeType.includes("webp")) return "webp";
+  if (mimeType.includes("pdf") || mimeType.includes("document")) return "pdf";
+  return "jpg";
+}
+
+/** Server Fn: Ingest WhatsApp Media Message directly to Media Library (No AI) */
 export const simulateWhatsAppMediaReceived = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { fileName: string; fileUrl: string; fileType: "image" | "video"; senderPhone: string; caption?: string }) => data)
+  .validator(
+    (data: {
+      fileName?: string;
+      fileUrl: string;
+      fileType: "image" | "video" | "document";
+      senderPhone: string;
+      caption?: string;
+      whatsappMessageId?: string;
+    }) => data
+  )
   .handler(async ({ data, context }) => {
     const ctx = context as any;
     const db = ctx.supabase || supabase;
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
-    // 1. Generate AI Suggestion
-    const aiSuggestion = await generateAiProductDraftFromMedia(data.fileUrl, data.caption || data.fileName);
+    const mimeType = data.fileType === "video" ? "video/mp4" : data.fileType === "document" ? "application/pdf" : "image/jpeg";
+    const cleanFileName = sanitizeFileName(data.caption || data.fileName || "", mimeType);
+    const { category, tags } = extractCategoryAndTagsFromCaption(data.caption || data.fileName || "");
 
-    // 2. Insert record into media_files
     const metadata = {
-      source: "whatsapp",
+      whatsapp_message_id: data.whatsappMessageId || `wa_msg_${Date.now()}`,
       sender_phone: data.senderPhone,
       caption: data.caption || "",
-      ai_suggestion: aiSuggestion,
       received_at: new Date().toISOString(),
+      source: "whatsapp",
+      category,
+      tags,
     };
 
     const payload = {
       tenant_id: tenantId,
-      file_name: data.fileName,
-      file_path: `whatsapp/${tenantId}/${Date.now()}_${data.fileName}`,
+      file_name: cleanFileName,
+      file_path: `whatsapp/${tenantId}/${Date.now()}_${cleanFileName}`,
       file_url: data.fileUrl,
       file_type: data.fileType,
-      mime_type: data.fileType === "video" ? "video/mp4" : "image/jpeg",
+      mime_type: mimeType,
       size_bytes: Math.floor(Math.random() * 2000000) + 500000,
+      source: "whatsapp",
       metadata,
       created_by: ctx.userId || null,
     };
@@ -245,7 +313,7 @@ export const simulateWhatsAppMediaReceived = createServerFn({ method: "POST" })
       throw new Error("فشل تسجيل وسيط الواتساب: " + error.message);
     }
 
-    // 3. Update WhatsApp Config Last Sync
+    // Update WhatsApp Config Last Sync
     const currentCfg = await storefrontService.readSettingRow(db, "whatsapp_sync", tenantId);
     const cfgVal: WhatsAppConfig = (currentCfg?.value as any) || DEFAULT_WHATSAPP_CONFIG;
     const updatedCfg: WhatsAppConfig = {
@@ -255,7 +323,7 @@ export const simulateWhatsAppMediaReceived = createServerFn({ method: "POST" })
     };
     await storefrontService.saveLiveValue(db, "whatsapp_sync", updatedCfg, tenantId);
 
-    return { ok: true, media: record, aiSuggestion };
+    return { ok: true, media: record, fileName: cleanFileName, category, tags };
   });
 
 /** Schema for Supplier Batch Import */

@@ -48,6 +48,8 @@ function AdminMediaComponent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "image" | "video">("all");
   const [filterSource, setFilterSource] = useState<"all" | "upload" | "whatsapp" | "ai_generated">("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [sortOption, setSortOption] = useState<string>("newest");
   const [selectedFile, setSelectedFile] = useState<MediaFileRecord | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isScanningUnused, setIsScanningUnused] = useState(false);
@@ -55,10 +57,19 @@ function AdminMediaComponent() {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Query Media List
+  // Query Media List with search, type, source, category, and sorting
   const { data: mediaFiles = [], isLoading } = useQuery({
-    queryKey: ["admin-media-files", searchTerm, filterType, filterSource],
-    queryFn: () => fetchMediaFn({ data: { search: searchTerm, type: filterType, source: filterSource } }),
+    queryKey: ["admin-media-files", searchTerm, filterType, filterSource, filterCategory, sortOption],
+    queryFn: () =>
+      fetchMediaFn({
+        data: {
+          search: searchTerm,
+          type: filterType,
+          source: filterSource,
+          category: filterCategory,
+          sort: sortOption,
+        },
+      }),
   });
 
   // Upload Mutation
@@ -212,7 +223,7 @@ function AdminMediaComponent() {
           <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="ابحث باسم الملف..."
+            placeholder="ابحث باسم الملف أو الوسوم (Tags)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-xl border border-border bg-background ps-9 pe-4 py-2 text-sm focus:outline-none"
@@ -220,6 +231,34 @@ function AdminMediaComponent() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Category Filter */}
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
+          >
+            <option value="all">جميع التصنيفات</option>
+            <option value="معدات وأدوات">معدات وأدوات</option>
+            <option value="إلكترونيات">إلكترونيات</option>
+            <option value="ساعات ومجوهرات">ساعات ومجوهرات</option>
+            <option value="أزياء وموضة">أزياء وموضة</option>
+            <option value="وسائط متنوعة">وسائط متنوعة</option>
+          </select>
+
+          {/* Sort Selector */}
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+            className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
+          >
+            <option value="newest">الأحدث أولاً ⏱️</option>
+            <option value="oldest">الأقدم أولاً</option>
+            <option value="largest">الأكبر حجماً 📦</option>
+            <option value="smallest">الأصغر حجماً</option>
+            <option value="name_asc">الاسم (أ - ي)</option>
+            <option value="name_desc">الاسم (ي - أ)</option>
+          </select>
+
           {/* File Type Filter */}
           <div className="flex items-center gap-1 bg-background p-1 rounded-xl border border-border">
             {(["all", "image", "video"] as const).map((t) => (
@@ -342,11 +381,25 @@ function AdminMediaComponent() {
                   )}
                 </div>
 
-                <div className="p-2.5 text-xs">
+                <div className="p-2.5 text-xs space-y-1">
                   <p className="font-bold truncate text-foreground">{file.file_name}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {(file.size_bytes / (1024 * 1024)).toFixed(2)} MB
-                  </p>
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span>{(file.size_bytes / (1024 * 1024)).toFixed(2)} MB</span>
+                    {((file.metadata as any)?.category as string) && (
+                      <span className="font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[9px]">
+                        {(file.metadata as any).category as string}
+                      </span>
+                    )}
+                  </div>
+                  {Array.isArray((file.metadata as any)?.tags) && ((file.metadata as any).tags as string[]).length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {((file.metadata as any).tags as string[]).slice(0, 3).map((tag, idx) => (
+                        <span key={idx} className="bg-accent text-muted-foreground text-[9px] px-1.5 py-0.5 rounded font-mono">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             );
