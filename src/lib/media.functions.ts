@@ -55,8 +55,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 /** Server Fn: List media files with search & filter */
 export const listMediaFiles = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { search?: string; type?: string; limit?: number }) => data)
-  .handler(async ({ data: { search, type, limit = 100 }, context }): Promise<MediaFileRecord[]> => {
+  .validator((data: { search?: string; type?: string; source?: string; limit?: number }) => data)
+  .handler(async ({ data: { search, type, source, limit = 100 }, context }): Promise<MediaFileRecord[]> => {
     const ctx = context as any;
     const db = ctx.supabase || supabase;
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
@@ -81,7 +81,18 @@ export const listMediaFiles = createServerFn({ method: "GET" })
       console.error("Error fetching media files:", error);
       return [];
     }
-    return (rows as unknown as MediaFileRecord[]) || [];
+
+    let results = (rows as unknown as MediaFileRecord[]) || [];
+
+    // Filter by source if requested
+    if (source && source !== "all") {
+      results = results.filter((file: any) => {
+        const itemSource = file.metadata?.source || "upload";
+        return itemSource === source;
+      });
+    }
+
+    return results;
   });
 
 /** Server Fn: Record newly uploaded media file */

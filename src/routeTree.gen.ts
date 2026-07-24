@@ -66,10 +66,12 @@ import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
 import { Route as AdminBranchesRouteImport } from './routes/admin.branches'
 import { Route as AdminBannersRouteImport } from './routes/admin.banners'
 import { Route as AdminAppearanceRouteImport } from './routes/admin.appearance'
+import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks.whatsapp'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
 import { Route as ApiAiAnalyzeProductRouteImport } from './routes/api/ai.analyze-product'
 import { Route as AdminStoresTenantIdRouteImport } from './routes/admin.stores.$tenantId'
 import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
+import { Route as AdminIntegrationsWhatsappRouteImport } from './routes/admin.integrations.whatsapp'
 
 const TrackRoute = TrackRouteImport.update({
   id: '/track',
@@ -356,6 +358,11 @@ const AdminAppearanceRoute = AdminAppearanceRouteImport.update({
   path: '/appearance',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiWebhooksWhatsappRoute = ApiWebhooksWhatsappRouteImport.update({
+  id: '/api/webhooks/whatsapp',
+  path: '/api/webhooks/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicImageProxyRoute = ApiPublicImageProxyRouteImport.update({
   id: '/api/public/image-proxy',
   path: '/api/public/image-proxy',
@@ -376,6 +383,12 @@ const AdminProductIdRoute = AdminProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminIntegrationsWhatsappRoute =
+  AdminIntegrationsWhatsappRouteImport.update({
+    id: '/integrations/whatsapp',
+    path: '/integrations/whatsapp',
+    getParentRoute: () => AdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -435,10 +448,12 @@ export interface FileRoutesByFullPath {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/store/': typeof StoreIndexRoute
+  '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/admin/stores/$tenantId': typeof AdminStoresTenantIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -496,10 +511,12 @@ export interface FileRoutesByTo {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin': typeof AdminIndexRoute
   '/store': typeof StoreIndexRoute
+  '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/admin/stores/$tenantId': typeof AdminStoresTenantIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -560,10 +577,12 @@ export interface FileRoutesById {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/store/': typeof StoreIndexRoute
+  '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/admin/stores/$tenantId': typeof AdminStoresTenantIdRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -625,10 +644,12 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/admin/'
     | '/store/'
+    | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
     | '/admin/stores/$tenantId'
     | '/api/ai/analyze-product'
     | '/api/public/image-proxy'
+    | '/api/webhooks/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -686,10 +707,12 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/admin'
     | '/store'
+    | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
     | '/admin/stores/$tenantId'
     | '/api/ai/analyze-product'
     | '/api/public/image-proxy'
+    | '/api/webhooks/whatsapp'
   id:
     | '__root__'
     | '/'
@@ -749,10 +772,12 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/admin/'
     | '/store/'
+    | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
     | '/admin/stores/$tenantId'
     | '/api/ai/analyze-product'
     | '/api/public/image-proxy'
+    | '/api/webhooks/whatsapp'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -779,6 +804,7 @@ export interface RootRouteChildren {
   VendorDashboardRoute: typeof VendorDashboardRoute
   ApiAiAnalyzeProductRoute: typeof ApiAiAnalyzeProductRoute
   ApiPublicImageProxyRoute: typeof ApiPublicImageProxyRoute
+  ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1182,6 +1208,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppearanceRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/webhooks/whatsapp': {
+      id: '/api/webhooks/whatsapp'
+      path: '/api/webhooks/whatsapp'
+      fullPath: '/api/webhooks/whatsapp'
+      preLoaderRoute: typeof ApiWebhooksWhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/image-proxy': {
       id: '/api/public/image-proxy'
       path: '/api/public/image-proxy'
@@ -1208,6 +1241,13 @@ declare module '@tanstack/react-router' {
       path: '/product/$id'
       fullPath: '/admin/product/$id'
       preLoaderRoute: typeof AdminProductIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/integrations/whatsapp': {
+      id: '/admin/integrations/whatsapp'
+      path: '/integrations/whatsapp'
+      fullPath: '/admin/integrations/whatsapp'
+      preLoaderRoute: typeof AdminIntegrationsWhatsappRouteImport
       parentRoute: typeof AdminRoute
     }
   }
@@ -1252,6 +1292,7 @@ interface AdminRouteChildren {
   AdminStudioRoute: typeof AdminStudioRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminIntegrationsWhatsappRoute: typeof AdminIntegrationsWhatsappRoute
   AdminProductIdRoute: typeof AdminProductIdRoute
 }
 
@@ -1282,6 +1323,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminStudioRoute: AdminStudioRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminIntegrationsWhatsappRoute: AdminIntegrationsWhatsappRoute,
   AdminProductIdRoute: AdminProductIdRoute,
 }
 
@@ -1339,6 +1381,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorDashboardRoute: VendorDashboardRoute,
   ApiAiAnalyzeProductRoute: ApiAiAnalyzeProductRoute,
   ApiPublicImageProxyRoute: ApiPublicImageProxyRoute,
+  ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
