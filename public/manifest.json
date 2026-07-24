@@ -1,6 +1,6 @@
 {
-  "name": "اندكس ستور — Indexes Store",
-  "short_name": "اندكس ستور",
+  "name": "Indexes Store — اندكس ستور",
+  "short_name": "NOQTA",
   "description": "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد",
   "start_url": "/",
   "display": "standalone",
@@ -20,7 +20,13 @@
     },
     {
       "src": "/favicon.ico",
-      "sizes": "any",
+      "sizes": "192x192",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "512x512",
       "type": "image/x-icon",
       "purpose": "any maskable"
     }

@@ -7,6 +7,7 @@ import { searchProducts } from "@/lib/actions/product.actions";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product } from "@/lib/store-data";
 import { z } from "zod";
+import { trackEvent } from "@/lib/analytics";
 
 const searchParamsSchema = z.object({
   q: z.string().optional(),
@@ -46,6 +47,9 @@ function SearchPage() {
     const t = setTimeout(async () => {
       setLoading(true);
       try {
+        if (q.trim()) {
+          trackEvent("click_search", { query: q });
+        }
         const data = await searchProducts(q);
         setResults(data);
       } finally {

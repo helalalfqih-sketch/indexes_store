@@ -29,6 +29,7 @@ import { useModelViewer } from "@/lib/model-viewer";
 import { useAppearance } from "@/components/appearance-provider";
 import { buildProductHead } from "@/lib/seo";
 import { ProductMediaGallery } from "@/components/product-media-gallery";
+import { trackEvent } from "@/lib/analytics";
 
 const DARK = "var(--showcase)";
 const LIGHT = "var(--showcase-foreground)";
@@ -127,6 +128,12 @@ function ProductPage() {
   const [showStickyBar, setShowStickyBar] = useState(false);
 
   useModelViewer();
+
+  useEffect(() => {
+    if (product?.id) {
+      trackEvent("view_product", { productId: product.id, name: product.name, price: product.price });
+    }
+  }, [product?.id]);
 
   useEffect(() => {
     const el = heroRef.current;
@@ -302,6 +309,7 @@ function ProductPage() {
                   href={orderHref}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackEvent("click_whatsapp", { source: "product_page", productId: product.id })}
                   className="flex items-center justify-center gap-2 rounded-2xl bg-success py-3.5 text-sm font-black text-success-foreground shadow-brand hover:bg-success/90 transition"
                 >
                   <MessageCircle className="h-5 w-5" />

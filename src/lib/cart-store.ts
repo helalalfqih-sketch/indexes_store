@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Product } from "./store-data";
 
+import { trackEvent } from "./analytics";
+
 export type CartLine = {
   productId: string;
   name: string;
@@ -27,6 +29,8 @@ export const useCart = create<CartState>()(
       add: (p, qty = 1) => {
         const isPublished = (p as any).is_published !== false && (p as any).status !== "archived";
         if (!isPublished) return;
+
+        trackEvent("add_to_cart", { productId: p.id, name: p.name, price: p.price, qty });
 
         set((s) => {
           const existing = s.items.find((i) => i.productId === p.id);
