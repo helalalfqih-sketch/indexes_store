@@ -361,35 +361,57 @@ export function generateVideoObjectJsonLd(input: {
 // 8. Organization JSON-LD
 // ─────────────────────────────────────────────────────────────────────────────
 
+export interface SchemaCustomConfig {
+  name?: string;
+  alternateName?: string;
+  logoUrl?: string;
+  phone?: string;
+  email?: string;
+  streetAddress?: string;
+  addressLocality?: string;
+  country?: string;
+  openingHours?: string;
+  priceRange?: string;
+  sameAs?: string[];
+}
+
 export function generateOrganizationJsonLd(
   baseUrl: string,
   logoUrl?: string,
+  config?: SchemaCustomConfig,
 ): Record<string, unknown> {
+  const name = config?.name || SITE_NAME;
+  const alternateName = config?.alternateName || SITE_NAME_EN;
+  const logo = config?.logoUrl || logoUrl || DEFAULT_OG_IMAGE;
+  const phone = config?.phone || STORE_PHONE;
+  const email = config?.email || STORE_EMAIL;
+  const social = config?.sameAs && config.sameAs.length > 0 ? config.sameAs : Object.values(STORE_SOCIAL);
+
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": `${baseUrl}/#organization`,
-    name: SITE_NAME,
-    alternateName: SITE_NAME_EN,
+    name,
+    alternateName,
     url: baseUrl,
     logo: {
       "@type": "ImageObject",
-      url: logoUrl || DEFAULT_OG_IMAGE,
+      url: logo,
       width: 1200,
       height: 630,
     },
     contactPoint: [
       {
         "@type": "ContactPoint",
-        telephone: STORE_PHONE,
+        telephone: phone,
         contactType: "customer service",
         contactOption: "TollFree",
         areaServed: STORE_COUNTRY,
         availableLanguage: ["Arabic"],
       },
     ],
-    sameAs: Object.values(STORE_SOCIAL),
-    email: STORE_EMAIL,
+    sameAs: social,
+    email,
   };
 }
 
@@ -400,22 +422,35 @@ export function generateOrganizationJsonLd(
 export function generateLocalBusinessJsonLd(
   baseUrl: string,
   logoUrl?: string,
+  config?: SchemaCustomConfig,
 ): Record<string, unknown> {
+  const name = config?.name || SITE_NAME;
+  const alternateName = config?.alternateName || SITE_NAME_EN;
+  const logo = config?.logoUrl || logoUrl || DEFAULT_OG_IMAGE;
+  const phone = config?.phone || STORE_PHONE;
+  const email = config?.email || STORE_EMAIL;
+  const streetAddress = config?.streetAddress || STORE_ADDRESS.streetAddress;
+  const addressLocality = config?.addressLocality || STORE_ADDRESS.addressLocality;
+  const social = config?.sameAs && config.sameAs.length > 0 ? config.sameAs : Object.values(STORE_SOCIAL);
+
   return {
     "@context": "https://schema.org",
     "@type": "Store",
     "@id": `${baseUrl}/#localbusiness`,
-    name: SITE_NAME,
-    alternateName: SITE_NAME_EN,
+    name,
+    alternateName,
     url: baseUrl,
-    logo: logoUrl || DEFAULT_OG_IMAGE,
+    logo,
     image: DEFAULT_OG_IMAGE,
     description: "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد",
-    telephone: STORE_PHONE,
-    email: STORE_EMAIL,
+    telephone: phone,
+    email,
     address: {
       "@type": "PostalAddress",
-      ...STORE_ADDRESS,
+      streetAddress,
+      addressLocality,
+      addressRegion: STORE_ADDRESS.addressRegion,
+      addressCountry: STORE_COUNTRY,
     },
     geo: {
       "@type": "GeoCoordinates",
@@ -430,14 +465,14 @@ export function generateLocalBusinessJsonLd(
         closes: "22:00",
       },
     ],
-    priceRange: "$$",
+    priceRange: config?.priceRange || "$$",
     currenciesAccepted: STORE_CURRENCY,
     paymentAccepted: "Cash",
     areaServed: {
       "@type": "Country",
       name: "Yemen",
     },
-    sameAs: Object.values(STORE_SOCIAL),
+    sameAs: social,
     hasMap: "https://maps.google.com/?q=صنعاء+اليمن",
     parentOrganization: {
       "@id": `${baseUrl}/#organization`,

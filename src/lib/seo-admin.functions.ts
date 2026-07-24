@@ -11,13 +11,20 @@ export interface GlobalSeoConfig {
   ogImage: string;
   ogImageWidth?: number;
   ogImageHeight?: number;
+  ogTitle?: string;
+  ogDescription?: string;
   twitterCard: "summary" | "summary_large_image";
+  twitterUsername?: string;
   canonicalBaseUrl?: string;
   sitemapEnabled: boolean;
   robotsEnabled: boolean;
   robotsCustomDirectives?: string;
   googleAnalyticsId?: string;
   facebookPixelId?: string;
+  googleVerificationCode?: string;
+  bingVerificationCode?: string;
+  siteName?: string;
+  alternateName?: string;
   // Schema configuration
   schemaOrgName?: string;
   schemaOrgLogo?: string;
@@ -26,25 +33,39 @@ export interface GlobalSeoConfig {
   schemaAddressStreet?: string;
   schemaAddressCity?: string;
   schemaPriceRange?: string;
+  // LocalBusiness Schema
+  schemaBusinessName?: string;
+  schemaCountry?: string;
+  schemaOpeningHours?: string;
 }
 
 export const DEFAULT_SEO_CONFIG: GlobalSeoConfig = {
-  metaTitle: "اندكس ستور — المتجر الرقمي | تسوّق أونلاين في اليمن",
+  metaTitle: "اندكس للتجارة  — المتجر الرقمي | صنعاء",
   metaDescription: "اكتشف أحدث المنتجات والعروض في اندكس ستور — إلكترونيات، أزياء، وأدوات منزلية بتجربة تسوق ثلاثية الأبعاد فريدة في اليمن.",
   ogImage: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png",
   ogImageWidth: 1200,
   ogImageHeight: 630,
+  ogTitle: "",
+  ogDescription: "",
   twitterCard: "summary_large_image",
+  twitterUsername: "@indexes_store",
   canonicalBaseUrl: "",
   sitemapEnabled: true,
   robotsEnabled: true,
   robotsCustomDirectives: "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /checkout/\nDisallow: /account/\nSitemap: /sitemap.xml",
+  googleVerificationCode: "",
+  bingVerificationCode: "",
+  siteName: "اندكس ستور",
+  alternateName: "Indexes Store",
   schemaOrgName: "اندكس ستور",
   schemaPhone: "+967771370740",
   schemaEmail: "support@indexes-store.com",
   schemaAddressStreet: "شارع بينون",
   schemaAddressCity: "صنعاء",
   schemaPriceRange: "$$",
+  schemaBusinessName: "اندكس ستور",
+  schemaCountry: "اليمن",
+  schemaOpeningHours: "يومياً 9:00 ص - 10:00 م",
 };
 
 /** Helper to get database client with service-role fallback */
@@ -173,10 +194,10 @@ export function evaluateSeoHealth(cfg: GlobalSeoConfig): SeoAuditReport {
   // Title length
   const titleLen = cfg.metaTitle?.length || 0;
   if (titleLen === 0) {
-    score -= 25;
+    score -= 20;
     warnings.push({ type: "danger", message: "العنوان الرئيسي (Meta Title) مفقود!" });
   } else if (titleLen < 30 || titleLen > 60) {
-    score -= 10;
+    score -= 8;
     warnings.push({ type: "warning", message: `طول العنوان (${titleLen} حرف) يفضل أن يكون بين 30 و 60 حرفاً.` });
   } else {
     warnings.push({ type: "success", message: "طول العنوان الرئيسي مثالي للظهور في محركات البحث." });
@@ -185,10 +206,10 @@ export function evaluateSeoHealth(cfg: GlobalSeoConfig): SeoAuditReport {
   // Description length
   const descLen = cfg.metaDescription?.length || 0;
   if (descLen === 0) {
-    score -= 25;
+    score -= 20;
     warnings.push({ type: "danger", message: "الوصف (Meta Description) مفقود!" });
   } else if (descLen < 70 || descLen > 160) {
-    score -= 10;
+    score -= 8;
     warnings.push({ type: "warning", message: `طول الوصف (${descLen} حرف) يفضل أن يكون بين 70 و 160 حرفاً.` });
   } else {
     warnings.push({ type: "success", message: "طول الوصف مثالي لنتائج البحث." });
@@ -196,7 +217,7 @@ export function evaluateSeoHealth(cfg: GlobalSeoConfig): SeoAuditReport {
 
   // OG Image
   if (!cfg.ogImage) {
-    score -= 15;
+    score -= 10;
     warnings.push({ type: "warning", message: "صورة المشاركة الاجتماعية (OG Image) مفقودة." });
   } else {
     warnings.push({ type: "success", message: "صورة المعاينة الاجتماعية متوفرة." });
@@ -204,17 +225,49 @@ export function evaluateSeoHealth(cfg: GlobalSeoConfig): SeoAuditReport {
 
   // Sitemap & Robots
   if (!cfg.sitemapEnabled) {
-    score -= 15;
+    score -= 10;
     warnings.push({ type: "warning", message: "ملف خريطة الموقع (Sitemap) معطل حالياً." });
   } else {
     warnings.push({ type: "success", message: "خريطة الموقع (Sitemap.xml) مفعلة." });
   }
 
   if (!cfg.robotsEnabled) {
-    score -= 15;
+    score -= 10;
     warnings.push({ type: "warning", message: "ملف تعليمات الروبوت (Robots.txt) معطل." });
   } else {
     warnings.push({ type: "success", message: "ملف Robots.txt مفعل ومضبوط." });
+  }
+
+  // Twitter Username
+  if (!cfg.twitterUsername) {
+    score -= 5;
+    warnings.push({ type: "warning", message: "اسم مستخدم تويتر/X غير محدد." });
+  } else {
+    warnings.push({ type: "success", message: "اسم مستخدم تويتر/X محدد." });
+  }
+
+  // Google Verification
+  if (!cfg.googleVerificationCode) {
+    score -= 5;
+    warnings.push({ type: "warning", message: "رمز إثبات ملكية Google غير محدد — يُنصح بربط Search Console." });
+  } else {
+    warnings.push({ type: "success", message: "رمز إثبات ملكية Google محدد." });
+  }
+
+  // Schema Org Name
+  if (!cfg.schemaOrgName) {
+    score -= 5;
+    warnings.push({ type: "warning", message: "اسم المؤسسة في Schema.org غير محدد." });
+  } else {
+    warnings.push({ type: "success", message: "بيانات Schema.org للمؤسسة مكتملة." });
+  }
+
+  // Schema Phone
+  if (!cfg.schemaPhone) {
+    score -= 5;
+    warnings.push({ type: "warning", message: "رقم هاتف خدمة العملاء غير محدد في Schema." });
+  } else {
+    warnings.push({ type: "success", message: "رقم هاتف خدمة العملاء محدد في Schema." });
   }
 
   return { score: Math.max(0, score), warnings };

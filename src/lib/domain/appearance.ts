@@ -334,7 +334,60 @@ export const SectionsConfigSchema = z.object({
 });
 export type SectionsConfig = z.infer<typeof SectionsConfigSchema>;
 
-// ── 12. SEO Schema ────────────────────────────────────────────────────────────
+// ── 12. Store Identity Schema ─────────────────────────────────────────────────
+export const StoreIdentitySchema = z.object({
+  logoUrl: z.string().catch(""),
+  faviconUrl: z.string().catch("/favicon.ico"),
+  appleTouchIconUrl: z.string().catch(""),
+  pwaIcon192Url: z.string().catch(""),
+  pwaIcon512Url: z.string().catch(""),
+  themeColor: z.string().catch("#1F5EFF"),
+});
+export type StoreIdentity = z.infer<typeof StoreIdentitySchema>;
+
+// ── 13. Brand Settings Schema ─────────────────────────────────────────────────
+export const BrandSettingsSchema = z.object({
+  storeName: z.string().catch("اندكس ستور"),
+  shortName: z.string().catch("NOQTA"),
+  description: z.string().catch("المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد."),
+  tagline: z.string().catch("اختيارك الأفضل"),
+  primaryColor: z.string().catch("#4f8cff"),
+  secondaryColor: z.string().catch("#a259ff"),
+  accentColor: z.string().catch("#ff6b35"),
+});
+export type BrandSettings = z.infer<typeof BrandSettingsSchema>;
+
+// ── 14. Social Links Schema ──────────────────────────────────────────────────
+const SocialLinkItemSchema = z.object({
+  url: z.string().catch(""),
+  enabled: z.boolean().catch(false),
+});
+
+export const SocialLinksSettingsSchema = z.object({
+  facebook: SocialLinkItemSchema.catch({ url: "https://facebook.com/indexes.store", enabled: true }),
+  instagram: SocialLinkItemSchema.catch({ url: "https://instagram.com/indexes.store", enabled: true }),
+  tiktok: SocialLinkItemSchema.catch({ url: "", enabled: false }),
+  youtube: SocialLinkItemSchema.catch({ url: "", enabled: false }),
+  whatsapp: SocialLinkItemSchema.catch({ url: "https://wa.me/967771370740", enabled: true }),
+  telegram: SocialLinkItemSchema.catch({ url: "", enabled: false }),
+});
+export type SocialLinksSettings = z.infer<typeof SocialLinksSettingsSchema>;
+
+// ── 15. General Store Settings Schema ────────────────────────────────────────
+export const GeneralStoreSettingsSchema = z.object({
+  phone: z.string().catch("967771370740"),
+  whatsapp: z.string().catch("967771370740"),
+  email: z.string().catch("support@indexes-store.com"),
+  address: z.string().catch("صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية"),
+  currency: z.string().catch("YER"),
+  language: z.string().catch("ar"),
+  country: z.string().catch("اليمن"),
+  city: z.string().catch("صنعاء"),
+  workingHours: z.string().catch("يومياً 9:00 ص - 10:00 م"),
+});
+export type GeneralStoreSettings = z.infer<typeof GeneralStoreSettingsSchema>;
+
+// ── 16. SEO Schema ────────────────────────────────────────────────────────────
 export const SeoConfigSchema = z
   .object({
     metaTitle: z.string().catch("اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن"),
@@ -344,10 +397,17 @@ export const SeoConfigSchema = z
     ogImage: z.string().catch(""),
     ogImageWidth: z.number().catch(1200),
     ogImageHeight: z.number().catch(630),
+    ogTitle: z.string().catch(""),
+    ogDescription: z.string().catch(""),
     twitterCard: z.enum(["summary", "summary_large_image"]).catch("summary_large_image"),
+    twitterUsername: z.string().catch(""),
     themeColor: z.string().catch("#06091f"),
     googleAnalyticsId: z.string().catch(""),
     facebookPixelId: z.string().catch(""),
+    googleVerificationCode: z.string().catch(""),
+    bingVerificationCode: z.string().catch(""),
+    siteName: z.string().catch(""),
+    alternateName: z.string().catch(""),
     sitemapEnabled: z.boolean().catch(true),
     robotsEnabled: z.boolean().catch(true),
     canonicalBaseUrl: z.string().catch(""),
@@ -363,11 +423,15 @@ export const SeoConfigSchema = z
     schemaAddressStreet: z.string().catch("شارع بينون"),
     schemaAddressCity: z.string().catch("صنعاء"),
     schemaPriceRange: z.string().catch("$$"),
+    // LocalBusiness Schema
+    schemaBusinessName: z.string().catch(""),
+    schemaCountry: z.string().catch("اليمن"),
+    schemaOpeningHours: z.string().catch("يومياً 9:00 ص - 10:00 م"),
   })
   .passthrough();
 export type SeoConfig = z.infer<typeof SeoConfigSchema>;
 
-// ── 13. Advanced Config Schema ─────────────────────────────────────────────────
+// ── 17. Advanced Config Schema ─────────────────────────────────────────────────
 // NOTE: customJs injection is intentionally excluded for security.
 // customStylesJson allows only validated CSS variable key-value objects.
 export const AdvancedConfigSchema = z.object({
@@ -382,7 +446,7 @@ export const AdvancedConfigSchema = z.object({
 });
 export type AdvancedConfig = z.infer<typeof AdvancedConfigSchema>;
 
-// ── 14. Full Storefront Settings Shape ─────────────────────────────────────────
+// ── 18. Full Storefront Settings Shape ─────────────────────────────────────────
 export interface StorefrontSettingsShape {
   hero: HeroConfig;
   theme: ThemeConfig;
@@ -397,9 +461,13 @@ export interface StorefrontSettingsShape {
   sections: SectionsConfig;
   seo: SeoConfig;
   advanced: AdvancedConfig;
+  store_identity: StoreIdentity;
+  brand_settings: BrandSettings;
+  social_links: SocialLinksSettings;
+  general_settings: GeneralStoreSettings;
 }
 
-// ── 15. Safe Default Fallback Constants ────────────────────────────────────────
+// ── 19. Safe Default Fallback Constants ────────────────────────────────────────
 export const DEFAULT_HERO_CONFIG: HeroConfig = HeroConfigSchema.parse({});
 export const DEFAULT_THEME_CONFIG: ThemeConfig = ThemeConfigSchema.parse({});
 export const DEFAULT_PRODUCTS_LAYOUT_CONFIG: ProductsLayoutConfig = ProductsLayoutConfigSchema.parse({});
@@ -413,6 +481,10 @@ export const DEFAULT_NOTIFICATIONS_CONFIG: NotificationsConfig = NotificationsCo
 export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = SectionsConfigSchema.parse({});
 export const DEFAULT_SEO_CONFIG: SeoConfig = SeoConfigSchema.parse({});
 export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = AdvancedConfigSchema.parse({});
+export const DEFAULT_STORE_IDENTITY: StoreIdentity = StoreIdentitySchema.parse({});
+export const DEFAULT_BRAND_SETTINGS: BrandSettings = BrandSettingsSchema.parse({});
+export const DEFAULT_SOCIAL_LINKS: SocialLinksSettings = SocialLinksSettingsSchema.parse({});
+export const DEFAULT_GENERAL_SETTINGS: GeneralStoreSettings = GeneralStoreSettingsSchema.parse({});
 
 export const DEFAULT_STOREFRONT_SETTINGS: StorefrontSettingsShape = {
   hero: DEFAULT_HERO_CONFIG,
@@ -428,4 +500,8 @@ export const DEFAULT_STOREFRONT_SETTINGS: StorefrontSettingsShape = {
   sections: DEFAULT_SECTIONS_CONFIG,
   seo: DEFAULT_SEO_CONFIG,
   advanced: DEFAULT_ADVANCED_CONFIG,
+  store_identity: DEFAULT_STORE_IDENTITY,
+  brand_settings: DEFAULT_BRAND_SETTINGS,
+  social_links: DEFAULT_SOCIAL_LINKS,
+  general_settings: DEFAULT_GENERAL_SETTINGS,
 };

@@ -134,70 +134,123 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // loaderData may be undefined on first render — fall back gracefully
     const seo = loaderData?.settings?.seo;
     const navigation = loaderData?.settings?.navigation;
-    const title = seo?.metaTitle || "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن";
+    const storeIdentity = loaderData?.settings?.store_identity;
+    const brandSettings = loaderData?.settings?.brand_settings;
+    const socialLinks = loaderData?.settings?.social_links;
+    const generalSettings = loaderData?.settings?.general_settings;
+
+    const storeName = brandSettings?.storeName || navigation?.storeName || "اندكس ستور";
+    const title = seo?.metaTitle || `${storeName} — الرئيسية | تسوّق أونلاين في اليمن`;
     const description =
       seo?.metaDescription ||
+      brandSettings?.description ||
+      navigation?.footerDescription ||
       "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.";
     const ogImage = seo?.ogImage || DEFAULT_OG_IMAGE;
-    const themeColor = seo?.themeColor || "#1F5EFF";
+    const ogTitle = seo?.ogTitle || title;
+    const ogDescription = seo?.ogDescription || description;
+    const themeColor = storeIdentity?.themeColor || seo?.themeColor || brandSettings?.primaryColor || "#1F5EFF";
+    const faviconUrl = storeIdentity?.faviconUrl || "/favicon.ico";
+    const appleTouchIconUrl = storeIdentity?.appleTouchIconUrl || "/apple-touch-icon.png";
+    const twitterUsername = seo?.twitterUsername || "@indexes_store";
+
     const baseUrl =
       process.env.SITE_URL ||
       (typeof window !== "undefined" ? window.location.origin : null) ||
       import.meta.env.VITE_PUBLIC_URL ||
       "";
-    const logoUrl = navigation?.logoUrl || undefined;
+    const logoUrl = storeIdentity?.logoUrl || navigation?.logoUrl || undefined;
 
-    // Structured data
-    const orgLd = generateOrganizationJsonLd(baseUrl, logoUrl);
-    const localBizLd = generateLocalBusinessJsonLd(baseUrl, logoUrl);
+    // Collect enabled social URLs for sameAs JSON-LD
+    const sameAsList: string[] = [];
+    if (socialLinks) {
+      if (socialLinks.facebook?.enabled && socialLinks.facebook?.url) sameAsList.push(socialLinks.facebook.url);
+      if (socialLinks.instagram?.enabled && socialLinks.instagram?.url) sameAsList.push(socialLinks.instagram.url);
+      if (socialLinks.tiktok?.enabled && socialLinks.tiktok?.url) sameAsList.push(socialLinks.tiktok.url);
+      if (socialLinks.youtube?.enabled && socialLinks.youtube?.url) sameAsList.push(socialLinks.youtube.url);
+      if (socialLinks.whatsapp?.enabled && socialLinks.whatsapp?.url) sameAsList.push(socialLinks.whatsapp.url);
+      if (socialLinks.telegram?.enabled && socialLinks.telegram?.url) sameAsList.push(socialLinks.telegram.url);
+    }
+
+    // Dynamic Structured Data
+    const customSchemaConfig = {
+      name: seo?.schemaOrgName || storeName,
+      alternateName: brandSettings?.shortName || "Indexes Store",
+      logoUrl,
+      phone: seo?.schemaPhone || generalSettings?.phone || navigation?.whatsappPhone,
+      email: seo?.schemaEmail || generalSettings?.email || navigation?.supportEmail,
+      streetAddress: seo?.schemaAddressStreet || generalSettings?.address || navigation?.addressText,
+      addressLocality: seo?.schemaAddressCity || generalSettings?.city || "صنعاء",
+      country: seo?.schemaCountry || generalSettings?.country || "اليمن",
+      openingHours: seo?.schemaOpeningHours || generalSettings?.workingHours,
+      priceRange: seo?.schemaPriceRange || "$$",
+      sameAs: sameAsList,
+    };
+
+    const orgLd = generateOrganizationJsonLd(baseUrl, logoUrl, customSchemaConfig);
+    const localBizLd = generateLocalBusinessJsonLd(baseUrl, logoUrl, customSchemaConfig);
     const websiteLd = generateWebsiteJsonLd(baseUrl);
 
+    const metaTags: Record<string, string>[] = [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=5" },
+      { name: "theme-color", content: themeColor },
+      { name: "msapplication-TileColor", content: themeColor },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: storeName },
+      { name: "application-name", content: storeName },
+      { name: "author", content: storeName },
+      { name: "format-detection", content: "telephone=no" },
+      { title },
+      { name: "description", content: description },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: `${storeName} — Indexes Store` },
+      { property: "og:locale", content: "ar_YE" },
+      { property: "og:title", content: ogTitle },
+      { property: "og:description", content: ogDescription },
+      { property: "og:image", content: ogImage },
+      { property: "og:image:width", content: String(seo?.ogImageWidth || 1200) },
+      { property: "og:image:height", content: String(seo?.ogImageHeight || 630) },
+      { property: "og:image:alt", content: ogTitle },
+      { name: "twitter:card", content: seo?.twitterCard || "summary_large_image" },
+      { name: "twitter:site", content: twitterUsername },
+      { name: "twitter:title", content: ogTitle },
+      { name: "twitter:description", content: ogDescription },
+      { name: "twitter:image", content: ogImage },
+      { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
+    ];
+
+    // Add Google verification code if configured
+    if (seo?.googleVerificationCode) {
+      metaTags.push({ name: "google-site-verification", content: seo.googleVerificationCode });
+    } else {
+      metaTags.push({ name: "google-site-verification", content: "google84868c536ade5c41.html" });
+    }
+
+    // Add Bing verification code if configured
+    if (seo?.bingVerificationCode) {
+      metaTags.push({ name: "msvalidate.01", content: seo.bingVerificationCode });
+    }
+
+    const linkTags: Record<string, string>[] = [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: faviconUrl, type: faviconUrl.endsWith(".ico") ? "image/x-icon" : "image/png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: appleTouchIconUrl },
+      { rel: "canonical", href: baseUrl },
+      { rel: "alternate", hrefLang: "ar", href: baseUrl },
+      { rel: "alternate", hrefLang: "x-default", href: baseUrl },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com" },
+      { rel: "preconnect", href: "https://images.unsplash.com" },
+      { rel: "dns-prefetch", href: "https://stream.mux.com" },
+      { rel: "dns-prefetch", href: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev" },
+      { rel: "manifest", href: "/manifest.json" },
+    ];
+
     return {
-      meta: [
-        { charSet: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=5" },
-        { name: "theme-color", content: themeColor },
-        { name: "msapplication-TileColor", content: themeColor },
-        { name: "apple-mobile-web-app-capable", content: "yes" },
-        { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-        { name: "apple-mobile-web-app-title", content: "اندكس ستور" },
-        { name: "application-name", content: "اندكس ستور" },
-        { name: "author", content: "اندكس ستور" },
-        { name: "format-detection", content: "telephone=no" },
-        { title },
-        { name: "description", content: description },
-        { property: "og:type", content: "website" },
-        { property: "og:site_name", content: "Indexes Store — اندكس ستور" },
-        { property: "og:locale", content: "ar_YE" },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:image", content: ogImage },
-        { property: "og:image:width", content: String(seo?.ogImageWidth || 1200) },
-        { property: "og:image:height", content: String(seo?.ogImageHeight || 630) },
-        { property: "og:image:alt", content: title },
-        { name: "twitter:card", content: seo?.twitterCard || "summary_large_image" },
-        { name: "twitter:site", content: "@indexes_store" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
-        { name: "twitter:image", content: ogImage },
-        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
-        { name: "google-site-verification", content: "google84868c536ade5c41.html" },
-        { name: "google-site-verification", content: "google2b30df2144f7547e.html" },
-      ],
-      links: [
-        { rel: "stylesheet", href: appCss },
-        { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-        { rel: "canonical", href: baseUrl },
-        { rel: "alternate", hrefLang: "ar", href: baseUrl },
-        { rel: "alternate", hrefLang: "x-default", href: baseUrl },
-        // Performance: preconnect critical origins
-        { rel: "preconnect", href: "https://fonts.googleapis.com" },
-        { rel: "preconnect", href: "https://fonts.gstatic.com" },
-        { rel: "preconnect", href: "https://images.unsplash.com" },
-        { rel: "dns-prefetch", href: "https://stream.mux.com" },
-        { rel: "dns-prefetch", href: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev" },
-        { rel: "manifest", href: "/manifest.json" },
-      ],
+      meta: metaTags,
+      links: linkTags,
       scripts: [
         { type: "application/ld+json", children: JSON.stringify(orgLd) },
         { type: "application/ld+json", children: JSON.stringify(localBizLd) },
