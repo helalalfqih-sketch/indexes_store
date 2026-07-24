@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/constants.dart';
 import '../models/product_model.dart';
@@ -36,7 +37,7 @@ class SupabaseService {
         return products;
       }
     } catch (e) {
-      print('Supabase getProducts fallback: $e');
+      debugPrint('Supabase getProducts fallback: $e');
     }
 
     // Fallback Seed Data for testing/demo
@@ -52,7 +53,7 @@ class SupabaseService {
         return data.map((json) => CategoryModel.fromJson(json)).toList();
       }
     } catch (e) {
-      print('Supabase getCategories fallback: $e');
+      debugPrint('Supabase getCategories fallback: $e');
     }
 
     return [
@@ -89,7 +90,7 @@ class SupabaseService {
       final response = await client.from('orders').insert(orderData).select().single();
       return OrderModel.fromJson(response);
     } catch (e) {
-      print('Error creating order: $e');
+      debugPrint('Error creating order: $e');
       // Return simulated order for offline testing
       return OrderModel(
         id: 'ord-${DateTime.now().millisecondsSinceEpoch}',
@@ -113,7 +114,7 @@ class SupabaseService {
       final publicUrl = client.storage.from(AppConstants.mediaBucket).getPublicUrl(path);
       return publicUrl;
     } catch (e) {
-      print('Error uploading seller media: $e');
+      debugPrint('Error uploading seller media: $e');
       return null;
     }
   }

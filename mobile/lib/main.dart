@@ -20,7 +20,7 @@ void main() async {
       anonKey: AppConstants.supabaseAnonKey,
     );
   } catch (e) {
-    print('Supabase init warning: $e');
+    debugPrint('Supabase init warning: $e');
   }
 
   // Initialize FCM Push Notification Service

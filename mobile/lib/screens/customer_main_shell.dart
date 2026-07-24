@@ -47,7 +47,7 @@ class _CustomerMainShellState extends State<CustomerMainShell> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF0F172A),
-          border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08))),
+          border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,

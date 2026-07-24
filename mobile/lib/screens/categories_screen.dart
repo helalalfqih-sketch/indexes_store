@@ -59,7 +59,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   final isSelected = _selectedCatId == 'all';
                   return ListTile(
                     selected: isSelected,
-                    selectedTileColor: const Color(0xFF1F5EFF).withOpacity(0.2),
+                    selectedTileColor: const Color(0xFF1F5EFF).withValues(alpha: 0.2),
                     title: const Text('جميع المنتجات', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                     onTap: () {
                       setState(() => _selectedCatId = 'all');
@@ -71,7 +71,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 final isSelected = _selectedCatId == cat.id;
                 return ListTile(
                   selected: isSelected,
-                  selectedTileColor: const Color(0xFF1F5EFF).withOpacity(0.2),
+                  selectedTileColor: const Color(0xFF1F5EFF).withValues(alpha: 0.2),
                   title: Text('${cat.icon ?? "📦"} ${cat.name}', style: TextStyle(color: isSelected ? const Color(0xFF38BDF8) : Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
                   onTap: () {
                     setState(() => _selectedCatId = cat.id);

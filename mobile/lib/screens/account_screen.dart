@@ -79,7 +79,7 @@ class AccountScreen extends StatelessWidget {
                             side: BorderSide(
                               color: auth.role == UserRole.shopper ? const Color(0xFF1F5EFF) : Colors.white12,
                             ),
-                            backgroundColor: auth.role == UserRole.shopper ? const Color(0xFF1F5EFF).withOpacity(0.15) : null,
+                            backgroundColor: auth.role == UserRole.shopper ? const Color(0xFF1F5EFF).withValues(alpha: 0.15) : null,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () {
@@ -95,7 +95,7 @@ class AccountScreen extends StatelessWidget {
                             side: BorderSide(
                               color: auth.role == UserRole.seller ? const Color(0xFF10B981) : Colors.white12,
                             ),
-                            backgroundColor: auth.role == UserRole.seller ? const Color(0xFF10B981).withOpacity(0.15) : null,
+                            backgroundColor: auth.role == UserRole.seller ? const Color(0xFF10B981).withValues(alpha: 0.15) : null,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () {

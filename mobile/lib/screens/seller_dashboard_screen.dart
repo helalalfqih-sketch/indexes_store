@@ -28,9 +28,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('فشل اختيار الصورة: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل اختيار الصورة: $e')),
+        );
+      }
     }
   }
 
@@ -115,7 +117,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       decoration: BoxDecoration(
                         color: Colors.black26,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.4), style: BorderStyle.solid),
+                        border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.4), style: BorderStyle.solid),
                       ),
                       child: _selectedImage != null
                           ? ClipRRect(
@@ -196,9 +198,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -56,7 +56,7 @@ class OrdersScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: ord.status == 'delivered' ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+                          color: ord.status == 'delivered' ? Colors.green.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(

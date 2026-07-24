@@ -29,9 +29,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1F5EFF).withOpacity(0.15),
+                  color: const Color(0xFF1F5EFF).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF1F5EFF).withOpacity(0.3)),
+                  border: Border.all(color: const Color(0xFF1F5EFF).withValues(alpha: 0.3)),
                 ),
                 child: const Text(
                   'أهلاً بك في اندكس ستور 🇾🇪',
@@ -138,14 +138,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.15) : const Color(0xFF0F172A),
+          color: isSelected ? color.withValues(alpha: 0.15) : const Color(0xFF0F172A),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected ? color : Colors.white12,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
-              ? [BoxShadow(color: color.withOpacity(0.25), blurRadius: 15, spreadRadius: 1)]
+              ? [BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 15, spreadRadius: 1)]
               : [],
         ),
         child: Row(
@@ -154,7 +154,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Center(

@@ -5,7 +5,7 @@ class NotificationService {
   NotificationService._internal();
 
   Future<void> initialize() async {
-    print('Notification Service initialized for FCM Push Notifications');
+    debugPrint('Notification Service initialized for FCM Push Notifications');
   }
 
   /// Show In-App Push Notification Banner
