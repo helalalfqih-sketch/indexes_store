@@ -60,16 +60,25 @@ function AdminMediaComponent() {
   // Query Media List with search, type, source, category, and sorting
   const { data: mediaFiles = [], isLoading } = useQuery({
     queryKey: ["admin-media-files", searchTerm, filterType, filterSource, filterCategory, sortOption],
-    queryFn: () =>
-      fetchMediaFn({
-        data: {
-          search: searchTerm,
-          type: filterType,
-          source: filterSource,
-          category: filterCategory,
-          sort: sortOption,
-        },
-      }),
+    queryFn: async () => {
+      try {
+        const res = await fetchMediaFn({
+          data: {
+            search: searchTerm,
+            type: filterType,
+            source: filterSource,
+            category: filterCategory,
+            sort: sortOption,
+          },
+        });
+        return res || [];
+      } catch (e) {
+        console.warn("fetchMediaFn error, using fallback:", e);
+        return [];
+      }
+    },
+    retry: false,
+    staleTime: 5000,
   });
 
   // Upload Mutation
