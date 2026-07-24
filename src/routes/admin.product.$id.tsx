@@ -38,6 +38,7 @@ import {
   recordInventoryMovement,
 } from "@/lib/actions/admin.actions";
 import { aiAnalyzeImage, aiOptimizeDescription } from "@/lib/catalog.functions";
+import { MediaUploader } from "@/components/media-uploader";
 import { Ai3dGeneratorPanel } from "@/components/ai-3d-generator";
 import { CollapsibleCard } from "@/components/admin/collapsible-card";
 import { ChipInput } from "@/components/admin/chip-input";
@@ -852,67 +853,35 @@ function ProductDetailPage() {
               </div>
             </CollapsibleCard>
 
+            {/* 1. Product Media Section */}
+            <CollapsibleCard
+              id="media"
+              title="🖼️ صور وسائط المنتج"
+              icon={<ImageIcon className="h-4 w-4" />}
+            >
+              <MediaUploader
+                label="معرض صور المنتج"
+                value={form.images}
+                multiple={true}
+                mediaType="image"
+                hint="يمكنك اختيار أكثر من صورة أو رفعها مباشرة"
+                onChange={(urls) => setForm((f) => ({ ...f, images: urls }))}
+              />
+            </CollapsibleCard>
+
             {/* 2. Video Section */}
             <CollapsibleCard
               id="video"
               title="🎥 فيديو المنتج (اختياري)"
               icon={<Video className="h-4 w-4" />}
             >
-              <div className="space-y-4">
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  onChange={handleVideoChange}
-                />
-                <div
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleVideoDrop}
-                  onClick={() => videoInputRef.current?.click()}
-                  className="rounded-xl border-2 border-dashed border-border p-5 text-center cursor-pointer hover:bg-muted/10 hover:border-primary transition"
-                >
-                  {uploadingVideo ? (
-                    <div className="space-y-2">
-                      <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
-                      <p className="text-xs font-bold text-muted-foreground">
-                        جاري رفع ومعالجة الفيديو...
-                      </p>
-                    </div>
-                  ) : form.video_playback_id ? (
-                    <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
-                      <div className="relative mx-auto flex aspect-video max-w-xs items-center justify-center overflow-hidden rounded-xl border border-border bg-showcase">
-                        {localVideoUrl ? (
-                          <video
-                            src={localVideoUrl}
-                            controls
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="text-center text-xs text-muted-foreground p-3">
-                            <Video className="mx-auto h-5 w-5 mb-1 text-primary" />
-                            <span>معرف الفيديو النشط: {form.video_playback_id}</span>
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={removeVideo}
-                        className="rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-bold text-destructive hover:bg-destructive/20 transition"
-                      >
-                        إزالة الفيديو
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <Video className="mx-auto h-6 w-6 text-muted-foreground" />
-                      <p className="text-xs font-bold text-muted-foreground">
-                        اسحب ملف الفيديو هنا، أو انقر للاختيار من الجهاز
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <MediaUploader
+                label="فيديو عرض المنتج"
+                value={form.video_playback_id}
+                mediaType="video"
+                hint="يدعم صيغ MP4 و WebM لعرض فيديو ترويجي للمنتج"
+                onChange={(url) => setForm((f) => ({ ...f, video_playback_id: url }))}
+              />
             </CollapsibleCard>
 
             {/* 3. AI Section */}

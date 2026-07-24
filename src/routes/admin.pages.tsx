@@ -18,6 +18,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { MediaUploader } from "@/components/media-uploader";
 import {
   listCmsPages,
   saveCmsPage,
@@ -385,6 +386,15 @@ function AdminPagesComponent() {
                     className="w-full rounded-xl border border-border bg-surface px-3 py-1.5 text-xs"
                   />
                 </div>
+              </div>
+
+              <div>
+                <MediaUploader
+                  label="صورة المشاركة لهذه الصفحة (OG Image)"
+                  value={editingPage.og_image || ""}
+                  mediaType="image"
+                  onChange={(url) => setEditingPage({ ...editingPage, og_image: url })}
+                />
               </div>
             </div>
 

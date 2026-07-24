@@ -16,6 +16,7 @@ import {
   Bot,
 } from "lucide-react";
 import { toast } from "sonner";
+import { MediaUploader } from "@/components/media-uploader";
 import { notifyStorefrontPublished } from "@/components/appearance-provider";
 import {
   getSeoSettings,
@@ -161,13 +162,11 @@ function AdminSeoComponent() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold mb-1">رابط صورة المشاركة الاجتماعية (OG Image URL)</label>
-              <input
-                type="text"
+              <MediaUploader
+                label="صورة المشاركة الاجتماعية (OG Image)"
                 value={formData.ogImage}
-                onChange={(e) => setFormData({ ...formData, ogImage: e.target.value })}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20"
-                dir="ltr"
+                mediaType="image"
+                onChange={(val) => setFormData({ ...formData, ogImage: val })}
               />
             </div>
 

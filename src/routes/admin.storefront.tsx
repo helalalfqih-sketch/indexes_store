@@ -52,6 +52,7 @@ import {
   type ChangeLogEntry,
 } from "@/lib/actions/appearance.actions";
 import { notifyStorefrontPublished } from "@/components/appearance-provider";
+import { MediaUploader } from "@/components/media-uploader";
 import {
   DEFAULT_STOREFRONT_SETTINGS,
   type StorefrontSettingsShape,
@@ -530,16 +531,20 @@ function HomepageTab({
           </select>
         </Field>
         {hero.type === "banner_image" && (
-          <ImageUploader
+          <MediaUploader
             label="صورة البنر الرئيسي"
             value={hero.bannerImageUrl}
+            mediaType="image"
             onChange={(val) => setHero("bannerImageUrl", val)}
           />
         )}
         {hero.type === "video" && (
-          <Field label="رابط فيديو البنر">
-            <input value={hero.bannerVideoUrl} onChange={(e) => setHero("bannerVideoUrl", e.target.value)} className={fieldCls} placeholder="مثال: https://..." dir="ltr" />
-          </Field>
+          <MediaUploader
+            label="فيديو البنر الرئيسي"
+            value={hero.bannerVideoUrl}
+            mediaType="video"
+            onChange={(val) => setHero("bannerVideoUrl", val)}
+          />
         )}
         {hero.type === "slideshow" && (
           <div className="space-y-3 pt-2 border-t border-border/40">
@@ -586,9 +591,10 @@ function HomepageTab({
                         حذف
                       </button>
                     </div>
-                    <ImageUploader
-                      label="صورة الشريحة"
+                    <MediaUploader
+                      label="وسيطة الشريحة"
                       value={slide.mediaUrl}
+                      mediaType="image"
                       onChange={(val) => {
                         const updated = [...hero.slides];
                         updated[idx] = { ...updated[idx], mediaUrl: val };
@@ -1206,9 +1212,10 @@ function NavigationTab({
             <input value={nav.tagline} onChange={(e) => set("tagline", e.target.value)} className={fieldCls} />
           </Field>
         </div>
-        <ImageUploader
+        <MediaUploader
           label="شعار المتجر (Logo)"
           value={nav.logoUrl}
+          mediaType="image"
           onChange={(val) => set("logoUrl", val)}
         />
       </SectionCard>

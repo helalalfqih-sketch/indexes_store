@@ -832,107 +832,106 @@ export function ProductSphereHero({
         )}
       </AnimatePresence>
 
-      {/* ── Hovered product card ─────────────────────────────────────────── */}
+      {/* ── Backdrop blur overlay when product is selected/hovered ────────────────── */}
+      {hovered && (
+        <div className="pointer-events-none absolute inset-0 z-10 bg-slate-950/20 backdrop-blur-[2px] transition-all duration-300" />
+      )}
+
+      {/* ── Interactive Bottom Sheet (بطاقة التفاعل المنبثقة) ─────────────────── */}
       <AnimatePresence>
         {hovered && (
           <motion.div
             key={hovered.id}
-            initial={{ y: 24, opacity: 0, scale: 0.95 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 16, opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-x-4 bottom-5 z-20 mx-auto sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[380px]"
-            style={{ pointerEvents: "none" }}
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 60, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="absolute inset-x-0 bottom-0 z-30 mx-auto w-full max-w-lg p-2 sm:p-4"
           >
-            <div
-              className="flex flex-col gap-2 rounded-2xl p-3"
-              style={{
-                pointerEvents: "auto",
-                background: "rgba(6,9,31,0.88)",
-                border: "1px solid rgba(79,140,255,0.22)",
-                backdropFilter: "blur(24px)",
-                boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(79,140,255,0.08), inset 0 1px 0 rgba(255,255,255,0.05)`,
-                fontFamily: "Tajawal, system-ui, sans-serif",
-              }}
-            >
-              <div className="flex items-center gap-3">
-                {/* Thumbnail */}
-                <div
-                  className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl animate-fade-in"
-                  style={{ border: "1px solid rgba(79,140,255,0.25)" }}
-                >
+            <div className="relative rounded-t-3xl border border-slate-800/90 bg-slate-900/95 p-4 shadow-2xl backdrop-blur-xl space-y-3 text-right">
+              {/* Drag Handle Bar */}
+              <div className="w-10 h-1 bg-slate-700/80 rounded-full mx-auto mb-1" />
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setHovered(null)}
+                className="absolute top-3 end-3 rounded-full bg-slate-800/80 p-1 text-slate-400 hover:text-white transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              {/* Product Info Card */}
+              <div className="flex gap-3 items-center bg-slate-950/70 p-3 rounded-2xl border border-slate-800/80">
+                <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-800 flex-shrink-0 border border-slate-700/50">
                   <OptimizedImage
                     src={hovered.image}
                     alt={hovered.name}
                     size="thumbnail"
-                    className="h-full w-full object-cover"
+                    className="w-full h-full object-cover"
                   />
                 </div>
-
-                {/* Info */}
-                {(showName || showPrice) && (
-                  <div className="min-w-0 flex-1 text-right">
-                    {showName && (
-                      <p
-                        className="truncate text-xs font-bold leading-snug"
-                        style={{ color: LIGHT }}
-                      >
-                        {hovered.name}
-                      </p>
-                    )}
-                    {showPrice && (
-                      <p
-                        className="mt-0.5 text-[11px] font-black"
-                        style={{ color: ACCENT }}
-                      >
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs font-bold text-slate-100 truncate">
+                    {hovered.name}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    الماركة: {hovered.brand || "ماركة متميزة"} | {hovered.badge || "ضمان سنة"}
+                  </p>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <div className="flex items-center gap-1 text-[10px] text-amber-400">
+                      <span>⭐ 4.8 (25 تقييم)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-black text-blue-400">
                         {formatPrice(hovered.price)}
-                      </p>
-                    )}
+                      </span>
+                      {hovered.oldPrice && (
+                        <span className="text-[10px] text-slate-500 line-through">
+                          {formatPrice(hovered.oldPrice)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Action Buttons Row */}
-              <div className="flex gap-2 border-t border-white/5 pt-2">
-                {/* CTA "افتح" */}
+              {/* Quick Action Buttons Grid */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => setActiveSpecsProduct(hovered)}
-                  className="flex-1 flex items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-black tracking-wider transition hover:scale-[1.02] active:scale-95 text-white cursor-pointer"
-                  style={{
-                    background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`,
-                    boxShadow: `0 0 12px ${ACCENT}35`,
-                  }}
+                  onClick={() => navigate({ to: "/product/$slug", params: { slug: hovered.slug } })}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white transition hover:bg-blue-500 active:scale-95 shadow-md"
                 >
-                  افتح المنتج 🛍️
+                  🛒 أطلب الآن
                 </button>
-
-                {/* Category Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigate({
-                      to: "/category/$id",
-                      params: { id: hovered.categoryId || "other" },
-                    });
-                  }}
-                  className="flex-1 flex items-center justify-center gap-1 rounded-xl bg-white/10 text-white border border-white/10 px-2 py-1.5 text-[10px] font-bold hover:bg-white/15 transition active:scale-95 cursor-pointer"
+                <a
+                  href={`https://wa.me/${STORE_CONTACT}?text=${encodeURIComponent(`مرحباً، أريد طلب منتج: ${hovered.name}\nالسعر: ${formatPrice(hovered.price)}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-500 active:scale-95 shadow-md"
                 >
-                  <span>الفئة 📁</span>
-                </button>
+                  💬 طلب عبر واتساب
+                </a>
+              </div>
 
-                {/* Video Play Button */}
-                {hovered.videoPlaybackId && (
+              {/* Next/Prev Product Navigation in Sphere */}
+              {pool.length > 1 && (
+                <div className="flex items-center justify-between border-t border-slate-800/80 pt-2 text-[11px] text-slate-400">
                   <button
                     type="button"
-                    onClick={() => setShowVideo(true)}
-                    className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition active:scale-95 cursor-pointer"
-                    title="فيديو توضيحي"
+                    onClick={() => {
+                      const curIdx = pool.findIndex((p) => p.id === hovered.id);
+                      const nextIdx = (curIdx + 1) % pool.length;
+                      setHovered(pool[nextIdx]);
+                    }}
+                    className="w-full flex items-center justify-center gap-1 hover:text-slate-100 transition py-1"
                   >
-                    <Play className="h-4 w-4 fill-white text-white" />
+                    <span>الانتقال للمنتج التالي في الكرة الذكية</span>
+                    <span className="text-blue-400">←</span>
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

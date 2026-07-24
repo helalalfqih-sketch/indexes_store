@@ -11,6 +11,7 @@ import {
   listAdminProducts,
 } from "@/lib/actions/admin.actions";
 import { inferCategorySlug } from "@/lib/catalog.functions";
+import { MediaUploader } from "@/components/media-uploader";
 import { Reorder } from "framer-motion";
 
 export const Route = createFileRoute("/admin/categories")({
@@ -458,8 +459,10 @@ function DraftForm({
       </label>
       {/* Category Image Picker */}
       <div className="sm:col-span-2">
-        <CategoryImagePicker
-          imageUrl={draft.image_url}
+        <MediaUploader
+          label="صورة التصنيف"
+          value={draft.image_url}
+          mediaType="image"
           onChange={(url) => setDraft({ ...draft, image_url: url })}
         />
       </div>

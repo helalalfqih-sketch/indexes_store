@@ -127,6 +127,14 @@ export async function readSettingRow(
     const { data, error } = await q.maybeSingle();
     if (!error && data) return data;
 
+    // Fallback if draft_value column error occurs in PostgREST schema cache
+    if (error && (error.message?.includes("draft_value") || error.code === "PGRST204")) {
+      let qFb = db.from("storefront_settings").select("key, value").eq("key", key);
+      qFb = scoped(qFb, scope);
+      const { data: fbData } = await qFb.maybeSingle();
+      if (fbData) return { key: fbData.key, value: fbData.value, draft_value: null };
+    }
+
     // Fallback: if tenant scope didn't find a row, try global scope (tenant_id IS NULL)
     if (scope !== null) {
       const { data: globalData } = await db
@@ -142,11 +150,11 @@ export async function readSettingRow(
     try {
       const { data: d2 } = await db
         .from("storefront_settings")
-        .select("key, value, draft_value")
+        .select("key, value")
         .eq("key", key)
         .is("tenant_id", null)
         .maybeSingle();
-      return d2 ?? null;
+      return d2 ? { key: d2.key, value: d2.value, draft_value: null } : null;
     } catch {
       return null;
     }

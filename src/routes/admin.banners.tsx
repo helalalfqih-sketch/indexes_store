@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { MediaUploader } from "@/components/media-uploader";
 
 export const Route = createFileRoute("/admin/banners")({
   component: BannersPage,
@@ -175,10 +176,12 @@ function BannersPage() {
               <input value={form.subtitle} onChange={(e) => setForm((f) => f ? { ...f, subtitle: e.target.value } : f)} placeholder="وصف قصير..." className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-                <ImageIcon className="inline h-3 w-3" /> رابط الصورة
-              </label>
-              <input value={form.image_url} onChange={(e) => setForm((f) => f ? { ...f, image_url: e.target.value } : f)} placeholder="https://..." className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
+              <MediaUploader
+                label="صورة البنر"
+                value={form.image_url}
+                mediaType="image"
+                onChange={(val) => setForm((f) => (f ? { ...f, image_url: val } : f))}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
