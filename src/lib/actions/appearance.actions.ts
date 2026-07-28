@@ -156,14 +156,10 @@ function rowsToSettings(
 // ── 1. Get Storefront Settings ────────────────────────────────────────────────
 
 /**
- * Fetch all global storefront settings.
- * - previewMode=true → returns draft_value when available (for admin live preview)
- * - previewMode=false (default) → returns published value only (for public storefront)
+ * Fetch all global storefront settings (Public/Published only).
  */
 export const getStorefrontAppearance = createServerFn({ method: "GET" })
-  .validator((data: { previewMode?: boolean } | undefined) => data)
-  .handler(async ({ data }): Promise<StorefrontSettingsShape> => {
-    const previewMode = data?.previewMode ?? false;
+  .handler(async (): Promise<StorefrontSettingsShape> => {
     try {
       let db = supabase;
       if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
@@ -178,17 +174,47 @@ export const getStorefrontAppearance = createServerFn({ method: "GET" })
       if (!db) return DEFAULT_STOREFRONT_SETTINGS;
 
       const publicTenantId = await resolvePublicCmsTenant(db);
-
-      if (previewMode) {
-        const rows = await storefrontService.fetchRowsWithDrafts(db, publicTenantId);
-        if (rows && rows.length > 0) return rowsToSettings(rows, true);
-      }
-
       const rows = await storefrontService.fetchPublishedRows(db, publicTenantId);
+      
       if (!rows || rows.length === 0) return DEFAULT_STOREFRONT_SETTINGS;
       return rowsToSettings(rows, false);
     } catch (err) {
       console.warn("[getStorefrontAppearance] Returning fallback defaults:", err);
+      return DEFAULT_STOREFRONT_SETTINGS;
+    }
+  });
+
+/**
+ * Fetch storefront settings with drafts for live preview (Authenticated Admins only).
+ */
+export const getStorefrontPreviewAppearance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<StorefrontSettingsShape> => {
+    try {
+      const { supabase: authSupabase, userId } = context;
+      const gate = await resolveCmsScope(authSupabase, userId);
+      
+      if (!gate.allowed) {
+        throw new Error("Unauthorized to view CMS drafts");
+      }
+
+      let db = authSupabase;
+      if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
+        try {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          if (supabaseAdmin) db = supabaseAdmin;
+        } catch {
+          db = authSupabase;
+        }
+      }
+
+      const publicTenantId = await resolvePublicCmsTenant(db);
+      const rows = await storefrontService.fetchRowsWithDrafts(db, publicTenantId);
+      
+      if (rows && rows.length > 0) return rowsToSettings(rows, true);
+      return DEFAULT_STOREFRONT_SETTINGS;
+    } catch (err) {
+      console.warn("[getStorefrontPreviewAppearance] Returning fallback defaults:", err);
       return DEFAULT_STOREFRONT_SETTINGS;
     }
   });

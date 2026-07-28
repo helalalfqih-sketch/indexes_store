@@ -1,6 +1,8 @@
 import { useRef, useState, type DragEvent } from "react";
 import { Star, Trash2, ArrowUp, ArrowDown, Link as LinkIcon, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
+import { useCurrentTenant } from "@/components/tenant-provider";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   value: string[];
@@ -13,6 +15,8 @@ export function ImageManager({ value, onChange }: Props) {
   const [urlDraft, setUrlDraft] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { tenant } = useCurrentTenant();
+  const tenantId = tenant?.id || "default";
 
   const addUrl = (raw: string) => {
     const v = raw.trim();
@@ -70,18 +74,20 @@ export function ImageManager({ value, onChange }: Props) {
       return;
     }
 
-    const loaders = imageFiles.map((file) => {
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error("فشل قراءة الملف"));
-        reader.readAsDataURL(file);
-      });
+    const uploadPromises = imageFiles.map(async (file) => {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._\-\u0600-\u06FF]/g, "-");
+      const storagePath = `uploads/${tenantId}/${Date.now()}_${safeName}`;
+      
+      const { error } = await supabase.storage.from("product-images").upload(storagePath, file, { upsert: false });
+      if (error) throw new Error(error.message);
+      
+      const { data } = supabase.storage.from("product-images").getPublicUrl(storagePath);
+      return data.publicUrl;
     });
 
     try {
-      const base64Urls = await Promise.all(loaders);
-      const uniqueNewUrls = base64Urls.filter((u) => !value.includes(u));
+      const uploadedUrls = await Promise.all(uploadPromises);
+      const uniqueNewUrls = uploadedUrls.filter((u) => !value.includes(u));
       if (uniqueNewUrls.length > 0) {
         onChange([...value, ...uniqueNewUrls]);
         toast.success(`تمت إضافة ${uniqueNewUrls.length} صورة من الجهاز`);
@@ -104,18 +110,20 @@ export function ImageManager({ value, onChange }: Props) {
         return;
       }
 
-      const loaders = imageFiles.map((file) => {
-        return new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error("فشل قراءة الملف"));
-          reader.readAsDataURL(file);
-        });
+      const uploadPromises = imageFiles.map(async (file) => {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._\-\u0600-\u06FF]/g, "-");
+        const storagePath = `uploads/${tenantId}/${Date.now()}_${safeName}`;
+        
+        const { error } = await supabase.storage.from("product-images").upload(storagePath, file, { upsert: false });
+        if (error) throw new Error(error.message);
+        
+        const { data } = supabase.storage.from("product-images").getPublicUrl(storagePath);
+        return data.publicUrl;
       });
 
       try {
-        const base64Urls = await Promise.all(loaders);
-        const uniqueNewUrls = base64Urls.filter((u) => !value.includes(u));
+        const uploadedUrls = await Promise.all(uploadPromises);
+        const uniqueNewUrls = uploadedUrls.filter((u) => !value.includes(u));
         if (uniqueNewUrls.length > 0) {
           onChange([...value, ...uniqueNewUrls]);
           toast.success(`تمت إضافة ${uniqueNewUrls.length} صورة من الجهاز`);

@@ -21,18 +21,6 @@ export const getSessionUser = createServerFn({ method: "GET" })
     let roles = ((roleRows ?? []) as { role: AppRole }[]).map((r) => r.role);
     const userEmail = ((claims?.email as string | undefined) ?? "").toLowerCase();
 
-    // Primary store owner auto-promotion to full Platform Admin
-    if (userEmail === "helalalfqih@gmail.com" && !roles.includes("admin")) {
-      try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        await supabaseAdmin
-          .from("user_roles")
-          .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" });
-        if (!roles.includes("admin")) roles.push("admin");
-      } catch (err) {
-        console.warn("[getSessionUser] Auto-admin promotion notice:", err);
-      }
-    }
 
     return {
       id: userId,

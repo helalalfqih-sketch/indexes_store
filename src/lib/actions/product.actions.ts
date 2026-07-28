@@ -19,13 +19,8 @@ import {
   inferCategorySlug,
 } from "@/lib/catalog.functions";
 import { fetchCategories } from "@/lib/actions/category.actions";
-import {
-  fallbackProducts,
-  toLegacyProduct,
-  type LegacyProductShape,
-} from "@/lib/data-adapter";
+import { toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
 import type { ProductDTO } from "@/lib/domain/product";
-import { products as seedProducts } from "@/lib/store-data";
 
 // ---------- Input validation ----------
 
@@ -42,21 +37,8 @@ export type ListProductsInput = z.infer<typeof listProductsInput>;
 
 // ---------- Enrichment (until oldPrice / badges live in DB) ----------
 
-const seedIndex = new Map(seedProducts.map((p) => [p.slug, p]));
-
-const enrichLegacy = (p: LegacyProductShape): LegacyProductShape => {
-  const seed = seedIndex.get(p.slug);
-  if (!seed) return p;
-  return {
-    ...p,
-    oldPrice: seed.oldPrice ?? p.oldPrice,
-    badge: p.badge ?? seed.badge,
-    image: p.image || seed.image,
-  };
-};
-
 const dtoToLegacy = (rows: ProductDTO[]): LegacyProductShape[] =>
-  rows.map((r) => enrichLegacy(toLegacyProduct(r)));
+  rows.map((r) => toLegacyProduct(r));
 
 // ---------- Actions ----------
 
@@ -65,12 +47,12 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
   try {
     const rows = await listProducts({ data });
     if (rows.length === 0) {
-      return fallbackProducts().map(toLegacyProduct).map(enrichLegacy);
+      return [];
     }
     return dtoToLegacy(rows);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] fetchProducts fallback:", err);
-    return fallbackProducts().map(toLegacyProduct).map(enrichLegacy);
+    return [];
   }
 }
 
@@ -78,12 +60,11 @@ export async function fetchProductBySlug(slug: string): Promise<LegacyProductSha
   const parsed = z.string().trim().min(1).parse(slug);
   try {
     const dto = await getProductBySlugFn({ data: { slug: parsed } });
-    if (dto) return enrichLegacy(toLegacyProduct(dto));
+    if (dto) return toLegacyProduct(dto);
   } catch (err) {
-    if (import.meta.env.DEV) console.warn("[product.actions] fetchProductBySlug fallback:", err);
+    if (import.meta.env.DEV) console.warn("[product.actions] fetchProductBySlug error:", err);
   }
-  const seed = fallbackProducts().find((p) => p.slug === parsed);
-  return seed ? enrichLegacy(toLegacyProduct(seed)) : null;
+  return null;
 }
 
 /**
@@ -155,16 +136,7 @@ export async function fetchOffers(): Promise<LegacyProductShape[]> {
       (p.badge && (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
   );
 
-  if (explicitOffers.length > 0) {
-    return explicitOffers;
-  }
-
-  // Fallback: pick products and compute deal pricing so offers page & home deals section are vibrant
-  return all.slice(0, 8).map((p) => ({
-    ...p,
-    oldPrice: p.oldPrice || Math.round(p.price * 1.25),
-    badge: p.badge || "عرض خاص 🔥",
-  }));
+  return explicitOffers;
 }
 
 export async function fetchBestSellers(limit = 4): Promise<LegacyProductShape[]> {

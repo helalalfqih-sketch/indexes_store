@@ -142,113 +142,50 @@ export const createOrder = createServerFn({ method: "POST" })
       throw new Error("بعض المنتجات غير متاحة حالياً.");
     }
 
-    // 4. Build line items + totals from DB values.
-    let currency = "YER";
-    let subtotal = 0;
-    let hasRestockNeededItem = false;
-
-    const itemRows = data.items.map((i) => {
-      const p = byId.get(i.productId)!;
-      currency = p.currency ?? currency;
-      const unitPrice = Number(p.price ?? 0);
-      const lineTotal = unitPrice * i.quantity;
-      subtotal += lineTotal;
-      if ((p.stock ?? 0) <= 0 || (p.stock ?? 0) < i.quantity) {
-        hasRestockNeededItem = true;
-      }
-      return {
-        tenant_id: tenantId,
-        product_id: p.id,
-        quantity: i.quantity,
-        unit_price: unitPrice,
-        total_price: lineTotal,
-        product_name_snapshot: p.name,
-        product_sku_snapshot: p.sku ?? null,
-        vendor_id: p.vendor_id ?? null,
-      };
+    // 4. Use Atomic RPC to handle stock validation, reduction, and order creation in one transaction.
+    const itemsPayload = data.items.map((i) => ({ productId: i.productId, quantity: i.quantity }));
+    
+    const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc("create_order_transaction", {
+      _tenant_id: tenantId,
+      _customer_name: data.customerName ?? null,
+      _customer_phone: data.customerPhone,
+      _customer_address: data.customerAddress ?? null,
+      _customer_email: data.customerEmail ?? null,
+      _notes: data.notes ?? null,
+      _coupon_code: data.couponCode ?? null,
+      _discount_amount: 0, // Force 0 discount until backend validation is supported
+      _payment_provider: data.paymentProvider ?? null,
+      _items: JSON.stringify(itemsPayload)
     });
 
-    const validatedDiscount = 0;
-    const total = Math.max(0, subtotal - validatedDiscount);
-
-    // Build notes with restock request flag if stock is 0
-    let finalNotes = data.notes ?? "";
-    if (hasRestockNeededItem) {
-      finalNotes = finalNotes ? `${finalNotes} | [طلب توفير كمية - المخزون 0]` : "[طلب توفير كمية - المخزون 0]";
+    if (rpcErr || !rpcData) {
+      console.error("[createOrder] RPC Error:", rpcErr);
+      throw new Error("تعذّر إنشاء الطلب بسبب خطأ في الخادم.");
     }
 
-    // 5. Insert the order (service role). user_id is our verified value or null.
-    const { data: order, error: orderErr } = await supabaseAdmin
-      .from("orders")
-      .insert({
-        tenant_id: tenantId,
-        user_id: userId,
-        customer_name: data.customerName ?? null,
-        customer_phone: data.customerPhone,
-        customer_address: data.customerAddress ?? null,
-        customer_email: data.customerEmail ?? null,
-        notes: finalNotes || null,
-        status: "pending",
-        payment_status: "pending",
-        payment_provider: data.paymentProvider ?? null,
-        total,
-        currency,
-        coupon_code: data.couponCode ?? null,
-        discount_amount: validatedDiscount,
-      })
-      .select("id")
-      .single();
-
-    if (orderErr || !order) throw new Error("تعذّر إنشاء الطلب.");
-
-    // 6. Insert order items.
-    const { data: insertedItems, error: itemsErr } = await supabaseAdmin
-      .from("order_items")
-      .insert(itemRows.map(({ vendor_id, ...r }) => ({ ...r, order_id: order.id })))
-      .select("id, order_id, product_id, quantity, unit_price, total_price");
-
-    if (itemsErr || !insertedItems) {
-      // Best-effort cleanup so we don't leave an order with no items.
-      await supabaseAdmin.from("orders").delete().eq("id", order.id);
-      throw new Error("تعذّر حفظ عناصر الطلب.");
-    }
+    const { orderId, total, currency, itemsCount, insertedItems } = rpcData as unknown as any;
 
     // 6b. Multi-Vendor Sub-Orders splitting (best-effort)
     try {
       const { splitOrderIntoVendorOrders } = await import("@/lib/services/vendor-order.service");
-      const orderItemsWithVendor = insertedItems.map((item) => {
-        const matchingRow = itemRows.find((r) => r.product_id === item.product_id);
-        return {
-          ...item,
-          vendor_id: matchingRow?.vendor_id ?? null,
-        };
-      });
+      const orderItemsWithVendor = insertedItems.map((item: any) => ({
+        ...item,
+        order_id: orderId,
+        tenant_id: tenantId
+      }));
 
-      await splitOrderIntoVendorOrders(supabaseAdmin as any, {
-        tenantId,
-        orderId: order.id,
-        items: orderItemsWithVendor,
-      });
+      if (orderItemsWithVendor.length > 0) {
+        await splitOrderIntoVendorOrders(supabaseAdmin as any, {
+          tenantId,
+          orderId: orderId,
+          items: orderItemsWithVendor,
+        });
+      }
     } catch (splitEx) {
       console.warn("[createOrder] multi-vendor order split notice:", splitEx);
     }
 
-    // 7. Initial audit entry (Task 4) — best-effort: never fails the order.
-    try {
-      const { error: histErr } = await supabaseAdmin.from("order_status_history").insert({
-        order_id: order.id,
-        tenant_id: tenantId,
-        from_status: null,
-        to_status: "pending",
-        changed_by: userId,
-        note: hasRestockNeededItem ? "Order created — يحتوي على طلب توفير كمية (المخزون 0)" : "Order created via checkout",
-      });
-      if (histErr) console.warn("[createOrder] status history notice:", histErr.message);
-    } catch (histEx) {
-      console.warn("[createOrder] status history skipped:", histEx);
-    }
-
-    return { orderId: order.id, total, currency, itemsCount: itemRows.length };
+    return { orderId, total, currency, itemsCount };
   });
 
 /**

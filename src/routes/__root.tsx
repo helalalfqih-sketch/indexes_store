@@ -324,7 +324,22 @@ function RootComponent() {
   }, [queryClient]);
 
   return (
-    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: idbPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}>
+    <PersistQueryClientProvider 
+      client={queryClient} 
+      persistOptions={{ 
+        persister: idbPersister, 
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            const excludedKeys = ["user", "my-orders", "admin", "tenant", "profile"];
+            return !excludedKeys.some((key) => 
+              query.queryKey[0] === key || 
+              (typeof query.queryKey[0] === "string" && query.queryKey[0].includes(key))
+            );
+          }
+        }
+      }}
+    >
       <AppearanceProvider initialSettings={settings}>
         <TenantProvider>
           {isAdmin || isBare ? (

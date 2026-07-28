@@ -32,7 +32,7 @@ function CartPage() {
   const remove = useCart((s) => s.remove);
   const { settings } = useAppearance();
 
-  const discount = coupon ? Math.round(total * 0.1) : 0;
+  const discount = 0; // TODO: Implement real backend coupon validation
   const finalTotal = total - discount;
 
   const [name, setName] = useState("");

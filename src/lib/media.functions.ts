@@ -425,8 +425,24 @@ export const deleteMediaFile = createServerFn({ method: "POST" })
     const db = ctx.supabase || supabase;
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
+    // 1. Fetch file_path before deleting record
+    const { data: record } = await db.from("media_files").select("file_path").eq("id", id).eq("tenant_id", tenantId).maybeSingle();
+    
+    // 2. Remove from database
     const { error } = await db.from("media_files").delete().eq("id", id).eq("tenant_id", tenantId);
     if (error) throw new Error(error.message);
+
+    // 3. Remove from storage
+    if (record?.file_path) {
+      const bucketsToTry = ["product-images", "media", "uploads"];
+      for (const bucket of bucketsToTry) {
+        try {
+          await db.storage.from(bucket).remove([record.file_path]);
+        } catch {
+          // ignore if bucket doesn't exist
+        }
+      }
+    }
 
     // Audit log
     await db.from("tenant_audit_logs").insert({

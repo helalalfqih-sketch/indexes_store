@@ -15,14 +15,6 @@ export const claimFirstAdmin = createServerFn({ method: "POST" })
     // Use service role for the elevated write; we already verified the caller is authenticated.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Primary store owner is ALWAYS allowed to claim admin
-    if (userEmail === "helalalfqih@gmail.com") {
-      const { error } = await supabaseAdmin
-        .from("user_roles")
-        .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" });
-      if (error) throw error;
-      return { granted: true };
-    }
 
     const { count } = await supabaseAdmin
       .from("user_roles")

@@ -38,13 +38,13 @@ import { Route as StoreEarningsRouteImport } from './routes/store.earnings'
 import { Route as StoreDashboardRouteImport } from './routes/store.dashboard'
 import { Route as StoreCustomersRouteImport } from './routes/store.customers'
 import { Route as StoreAnalyticsRouteImport } from './routes/store.analytics'
-import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
-import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
-import { Route as GoogleShoppingXmlRouteImport } from './routes/google-shopping.xml'
 import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
+import { Route as ApiSitemapRouteImport } from './routes/api/sitemap'
+import { Route as ApiRobotsRouteImport } from './routes/api/robots'
+import { Route as ApiGoogleShoppingRouteImport } from './routes/api/google-shopping'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSystemHealthRouteImport } from './routes/admin.system-health'
 import { Route as AdminStudioRouteImport } from './routes/admin.studio'
@@ -231,16 +231,6 @@ const StoreAnalyticsRoute = StoreAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => StoreRoute,
 } as any)
-const SitemapXmlRoute = SitemapXmlRouteImport.update({
-  id: '/sitemap/xml',
-  path: '/sitemap/xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RobotsTxtRoute = RobotsTxtRouteImport.update({
-  id: '/robots/txt',
-  path: '/robots/txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProductSlugRoute = ProductSlugRouteImport.update({
   id: '/product/$slug',
   path: '/product/$slug',
@@ -251,11 +241,6 @@ const PagesSlugRoute = PagesSlugRouteImport.update({
   path: '/pages/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GoogleShoppingXmlRoute = GoogleShoppingXmlRouteImport.update({
-  id: '/google-shopping/xml',
-  path: '/google-shopping/xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const Demo3dViewerRoute = Demo3dViewerRouteImport.update({
   id: '/demo/3d-viewer',
   path: '/demo/3d-viewer',
@@ -264,6 +249,21 @@ const Demo3dViewerRoute = Demo3dViewerRouteImport.update({
 const CategoryIdRoute = CategoryIdRouteImport.update({
   id: '/category/$id',
   path: '/category/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSitemapRoute = ApiSitemapRouteImport.update({
+  id: '/api/sitemap',
+  path: '/api/sitemap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRobotsRoute = ApiRobotsRouteImport.update({
+  id: '/api/robots',
+  path: '/api/robots',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGoogleShoppingRoute = ApiGoogleShoppingRouteImport.update({
+  id: '/api/google-shopping',
+  path: '/api/google-shopping',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -522,13 +522,13 @@ export interface FileRoutesByFullPath {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/google-shopping': typeof ApiGoogleShoppingRoute
+  '/api/robots': typeof ApiRobotsRoute
+  '/api/sitemap': typeof ApiSitemapRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
-  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
-  '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
@@ -598,13 +598,13 @@ export interface FileRoutesByTo {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/google-shopping': typeof ApiGoogleShoppingRoute
+  '/api/robots': typeof ApiRobotsRoute
+  '/api/sitemap': typeof ApiSitemapRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
-  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
-  '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
@@ -678,13 +678,13 @@ export interface FileRoutesById {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/google-shopping': typeof ApiGoogleShoppingRoute
+  '/api/robots': typeof ApiRobotsRoute
+  '/api/sitemap': typeof ApiSitemapRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
-  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
-  '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
@@ -758,13 +758,13 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/google-shopping'
+    | '/api/robots'
+    | '/api/sitemap'
     | '/category/$id'
     | '/demo/3d-viewer'
-    | '/google-shopping/xml'
     | '/pages/$slug'
     | '/product/$slug'
-    | '/robots/txt'
-    | '/sitemap/xml'
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
@@ -834,13 +834,13 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/google-shopping'
+    | '/api/robots'
+    | '/api/sitemap'
     | '/category/$id'
     | '/demo/3d-viewer'
-    | '/google-shopping/xml'
     | '/pages/$slug'
     | '/product/$slug'
-    | '/robots/txt'
-    | '/sitemap/xml'
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
@@ -913,13 +913,13 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/google-shopping'
+    | '/api/robots'
+    | '/api/sitemap'
     | '/category/$id'
     | '/demo/3d-viewer'
-    | '/google-shopping/xml'
     | '/pages/$slug'
     | '/product/$slug'
-    | '/robots/txt'
-    | '/sitemap/xml'
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
@@ -962,13 +962,13 @@ export interface RootRouteChildren {
   StoreRoute: typeof StoreRouteWithChildren
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
+  ApiGoogleShoppingRoute: typeof ApiGoogleShoppingRoute
+  ApiRobotsRoute: typeof ApiRobotsRoute
+  ApiSitemapRoute: typeof ApiSitemapRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
-  GoogleShoppingXmlRoute: typeof GoogleShoppingXmlRoute
   PagesSlugRoute: typeof PagesSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
-  RobotsTxtRoute: typeof RobotsTxtRoute
-  SitemapXmlRoute: typeof SitemapXmlRoute
   VendorSlugRoute: typeof VendorSlugRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
   ApiAiAgentRoute: typeof ApiAiAgentRoute
@@ -1183,20 +1183,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreAnalyticsRouteImport
       parentRoute: typeof StoreRoute
     }
-    '/sitemap/xml': {
-      id: '/sitemap/xml'
-      path: '/sitemap/xml'
-      fullPath: '/sitemap/xml'
-      preLoaderRoute: typeof SitemapXmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/robots/txt': {
-      id: '/robots/txt'
-      path: '/robots/txt'
-      fullPath: '/robots/txt'
-      preLoaderRoute: typeof RobotsTxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/product/$slug': {
       id: '/product/$slug'
       path: '/product/$slug'
@@ -1211,13 +1197,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PagesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/google-shopping/xml': {
-      id: '/google-shopping/xml'
-      path: '/google-shopping/xml'
-      fullPath: '/google-shopping/xml'
-      preLoaderRoute: typeof GoogleShoppingXmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/demo/3d-viewer': {
       id: '/demo/3d-viewer'
       path: '/demo/3d-viewer'
@@ -1230,6 +1209,27 @@ declare module '@tanstack/react-router' {
       path: '/category/$id'
       fullPath: '/category/$id'
       preLoaderRoute: typeof CategoryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sitemap': {
+      id: '/api/sitemap'
+      path: '/api/sitemap'
+      fullPath: '/api/sitemap'
+      preLoaderRoute: typeof ApiSitemapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/robots': {
+      id: '/api/robots'
+      path: '/api/robots'
+      fullPath: '/api/robots'
+      preLoaderRoute: typeof ApiRobotsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/google-shopping': {
+      id: '/api/google-shopping'
+      path: '/api/google-shopping'
+      fullPath: '/api/google-shopping'
+      preLoaderRoute: typeof ApiGoogleShoppingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -1669,13 +1669,13 @@ const rootRouteChildren: RootRouteChildren = {
   StoreRoute: StoreRouteWithChildren,
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
+  ApiGoogleShoppingRoute: ApiGoogleShoppingRoute,
+  ApiRobotsRoute: ApiRobotsRoute,
+  ApiSitemapRoute: ApiSitemapRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
-  GoogleShoppingXmlRoute: GoogleShoppingXmlRoute,
   PagesSlugRoute: PagesSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
-  RobotsTxtRoute: RobotsTxtRoute,
-  SitemapXmlRoute: SitemapXmlRoute,
   VendorSlugRoute: VendorSlugRoute,
   VendorDashboardRoute: VendorDashboardRoute,
   ApiAiAgentRoute: ApiAiAgentRoute,

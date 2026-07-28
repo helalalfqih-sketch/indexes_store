@@ -205,9 +205,6 @@ function ProductDetailPage() {
   const [aiSectionCollapsed, setAiSectionCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOverAi, setDragOverAi] = useState(false);
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [localVideoUrl, setLocalVideoUrl] = useState<string>("");
-  const videoInputRef = useRef<HTMLInputElement | null>(null);
 
   // Auto-populate form images and video from incoming selected media files
   useEffect(() => {
@@ -228,40 +225,19 @@ function ProductDetailPage() {
         source_url: video ? video.file_url : prev.source_url,
       }));
 
-      if (video) {
-        setLocalVideoUrl(video.file_url);
+      if (video && video.file_url) {
+        // We no longer set localVideoUrl, MediaUploader handles this via video_playback_id or source_url
+        // However, standard v2 video field is video_playback_id
+        setForm((prev) => ({
+          ...prev,
+          video_playback_id: video.file_url,
+        }));
       }
 
       toast.info(`تم استيراد ${images.length} صورة ${video ? "وفيديو 1" : ""} تلقائياً لمنتجك!`);
     }
   }, [incomingMedia]);
 
-  const handleVideoDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("video/")) {
-      toast.error("يرجى سحب ملف فيديو صالح");
-      return;
-    }
-
-    setUploadingVideo(true);
-    setLocalVideoUrl(URL.createObjectURL(file));
-
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    const mockPlaybackId = `mux-playback-${Date.now()}`;
-    setForm((f) => ({ ...f, video_playback_id: mockPlaybackId }));
-    setUploadingVideo(false);
-    toast.success("تم رفع ومعالجة الفيديو بنجاح!");
-  };
-
-  const removeVideo = () => {
-    setForm((f) => ({ ...f, video_playback_id: "" }));
-    setLocalVideoUrl("");
-    toast.success("تمت إزالة الفيديو");
-  };
 
   useEffect(() => {
     if (isNew || !productQ.data) return;

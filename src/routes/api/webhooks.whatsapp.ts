@@ -138,11 +138,28 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
 
       // ── POST: Full Media Sync Pipeline ───────────────────────────────────
       POST: async ({ request }) => {
+        const signature = request.headers.get("x-hub-signature-256");
+        let rawBody = "";
         let body: any;
+        
         try {
-          body = await request.json();
+          rawBody = await request.text();
+          body = JSON.parse(rawBody);
         } catch {
           return Response.json({ error: "invalid json" }, { status: 400 });
+        }
+
+        // Validate webhook signature if secret is provided
+        const appSecret = process.env.WHATSAPP_APP_SECRET;
+        if (appSecret && signature) {
+          const crypto = await import("crypto");
+          const expectedSig = "sha256=" + crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex");
+          if (signature !== expectedSig) {
+            console.warn("[WA Webhook] ❌ Invalid signature detected");
+            return new Response("Forbidden", { status: 403 });
+          }
+        } else if (process.env.NODE_ENV === "production") {
+          console.warn("[WA Webhook] ⚠️ Missing app secret or signature in production");
         }
 
         const entry = body?.entry?.[0];

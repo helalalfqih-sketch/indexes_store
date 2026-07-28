@@ -8,7 +8,11 @@ import { analyzeQualityTrends } from "./quality/trend-engine";
 import { generateEvidenceRecommendations } from "./quality/ai-recommender";
 import { correlateRuntimeIncidents } from "./quality/incident-correlation";
 
-export const getLatestQualityReportFn = createServerFn({ method: "GET" }).handler(async () => {
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+export const getLatestQualityReportFn = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
   let report = loadLatestReport();
   if (!report) {
     const summary = await runQualityAudit({ environment: "local" });
@@ -17,11 +21,15 @@ export const getLatestQualityReportFn = createServerFn({ method: "GET" }).handle
   return report;
 });
 
-export const getQualityHistoryFn = createServerFn({ method: "GET" }).handler(async () => {
+export const getQualityHistoryFn = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
   return analyzeQualityTrends(30);
 });
 
-export const getQualityIncidentsFn = createServerFn({ method: "GET" }).handler(async () => {
+export const getQualityIncidentsFn = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
   let report = loadLatestReport();
   if (!report) {
     const summary = await runQualityAudit({ environment: "local" });
@@ -38,7 +46,9 @@ export const getQualityIncidentsFn = createServerFn({ method: "GET" }).handler(a
   };
 });
 
-export const triggerQualityAuditFn = createServerFn({ method: "POST" }).handler(async () => {
+export const triggerQualityAuditFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
   const summary = await runQualityAudit({ environment: "local" });
   return summary.report;
 });
