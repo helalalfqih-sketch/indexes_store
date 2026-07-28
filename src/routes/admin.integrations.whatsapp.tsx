@@ -21,7 +21,6 @@ import { toast } from "sonner";
 import {
   getWhatsAppConfig,
   saveWhatsAppConfig,
-  saveWhatsAppConfig,
   type WhatsAppConfig,
 } from "@/lib/whatsapp.functions";
 
