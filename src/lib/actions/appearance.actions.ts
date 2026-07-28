@@ -58,7 +58,8 @@ async function resolveCmsScope(
   } catch {
     /* fall through */
   }
-  return { allowed: true, scope: null };
+  // Default deny: unauthorized users should not get global scope
+  return { allowed: false, scope: null };
 }
 
 /** Resolve the storefront tenant for PUBLIC reads from request headers. */
@@ -155,40 +156,55 @@ function rowsToSettings(
 // ── 1. Get Storefront Settings ────────────────────────────────────────────────
 
 /**
- * Fetch all global storefront settings.
- * - previewMode=true → returns draft_value when available (for admin live preview)
- * - previewMode=false (default) → returns published value only (for public storefront)
+ * Fetch published global storefront settings.
+ * - Public storefront read only.
+ * - Never returns draft_value.
  */
 export const getStorefrontAppearance = createServerFn({ method: "GET" })
-  .validator((data: { previewMode?: boolean } | undefined) => data)
-  .handler(async ({ data }): Promise<StorefrontSettingsShape> => {
-    const previewMode = data?.previewMode ?? false;
+  .handler(async (): Promise<StorefrontSettingsShape> => {
     try {
-      let db = supabase;
-      if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
-        try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          if (supabaseAdmin) db = supabaseAdmin;
-        } catch {
-          db = supabase;
-        }
-      }
-
-      if (!db) return DEFAULT_STOREFRONT_SETTINGS;
-
-      const publicTenantId = await resolvePublicCmsTenant(db);
-
-      if (previewMode) {
-        const rows = await storefrontService.fetchRowsWithDrafts(db, publicTenantId);
-        if (rows && rows.length > 0) return rowsToSettings(rows, true);
-      }
-
-      const rows = await storefrontService.fetchPublishedRows(db, publicTenantId);
+      const publicTenantId = await resolvePublicCmsTenant(supabase);
+      
+      const rows = await storefrontService.fetchPublishedRows(supabase, publicTenantId);
       if (!rows || rows.length === 0) return DEFAULT_STOREFRONT_SETTINGS;
       return rowsToSettings(rows, false);
     } catch (err) {
       console.warn("[getStorefrontAppearance] Returning fallback defaults:", err);
       return DEFAULT_STOREFRONT_SETTINGS;
+    }
+  });
+
+/**
+ * Admin Preview Read
+ * - Authentication required
+ * - Tenant membership required
+ * - CMS preview permission required
+ * - Returns draft values
+ */
+export const getStorefrontPreviewAppearance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<StorefrontSettingsShape> => {
+    try {
+      const ctx = context as any;
+      const { user } = ctx;
+      if (!user?.id) throw new Error("Unauthorized");
+
+      // We need to resolve scope first (this verifies if they are allowed to manage CMS)
+      const { allowed, scope } = await resolveCmsScope(supabase, user.id);
+      if (!allowed) {
+        throw new Error("Forbidden: missing CMS permissions");
+      }
+
+      // If scope is null (global), make sure they are platform admin.
+      // If scope is a tenant, make sure they are previewing THEIR tenant.
+      
+      const rows = await storefrontService.fetchRowsWithDrafts(supabase, scope);
+      if (rows && rows.length > 0) return rowsToSettings(rows, true);
+      
+      return DEFAULT_STOREFRONT_SETTINGS;
+    } catch (err) {
+      console.warn("[getStorefrontPreviewAppearance] Error fetching preview:", err);
+      throw err;
     }
   });
 

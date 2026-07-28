@@ -173,11 +173,8 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
       }
     }
 
-    // 1. Primary owner email bypass (always true)
-    if (email?.toLowerCase() === "helalalfqih@gmail.com") return true;
-
+    // 1. Platform admin bypass (user_roles table)
     if (userId) {
-      // 2. Platform admin bypass (user_roles table)
       const { data: roles } = await client
         .from("user_roles")
         .select("role")
@@ -187,7 +184,7 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
 
       const tenantId = await resolveTenantId(client);
 
-      // 3. Tenant owner bypass — owner_user_id in tenants table
+      // 2. Tenant owner bypass — owner_user_id in tenants table
       const { data: tenantRow } = await client
         .from("tenants")
         .select("owner_user_id")
@@ -196,7 +193,7 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
 
       if (tenantRow?.owner_user_id === userId) return true;
 
-      // 4. Tenant member permission check
+      // 3. Tenant member permission check
       const { data: member } = await client
         .from("tenant_members")
         .select("role, permissions")
@@ -211,10 +208,11 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
       }
     }
 
-    // Fail-safe for platform admin / single-tenant operations
-    return true;
-  } catch {
-    return true;
+    // Default deny
+    return false;
+  } catch (err) {
+    // Fail closed on exception
+    return false;
   }
 }
 

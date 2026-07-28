@@ -5,41 +5,32 @@
  *   UI Routes -> Services & Server Functions -> Database Tables -> RLS Policies
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Layers, Database, Shield, Zap, Cpu, Server, CheckCircle, ArrowRight, RefreshCw } from "lucide-react";
-import { auditProjectArchitecture, type ArchitectureHealthReport } from "@/services/ai-agent/architecture.service";
 
 export function VisualArchitectureMap() {
   const [activeNode, setActiveNode] = useState<string | null>("ui");
-  const [report, setReport] = useState<ArchitectureHealthReport | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // auditProjectArchitecture() is a Node.js-only service. 
+  // It cannot run in the browser or on Edge due to fs/path usage.
   const fetchAudit = async () => {
     setLoading(true);
-    try {
-      const res = await auditProjectArchitecture();
-      setReport(res);
-    } catch {
-      // Ignore
-    } finally {
+    setTimeout(() => {
       setLoading(false);
-    }
+    }, 500);
   };
-
-  useEffect(() => {
-    fetchAudit();
-  }, []);
 
   const nodes = [
     {
       id: "ui",
-      label: `UI Layer (${report?.metrics?.totalRoutes || 38} Routes & ${report?.metrics?.totalComponents || 45} Components)`,
+      label: `UI Layer (Routes & Components)`,
       icon: Layers,
       color: "text-violet-400 border-violet-500/40 bg-violet-950/30",
     },
     {
       id: "service",
-      label: `Service Layer (${report?.metrics?.totalServices || 18} Server Functions)`,
+      label: `Service Layer (Server Functions)`,
       icon: Server,
       color: "text-cyan-400 border-cyan-500/40 bg-cyan-950/30",
     },
@@ -51,13 +42,13 @@ export function VisualArchitectureMap() {
     },
     {
       id: "db",
-      label: `Supabase DB (${report?.metrics?.totalDbTables || 14} Tables)`,
+      label: `Supabase DB (Tables)`,
       icon: Database,
       color: "text-emerald-400 border-emerald-500/40 bg-emerald-950/30",
     },
     {
       id: "rls",
-      label: `Multi-Tenant RLS Policy Guard (${report?.metrics?.rlsCoveragePercentage || 100}% Coverage)`,
+      label: `Multi-Tenant RLS Policy Guard`,
       icon: Shield,
       color: "text-rose-400 border-rose-500/40 bg-rose-950/30",
     },
@@ -81,10 +72,8 @@ export function VisualArchitectureMap() {
             <h4 className="text-xs font-bold text-zinc-100">Live Project Architecture Map</h4>
             <p className="text-[10px] text-zinc-400">
               Architecture Health Score:{" "}
-              <span className={`font-mono font-bold ${
-                (report?.score ?? 90) >= 80 ? "text-emerald-400" : "text-amber-400"
-              }`}>
-                {report?.score ?? 90}/100 ✨
+              <span className="font-mono font-bold text-zinc-500">
+                غير متوفر (يتطلب بيئة الخادم)
               </span>
             </p>
           </div>
@@ -135,23 +124,13 @@ export function VisualArchitectureMap() {
       <div className="bg-[#09090b] border border-zinc-800 rounded-xl p-3 text-[11px] text-zinc-400 space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="font-bold text-zinc-200">تقرير السلامة المعمارية الحي:</span>
-          <span className="text-[10px] text-zinc-400 font-mono">
-            {report?.violations?.length || 0} ملاحظات
+          <span className="text-[10px] text-zinc-500 font-mono">
+            غير متوفر
           </span>
         </div>
-        {report?.violations && report.violations.length > 0 ? (
-          <div className="space-y-1 max-h-24 overflow-y-auto">
-            {report.violations.slice(0, 3).map((v, i) => (
-              <p key={i} className="text-[10px] text-amber-400/90 truncate">
-                ⚠️ {v.file}: {v.description}
-              </p>
-            ))}
-          </div>
-        ) : (
-          <p className="text-[10px] text-emerald-400">
-            ✓ جميع الطبقات مفحوصة ومؤمنة بسياسات عزل المستأجرين Multi-Tenant RLS.
-          </p>
-        )}
+        <p className="text-[10px] text-zinc-500">
+          الفحص المعماري الحي متاح فقط في بيئة التطوير المحلية بسبب قيود أمان الخادم.
+        </p>
       </div>
     </div>
   );

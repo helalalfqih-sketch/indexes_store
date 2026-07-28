@@ -125,19 +125,12 @@ export const listMediaFiles = createServerFn({ method: "GET" })
     try {
       const ctx = context as any;
       let db = ctx?.supabase || supabase;
-
-      if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
-        try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          if (supabaseAdmin) db = supabaseAdmin;
-        } catch {
-          // fallback
-        }
-      }
+      const tenantId = await resolveTenantId(db);
 
       let q = db
         .from("media_files")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
         .limit(limit);
 
@@ -153,10 +146,9 @@ export const listMediaFiles = createServerFn({ method: "GET" })
 
       let results = (rows as unknown as MediaFileRecord[]) || [];
 
-      // If DB has no rows at all, append DEMO media to show demo items alongside new uploads
+      // Removed DEFAULT_DEMO_MEDIA fallback which injected fake successes
       if (results.length === 0) {
-        console.log("[Media] DB empty, returning DEMO media fallback");
-        results = DEFAULT_DEMO_MEDIA;
+        return [];
       }
 
       // Filter by Search (Name or Tags)
@@ -217,7 +209,7 @@ export const listMediaFiles = createServerFn({ method: "GET" })
       return results;
     } catch (err) {
       console.warn("listMediaFiles exception fallback:", err);
-      return DEFAULT_DEMO_MEDIA;
+      return [];
     }
   });
 
@@ -479,17 +471,12 @@ export const getMediaFilesByIds = createServerFn({ method: "POST" })
     if (!ids || ids.length === 0) return [];
     const ctx = context as any;
     let db = ctx?.supabase || supabase;
-
-    if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        if (supabaseAdmin) db = supabaseAdmin;
-      } catch { /* fallback */ }
-    }
+    const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
     const { data: rows, error } = await db
       .from("media_files")
       .select("*")
+      .eq("tenant_id", tenantId)
       .in("id", ids)
       .order("sequence_number", { ascending: true });
 
@@ -509,15 +496,15 @@ export const linkProductMedia = createServerFn({ method: "POST" })
     if (!productId || !mediaIds || mediaIds.length === 0) return { ok: true };
     const ctx = context as any;
     let db = ctx?.supabase || supabase;
-
-    if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        if (supabaseAdmin) db = supabaseAdmin;
-      } catch { /* fallback */ }
-    }
-
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
+
+    // Validate product belongs to tenant
+    const { data: prod } = await db.from("products").select("id").eq("id", productId).eq("tenant_id", tenantId).single();
+    if (!prod) throw new Error("المنتج غير موجود أو لا تملك صلاحية الوصول إليه");
+
+    // Validate media belongs to tenant
+    const { data: medias } = await db.from("media_files").select("id").in("id", mediaIds).eq("tenant_id", tenantId);
+    if (!medias || medias.length !== mediaIds.length) throw new Error("بعض الوسائط غير موجودة أو لا تملك صلاحية الوصول إليها");
 
     const records = mediaIds.map((mediaId, idx) => ({
       tenant_id: tenantId,
@@ -547,13 +534,6 @@ export const bulkDeleteMediaFiles = createServerFn({ method: "POST" })
     }
 
     let db = ctx?.supabase || supabase;
-    if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        if (supabaseAdmin) db = supabaseAdmin;
-      } catch { /* fallback */ }
-    }
-
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
     const { error } = await db.from("media_files").delete().in("id", ids).eq("tenant_id", tenantId);
@@ -569,14 +549,6 @@ export const searchExistingProductsForLink = createServerFn({ method: "GET" })
   .handler(async ({ data: { query }, context }) => {
     const ctx = context as any;
     let db = ctx?.supabase || supabase;
-
-    if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        if (supabaseAdmin) db = supabaseAdmin;
-      } catch { /* fallback */ }
-    }
-
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
     let q = db
@@ -609,20 +581,12 @@ export const attachMediaToExistingProduct = createServerFn({ method: "POST" })
     }
     const ctx = context as any;
     let db = ctx?.supabase || supabase;
-
-    if (typeof process !== "undefined" && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        if (supabaseAdmin) db = supabaseAdmin;
-      } catch { /* fallback */ }
-    }
-
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
     // 1. Fetch selected media files
-    const { data: mediaRows } = await db.from("media_files").select("*").in("id", mediaIds);
-    if (!mediaRows || mediaRows.length === 0) {
-      throw new Error("لم يتم العثور على الملفات المحددة");
+    const { data: mediaRows } = await db.from("media_files").select("*").in("id", mediaIds).eq("tenant_id", tenantId);
+    if (!mediaRows || mediaRows.length !== mediaIds.length) {
+      throw new Error("بعض الملفات المحددة غير موجودة أو لا تملك صلاحية الوصول إليها");
     }
 
     // 2. Fetch existing product

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import crypto from "node:crypto";
 import { sanitizeFileName, extractCategoryAndTagsFromCaption } from "@/lib/whatsapp.functions";
-import { getDefaultTenantId } from "@/lib/saas/tenant-context";
 
 const STORAGE_BUCKET = "product-images"; // Supabase Storage bucket
 
@@ -138,11 +138,29 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
 
       // ── POST: Full Media Sync Pipeline ───────────────────────────────────
       POST: async ({ request }) => {
+        let rawBody = "";
         let body: any;
         try {
+          rawBody = await request.clone().text();
           body = await request.json();
         } catch {
           return Response.json({ error: "invalid json" }, { status: 400 });
+        }
+
+        const signature = request.headers.get("x-hub-signature-256") || "";
+        const expectedSecret = process.env.WHATSAPP_APP_SECRET || "";
+
+        if (expectedSecret && signature) {
+          const hmac = crypto.createHmac("sha256", expectedSecret);
+          hmac.update(rawBody);
+          const expectedSignature = `sha256=${hmac.digest("hex")}`;
+          
+          if (signature !== expectedSignature) {
+            console.warn("[WA Webhook] ❌ HMAC signature verification failed");
+            return Response.json({ error: "forbidden" }, { status: 403 });
+          }
+        } else if (!expectedSecret) {
+          console.warn("[WA Webhook] ⚠️ WHATSAPP_APP_SECRET is not set, skipping HMAC verification");
         }
 
         const entry = body?.entry?.[0];
@@ -162,6 +180,7 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
         }
 
         const message = messages[0];
+        const messageId = message.id;
         const senderPhone: string = message.from || "unknown";
         const messageType: string = message.type;
 
@@ -190,14 +209,37 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
         console.log(`[WA] 🔍 mediaId=${mediaId} hasToken=${!!waToken} tokenLen=${waToken?.length ?? 0}`);
         console.log(`[WA] 🔍 messageType=${messageType} mimeType=${mimeType} fileName=${fileName}`);
 
-        // Resolve the real tenant_id from DB (FK-safe — never hardcode)
-        let tenantId: string;
-        try {
-          tenantId = await getDefaultTenantId(db);
-          console.log(`[WA] 🏠 tenantId=${tenantId}`);
-        } catch (err) {
-          console.error("[WA] Could not resolve default tenant:", err);
-          return Response.json({ error: "tenant not found" }, { status: 500 });
+        const wabaId = entry?.id;
+        if (!wabaId) {
+          console.error("[WA] Missing WABA ID in payload");
+          return Response.json({ error: "missing waba_id" }, { status: 400 });
+        }
+
+        // Use any to bypass TS error since whatsapp_integrations is not in the generated types yet
+        const { data: integration } = await (db as any)
+          .from("whatsapp_integrations")
+          .select("tenant_id")
+          .eq("waba_id", wabaId)
+          .maybeSingle();
+
+        if (!integration?.tenant_id) {
+          console.error(`[WA] Could not resolve tenant for waba_id=${wabaId}`);
+          return Response.json({ error: "tenant not found" }, { status: 404 });
+        }
+        
+        const tenantId = integration.tenant_id;
+        console.log(`[WA] 🏠 tenantId=${tenantId}`);
+
+        // Idempotency Check
+        if (messageId) {
+          const { error: idempotencyErr } = await (db as any)
+            .from("whatsapp_webhook_events")
+            .insert({ tenant_id: tenantId, message_id: messageId });
+          
+          if (idempotencyErr) {
+            console.log(`[WA] ♻️ Duplicate message_id=${messageId} ignored`);
+            return Response.json({ status: "ignored", reason: "duplicate" }, { status: 200 });
+          }
         }
 
         // ── PIPELINE ─────────────────────────────────────────────────────────

@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import {
   getStorefrontAppearance,
+  getStorefrontPreviewAppearance,
   saveStorefrontDraft,
   updateStorefrontAppearance,
   getStorefrontChangeLogs,
@@ -1649,7 +1650,7 @@ function StudioTab() {
 // ── Main Page Layout Component ────────────────────────────────────────────────
 function StorefrontCMSPage() {
   const queryClient = useQueryClient();
-  const getSettings = useServerFn(getStorefrontAppearance);
+  const getSettings = useServerFn(getStorefrontPreviewAppearance);
   const saveDraft = useServerFn(saveStorefrontDraft);
   const saveSettings = useServerFn(updateStorefrontAppearance);
 
@@ -1661,7 +1662,7 @@ function StorefrontCMSPage() {
 
   const settingsQ = useQuery({
     queryKey: ["storefront-settings-cms-premium"],
-    queryFn: () => getSettings({ data: { previewMode: true } }),
+    queryFn: () => getSettings(),
     staleTime: 10_000,
   });
 
