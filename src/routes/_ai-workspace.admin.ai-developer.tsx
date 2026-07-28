@@ -49,6 +49,7 @@ import {
   type AgentMessage,
   type AgentMemoryEntry,
   type ProjectFileParsedContext,
+  auditFullWorkspaceFn,
 } from "@/lib/ai-agent.functions";
 import { listAIProvidersFn } from "@/lib/ai-provider.server";
 
@@ -133,6 +134,7 @@ function AIWorkspacePage() {
   const applyPatchServerFn = useServerFn(applyCodePatchFn);
   const getSessionEventsFn = useServerFn(getSessionExecutionEventsFn);
   const getExecJournalFn = useServerFn(listExecutionJournalFn);
+  const auditFullWorkspace = useServerFn(auditFullWorkspaceFn);
 
   // ── Streaming Hook ────────────────────────────────────────────────────────
   const { state: streamState, startStream, cancelStream } = useAgentStream();
@@ -1039,9 +1041,6 @@ function AIWorkspacePage() {
                       onClick={async () => {
                         setIsAuditingWorkspace(true);
                         try {
-                          const { auditFullWorkspace } = await import(
-                            "@/services/ai-agent/workspace-auditor.service"
-                          );
                           const res = await auditFullWorkspace();
                           setFullAuditReport(res);
                           toast.success(`تم فحص ${res.totalFilesScanned} ملف بنجاح!`);

@@ -155,7 +155,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const twitterUsername = seo?.twitterUsername || "@indexes_store";
 
     const baseUrl =
-      process.env.SITE_URL ||
+      (typeof process !== "undefined" ? process.env.SITE_URL : null) ||
       (typeof window !== "undefined" ? window.location.origin : null) ||
       import.meta.env.VITE_PUBLIC_URL ||
       "";

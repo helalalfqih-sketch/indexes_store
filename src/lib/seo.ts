@@ -18,7 +18,7 @@
 
 export const SITE_NAME = "اندكس ستور";
 export const SITE_NAME_EN = "Indexes Store";
-export const DEFAULT_BASE_URL = process.env.SITE_URL || "";
+export const DEFAULT_BASE_URL = typeof process !== "undefined" ? process.env.SITE_URL || "" : "";
 export const STORE_COUNTRY = "YE";   // ISO 3166-1 alpha-2 for Yemen
 export const STORE_CURRENCY = "YER"; // ISO 4217 for Yemeni Rial
 export const STORE_PHONE = "+967771370740";

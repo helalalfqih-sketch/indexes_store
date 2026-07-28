@@ -48,7 +48,7 @@ export const Route = createFileRoute("/")({
   head: ({ loaderData }) => {
     const seo = (loaderData as any)?.settings?.seo;
     const baseUrl =
-      process.env.SITE_URL ||
+      (typeof process !== "undefined" ? process.env.SITE_URL : null) ||
       (typeof window !== "undefined" ? window.location.origin : null) ||
       import.meta.env.VITE_PUBLIC_URL ||
       "";

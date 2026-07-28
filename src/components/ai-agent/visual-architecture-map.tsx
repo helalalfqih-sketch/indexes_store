@@ -7,22 +7,38 @@
 
 import React, { useState, useEffect } from "react";
 import { Layers, Database, Shield, Zap, Cpu, Server, CheckCircle, ArrowRight, RefreshCw } from "lucide-react";
-import { auditProjectArchitecture, type ArchitectureHealthReport } from "@/services/ai-agent/architecture.service";
+import { useServerFn } from "@tanstack/react-start";
+import { getArchitectureAuditFn } from "@/lib/ai-agent.functions";
+import type { ArchitectureHealthReport } from "@/features/ai-developer/types/architecture";
 
 export function VisualArchitectureMap() {
   const [activeNode, setActiveNode] = useState<string | null>("ui");
   const [report, setReport] = useState<ArchitectureHealthReport | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "empty" | "error" | "permission_denied">("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const fetchAuditServerFn = useServerFn(getArchitectureAuditFn);
 
   const fetchAudit = async () => {
-    setLoading(true);
+    setStatus("loading");
+    setErrorMsg(null);
     try {
-      const res = await auditProjectArchitecture();
-      setReport(res);
-    } catch {
-      // Ignore
-    } finally {
-      setLoading(false);
+      const res = await fetchAuditServerFn();
+      if (!res) {
+        setStatus("empty");
+        setReport(null);
+      } else {
+        setStatus("success");
+        setReport(res);
+      }
+    } catch (err: any) {
+      console.error(err);
+      if (err?.message?.includes("Role") || err?.message?.includes("permission")) {
+        setStatus("permission_denied");
+      } else {
+        setStatus("error");
+      }
+      setErrorMsg(err?.message || "تعذر تحميل التقرير المعماري. تأكد من اتصال الخادم.");
     }
   };
 
@@ -33,13 +49,13 @@ export function VisualArchitectureMap() {
   const nodes = [
     {
       id: "ui",
-      label: `UI Layer (${report?.metrics?.totalRoutes || 38} Routes & ${report?.metrics?.totalComponents || 45} Components)`,
+      label: status === "success" && report ? `UI Layer (${report.metrics.totalRoutes} Routes & ${report.metrics.totalComponents} Components)` : `UI Layer (غير مقاس)`,
       icon: Layers,
       color: "text-violet-400 border-violet-500/40 bg-violet-950/30",
     },
     {
       id: "service",
-      label: `Service Layer (${report?.metrics?.totalServices || 18} Server Functions)`,
+      label: status === "success" && report ? `Service Layer (${report.metrics.totalServices} Server Functions)` : `Service Layer (غير مقاس)`,
       icon: Server,
       color: "text-cyan-400 border-cyan-500/40 bg-cyan-950/30",
     },
@@ -51,13 +67,13 @@ export function VisualArchitectureMap() {
     },
     {
       id: "db",
-      label: `Supabase DB (${report?.metrics?.totalDbTables || 14} Tables)`,
+      label: status === "success" && report ? `Supabase DB (${report.metrics.totalDbTables} Tables)` : `Supabase DB (غير مقاس)`,
       icon: Database,
       color: "text-emerald-400 border-emerald-500/40 bg-emerald-950/30",
     },
     {
       id: "rls",
-      label: `Multi-Tenant RLS Policy Guard (${report?.metrics?.rlsCoveragePercentage || 100}% Coverage)`,
+      label: status === "success" && report ? `Multi-Tenant RLS Policy Guard (${report.metrics.rlsCoveragePercentage}% Coverage)` : `Multi-Tenant RLS Policy Guard (غير مقاس)`,
       icon: Shield,
       color: "text-rose-400 border-rose-500/40 bg-rose-950/30",
     },
@@ -93,11 +109,11 @@ export function VisualArchitectureMap() {
         <button
           type="button"
           onClick={fetchAudit}
-          disabled={loading}
+          disabled={status === "loading"}
           className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition"
           title="تحديث الخريطة الحية"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-violet-400" : ""}`} />
+          <RefreshCw className={`h-3.5 w-3.5 ${status === "loading" ? "animate-spin text-violet-400" : ""}`} />
         </button>
       </div>
 
@@ -136,10 +152,32 @@ export function VisualArchitectureMap() {
         <div className="flex items-center justify-between">
           <span className="font-bold text-zinc-200">تقرير السلامة المعمارية الحي:</span>
           <span className="text-[10px] text-zinc-400 font-mono">
-            {report?.violations?.length || 0} ملاحظات
+            {status === "success" ? `${report?.violations?.length || 0} ملاحظات` : "غير متوفر"}
           </span>
         </div>
-        {report?.violations && report.violations.length > 0 ? (
+        
+        {status === "loading" && (
+          <p className="text-[10px] text-violet-400 flex items-center gap-1">
+            <RefreshCw className="h-3 w-3 animate-spin" /> جاري تحليل المعمارية...
+          </p>
+        )}
+
+        {(status === "error" || status === "permission_denied") && (
+          <div className="text-[10px] text-rose-400 flex flex-col items-start gap-1">
+            <p>❌ {errorMsg || "تعذر تحميل التقرير"}</p>
+            <button type="button" onClick={fetchAudit} className="text-rose-300 underline font-bold mt-1">
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
+        {status === "empty" && (
+          <p className="text-[10px] text-amber-400">
+            ⚠️ لا يوجد بيانات متاحة حالياً.
+          </p>
+        )}
+
+        {status === "success" && report?.violations && report.violations.length > 0 && (
           <div className="space-y-1 max-h-24 overflow-y-auto">
             {report.violations.slice(0, 3).map((v, i) => (
               <p key={i} className="text-[10px] text-amber-400/90 truncate">
@@ -147,7 +185,9 @@ export function VisualArchitectureMap() {
               </p>
             ))}
           </div>
-        ) : (
+        )}
+
+        {status === "success" && (!report?.violations || report.violations.length === 0) && (
           <p className="text-[10px] text-emerald-400">
             ✓ جميع الطبقات مفحوصة ومؤمنة بسياسات عزل المستأجرين Multi-Tenant RLS.
           </p>
