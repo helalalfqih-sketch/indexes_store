@@ -23,6 +23,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
+import { Route as AiWorkspaceRouteImport } from './routes/_ai-workspace'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreIndexRouteImport } from './routes/store.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -74,7 +75,6 @@ import { Route as AdminAuditLogsRouteImport } from './routes/admin.audit-logs'
 import { Route as AdminAppearanceRouteImport } from './routes/admin.appearance'
 import { Route as AdminAiSettingsRouteImport } from './routes/admin.ai-settings'
 import { Route as AdminAiMemoryRouteImport } from './routes/admin.ai-memory'
-import { Route as AdminAiDeveloperRouteImport } from './routes/admin.ai-developer'
 import { Route as AdminAiAgentRouteImport } from './routes/admin.ai-agent'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks.whatsapp'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
@@ -85,6 +85,7 @@ import { Route as AdminStoresTenantIdRouteImport } from './routes/admin.stores.$
 import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
 import { Route as AdminIntegrationsWhatsappRouteImport } from './routes/admin.integrations.whatsapp'
 import { Route as AdminDiagnosticsWhatsappRouteImport } from './routes/admin.diagnostics.whatsapp'
+import { Route as AiWorkspaceAdminAiDeveloperRouteImport } from './routes/_ai-workspace.admin.ai-developer'
 
 const TrackRoute = TrackRouteImport.update({
   id: '/track',
@@ -154,6 +155,10 @@ const AdminRoute = AdminRouteImport.update({
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiWorkspaceRoute = AiWorkspaceRouteImport.update({
+  id: '/_ai-workspace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -411,11 +416,6 @@ const AdminAiMemoryRoute = AdminAiMemoryRouteImport.update({
   path: '/ai-memory',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminAiDeveloperRoute = AdminAiDeveloperRouteImport.update({
-  id: '/ai-developer',
-  path: '/ai-developer',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminAiAgentRoute = AdminAiAgentRouteImport.update({
   id: '/ai-agent',
   path: '/ai-agent',
@@ -468,6 +468,12 @@ const AdminDiagnosticsWhatsappRoute =
     path: '/diagnostics/whatsapp',
     getParentRoute: () => AdminRoute,
   } as any)
+const AiWorkspaceAdminAiDeveloperRoute =
+  AiWorkspaceAdminAiDeveloperRouteImport.update({
+    id: '/admin/ai-developer',
+    path: '/admin/ai-developer',
+    getParentRoute: () => AiWorkspaceRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -486,7 +492,6 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/admin/ai-agent': typeof AdminAiAgentRoute
-  '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
   '/admin/ai-settings': typeof AdminAiSettingsRoute
   '/admin/appearance': typeof AdminAppearanceRoute
@@ -537,6 +542,7 @@ export interface FileRoutesByFullPath {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/store/': typeof StoreIndexRoute
+  '/admin/ai-developer': typeof AiWorkspaceAdminAiDeveloperRoute
   '/admin/diagnostics/whatsapp': typeof AdminDiagnosticsWhatsappRoute
   '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
@@ -562,7 +568,6 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/admin/ai-agent': typeof AdminAiAgentRoute
-  '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
   '/admin/ai-settings': typeof AdminAiSettingsRoute
   '/admin/appearance': typeof AdminAppearanceRoute
@@ -613,6 +618,7 @@ export interface FileRoutesByTo {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin': typeof AdminIndexRoute
   '/store': typeof StoreIndexRoute
+  '/admin/ai-developer': typeof AiWorkspaceAdminAiDeveloperRoute
   '/admin/diagnostics/whatsapp': typeof AdminDiagnosticsWhatsappRoute
   '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
@@ -626,6 +632,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_ai-workspace': typeof AiWorkspaceRouteWithChildren
   '/account': typeof AccountRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
@@ -641,7 +648,6 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/admin/ai-agent': typeof AdminAiAgentRoute
-  '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
   '/admin/ai-settings': typeof AdminAiSettingsRoute
   '/admin/appearance': typeof AdminAppearanceRoute
@@ -692,6 +698,7 @@ export interface FileRoutesById {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/store/': typeof StoreIndexRoute
+  '/_ai-workspace/admin/ai-developer': typeof AiWorkspaceAdminAiDeveloperRoute
   '/admin/diagnostics/whatsapp': typeof AdminDiagnosticsWhatsappRoute
   '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
@@ -721,7 +728,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/admin/ai-agent'
-    | '/admin/ai-developer'
     | '/admin/ai-memory'
     | '/admin/ai-settings'
     | '/admin/appearance'
@@ -772,6 +778,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/admin/'
     | '/store/'
+    | '/admin/ai-developer'
     | '/admin/diagnostics/whatsapp'
     | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
@@ -797,7 +804,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/admin/ai-agent'
-    | '/admin/ai-developer'
     | '/admin/ai-memory'
     | '/admin/ai-settings'
     | '/admin/appearance'
@@ -848,6 +854,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/admin'
     | '/store'
+    | '/admin/ai-developer'
     | '/admin/diagnostics/whatsapp'
     | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
@@ -860,6 +867,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_ai-workspace'
     | '/account'
     | '/admin'
     | '/auth'
@@ -875,7 +883,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/admin/ai-agent'
-    | '/admin/ai-developer'
     | '/admin/ai-memory'
     | '/admin/ai-settings'
     | '/admin/appearance'
@@ -926,6 +933,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/admin/'
     | '/store/'
+    | '/_ai-workspace/admin/ai-developer'
     | '/admin/diagnostics/whatsapp'
     | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
@@ -939,6 +947,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiWorkspaceRoute: typeof AiWorkspaceRouteWithChildren
   AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
@@ -1067,6 +1076,13 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_ai-workspace': {
+      id: '/_ai-workspace'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AiWorkspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -1426,13 +1442,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAiMemoryRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/ai-developer': {
-      id: '/admin/ai-developer'
-      path: '/ai-developer'
-      fullPath: '/admin/ai-developer'
-      preLoaderRoute: typeof AdminAiDeveloperRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/ai-agent': {
       id: '/admin/ai-agent'
       path: '/ai-agent'
@@ -1503,8 +1512,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDiagnosticsWhatsappRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_ai-workspace/admin/ai-developer': {
+      id: '/_ai-workspace/admin/ai-developer'
+      path: '/admin/ai-developer'
+      fullPath: '/admin/ai-developer'
+      preLoaderRoute: typeof AiWorkspaceAdminAiDeveloperRouteImport
+      parentRoute: typeof AiWorkspaceRoute
+    }
   }
 }
+
+interface AiWorkspaceRouteChildren {
+  AiWorkspaceAdminAiDeveloperRoute: typeof AiWorkspaceAdminAiDeveloperRoute
+}
+
+const AiWorkspaceRouteChildren: AiWorkspaceRouteChildren = {
+  AiWorkspaceAdminAiDeveloperRoute: AiWorkspaceAdminAiDeveloperRoute,
+}
+
+const AiWorkspaceRouteWithChildren = AiWorkspaceRoute._addFileChildren(
+  AiWorkspaceRouteChildren,
+)
 
 interface AdminStoresRouteChildren {
   AdminStoresTenantIdRoute: typeof AdminStoresTenantIdRoute
@@ -1520,7 +1548,6 @@ const AdminStoresRouteWithChildren = AdminStoresRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminAiAgentRoute: typeof AdminAiAgentRoute
-  AdminAiDeveloperRoute: typeof AdminAiDeveloperRoute
   AdminAiMemoryRoute: typeof AdminAiMemoryRoute
   AdminAiSettingsRoute: typeof AdminAiSettingsRoute
   AdminAppearanceRoute: typeof AdminAppearanceRoute
@@ -1559,7 +1586,6 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAiAgentRoute: AdminAiAgentRoute,
-  AdminAiDeveloperRoute: AdminAiDeveloperRoute,
   AdminAiMemoryRoute: AdminAiMemoryRoute,
   AdminAiSettingsRoute: AdminAiSettingsRoute,
   AdminAppearanceRoute: AdminAppearanceRoute,
@@ -1628,6 +1654,7 @@ const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiWorkspaceRoute: AiWorkspaceRouteWithChildren,
   AccountRoute: AccountRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,

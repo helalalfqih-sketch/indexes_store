@@ -375,6 +375,17 @@ export const agentToolRegistry: Record<string, ToolDefinition> = {
     },
   },
 
+  audit_full_workspace: {
+    category: "Runtime",
+    name: "audit_full_workspace",
+    description: "Scan every file in the repository to produce a full error, security, and TypeScript audit report",
+    inputSchema: z.object({}),
+    execute: async () => {
+      const { auditFullWorkspace } = await import("./workspace-auditor.service");
+      return await auditFullWorkspace();
+    },
+  },
+
   multi_agent_pipeline: {
     category: "Runtime",
     name: "multi_agent_pipeline",
