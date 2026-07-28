@@ -210,11 +210,11 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
         if (perms.includes(permission)) return true;
       }
     }
-
-    // Fail-safe for platform admin / single-tenant operations
-    return true;
-  } catch {
-    return true;
+    // Fail-closed for any unhandled case
+    return false;
+  } catch (err) {
+    console.error("[checkTenantPermission] Error checking permission:", err);
+    return false;
   }
 }
 

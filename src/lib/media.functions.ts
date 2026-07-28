@@ -135,9 +135,12 @@ export const listMediaFiles = createServerFn({ method: "GET" })
         }
       }
 
+      const tenantId = await resolveTenantId(ctx.supabase, { userId: ctx.userId });
+
       let q = db
         .from("media_files")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
         .limit(limit);
 
@@ -487,9 +490,12 @@ export const getMediaFilesByIds = createServerFn({ method: "POST" })
       } catch { /* fallback */ }
     }
 
+    const tenantId = await resolveTenantId(ctx.supabase || supabase, { userId: ctx.userId });
+
     const { data: rows, error } = await db
       .from("media_files")
       .select("*")
+      .eq("tenant_id", tenantId)
       .in("id", ids)
       .order("sequence_number", { ascending: true });
 
@@ -518,6 +524,12 @@ export const linkProductMedia = createServerFn({ method: "POST" })
     }
 
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
+
+    // Verify ownership of media files
+    const { data: mediaRows } = await db.from("media_files").select("id").eq("tenant_id", tenantId).in("id", mediaIds);
+    if (!mediaRows || mediaRows.length !== mediaIds.length) {
+      throw new Error("بعض أو كل الوسائط غير موجودة أو لا تملك صلاحية الوصول إليها.");
+    }
 
     const records = mediaIds.map((mediaId, idx) => ({
       tenant_id: tenantId,
@@ -620,7 +632,7 @@ export const attachMediaToExistingProduct = createServerFn({ method: "POST" })
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
     // 1. Fetch selected media files
-    const { data: mediaRows } = await db.from("media_files").select("*").in("id", mediaIds);
+    const { data: mediaRows } = await db.from("media_files").select("*").eq("tenant_id", tenantId).in("id", mediaIds);
     if (!mediaRows || mediaRows.length === 0) {
       throw new Error("لم يتم العثور على الملفات المحددة");
     }

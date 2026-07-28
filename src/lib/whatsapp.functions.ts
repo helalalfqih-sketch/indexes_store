@@ -92,17 +92,21 @@ async function getDbClient(authSupabase?: any) {
 
 /** Helper to resolve scope */
 async function resolveCmsScope(authSupabase: any, userId: string | null) {
-  if (!userId || !authSupabase) return { scope: null };
+  if (!userId || !authSupabase) throw new Error("Unauthorized");
+
   try {
     const { data: isAdmin } = await authSupabase.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
     });
     if (isAdmin) return { scope: null };
+
     const tenantId = await resolveTenantId(authSupabase, { userId });
+    if (!tenantId) throw new Error("Tenant not found");
     return { scope: tenantId };
-  } catch {
-    return { scope: null };
+  } catch (err) {
+    console.error("[resolveCmsScope] Error resolving tenant:", err);
+    throw new Error("Unauthorized access to CMS scope");
   }
 }
 

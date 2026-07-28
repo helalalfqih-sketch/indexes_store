@@ -55,10 +55,11 @@ async function resolveCmsScope(
       _required_role: "owner",
     });
     if (isOwner) return { allowed: true, scope: tenantId };
-  } catch {
-    /* fall through */
+  } catch (err) {
+    console.error("[resolveCmsScope] Error resolving tenant:", err);
+    return { allowed: false, scope: null };
   }
-  return { allowed: true, scope: null };
+  return { allowed: false, scope: null };
 }
 
 /** Resolve the storefront tenant for PUBLIC reads from request headers. */
