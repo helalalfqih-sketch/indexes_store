@@ -17,8 +17,8 @@ import {
 } from "@/lib/saas/tenant-context";
 
 const publicClient = () => {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const url = (typeof process !== 'undefined' ? process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL : undefined) || import.meta.env.VITE_SUPABASE_URL;
+  const key = (typeof process !== 'undefined' ? process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY : undefined) || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) {
     throw new Error(`Missing Supabase URL or Publishable Key. Ensure SUPABASE_URL/VITE_SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY/VITE_SUPABASE_PUBLISHABLE_KEY are set.`);
   }
