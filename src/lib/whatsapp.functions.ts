@@ -272,69 +272,7 @@ function getExtensionFromMime(mimeType: string): string {
   return "jpg";
 }
 
-/** Server Fn: Ingest WhatsApp Media Message directly to Media Library (No AI) */
-export const simulateWhatsAppMediaReceived = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator(
-    (data: {
-      fileName?: string;
-      fileUrl: string;
-      fileType: "image" | "video" | "document";
-      senderPhone: string;
-      caption?: string;
-      whatsappMessageId?: string;
-    }) => data
-  )
-  .handler(async ({ data, context }) => {
-    const ctx = context as any;
-    const db = ctx.supabase || supabase;
-    const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
-    const mimeType = data.fileType === "video" ? "video/mp4" : data.fileType === "document" ? "application/pdf" : "image/jpeg";
-    const cleanFileName = sanitizeFileName(data.caption || data.fileName || "", mimeType);
-    const { category, tags } = extractCategoryAndTagsFromCaption(data.caption || data.fileName || "");
-
-    const metadata = {
-      whatsapp_message_id: data.whatsappMessageId || `wa_msg_${Date.now()}`,
-      sender_phone: data.senderPhone,
-      caption: data.caption || "",
-      received_at: new Date().toISOString(),
-      source: "whatsapp",
-      category,
-      tags,
-    };
-
-    const payload = {
-      tenant_id: tenantId,
-      file_name: cleanFileName,
-      file_path: `whatsapp/${tenantId}/${Date.now()}_${cleanFileName}`,
-      file_url: data.fileUrl,
-      file_type: data.fileType,
-      mime_type: mimeType,
-      size_bytes: Math.floor(Math.random() * 2000000) + 500000,
-      source: "whatsapp",
-      metadata,
-      created_by: ctx.userId || null,
-    };
-
-    const { data: record, error } = await db.from("media_files").insert(payload).select("*").single();
-
-    if (error) {
-      throw new Error("فشل تسجيل وسيط الواتساب: " + error.message);
-    }
-
-    // Update WhatsApp Config Last Sync
-    const currentCfg = await storefrontService.readSettingRow(db, "whatsapp_sync", tenantId);
-    const cfgVal: WhatsAppConfig = (currentCfg?.value as any) || DEFAULT_WHATSAPP_CONFIG;
-    const updatedCfg: WhatsAppConfig = {
-      ...cfgVal,
-      lastSyncAt: new Date().toISOString(),
-      mediaCount: (cfgVal.mediaCount || 0) + 1,
-    };
-    await storefrontService.saveLiveValue(db, "whatsapp_sync", updatedCfg, tenantId);
-
-    return { ok: true, media: record, fileName: cleanFileName, category, tags };
-  });
 
 /** Schema for Supplier Batch Import */
 const SupplierBatchSchema = z.object({

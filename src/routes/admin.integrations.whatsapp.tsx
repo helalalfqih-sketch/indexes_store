@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import {
   getWhatsAppConfig,
   saveWhatsAppConfig,
-  simulateWhatsAppMediaReceived,
+  saveWhatsAppConfig,
   type WhatsAppConfig,
 } from "@/lib/whatsapp.functions";
 
@@ -40,19 +40,12 @@ function WhatsAppIntegrationComponent() {
   const navigate = useNavigate();
   const fetchConfigFn = useServerFn(getWhatsAppConfig);
   const saveConfigFn = useServerFn(saveWhatsAppConfig);
-  const simulateMediaFn = useServerFn(simulateWhatsAppMediaReceived);
 
   const [formData, setFormData] = useState<WhatsAppConfig | null>(null);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
 
-  // Test Simulator state
-  const [simFileUrl, setSimFileUrl] = useState(
-    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop"
-  );
-  const [simCaption, setSimCaption] = useState("ساعة ابل واش الترا سوداء فاخرة");
-  const [simPhone, setSimPhone] = useState("+967771370740");
-  const [lastSimResult, setLastSimResult] = useState<any>(null);
+
 
   const { data: waConfig, isLoading } = useQuery({
     queryKey: ["admin-whatsapp-config"],
@@ -74,27 +67,7 @@ function WhatsAppIntegrationComponent() {
     },
   });
 
-  const simMutation = useMutation({
-    mutationFn: () =>
-      simulateMediaFn({
-        data: {
-          fileName: `wa_product_${Date.now()}.jpg`,
-          fileUrl: simFileUrl,
-          fileType: "image",
-          senderPhone: simPhone,
-          caption: simCaption,
-        },
-      }),
-    onSuccess: (res) => {
-      toast.success("تمت محاكاة استقبال الرسالة بنجاح واستخلاص بيانات AI ✨");
-      setLastSimResult(res);
-      queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-config"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-media-files"] });
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || "فشلت محاكاة الرسالة");
-    },
-  });
+
 
   if (isLoading || !formData) {
     return (
@@ -405,108 +378,6 @@ function WhatsAppIntegrationComponent() {
         </div>
       </div>
 
-      {/* 🧪 WhatsApp Media Simulator & AI Extractor */}
-      <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
-        <div className="border-b border-border pb-3 flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-black text-foreground flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-emerald-500" /> محاكاة استقبال وسائط واتساب واختبار الذكاء الاصطناعي
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              اختبر تدفق المزامنة وتوليد بطاقات المنتجات من الوسائط مباشرة بدون الحاجة لإرسال رسالة فعلية
-            </p>
-          </div>
-          <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full">
-            AI Test Sandbox
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-bold mb-1">رابط صورة/فيديو المنتج</label>
-            <input
-              type="text"
-              value={simFileUrl}
-              onChange={(e) => setSimFileUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full rounded-xl border border-border bg-background p-2.5 text-xs"
-              dir="ltr"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold mb-1">تعليق الرسالة (Caption / Hint)</label>
-            <input
-              type="text"
-              value={simCaption}
-              onChange={(e) => setSimCaption(e.target.value)}
-              placeholder="ساعة ابل واش الترا سوداء..."
-              className="w-full rounded-xl border border-border bg-background p-2.5 text-xs"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold mb-1">رقم مرسل الرسالة</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={simPhone}
-                onChange={(e) => setSimPhone(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background p-2.5 text-xs"
-                dir="ltr"
-              />
-              <button
-                type="button"
-                onClick={() => simMutation.mutate()}
-                disabled={simMutation.isPending}
-                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shrink-0 hover:bg-emerald-700 disabled:opacity-50"
-              >
-                {simMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                ارسال المحاكاة
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Live Simulation Output Card */}
-        {lastSimResult && (
-          <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-500 flex items-center gap-1.5">
-                <Bot className="h-4 w-4" /> نتيجة التحليل واقتراح الذكاء الاصطناعي (AI Draft)
-              </span>
-              <button
-                type="button"
-                onClick={() => navigate({ to: "/admin/products" })}
-                className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white hover:bg-emerald-700 transition"
-              >
-                <PlusCircle className="h-3.5 w-3.5" /> تحويل إلى منتج في المتجر
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-surface p-3 rounded-lg border border-border text-xs">
-              <div>
-                <span className="text-muted-foreground block text-[10px]">اسم المنتج المقترح:</span>
-                <span className="font-bold text-foreground">{lastSimResult.aiSuggestion?.title}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block text-[10px]">التصنيف المقترح:</span>
-                <span className="font-bold text-primary">{lastSimResult.aiSuggestion?.category}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block text-[10px]">السعر التقديري:</span>
-                <span className="font-bold text-emerald-500">{lastSimResult.aiSuggestion?.price} YER</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block text-[10px]">مصدر الوسيط:</span>
-                <span className="font-mono text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded font-bold">
-                  WhatsApp Media Import
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
