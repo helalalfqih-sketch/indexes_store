@@ -14,13 +14,55 @@ export interface ObservedRouteHealth {
 
 export function observeRouteHealthTree(): ObservedRouteHealth[] {
   const routes: Omit<ObservedRouteHealth, "lastCheckedAt">[] = [
-    { routePath: "/", category: "STOREFRONT", status: "OPERATIONAL", averageLoadMs: 140, errorRate: 0.0 },
-    { routePath: "/product/$slug", category: "STOREFRONT", status: "OPERATIONAL", averageLoadMs: 185, errorRate: 0.0 },
-    { routePath: "/cart", category: "STOREFRONT", status: "OPERATIONAL", averageLoadMs: 95, errorRate: 0.0 },
-    { routePath: "/checkout", category: "STOREFRONT", status: "OPERATIONAL", averageLoadMs: 210, errorRate: 0.0 },
-    { routePath: "/admin/products", category: "ADMIN", status: "OPERATIONAL", averageLoadMs: 160, errorRate: 0.0 },
-    { routePath: "/admin/orders", category: "ADMIN", status: "OPERATIONAL", averageLoadMs: 175, errorRate: 0.0 },
-    { routePath: "/admin/ai-developer", category: "ADMIN", status: "OPERATIONAL", averageLoadMs: 220, errorRate: 0.0 },
+    {
+      routePath: "/",
+      category: "STOREFRONT",
+      status: "OPERATIONAL",
+      averageLoadMs: 140,
+      errorRate: 0.0,
+    },
+    {
+      routePath: "/product/$slug",
+      category: "STOREFRONT",
+      status: "OPERATIONAL",
+      averageLoadMs: 185,
+      errorRate: 0.0,
+    },
+    {
+      routePath: "/cart",
+      category: "STOREFRONT",
+      status: "OPERATIONAL",
+      averageLoadMs: 95,
+      errorRate: 0.0,
+    },
+    {
+      routePath: "/checkout",
+      category: "STOREFRONT",
+      status: "OPERATIONAL",
+      averageLoadMs: 210,
+      errorRate: 0.0,
+    },
+    {
+      routePath: "/admin/products",
+      category: "ADMIN",
+      status: "OPERATIONAL",
+      averageLoadMs: 160,
+      errorRate: 0.0,
+    },
+    {
+      routePath: "/admin/orders",
+      category: "ADMIN",
+      status: "OPERATIONAL",
+      averageLoadMs: 175,
+      errorRate: 0.0,
+    },
+    {
+      routePath: "/admin/ai-developer",
+      category: "ADMIN",
+      status: "OPERATIONAL",
+      averageLoadMs: 220,
+      errorRate: 0.0,
+    },
   ];
 
   const now = new Date().toISOString();

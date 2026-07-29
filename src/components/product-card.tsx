@@ -1,5 +1,18 @@
 import { Link } from "@tanstack/react-router";
-import { Star, Play, X, Heart, Eye, ShoppingCart, Video, Sparkles, Trophy, Clock, Flame, Check } from "lucide-react";
+import {
+  Star,
+  Play,
+  X,
+  Heart,
+  Eye,
+  ShoppingCart,
+  Video,
+  Sparkles,
+  Trophy,
+  Clock,
+  Flame,
+  Check,
+} from "lucide-react";
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import type { Product } from "@/lib/store-data";
@@ -29,7 +42,8 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
   const requestVideoFn = useServerFn(requestProductVideo);
 
   const modelUrl = (product as LegacyProductShape).modelUrl ?? null;
-  const videoPlaybackId = (product as any).videoPlaybackId || (product as any).video_playback_id || null;
+  const videoPlaybackId =
+    (product as any).videoPlaybackId || (product as any).video_playback_id || null;
 
   const discount = product.oldPrice
     ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
@@ -44,7 +58,8 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
 
   // Badge & Theme determination
   const rawBadge = (product as any).badge || "";
-  const isBestSeller = (product as any).is_best_seller || rawBadge.includes("مبيع") || rawBadge.includes("أكثر");
+  const isBestSeller =
+    (product as any).is_best_seller || rawBadge.includes("مبيع") || rawBadge.includes("أكثر");
   const isDeal = (product as any).is_deal || rawBadge.includes("صفقة") || discount > 15;
   const isNew = (product as any).is_new || rawBadge.includes("جديد");
 
@@ -133,7 +148,6 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
       className="group relative flex flex-col h-full overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 bg-[#070f1e]/95 backdrop-blur-xl p-2 sm:p-3 shadow-xl transition-all duration-300 hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.2)]"
     >
       <div className="flex flex-col h-full justify-between gap-2">
-        
         {/* ================= 1. TOP PURPLE FLOATING STATUS CAPSULE ================= */}
         <div className="flex items-center justify-between gap-1 rounded-full border border-purple-500/40 bg-purple-950/70 px-2 py-1 backdrop-blur-md text-[10px] text-purple-200">
           <button
@@ -146,7 +160,9 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
             className="flex items-center justify-center h-5 w-5 rounded-full bg-white/10 hover:bg-white/20 transition active:scale-95"
             title={isFav ? "إزالة من المفضلة" : "إضافة للمفضلة"}
           >
-            <Heart className={`h-3 w-3 ${isFav ? "fill-purple-400 text-purple-400" : "text-purple-300"}`} />
+            <Heart
+              className={`h-3 w-3 ${isFav ? "fill-purple-400 text-purple-400" : "text-purple-300"}`}
+            />
           </button>
 
           <div className="flex items-center gap-1.5">
@@ -169,7 +185,9 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
             className="flex items-center justify-center h-5 w-5 rounded-full bg-white/10 hover:bg-white/20 transition active:scale-95"
             title={isFav ? "إزالة من المفضلة" : "إضافة للمفضلة"}
           >
-            <Heart className={`h-3 w-3 ${isFav ? "fill-red-500 text-red-500" : "text-purple-300"}`} />
+            <Heart
+              className={`h-3 w-3 ${isFav ? "fill-red-500 text-red-500" : "text-purple-300"}`}
+            />
           </button>
         </div>
 
@@ -256,7 +274,11 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
                 : "bg-[#112233] hover:bg-cyan-500 hover:text-slate-950 border border-white/15 text-white"
             }`}
           >
-            {addedToCartToast ? <Check className="h-3 w-3" /> : <ShoppingCart className="h-3 w-3 text-cyan-400" />}
+            {addedToCartToast ? (
+              <Check className="h-3 w-3" />
+            ) : (
+              <ShoppingCart className="h-3 w-3 text-cyan-400" />
+            )}
             <span className="truncate"> سلة</span>
           </button>
 
@@ -287,7 +309,11 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               <X className="h-4 w-4" />
             </button>
             <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
-              <MuxPlayer playbackId={videoPlaybackId} autoPlay={true} style={{ width: "100%", height: "100%" }} />
+              <MuxPlayer
+                playbackId={videoPlaybackId}
+                autoPlay={true}
+                style={{ width: "100%", height: "100%" }}
+              />
             </div>
             <div className="p-3 text-start">
               <h4 className="text-sm font-black text-white">{product.name}</h4>
@@ -313,9 +339,12 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               <Video className="h-7 w-7" />
             </div>
 
-            <h3 className="text-base font-black text-white">هذا المنتج لا يحتوي على فيديو حالياً</h3>
+            <h3 className="text-base font-black text-white">
+              هذا المنتج لا يحتوي على فيديو حالياً
+            </h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              يمكنك طلب توفير فيديو توضيحي لمشاهدة تفاصيل وطريقة عمل هذا المنتج عن قرب. سنقوم بإنتاجه فوراً!
+              يمكنك طلب توفير فيديو توضيحي لمشاهدة تفاصيل وطريقة عمل هذا المنتج عن قرب. سنقوم
+              بإنتاجه فوراً!
             </p>
 
             <div className="pt-2">
@@ -381,7 +410,9 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
                     <div className="flex items-center gap-1.5 text-xs text-amber-400">
                       <Star className="h-4 w-4 fill-amber-400" />
                       <span className="font-bold text-white">{product.rating || 4.8}</span>
-                      <span className="text-slate-400">({(product as any).reviews || 42} تقييم)</span>
+                      <span className="text-slate-400">
+                        ({(product as any).reviews || 42} تقييم)
+                      </span>
                     </div>
                   )}
 
@@ -402,7 +433,8 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
                   </div>
 
                   <p className="text-xs text-slate-300 leading-relaxed pt-2">
-                    {product.description || "منتج عالي الجودة مع ضمان ومتوفر للتوصيل السريع لجميع المحافظات."}
+                    {product.description ||
+                      "منتج عالي الجودة مع ضمان ومتوفر للتوصيل السريع لجميع المحافظات."}
                   </p>
                 </div>
 

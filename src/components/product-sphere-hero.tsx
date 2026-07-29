@@ -24,15 +24,15 @@ import MuxPlayer from "@mux/mux-player-react";
 import { OptimizedImage } from "@/components/optimized-image";
 
 // ─── Design Tokens ───────────────────────────────────────────────────────────
-const BG_TOP    = "#040818";   // deep navy top
-const BG_MID    = "#06091f";   // midnight center
-const BG_BOT    = "#000209";   // pure dark bottom
-const ACCENT    = "#4f8cff";   // electric blue
-const ACCENT2   = "#a259ff";   // violet
-const LIGHT     = "#eeeeff";
-const RING_CLR  = "#3a6bdb";
-const RADIUS    = 2.2;         // sphere radius
-const TILE      = 0.70;        // card size
+const BG_TOP = "#040818"; // deep navy top
+const BG_MID = "#06091f"; // midnight center
+const BG_BOT = "#000209"; // pure dark bottom
+const ACCENT = "#4f8cff"; // electric blue
+const ACCENT2 = "#a259ff"; // violet
+const LIGHT = "#eeeeff";
+const RING_CLR = "#3a6bdb";
+const RADIUS = 2.2; // sphere radius
+const TILE = 0.7; // card size
 
 // ─── Image proxy ─────────────────────────────────────────────────────────────
 function proxiedTextureUrl(value: string): string {
@@ -51,7 +51,9 @@ class TileErrorBoundary extends Component<
   { hasError: boolean }
 > {
   state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
   componentDidCatch(error: unknown, info: ErrorInfo) {
     console.warn("[TileErrorBoundary]", error, info);
   }
@@ -80,19 +82,19 @@ function r3f(type: string, props: R3FProps) {
   const { children, ...rest } = props;
   return createElement(type, cleanR3FProps(rest), children);
 }
-const RMesh               = (p: R3FProps) => r3f("mesh", p);
-const RGroup              = (p: R3FProps) => r3f("group", p);
-const RPlaneGeometry      = (p: R3FProps) => r3f("planeGeometry", p);
-const RSphereGeometry     = (p: R3FProps) => r3f("sphereGeometry", p);
-const RTorusGeometry      = (p: R3FProps) => r3f("torusGeometry", p);
-const RCircleGeometry     = (p: R3FProps) => r3f("circleGeometry", p);
-const RMeshBasicMaterial  = (p: R3FProps) => r3f("meshBasicMaterial", p);
+const RMesh = (p: R3FProps) => r3f("mesh", p);
+const RGroup = (p: R3FProps) => r3f("group", p);
+const RPlaneGeometry = (p: R3FProps) => r3f("planeGeometry", p);
+const RSphereGeometry = (p: R3FProps) => r3f("sphereGeometry", p);
+const RTorusGeometry = (p: R3FProps) => r3f("torusGeometry", p);
+const RCircleGeometry = (p: R3FProps) => r3f("circleGeometry", p);
+const RMeshBasicMaterial = (p: R3FProps) => r3f("meshBasicMaterial", p);
 const RMeshStandardMaterial = (p: R3FProps) => r3f("meshStandardMaterial", p);
-const RColor              = (p: R3FProps) => r3f("color", p);
-const RFog                = (p: R3FProps) => r3f("fog", p);
-const RAmbientLight       = (p: R3FProps) => r3f("ambientLight", p);
-const RDirectionalLight   = (p: R3FProps) => r3f("directionalLight", p);
-const RPointLight         = (p: R3FProps) => r3f("pointLight", p);
+const RColor = (p: R3FProps) => r3f("color", p);
+const RFog = (p: R3FProps) => r3f("fog", p);
+const RAmbientLight = (p: R3FProps) => r3f("ambientLight", p);
+const RDirectionalLight = (p: R3FProps) => r3f("directionalLight", p);
+const RPointLight = (p: R3FProps) => r3f("pointLight", p);
 
 // ─── Fibonacci sphere distribution ───────────────────────────────────────────
 function fibonacciSphere(count: number, radius: number): THREE.Vector3[] {
@@ -103,9 +105,7 @@ function fibonacciSphere(count: number, radius: number): THREE.Vector3[] {
     const y = 1 - (i / (count - 1)) * 2;
     const r = Math.sqrt(1 - y * y);
     const theta = phi * i;
-    pts.push(
-      new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r).multiplyScalar(radius),
-    );
+    pts.push(new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r).multiplyScalar(radius));
   }
   return pts;
 }
@@ -136,8 +136,8 @@ function OrbitalRing2() {
   });
   return (
     <RMesh ref={meshRef} rotation={[0.8, 1.2, 0.4]}>
-      <RTorusGeometry args={[RADIUS + 0.9, 0.010, 12, 100]} />
-      <RMeshBasicMaterial color={ACCENT2} transparent opacity={0.30} />
+      <RTorusGeometry args={[RADIUS + 0.9, 0.01, 12, 100]} />
+      <RMeshBasicMaterial color={ACCENT2} transparent opacity={0.3} />
     </RMesh>
   );
 }
@@ -179,7 +179,7 @@ function AmbientParticles({ count = 60 }: { count?: number }) {
     positions.forEach((p, i) => {
       dummy.position.set(
         p.x + Math.sin(t * 0.3 + i) * 0.12,
-        p.y + Math.cos(t * 0.25 + i * 1.3) * 0.10,
+        p.y + Math.cos(t * 0.25 + i * 1.3) * 0.1,
         p.z,
       );
       const s = 0.015 + Math.abs(Math.sin(t * 0.5 + i)) * 0.018;
@@ -285,11 +285,7 @@ function ProductTile({
         ) : (
           <RPlaneGeometry args={[tileScale, tileScale]} />
         )}
-        <RMeshBasicMaterial
-          map={texture}
-          toneMapped={false}
-          side={THREE.DoubleSide}
-        />
+        <RMeshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
       </RMesh>
     </RGroup>
   );
@@ -324,7 +320,9 @@ function useDragRotation(groupRef: React.RefObject<THREE.Group>) {
     const onUp = () => {
       isDragging.current = false;
       // Resume auto-rotate after 2.5 s of inactivity
-      setTimeout(() => { autoRotate.current = true; }, 2500);
+      setTimeout(() => {
+        autoRotate.current = true;
+      }, 2500);
     };
 
     const mouseDown = (e: MouseEvent) => onDown(e.clientX, e.clientY);
@@ -419,9 +417,7 @@ function ProductSphere({
     }
   });
 
-  const fallbackMat = (
-    <RMeshBasicMaterial color="#1e2a4a" side={THREE.DoubleSide} />
-  );
+  const fallbackMat = <RMeshBasicMaterial color="#1e2a4a" side={THREE.DoubleSide} />;
 
   return (
     <RGroup ref={groupRef}>
@@ -705,7 +701,7 @@ export function ProductSphereHero({
         <Suspense fallback={<Fallback />}>
           {mounted && pool.length > 0 ? (
             <Canvas
-               dpr={[1, 1.5]}
+              dpr={[1, 1.5]}
               camera={{ position: [0, 0.3, 5.8], fov: 44 }}
               gl={{
                 antialias: true,
@@ -716,7 +712,7 @@ export function ProductSphereHero({
               }}
             >
               <Suspense fallback={null}>
-              <Scene
+                <Scene
                   products={pool}
                   onHoverAny={setHovered}
                   onSelect={handleSelect}
@@ -767,10 +763,7 @@ export function ProductSphereHero({
             backdropFilter: "blur(8px)",
           }}
         >
-          <span
-            className="h-1.5 w-1.5 animate-pulse rounded-full"
-            style={{ background: ACCENT }}
-          />
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: ACCENT }} />
           <span
             className="text-[9px] font-bold tracking-[0.35em]"
             style={{ color: "rgba(200,220,255,0.85)" }}
@@ -872,9 +865,7 @@ export function ProductSphereHero({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xs font-bold text-slate-100 truncate">
-                    {hovered.name}
-                  </h3>
+                  <h3 className="text-xs font-bold text-slate-100 truncate">{hovered.name}</h3>
                   <p className="text-[10px] text-slate-400 mt-0.5">
                     الماركة: {hovered.brand || "ماركة متميزة"} | {hovered.badge || "ضمان سنة"}
                   </p>
@@ -954,181 +945,202 @@ export function ProductSphereHero({
           className="h-1.5 w-1.5 rounded-full animate-pulse"
           style={{ background: "#4ade80" }}
         />
-        <span
-          className="text-[9px] font-bold"
-          style={{ color: "rgba(180,210,255,0.65)" }}
-        >
+        <span className="text-[9px] font-bold" style={{ color: "rgba(180,210,255,0.65)" }}>
           {pool.length} منتج
         </span>
       </motion.div>
 
       {/* Video Modal Overlay */}
-      {showVideo && hovered && hovered.videoPlaybackId && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-surface/90 shadow-2xl p-2">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowVideo(false);
-              }}
-              className="absolute top-4 end-4 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
-              <MuxPlayer
-                playbackId={hovered.videoPlaybackId}
-                autoPlay={true}
-                style={{ width: "100%", height: "100%" }}
-              />
+      {showVideo &&
+        hovered &&
+        hovered.videoPlaybackId &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
+            <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-surface/90 shadow-2xl p-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowVideo(false);
+                }}
+                className="absolute top-4 end-4 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
+                <MuxPlayer
+                  playbackId={hovered.videoPlaybackId}
+                  autoPlay={true}
+                  style={{ width: "100%", height: "100%" }}
+                />
+              </div>
+              <div className="p-4 text-start">
+                <h4 className="text-sm font-black text-foreground">{hovered.name}</h4>
+                <p className="text-xs text-muted-foreground mt-1">فيديو توضيحي للمنتج</p>
+              </div>
             </div>
-            <div className="p-4 text-start">
-              <h4 className="text-sm font-black text-foreground">{hovered.name}</h4>
-              <p className="text-xs text-muted-foreground mt-1">فيديو توضيحي للمنتج</p>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body,
+        )}
 
       {/* Product Specs & Details Modal */}
       <AnimatePresence>
-        {activeSpecsProduct && typeof document !== "undefined" && createPortal(
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
-            onClick={() => setActiveSpecsProduct(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="relative w-full max-w-lg overflow-y-auto max-h-[85vh] rounded-3xl glass-dark p-6 shadow-2xl space-y-6 text-start"
-              onClick={(e) => e.stopPropagation()}
+        {activeSpecsProduct &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+              onClick={() => setActiveSpecsProduct(null)}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-primary tracking-widest uppercase">تفاصيل ومواصفات المنتج</span>
-                  <h3 className="text-base font-black text-white mt-0.5">{activeSpecsProduct.name}</h3>
+              <motion.div
+                initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="relative w-full max-w-lg overflow-y-auto max-h-[85vh] rounded-3xl glass-dark p-6 shadow-2xl space-y-6 text-start"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-primary tracking-widest uppercase">
+                      تفاصيل ومواصفات المنتج
+                    </span>
+                    <h3 className="text-base font-black text-white mt-0.5">
+                      {activeSpecsProduct.name}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSpecsProduct(null)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white hover:bg-white/10 transition cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveSpecsProduct(null)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white hover:bg-white/10 transition cursor-pointer"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
 
-              {/* Media Preview */}
-              <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center">
-                <OptimizedImage
-                  src={activeSpecsProduct.image}
-                  alt={activeSpecsProduct.name}
-                  size="large"
-                  className="h-full w-full object-contain p-2"
-                />
-                {activeSpecsProduct.badge && (
-                  <span className="absolute end-3 top-3 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg">
-                    {activeSpecsProduct.badge}
-                  </span>
-                )}
-              </div>
-
-              {/* Specifications List */}
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
-                  <span className="text-white/40 block">السعر الحالي</span>
-                  <span className="text-sm font-black text-primary mt-0.5 block">{formatPrice(activeSpecsProduct.price)}</span>
+                {/* Media Preview */}
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center">
+                  <OptimizedImage
+                    src={activeSpecsProduct.image}
+                    alt={activeSpecsProduct.name}
+                    size="large"
+                    className="h-full w-full object-contain p-2"
+                  />
+                  {activeSpecsProduct.badge && (
+                    <span className="absolute end-3 top-3 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg">
+                      {activeSpecsProduct.badge}
+                    </span>
+                  )}
                 </div>
-                {activeSpecsProduct.oldPrice && (
+
+                {/* Specifications List */}
+                <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
-                    <span className="text-white/40 block">السعر السابق</span>
-                    <span className="text-sm font-black text-white/40 line-through mt-0.5 block">{formatPrice(activeSpecsProduct.oldPrice)}</span>
+                    <span className="text-white/40 block">السعر الحالي</span>
+                    <span className="text-sm font-black text-primary mt-0.5 block">
+                      {formatPrice(activeSpecsProduct.price)}
+                    </span>
                   </div>
-                )}
-                <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
-                  <span className="text-white/40 block">الفئة</span>
-                  <span className="text-sm font-bold text-white mt-0.5 block">
-                    {activeSpecsProduct.categoryId === "electronics" ? "إلكترونيات" : activeSpecsProduct.categoryId === "kitchen" ? "المطبخ" : "متنوعات"}
-                  </span>
-                </div>
-                <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
-                  <span className="text-white/40 block">حالة التوفر</span>
-                  <span className="text-sm font-bold text-emerald-400 mt-0.5 block">متوفر في المتجر</span>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-1.5 text-right">
-                <h4 className="text-xs font-bold text-white/60">وصف المنتج ومميزاته:</h4>
-                <p className="text-xs text-white/80 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5 whitespace-pre-wrap">{activeSpecsProduct.description || "لا يوجد وصف متوفر لهذا المنتج حالياً."}</p>
-              </div>
-
-              {/* Video Section */}
-              <div className="space-y-2 border-t border-white/5 pt-4 text-right">
-                <h4 className="text-xs font-bold text-white/60">الفيديو التوضيحي:</h4>
-                {activeSpecsProduct.videoPlaybackId ? (
-                  <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black/60 border border-white/5">
-                    <MuxPlayer
-                      playbackId={activeSpecsProduct.videoPlaybackId}
-                      autoPlay={false}
-                      style={{ width: "100%", height: "100%" }}
-                    />
+                  {activeSpecsProduct.oldPrice && (
+                    <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
+                      <span className="text-white/40 block">السعر السابق</span>
+                      <span className="text-sm font-black text-white/40 line-through mt-0.5 block">
+                        {formatPrice(activeSpecsProduct.oldPrice)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
+                    <span className="text-white/40 block">الفئة</span>
+                    <span className="text-sm font-bold text-white mt-0.5 block">
+                      {activeSpecsProduct.categoryId === "electronics"
+                        ? "إلكترونيات"
+                        : activeSpecsProduct.categoryId === "kitchen"
+                          ? "المطبخ"
+                          : "متنوعات"}
+                    </span>
                   </div>
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-5 text-center flex flex-col items-center gap-3">
-                    <span className="text-[10px] text-white/50">لا يتوفر فيديو توضيحي لهذا المنتج في الوقت الحالي</span>
-                    <button
-                      type="button"
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        try {
-                          const { supabase } = await import("@/integrations/supabase/client");
-                          if (supabase) {
-                            await (supabase as any).from("product_video_requests").insert({
-                              product_id: activeSpecsProduct.id,
-                              product_name: activeSpecsProduct.name
-                            });
+                  <div className="rounded-xl bg-white/5 p-3 border border-white/5 text-right">
+                    <span className="text-white/40 block">حالة التوفر</span>
+                    <span className="text-sm font-bold text-emerald-400 mt-0.5 block">
+                      متوفر في المتجر
+                    </span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-1.5 text-right">
+                  <h4 className="text-xs font-bold text-white/60">وصف المنتج ومميزاته:</h4>
+                  <p className="text-xs text-white/80 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5 whitespace-pre-wrap">
+                    {activeSpecsProduct.description || "لا يوجد وصف متوفر لهذا المنتج حالياً."}
+                  </p>
+                </div>
+
+                {/* Video Section */}
+                <div className="space-y-2 border-t border-white/5 pt-4 text-right">
+                  <h4 className="text-xs font-bold text-white/60">الفيديو التوضيحي:</h4>
+                  {activeSpecsProduct.videoPlaybackId ? (
+                    <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black/60 border border-white/5">
+                      <MuxPlayer
+                        playbackId={activeSpecsProduct.videoPlaybackId}
+                        autoPlay={false}
+                        style={{ width: "100%", height: "100%" }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-5 text-center flex flex-col items-center gap-3">
+                      <span className="text-[10px] text-white/50">
+                        لا يتوفر فيديو توضيحي لهذا المنتج في الوقت الحالي
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          try {
+                            const { supabase } = await import("@/integrations/supabase/client");
+                            if (supabase) {
+                              await (supabase as any).from("product_video_requests").insert({
+                                product_id: activeSpecsProduct.id,
+                                product_name: activeSpecsProduct.name,
+                              });
+                            }
+                          } catch (err) {
+                            console.error("Failed to request video:", err);
                           }
-                        } catch (err) {
-                          console.error("Failed to request video:", err);
-                        }
-                        toast.success("تم إرسال طلب توفير فيديو للمنتج بنجاح إلى المدير! 👍");
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-black text-white hover:bg-primary/95 transition cursor-pointer shadow-brand"
-                    >
-                      طلب توفير فيديو للمنتج 🎥
-                    </button>
-                  </div>
-                )}
-              </div>
+                          toast.success("تم إرسال طلب توفير فيديو للمنتج بنجاح إلى المدير! 👍");
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-black text-white hover:bg-primary/95 transition cursor-pointer shadow-brand"
+                      >
+                        طلب توفير فيديو للمنتج 🎥
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-              {/* Footer Actions */}
-              <div className="flex gap-3 border-t border-white/10 pt-4">
-                <a
-                  href={`https://wa.me/${STORE_CONTACT}?text=${encodeURIComponent(`مرحباً، أريد طلب منتج: ${activeSpecsProduct.name}\nالسعر: ${formatPrice(activeSpecsProduct.price)}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 px-5 py-3.5 text-xs font-black text-white transition shadow-lg"
-                >
-                  اطلب الآن عبر واتساب 💬
-                </a>
-                <Link
-                  to="/product/$slug"
-                  params={{ slug: activeSpecsProduct.slug }}
-                  className="inline-flex items-center justify-center rounded-2xl bg-white/10 hover:bg-white/15 px-5 py-3.5 text-xs font-bold text-white transition"
-                >
-                  صفحة المنتج الكاملة
-                </Link>
-              </div>
-            </motion.div>
-          </div>,
-          document.body
-        )}
+                {/* Footer Actions */}
+                <div className="flex gap-3 border-t border-white/10 pt-4">
+                  <a
+                    href={`https://wa.me/${STORE_CONTACT}?text=${encodeURIComponent(`مرحباً، أريد طلب منتج: ${activeSpecsProduct.name}\nالسعر: ${formatPrice(activeSpecsProduct.price)}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 px-5 py-3.5 text-xs font-black text-white transition shadow-lg"
+                  >
+                    اطلب الآن عبر واتساب 💬
+                  </a>
+                  <Link
+                    to="/product/$slug"
+                    params={{ slug: activeSpecsProduct.slug }}
+                    className="inline-flex items-center justify-center rounded-2xl bg-white/10 hover:bg-white/15 px-5 py-3.5 text-xs font-bold text-white transition"
+                  >
+                    صفحة المنتج الكاملة
+                  </Link>
+                </div>
+              </motion.div>
+            </div>,
+            document.body,
+          )}
       </AnimatePresence>
     </section>
   );

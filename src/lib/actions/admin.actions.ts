@@ -82,9 +82,7 @@ export const listInventoryMovements = (productId: string) =>
 
 export const importCatalogFromUrl = (input: { url: string; publish?: boolean }) =>
   adminImportCatalogFromUrl({
-    data: z
-      .object({ url: z.string().url(), publish: z.boolean().default(true) })
-      .parse(input),
+    data: z.object({ url: z.string().url(), publish: z.boolean().default(true) }).parse(input),
   });
 
 export const autoCategorizeProducts = () => adminAutoCategorizeProducts({});

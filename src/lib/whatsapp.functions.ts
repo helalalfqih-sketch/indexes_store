@@ -149,7 +149,7 @@ export const saveWhatsAppConfig = createServerFn({ method: "POST" })
 /** Generate AI Product Draft from Image/Video URL or Base64 */
 export async function generateAiProductDraftFromMedia(
   mediaUrl: string,
-  hint = ""
+  hint = "",
 ): Promise<AiSuggestion> {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
@@ -169,7 +169,8 @@ export async function generateAiProductDraftFromMedia(
     // Fallback Mock suggestion if API keys aren't set in local env
     return {
       title: hint || "منتج واتساب جديد",
-      description: "تم استيراد هذا المنتج تلقائياً عبر خدمة WhatsApp Media Sync وجاري تجهيز البيانات الفنية له.",
+      description:
+        "تم استيراد هذا المنتج تلقائياً عبر خدمة WhatsApp Media Sync وجاري تجهيز البيانات الفنية له.",
       category: "الإلكترونيات",
       price: 12500,
       tags: ["واتساب", "جديد", "مستورد"],
@@ -235,7 +236,10 @@ export function sanitizeFileName(caption: string, mimeType: string): string {
 }
 
 /** Extract category & tags directly from Caption (No AI) */
-export function extractCategoryAndTagsFromCaption(caption: string): { category: string; tags: string[] } {
+export function extractCategoryAndTagsFromCaption(caption: string): {
+  category: string;
+  tags: string[];
+} {
   if (!caption || !caption.trim()) {
     return { category: "وسائط متنوعة", tags: ["واتساب"] };
   }
@@ -283,16 +287,23 @@ export const simulateWhatsAppMediaReceived = createServerFn({ method: "POST" })
       senderPhone: string;
       caption?: string;
       whatsappMessageId?: string;
-    }) => data
+    }) => data,
   )
   .handler(async ({ data, context }) => {
     const ctx = context as any;
     const db = ctx.supabase || supabase;
     const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
-    const mimeType = data.fileType === "video" ? "video/mp4" : data.fileType === "document" ? "application/pdf" : "image/jpeg";
+    const mimeType =
+      data.fileType === "video"
+        ? "video/mp4"
+        : data.fileType === "document"
+          ? "application/pdf"
+          : "image/jpeg";
     const cleanFileName = sanitizeFileName(data.caption || data.fileName || "", mimeType);
-    const { category, tags } = extractCategoryAndTagsFromCaption(data.caption || data.fileName || "");
+    const { category, tags } = extractCategoryAndTagsFromCaption(
+      data.caption || data.fileName || "",
+    );
 
     const metadata = {
       whatsapp_message_id: data.whatsappMessageId || `wa_msg_${Date.now()}`,
@@ -317,7 +328,11 @@ export const simulateWhatsAppMediaReceived = createServerFn({ method: "POST" })
       created_by: ctx.userId || null,
     };
 
-    const { data: record, error } = await db.from("media_files").insert(payload).select("*").single();
+    const { data: record, error } = await db
+      .from("media_files")
+      .insert(payload)
+      .select("*")
+      .single();
 
     if (error) {
       throw new Error("فشل تسجيل وسيط الواتساب: " + error.message);
@@ -388,7 +403,11 @@ export const processSupplierBatchMessage = createServerFn({ method: "POST" })
     };
 
     // Insert Product Draft
-    const { data: createdProduct, error } = await db.from("products").insert(productPayload).select("*").single();
+    const { data: createdProduct, error } = await db
+      .from("products")
+      .insert(productPayload)
+      .select("*")
+      .single();
 
     if (error) {
       // Fallback if schema doesn't have metadata column
@@ -402,7 +421,11 @@ export const processSupplierBatchMessage = createServerFn({ method: "POST" })
         images: data.images,
         status: "draft",
       };
-      const { data: fallbackProduct } = await db.from("products").insert(fallbackPayload).select("*").single();
+      const { data: fallbackProduct } = await db
+        .from("products")
+        .insert(fallbackPayload)
+        .select("*")
+        .single();
       return {
         ok: true,
         product: fallbackProduct || fallbackPayload,
@@ -442,7 +465,9 @@ export const getPendingWhatsAppDrafts = createServerFn({ method: "GET" })
 /** Server Fn: Employee Approves Draft & Publishes to Store + Meta & Google Merchant */
 export const approveWhatsAppDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { productId: string; name?: string; price?: number; description?: string }) => data)
+  .validator(
+    (data: { productId: string; name?: string; price?: number; description?: string }) => data,
+  )
   .handler(async ({ data, context }) => {
     const ctx = context as any;
     const db = await getDbClient(ctx?.supabase);
@@ -477,14 +502,21 @@ export const approveWhatsAppDraft = createServerFn({ method: "POST" })
   });
 
 /** Generate Meta Commerce (Facebook / Instagram Shop) XML Feed */
-export function generateMetaCatalogFeedXml(products: any[], origin = "https://indexes-store.vercel.app"): string {
+export function generateMetaCatalogFeedXml(
+  products: any[],
+  origin = "https://indexes-store.vercel.app",
+): string {
   const itemsXml = products
     .map((p) => {
       const pUrl = `${origin}/product/${p.slug || p.id}`;
       const imgUrl = p.image || (p.images && p.images[0]) || `${origin}/placeholder.png`;
-      const addImages = p.images && p.images.length > 1
-        ? p.images.slice(1).map((img: string) => `<g:additional_image_link>${img}</g:additional_image_link>`).join("\n        ")
-        : "";
+      const addImages =
+        p.images && p.images.length > 1
+          ? p.images
+              .slice(1)
+              .map((img: string) => `<g:additional_image_link>${img}</g:additional_image_link>`)
+              .join("\n        ")
+          : "";
 
       return `    <item>
       <g:id>${p.id}</g:id>
@@ -513,7 +545,9 @@ ${itemsXml}
 }
 
 /** Generate Google Merchant Center RSS 2.0 XML Feed */
-export function generateGoogleMerchantFeedXml(products: any[], origin = "https://indexes-store.vercel.app"): string {
+export function generateGoogleMerchantFeedXml(
+  products: any[],
+  origin = "https://indexes-store.vercel.app",
+): string {
   return generateMetaCatalogFeedXml(products, origin);
 }
-

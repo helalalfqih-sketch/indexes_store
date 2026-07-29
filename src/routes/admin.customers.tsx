@@ -1,11 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  Users,
-  Search,
-  Loader2,
-  ShoppingBag,
-  Phone,
-} from "lucide-react";
+import { Users, Search, Loader2, ShoppingBag, Phone } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listTenantOrders } from "@/lib/orders-admin.functions";
@@ -60,9 +54,7 @@ function CustomersPage() {
 
   const customers = buildCustomersFromOrders(ordersQ.data?.rows ?? []).filter(
     (c) =>
-      !search ||
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone.includes(search),
+      !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search),
   );
 
   const totalRevenue = customers.reduce((a, c) => a + c.total_spend, 0);
@@ -135,12 +127,13 @@ function CustomersPage() {
                 </tr>
               ) : (
                 customers.map((c) => (
-                  <tr key={c.id} className="border-b border-border/60 hover:bg-accent/30 transition">
+                  <tr
+                    key={c.id}
+                    className="border-b border-border/60 hover:bg-accent/30 transition"
+                  >
                     <td className="px-4 py-3">
                       <div className="font-bold">{c.name}</div>
-                      {c.email && (
-                        <div className="text-xs text-muted-foreground">{c.email}</div>
-                      )}
+                      {c.email && <div className="text-xs text-muted-foreground">{c.email}</div>}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">

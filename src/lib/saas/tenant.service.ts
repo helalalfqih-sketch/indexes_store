@@ -79,11 +79,17 @@ export const tenantService = {
     return data;
   },
 
-  async usage(db: DB, tenantId: string): Promise<{ products: number; categories: number; members: number }> {
+  async usage(
+    db: DB,
+    tenantId: string,
+  ): Promise<{ products: number; categories: number; members: number }> {
     const [{ count: products }, { count: categories }, { count: members }] = await Promise.all([
       db.from("products").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId),
       db.from("categories").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId),
-      db.from("tenant_members").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId),
+      db
+        .from("tenant_members")
+        .select("*", { count: "exact", head: true })
+        .eq("tenant_id", tenantId),
     ]);
     return { products: products ?? 0, categories: categories ?? 0, members: members ?? 0 };
   },

@@ -14,13 +14,22 @@ export function GleamDevicePreview({
     <div className="flex flex-col items-center gap-4 w-full">
       {/* Action Strip Above Phone */}
       <div className="flex items-center gap-2 flex-wrap justify-center text-xs font-bold">
-        <button type="button" className="px-3 py-1.5 rounded-2xl bg-white/80 border border-white/90 shadow-md text-slate-700 hover:bg-white transition flex items-center gap-1">
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-2xl bg-white/80 border border-white/90 shadow-md text-slate-700 hover:bg-white transition flex items-center gap-1"
+        >
           Previews ⌄
         </button>
-        <button type="button" className="px-3 py-1.5 rounded-2xl bg-white/80 border border-white/90 shadow-md text-slate-700 hover:bg-white transition flex items-center gap-1">
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-2xl bg-white/80 border border-white/90 shadow-md text-slate-700 hover:bg-white transition flex items-center gap-1"
+        >
           Deploy <ExternalLink className="h-3 w-3 text-purple-600" />
         </button>
-        <button type="button" className="px-3 py-1.5 rounded-2xl bg-white/80 border border-white/90 shadow-md text-slate-700 hover:bg-white transition">
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-2xl bg-white/80 border border-white/90 shadow-md text-slate-700 hover:bg-white transition"
+        >
           Homepage
         </button>
         <span className="px-3 py-1.5 rounded-2xl bg-gradient-to-r from-amber-400 to-purple-500 text-white shadow-md flex items-center gap-1">
@@ -39,9 +48,13 @@ export function GleamDevicePreview({
         <div className="relative w-full h-full bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 rounded-[35px] overflow-hidden flex flex-col justify-between pt-7 pb-2 text-white">
           {/* Header */}
           <div className="text-center pt-2 px-3">
-            <span className="text-[9px] tracking-widest text-slate-400 font-mono uppercase">{projectName}</span>
+            <span className="text-[9px] tracking-widest text-slate-400 font-mono uppercase">
+              {projectName}
+            </span>
             <h4 className="text-xs font-black mt-1 text-slate-100">كوكب المنتجات</h4>
-            <p className="text-[9px] text-slate-400 mt-0.5">برز واستكشف - كل وجه منتج اضغط للفنحة.</p>
+            <p className="text-[9px] text-slate-400 mt-0.5">
+              برز واستكشف - كل وجه منتج اضغط للفنحة.
+            </p>
           </div>
 
           {/* 3D Product Sphere Graphic Simulation */}

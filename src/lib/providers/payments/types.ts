@@ -1,12 +1,7 @@
 import type { OrderDTO, PaymentStatus } from "@/lib/domain/order";
 
 export type PaymentMethodId =
-  | "cod"
-  | "bank_transfer"
-  | "kuraimi"
-  | "mtn_cash"
-  | "sabafon_cash"
-  | "hawala";
+  "cod" | "bank_transfer" | "kuraimi" | "mtn_cash" | "sabafon_cash" | "hawala";
 
 export type InitiatePaymentInput = {
   order: OrderDTO;

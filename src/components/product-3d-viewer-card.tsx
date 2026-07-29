@@ -18,10 +18,8 @@ import { Card } from "@astryxdesign/core/Card";
 import { Text, Heading } from "@astryxdesign/core/Text";
 import { useModelViewer, useMounted } from "@/lib/model-viewer";
 
-export const DEMO_MODEL_URL =
-  "https://modelviewer.dev/shared-assets/models/NeilArmstrong.glb";
-export const DEMO_POSTER_URL =
-  "https://modelviewer.dev/assets/ShopifyModels/Chair.webp";
+export const DEMO_MODEL_URL = "https://modelviewer.dev/shared-assets/models/NeilArmstrong.glb";
+export const DEMO_POSTER_URL = "https://modelviewer.dev/assets/ShopifyModels/Chair.webp";
 
 export type Product3DViewerCardProps = {
   modelSrc?: string;
@@ -134,7 +132,9 @@ export function Product3DViewerCard({
         </HStack>
 
         <HStack gap={3} vAlign="center" justify="between" wrap="wrap">
-          <Text type="large" weight="bold">{price}</Text>
+          <Text type="large" weight="bold">
+            {price}
+          </Text>
           <Button
             label="Add to Cart"
             variant="primary"

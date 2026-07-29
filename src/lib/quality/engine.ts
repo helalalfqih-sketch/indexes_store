@@ -126,11 +126,17 @@ export async function runQualityAudit(options: EngineRunOptions = {}): Promise<E
 
   for (const auditor of allAuditors) {
     if (options.category && auditor.category !== options.category) {
-      skippedAudits.push({ id: auditor.id, reason: `Category mismatch (${auditor.category} != ${options.category})` });
+      skippedAudits.push({
+        id: auditor.id,
+        reason: `Category mismatch (${auditor.category} != ${options.category})`,
+      });
       continue;
     }
     if (!auditor.environments.includes(env)) {
-      skippedAudits.push({ id: auditor.id, reason: `Environment mismatch (${auditor.environments.join(",")} != ${env})` });
+      skippedAudits.push({
+        id: auditor.id,
+        reason: `Environment mismatch (${auditor.environments.join(",")} != ${env})`,
+      });
       continue;
     }
     eligibleAuditors.push(auditor);
@@ -148,7 +154,12 @@ export async function runQualityAudit(options: EngineRunOptions = {}): Promise<E
   }
 
   const totalDurationMs = Date.now() - startTime;
-  const manifest = createExecutionManifest(currentEngineInfo, results, skippedAudits, totalDurationMs);
+  const manifest = createExecutionManifest(
+    currentEngineInfo,
+    results,
+    skippedAudits,
+    totalDurationMs,
+  );
 
   // Phase 3 Evidence & Reporting Platform Pipeline
   const completeReport = generateQualityReport(currentEngineInfo, results, manifest);

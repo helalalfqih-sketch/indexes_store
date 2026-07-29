@@ -159,13 +159,15 @@ function AIEngineeringAgentPage() {
     provider?: string;
     model?: string;
   } | null>(null);
-  const [agentEventsLog, setAgentEventsLog] = useState<{
-    id: string;
-    label: string;
-    state: string;
-    progress?: number;
-    time: string;
-  }[]>([]);
+  const [agentEventsLog, setAgentEventsLog] = useState<
+    {
+      id: string;
+      label: string;
+      state: string;
+      progress?: number;
+      time: string;
+    }[]
+  >([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Lovable IDE & AI Builder States
@@ -304,16 +306,22 @@ function AIEngineeringAgentPage() {
     const jsonString = e.dataTransfer.getData("application/json");
     const plainPath = e.dataTransfer.getData("text/plain");
 
-    let targetPaths: string[] = [];
+    const targetPaths: string[] = [];
 
     if (jsonString) {
       try {
         const parsed = JSON.parse(jsonString);
         if (parsed?.path) targetPaths.push(parsed.path);
-      } catch { /* fallback */ }
+      } catch {
+        /* fallback */
+      }
     }
 
-    if (targetPaths.length === 0 && plainPath && (plainPath.includes("/") || plainPath.includes("."))) {
+    if (
+      targetPaths.length === 0 &&
+      plainPath &&
+      (plainPath.includes("/") || plainPath.includes("."))
+    ) {
       targetPaths.push(plainPath);
     }
 
@@ -380,7 +388,10 @@ function AIEngineeringAgentPage() {
 
   const { data: rawPersistentEvents } = useQuery({
     queryKey: ["ai-session-events", activeSessionId],
-    queryFn: () => (activeSessionId ? getSessionEventsFn({ data: { sessionId: activeSessionId } }) : Promise.resolve([])),
+    queryFn: () =>
+      activeSessionId
+        ? getSessionEventsFn({ data: { sessionId: activeSessionId } })
+        : Promise.resolve([]),
     enabled: !!activeSessionId,
   });
   const persistentEvents = (rawPersistentEvents || []) as any[];
@@ -406,8 +417,6 @@ function AIEngineeringAgentPage() {
   const agentRole = roleData?.role || "viewer";
   const canSend = agentRole !== "viewer";
 
-
-
   // Seed memory on first load
   useEffect(() => {
     if (memory.length === 0 && roleData) {
@@ -421,31 +430,34 @@ function AIEngineeringAgentPage() {
   }, [messages, streamingContent]);
 
   // Load session messages when active session changes
-  const loadSession = useCallback(async (sessionId: string) => {
-    setActiveSessionId(sessionId);
-    try {
-      const res = await getSessionFn({ data: { sessionId } });
-      setMessages(res.messages);
-      const sess = res.session;
-      if (
-        sess &&
-        (sess.task_status === "waiting_approval" || sess.task_status === "planning") &&
-        (sess.affected_files?.length > 0 || sess.task_plan?.length > 0)
-      ) {
-        setPendingTask({
-          taskId: sess.task_id || "TASK-001",
-          plan: sess.task_plan || [],
-          affectedFiles: sess.affected_files || [],
-          riskLevel: sess.risk_level || "low",
-        });
-      } else {
+  const loadSession = useCallback(
+    async (sessionId: string) => {
+      setActiveSessionId(sessionId);
+      try {
+        const res = await getSessionFn({ data: { sessionId } });
+        setMessages(res.messages);
+        const sess = res.session;
+        if (
+          sess &&
+          (sess.task_status === "waiting_approval" || sess.task_status === "planning") &&
+          (sess.affected_files?.length > 0 || sess.task_plan?.length > 0)
+        ) {
+          setPendingTask({
+            taskId: sess.task_id || "TASK-001",
+            plan: sess.task_plan || [],
+            affectedFiles: sess.affected_files || [],
+            riskLevel: sess.risk_level || "low",
+          });
+        } else {
+          setPendingTask(null);
+        }
+      } catch {
+        setMessages([]);
         setPendingTask(null);
       }
-    } catch {
-      setMessages([]);
-      setPendingTask(null);
-    }
-  }, [getSessionFn]);
+    },
+    [getSessionFn],
+  );
 
   // Create new session
   const handleNewSession = async () => {
@@ -459,8 +471,6 @@ function AIEngineeringAgentPage() {
       toast.error(e.message || "فشل إنشاء الجلسة");
     }
   };
-
-
 
   // Send message + stream AI response
   const handleSend = async () => {
@@ -524,11 +534,12 @@ function AIEngineeringAgentPage() {
     // Build attached files project context layer
     let effectiveMessage = userMessage;
     if (attachedFiles.length > 0) {
-      effectiveMessage += `\n\n--- ATTACHED REAL PROJECT FILE CONTEXTS ---\n` +
+      effectiveMessage +=
+        `\n\n--- ATTACHED REAL PROJECT FILE CONTEXTS ---\n` +
         attachedFiles
           .map(
             (f) =>
-              `[PROJECT_FILE_CONTEXT]\nFile: ${f.fileName}\nPath: ${f.path}\nSize: ${f.size} Bytes | Lines: ${f.lineCount} | Language: ${f.language}\nImports/Dependencies: ${f.dependencies.join(", ") || "None"}\nContent:\n${f.content}`
+              `[PROJECT_FILE_CONTEXT]\nFile: ${f.fileName}\nPath: ${f.path}\nSize: ${f.size} Bytes | Lines: ${f.lineCount} | Language: ${f.language}\nImports/Dependencies: ${f.dependencies.join(", ") || "None"}\nContent:\n${f.content}`,
           )
           .join("\n\n");
       setAttachedFiles([]);
@@ -536,7 +547,10 @@ function AIEngineeringAgentPage() {
 
     // Stream AI response with Activity Events
     try {
-      setAgentActivity({ status: "receiving_request", label: "جاري استقبال طلبك والملفات المرفقة..." });
+      setAgentActivity({
+        status: "receiving_request",
+        label: "جاري استقبال طلبك والملفات المرفقة...",
+      });
       const base = (typeof window !== "undefined" ? window.location.origin : "") || "";
       const res = await fetch(`${base}/api/ai/agent`, {
         method: "POST",
@@ -594,7 +608,11 @@ function AIEngineeringAgentPage() {
                     label: json.label || json.message || "معالجة التفتيش البنائي...",
                     state: json.state || json.status || "ANALYZING_REPOSITORY",
                     progress: json.progress,
-                    time: new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+                    time: new Date().toLocaleTimeString("ar-SA", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    }),
                   },
                 ]);
               } else if (
@@ -613,7 +631,11 @@ function AIEngineeringAgentPage() {
                     id: crypto.randomUUID(),
                     label: json.message || "تفتيش الكود والمستودع...",
                     state: "ANALYZING_REPOSITORY",
-                    time: new Date().toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+                    time: new Date().toLocaleTimeString("ar-SA", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    }),
                   },
                 ]);
               } else if (json.type === "approval_required" || json.type === "plan_ready") {
@@ -724,11 +746,12 @@ function AIEngineeringAgentPage() {
 
     // 1 & 2: STREAMING / ANALYSIS & GENERATING PLAN
     if (isStreaming) {
-      const latestEvent = persistentEvents.length > 0
-        ? persistentEvents[persistentEvents.length - 1]
-        : agentEventsLog.length > 0
-        ? agentEventsLog[agentEventsLog.length - 1]
-        : null;
+      const latestEvent =
+        persistentEvents.length > 0
+          ? persistentEvents[persistentEvents.length - 1]
+          : agentEventsLog.length > 0
+            ? agentEventsLog[agentEventsLog.length - 1]
+            : null;
 
       const evtMsg = (latestEvent?.message || latestEvent?.label || "").toLowerCase();
 
@@ -795,7 +818,14 @@ function AIEngineeringAgentPage() {
       canExecute: true,
       helperMsg: "اضغط على Build & Execute لبدء الاعتماد والتنفيذ الفوري.",
     };
-  }, [isStreaming, pendingTask, isExecutingTask, persistentEvents, agentEventsLog, failureExplanation]);
+  }, [
+    isStreaming,
+    pendingTask,
+    isExecutingTask,
+    persistentEvents,
+    agentEventsLog,
+    failureExplanation,
+  ]);
 
   const approveTaskServerFn = useServerFn(approveAgentTask);
 
@@ -819,7 +849,10 @@ function AIEngineeringAgentPage() {
       current_session_id: activeSessionId,
       approval_status: executionStageInfo.stage,
     });
-    console.log("[BuildAndExecuteClicked]", { receivedTaskId: taskIdToRun, receivedSessionId: activeSessionId });
+    console.log("[BuildAndExecuteClicked]", {
+      receivedTaskId: taskIdToRun,
+      receivedSessionId: activeSessionId,
+    });
     setIsExecutingTask(true);
     toast.loading(`جاري اعتماد المهمة وتفعيل محرك التنفيذ ${taskIdToRun}...`, { id: "task-exec" });
 
@@ -830,11 +863,15 @@ function AIEngineeringAgentPage() {
     try {
       // 1. approvePlan(taskId)
       await approveTaskServerFn({ data: { taskId: taskIdToRun } });
-      
+
       // 2. startExecution Controller Orchestrator
-      const res = (await startExecutionFn({ data: { taskId: taskIdToRun, sessionId: activeSessionId || "default" } })) as any;
+      const res = (await startExecutionFn({
+        data: { taskId: taskIdToRun, sessionId: activeSessionId || "default" },
+      })) as any;
       if (res?.success) {
-        toast.success(`تم تطبيق جميع الخطوات والتعديلات واجتياز فحص البناء بنجاح! ✨`, { id: "task-exec" });
+        toast.success(`تم تطبيق جميع الخطوات والتعديلات واجتياز فحص البناء بنجاح! ✨`, {
+          id: "task-exec",
+        });
         setPendingTask(null);
         setFailureExplanation(null);
         queryClient.invalidateQueries({ queryKey: ["ai-agent-sessions"] });
@@ -849,7 +886,10 @@ function AIEngineeringAgentPage() {
         }
         queryClient.invalidateQueries({ queryKey: ["ai-execution-journal"] });
         queryClient.invalidateQueries({ queryKey: ["ai-session-events", activeSessionId] });
-        toast.error(`فشل التنفيذ/فحص البناء! (${res?.failureDetails?.reason || res?.failureDetails?.message || "تم التراجع تلقائياً"}) 🔄`, { id: "task-exec" });
+        toast.error(
+          `فشل التنفيذ/فحص البناء! (${res?.failureDetails?.reason || res?.failureDetails?.message || "تم التراجع تلقائياً"}) 🔄`,
+          { id: "task-exec" },
+        );
       }
     } catch (err: any) {
       queryClient.invalidateQueries({ queryKey: ["ai-execution-journal"] });
@@ -902,8 +942,12 @@ function AIEngineeringAgentPage() {
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(false);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isBottomConsoleOpen, setIsBottomConsoleOpen] = useState(true);
-  const [activeConsoleTab, setActiveConsoleTab] = useState<"terminal" | "journal" | "build" | "errors">("journal");
-  const [rightContextTab, setRightContextTab] = useState<"preview" | "diff" | "build" | "whatsapp_sync" | "architecture_map">("preview");
+  const [activeConsoleTab, setActiveConsoleTab] = useState<
+    "terminal" | "journal" | "build" | "errors"
+  >("journal");
+  const [rightContextTab, setRightContextTab] = useState<
+    "preview" | "diff" | "build" | "whatsapp_sync" | "architecture_map"
+  >("preview");
   const [mobileDrawer, setMobileDrawer] = useState<"files" | "preview" | "logs" | null>(null);
 
   // ──────────────────────────────────────────────────────────────
@@ -911,7 +955,10 @@ function AIEngineeringAgentPage() {
   // ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="fixed inset-0 z-[100] font-sans bg-[#09090b] text-zinc-100 flex flex-col h-screen w-screen overflow-hidden text-start" dir="rtl">
+    <div
+      className="fixed inset-0 z-[100] font-sans bg-[#09090b] text-zinc-100 flex flex-col h-screen w-screen overflow-hidden text-start"
+      dir="rtl"
+    >
       {/* ──────────────────────────────────────────────────────────────
           1. Fixed Top Header Bar — IDE Toolbar
           ────────────────────────────────────────────────────────────── */}
@@ -923,18 +970,30 @@ function AIEngineeringAgentPage() {
               <Bot className="w-3.5 h-3.5" />
             </div>
             <div className="flex flex-col text-right">
-              <span className="text-[11px] font-black tracking-tight leading-none text-zinc-100">NOQTA AI Developer</span>
+              <span className="text-[11px] font-black tracking-tight leading-none text-zinc-100">
+                NOQTA AI Developer
+              </span>
               <span className="text-[9px] text-zinc-400 font-mono">v2.5 IDE Workspace</span>
             </div>
           </div>
 
           {/* Project Status Pill */}
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#16161a] border border-zinc-800 text-[11px] font-bold">
-            <span className={`w-2 h-2 rounded-full ${
-              isValidatingBuild ? "bg-amber-400 animate-ping" : buildValidation.passed ? "bg-emerald-400 animate-pulse" : "bg-rose-500"
-            }`} />
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isValidatingBuild
+                  ? "bg-amber-400 animate-ping"
+                  : buildValidation.passed
+                    ? "bg-emerald-400 animate-pulse"
+                    : "bg-rose-500"
+              }`}
+            />
             <span className="text-zinc-300">
-              {isValidatingBuild ? "جاري فحص البناء..." : buildValidation.passed ? "النظام متصل ومعتمد ✨" : "يوجد أخطاء في البناء ⚠️"}
+              {isValidatingBuild
+                ? "جاري فحص البناء..."
+                : buildValidation.passed
+                  ? "النظام متصل ومعتمد ✨"
+                  : "يوجد أخطاء في البناء ⚠️"}
             </span>
           </div>
         </div>
@@ -977,7 +1036,12 @@ function AIEngineeringAgentPage() {
               <option value="">✨ الذكاء تلقائي (Default)</option>
               {providers.map((p: any) => (
                 <option key={p.id} value={p.id}>
-                  {p.provider === "gemini" ? "Gemini 1.5 Pro" : p.provider === "lovable" ? "Lovable AI Engine" : p.provider} ({p.model})
+                  {p.provider === "gemini"
+                    ? "Gemini 1.5 Pro"
+                    : p.provider === "lovable"
+                      ? "Lovable AI Engine"
+                      : p.provider}{" "}
+                  ({p.model})
                 </option>
               ))}
             </select>
@@ -994,7 +1058,11 @@ function AIEngineeringAgentPage() {
             className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-bold text-zinc-200 transition shadow-sm disabled:opacity-50"
             title="فحص البناء (Self-Validation Check)"
           >
-            {isValidatingBuild ? <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-400" /> : <RefreshCw className="h-3.5 w-3.5 text-cyan-400" />}
+            {isValidatingBuild ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-400" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5 text-cyan-400" />
+            )}
             <span>فحص البناء</span>
           </button>
 
@@ -1005,7 +1073,11 @@ function AIEngineeringAgentPage() {
             disabled={isPublishing}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition disabled:opacity-50"
           >
-            {isPublishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />}
+            {isPublishing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <UploadCloud className="h-3.5 w-3.5" />
+            )}
             <span className="hidden sm:inline">نشر المباشر</span>
           </button>
 
@@ -1045,11 +1117,12 @@ function AIEngineeringAgentPage() {
           2. Main Desktop IDE Workspace (3 Panels + Bottom Console)
           ────────────────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden relative">
-
         {/* 📁 LEFT PANEL: Project Explorer & History */}
-        <aside className={`hidden md:flex flex-col border-l border-zinc-800/80 bg-[#0e0e11]/90 backdrop-blur-xl transition-all duration-300 z-20 shrink-0 ${
-          isLeftPanelOpen ? "w-72" : "w-12"
-        }`}>
+        <aside
+          className={`hidden md:flex flex-col border-l border-zinc-800/80 bg-[#0e0e11]/90 backdrop-blur-xl transition-all duration-300 z-20 shrink-0 ${
+            isLeftPanelOpen ? "w-72" : "w-12"
+          }`}
+        >
           <div className="h-10 border-b border-zinc-800/80 flex items-center justify-between px-3 bg-[#141417]/80 text-[11px] font-bold text-zinc-400">
             {isLeftPanelOpen && (
               <span className="flex items-center gap-1.5 text-zinc-200">
@@ -1063,7 +1136,11 @@ function AIEngineeringAgentPage() {
               className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
               title={isLeftPanelOpen ? "طي الشريط الجانبي" : "توسيع الشريط الجانبي"}
             >
-              {isLeftPanelOpen ? <ChevronRight className="h-4 w-4" /> : <Layers className="h-4 w-4 text-violet-400" />}
+              {isLeftPanelOpen ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <Layers className="h-4 w-4 text-violet-400" />
+              )}
             </button>
           </div>
 
@@ -1083,10 +1160,16 @@ function AIEngineeringAgentPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center py-3 gap-3 text-zinc-500">
-              <button onClick={() => setIsLeftPanelOpen(true)} className="p-2 hover:bg-zinc-800 rounded-xl text-amber-400">
+              <button
+                onClick={() => setIsLeftPanelOpen(true)}
+                className="p-2 hover:bg-zinc-800 rounded-xl text-amber-400"
+              >
                 <FileCode className="h-5 w-5" />
               </button>
-              <button onClick={() => setIsLeftPanelOpen(true)} className="p-2 hover:bg-zinc-800 rounded-xl text-sky-400">
+              <button
+                onClick={() => setIsLeftPanelOpen(true)}
+                className="p-2 hover:bg-zinc-800 rounded-xl text-sky-400"
+              >
                 <History className="h-5 w-5" />
               </button>
             </div>
@@ -1095,7 +1178,6 @@ function AIEngineeringAgentPage() {
 
         {/* 💬 CENTER PANEL: Primary AI Workspace & Code Editor */}
         <main className="flex-1 flex flex-col min-w-0 bg-[#09090b] overflow-hidden relative">
-
           {/* Center Header Tabs: Active File or Mode Tabs */}
           <div className="h-10 border-b border-zinc-800/80 bg-[#121215] flex items-center justify-between px-3 text-xs shrink-0">
             <div className="flex items-center gap-2 overflow-x-auto">
@@ -1116,7 +1198,11 @@ function AIEngineeringAgentPage() {
                   disabled={isValidatingBuild}
                   className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-bold text-[11px] transition shadow-md flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  {isValidatingBuild ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                  {isValidatingBuild ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-3.5 h-3.5" />
+                  )}
                   حفظ وفحص الكود
                 </button>
               )}
@@ -1125,7 +1211,6 @@ function AIEngineeringAgentPage() {
 
           {/* Mode Switch Content Body */}
           <div className="flex-1 flex flex-col overflow-hidden relative">
-
             {workMode === "BUILD" ? (
               /* BUILD MODE: Monaco Code Editor */
               <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#09090b]">
@@ -1157,9 +1242,13 @@ function AIEngineeringAgentPage() {
                     </div>
                     <div className="space-y-1">
                       <h3 className="text-base font-black text-white">
-                        {isParsingFile ? "جاري قراءة واستخراج سياق الملفات..." : "أفلت الملف هنا لتحليله كـ Context"}
+                        {isParsingFile
+                          ? "جاري قراءة واستخراج سياق الملفات..."
+                          : "أفلت الملف هنا لتحليله كـ Context"}
                       </h3>
-                      <p className="text-xs text-violet-200/80">سيتم دمج الأكواد البرمجية مباشرة في سياق ذاكرة AI Developer</p>
+                      <p className="text-xs text-violet-200/80">
+                        سيتم دمج الأكواد البرمجية مباشرة في سياق ذاكرة AI Developer
+                      </p>
                     </div>
                   </div>
                 )}
@@ -1172,9 +1261,12 @@ function AIEngineeringAgentPage() {
                         <Bot className="h-10 w-10 text-violet-400 animate-pulse" />
                       </div>
                       <div className="space-y-1">
-                        <h3 className="text-lg font-black text-zinc-100">NOQTA AI Developer Agent</h3>
+                        <h3 className="text-lg font-black text-zinc-100">
+                          NOQTA AI Developer Agent
+                        </h3>
                         <p className="text-xs text-zinc-400 max-w-sm leading-relaxed">
-                          مرحباً بك في بيئة التطوير الذاتية. اكتب أي طلب برمجي أو خطة تحسين لبناء وتطوير تطبيق Indexes Store.
+                          مرحباً بك في بيئة التطوير الذاتية. اكتب أي طلب برمجي أو خطة تحسين لبناء
+                          وتطوير تطبيق Indexes Store.
                         </p>
                       </div>
 
@@ -1207,17 +1299,27 @@ function AIEngineeringAgentPage() {
                         exit={{ opacity: 0 }}
                         className={`flex gap-3 text-xs leading-relaxed ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                       >
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold ${
-                          msg.role === "user" ? "bg-violet-600 text-white" : "bg-[#18181c] border border-zinc-800 text-violet-400"
-                        }`}>
-                          {msg.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                        <div
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold ${
+                            msg.role === "user"
+                              ? "bg-violet-600 text-white"
+                              : "bg-[#18181c] border border-zinc-800 text-violet-400"
+                          }`}
+                        >
+                          {msg.role === "user" ? (
+                            <User className="w-4 h-4" />
+                          ) : (
+                            <Bot className="w-4 h-4" />
+                          )}
                         </div>
 
-                        <div className={`space-y-2 max-w-[85%] rounded-2xl p-4 border ${
-                          msg.role === "user"
-                            ? "bg-violet-950/30 border-violet-800/40 text-zinc-100"
-                            : "bg-[#141417] border-zinc-800/80 text-zinc-200 shadow-xl"
-                        }`}>
+                        <div
+                          className={`space-y-2 max-w-[85%] rounded-2xl p-4 border ${
+                            msg.role === "user"
+                              ? "bg-violet-950/30 border-violet-800/40 text-zinc-100"
+                              : "bg-[#141417] border-zinc-800/80 text-zinc-200 shadow-xl"
+                          }`}
+                        >
                           <MarkdownContent content={msg.content} />
                         </div>
                       </motion.div>
@@ -1243,11 +1345,16 @@ function AIEngineeringAgentPage() {
                   {attachedFiles.length > 0 && (
                     <div className="flex items-center gap-2 overflow-x-auto pb-1">
                       {attachedFiles.map((file, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-950/40 border border-violet-800/50 text-[11px] font-mono text-violet-300">
+                        <div
+                          key={idx}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-950/40 border border-violet-800/50 text-[11px] font-mono text-violet-300"
+                        >
                           <Paperclip className="w-3 h-3 shrink-0" />
                           <span className="truncate max-w-[150px]">{file.fileName}</span>
                           <button
-                            onClick={() => setAttachedFiles((prev) => prev.filter((_, i) => i !== idx))}
+                            onClick={() =>
+                              setAttachedFiles((prev) => prev.filter((_, i) => i !== idx))
+                            }
                             className="p-0.5 rounded hover:bg-violet-900/60 text-violet-400 hover:text-white"
                           >
                             <X className="w-3 h-3" />
@@ -1289,21 +1396,26 @@ function AIEngineeringAgentPage() {
                         disabled={!inputValue.trim() || isStreaming || !canSend}
                         className="p-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold transition disabled:opacity-30 shadow-lg shadow-violet-600/20"
                       >
-                        {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        {isStreaming ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
             )}
-
           </div>
         </main>
 
         {/* 👁️ RIGHT PANEL: Context & Inspection Tabs */}
-        <aside className={`hidden lg:flex flex-col border-r border-zinc-800/80 bg-[#0e0e11]/90 backdrop-blur-xl transition-all duration-300 z-20 shrink-0 ${
-          isRightPanelOpen ? "w-[400px]" : "w-12"
-        }`}>
+        <aside
+          className={`hidden lg:flex flex-col border-r border-zinc-800/80 bg-[#0e0e11]/90 backdrop-blur-xl transition-all duration-300 z-20 shrink-0 ${
+            isRightPanelOpen ? "w-[400px]" : "w-12"
+          }`}
+        >
           {/* Header & Tabs */}
           <div className="flex flex-col border-b border-zinc-800/80 bg-[#141417]/80">
             <div className="h-10 flex items-center justify-between px-3 text-[11px] font-bold text-zinc-400">
@@ -1313,15 +1425,40 @@ function AIEngineeringAgentPage() {
                 className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition"
                 title={isRightPanelOpen ? "طي الشريط الأيمن" : "توسيع الشريط الأيمن"}
               >
-                {isRightPanelOpen ? <ChevronRight className="h-4 w-4 rotate-180" /> : <Eye className="h-4 w-4 text-cyan-400" />}
+                {isRightPanelOpen ? (
+                  <ChevronRight className="h-4 w-4 rotate-180" />
+                ) : (
+                  <Eye className="h-4 w-4 text-cyan-400" />
+                )}
               </button>
               {isRightPanelOpen && (
                 <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-                  <button onClick={() => setRightContextTab("preview")} className={`px-2.5 py-1 rounded-lg transition ${rightContextTab === "preview" ? "bg-cyan-500/20 text-cyan-400" : "hover:bg-zinc-800"}`}>المعاينة</button>
-                  <button onClick={() => setRightContextTab("architecture_map")} className={`px-2.5 py-1 rounded-lg transition ${rightContextTab === "architecture_map" ? "bg-violet-500/20 text-violet-400 font-bold" : "hover:bg-zinc-800"}`}>🗺️ Project Map</button>
-                  <button onClick={() => setRightContextTab("diff")} className={`px-2.5 py-1 rounded-lg transition ${rightContextTab === "diff" ? "bg-amber-500/20 text-amber-400" : "hover:bg-zinc-800"}`}>التغييرات</button>
-                  <button onClick={() => setRightContextTab("whatsapp_sync")} className={`px-2.5 py-1 rounded-lg transition ${rightContextTab === "whatsapp_sync" ? "bg-emerald-500/20 text-emerald-400" : "hover:bg-zinc-800 flex flex-col items-center gap-1"}`}>
-                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> WhatsApp Sync</span>
+                  <button
+                    onClick={() => setRightContextTab("preview")}
+                    className={`px-2.5 py-1 rounded-lg transition ${rightContextTab === "preview" ? "bg-cyan-500/20 text-cyan-400" : "hover:bg-zinc-800"}`}
+                  >
+                    المعاينة
+                  </button>
+                  <button
+                    onClick={() => setRightContextTab("architecture_map")}
+                    className={`px-2.5 py-1 rounded-lg transition ${rightContextTab === "architecture_map" ? "bg-violet-500/20 text-violet-400 font-bold" : "hover:bg-zinc-800"}`}
+                  >
+                    🗺️ Project Map
+                  </button>
+                  <button
+                    onClick={() => setRightContextTab("diff")}
+                    className={`px-2.5 py-1 rounded-lg transition ${rightContextTab === "diff" ? "bg-amber-500/20 text-amber-400" : "hover:bg-zinc-800"}`}
+                  >
+                    التغييرات
+                  </button>
+                  <button
+                    onClick={() => setRightContextTab("whatsapp_sync")}
+                    className={`px-2.5 py-1 rounded-lg transition ${rightContextTab === "whatsapp_sync" ? "bg-emerald-500/20 text-emerald-400" : "hover:bg-zinc-800 flex flex-col items-center gap-1"}`}
+                  >
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>{" "}
+                      WhatsApp Sync
+                    </span>
                   </button>
                 </div>
               )}
@@ -1340,13 +1477,15 @@ function AIEngineeringAgentPage() {
                     isBuilding={isValidatingBuild}
                     onRefresh={() => validateBuildServerFn()}
                   />
-                  <GleamPerformancePanel lighthouseScore={98} buildTime="1.2s" securityPass={true} />
+                  <GleamPerformancePanel
+                    lighthouseScore={98}
+                    buildTime="1.2s"
+                    securityPass={true}
+                  />
                 </div>
               )}
 
-              {rightContextTab === "architecture_map" && (
-                <VisualArchitectureMap />
-              )}
+              {rightContextTab === "architecture_map" && <VisualArchitectureMap />}
 
               {rightContextTab === "diff" && (
                 <div className="flex flex-col h-full items-center justify-center text-center text-zinc-500 space-y-3">
@@ -1363,7 +1502,9 @@ function AIEngineeringAgentPage() {
                         <CheckCircle className="h-4 w-4 text-emerald-400" />
                       </div>
                       <div className="text-right">
-                        <h4 className="text-xs font-bold text-emerald-300">WhatsApp Commerce Sync</h4>
+                        <h4 className="text-xs font-bold text-emerald-300">
+                          WhatsApp Commerce Sync
+                        </h4>
                         <p className="text-[10px] text-zinc-400">Agent Tool Architecture</p>
                       </div>
                     </div>
@@ -1371,11 +1512,14 @@ function AIEngineeringAgentPage() {
                       Force Sync
                     </button>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-[11px] bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800">
                       <span className="text-zinc-400">Status</span>
-                      <span className="text-emerald-400 font-mono font-bold flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> ONLINE</span>
+                      <span className="text-emerald-400 font-mono font-bold flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>{" "}
+                        ONLINE
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-[11px] bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800">
                       <span className="text-zinc-400">Last Synchronization</span>
@@ -1388,12 +1532,18 @@ function AIEngineeringAgentPage() {
                   </div>
 
                   <div className="pt-2">
-                    <p className="text-[10px] text-zinc-500 mb-2">Recent Meta Graph API Responses:</p>
+                    <p className="text-[10px] text-zinc-500 mb-2">
+                      Recent Meta Graph API Responses:
+                    </p>
                     <div className="bg-[#09090b] border border-zinc-800 rounded-xl p-3 text-[10px] font-mono text-zinc-400 h-32 overflow-y-auto">
                       <div className="text-emerald-400">{">"} [2026-07-28 14:15:22] SYNC_START</div>
-                      <div className="text-zinc-300">{">"} Request: POST /v18.0/catalog/products</div>
+                      <div className="text-zinc-300">
+                        {">"} Request: POST /v18.0/catalog/products
+                      </div>
                       <div className="text-cyan-400">{">"} Response: 200 OK</div>
-                      <div className="text-zinc-500">{">"} Body: {"{"} "id": "meta_123456", "status": "active" {"}"}</div>
+                      <div className="text-zinc-500">
+                        {">"} Body: {"{"} "id": "meta_123456", "status": "active" {"}"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1401,21 +1551,25 @@ function AIEngineeringAgentPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center py-3 gap-3 text-zinc-500">
-              <button onClick={() => setIsRightPanelOpen(true)} className="p-2 hover:bg-zinc-800 rounded-xl text-cyan-400">
+              <button
+                onClick={() => setIsRightPanelOpen(true)}
+                className="p-2 hover:bg-zinc-800 rounded-xl text-cyan-400"
+              >
                 <Eye className="h-5 w-5" />
               </button>
             </div>
           )}
         </aside>
-
       </div>
 
       {/* ──────────────────────────────────────────────────────────────
           3. Collapsible Bottom Console (Terminal, Agent Logs, Build, Errors)
           ────────────────────────────────────────────────────────────── */}
-      <footer className={`border-t border-zinc-800/80 bg-[#0e0e11]/95 backdrop-blur-2xl transition-all duration-300 z-30 shrink-0 ${
-        isBottomConsoleOpen ? "h-56" : "h-9"
-      }`}>
+      <footer
+        className={`border-t border-zinc-800/80 bg-[#0e0e11]/95 backdrop-blur-2xl transition-all duration-300 z-30 shrink-0 ${
+          isBottomConsoleOpen ? "h-56" : "h-9"
+        }`}
+      >
         {/* Bottom Bar Toggle & Tabs Header */}
         <div className="h-9 border-b border-zinc-800/80 bg-[#141417] px-3 flex items-center justify-between text-xs font-bold text-zinc-400 select-none">
           <div className="flex items-center gap-1">
@@ -1424,14 +1578,21 @@ function AIEngineeringAgentPage() {
               onClick={() => setIsBottomConsoleOpen((prev) => !prev)}
               className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition me-1"
             >
-              <ChevronDown className={`h-4 w-4 transition-transform ${isBottomConsoleOpen ? "" : "rotate-180"}`} />
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${isBottomConsoleOpen ? "" : "rotate-180"}`}
+              />
             </button>
 
             <button
               type="button"
-              onClick={() => { setIsBottomConsoleOpen(true); setActiveConsoleTab("journal"); }}
+              onClick={() => {
+                setIsBottomConsoleOpen(true);
+                setActiveConsoleTab("journal");
+              }}
               className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition ${
-                activeConsoleTab === "journal" ? "bg-violet-600/20 text-violet-300 font-black border border-violet-500/30" : "hover:text-white"
+                activeConsoleTab === "journal"
+                  ? "bg-violet-600/20 text-violet-300 font-black border border-violet-500/30"
+                  : "hover:text-white"
               }`}
             >
               <History className="h-3.5 w-3.5 text-violet-400" />
@@ -1440,9 +1601,14 @@ function AIEngineeringAgentPage() {
 
             <button
               type="button"
-              onClick={() => { setIsBottomConsoleOpen(true); setActiveConsoleTab("terminal"); }}
+              onClick={() => {
+                setIsBottomConsoleOpen(true);
+                setActiveConsoleTab("terminal");
+              }}
               className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition ${
-                activeConsoleTab === "terminal" ? "bg-violet-600/20 text-violet-300 font-black border border-violet-500/30" : "hover:text-white"
+                activeConsoleTab === "terminal"
+                  ? "bg-violet-600/20 text-violet-300 font-black border border-violet-500/30"
+                  : "hover:text-white"
               }`}
             >
               <FileCode className="h-3.5 w-3.5 text-amber-400" />
@@ -1451,9 +1617,14 @@ function AIEngineeringAgentPage() {
 
             <button
               type="button"
-              onClick={() => { setIsBottomConsoleOpen(true); setActiveConsoleTab("build"); }}
+              onClick={() => {
+                setIsBottomConsoleOpen(true);
+                setActiveConsoleTab("build");
+              }}
               className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition ${
-                activeConsoleTab === "build" ? "bg-violet-600/20 text-violet-300 font-black border border-violet-500/30" : "hover:text-white"
+                activeConsoleTab === "build"
+                  ? "bg-violet-600/20 text-violet-300 font-black border border-violet-500/30"
+                  : "hover:text-white"
               }`}
             >
               <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
@@ -1471,28 +1642,39 @@ function AIEngineeringAgentPage() {
         {isBottomConsoleOpen && (
           <div className="h-[calc(100%-36px)] overflow-y-auto p-3 custom-scrollbar bg-[#09090b] text-xs font-mono">
             {activeConsoleTab === "journal" && (
-              <ExecutionJournalPanel
-                logs={journalLogs}
-                persistentEvents={persistentEvents}
-              />
+              <ExecutionJournalPanel logs={journalLogs} persistentEvents={persistentEvents} />
             )}
 
             {activeConsoleTab === "terminal" && (
               <div className="space-y-1.5 text-zinc-300">
                 <div className="text-emerald-400 font-bold">$ noqta-ai-agent --watch-mode</div>
-                <div className="text-zinc-500">[SYSTEM] Server Function hooks initialized cleanly.</div>
-                <div className="text-zinc-400">[BUILD] 0 compilation errors detected across active routes.</div>
-                <div className="text-violet-400 font-bold">$ ready for next engineering command...</div>
+                <div className="text-zinc-500">
+                  [SYSTEM] Server Function hooks initialized cleanly.
+                </div>
+                <div className="text-zinc-400">
+                  [BUILD] 0 compilation errors detected across active routes.
+                </div>
+                <div className="text-violet-400 font-bold">
+                  $ ready for next engineering command...
+                </div>
               </div>
             )}
 
             {activeConsoleTab === "build" && (
               <div className="space-y-2">
-                <div className={`p-3 rounded-xl border ${
-                  buildValidation.passed ? "bg-emerald-950/20 border-emerald-800/40 text-emerald-300" : "bg-rose-950/20 border-rose-800/40 text-rose-300"
-                }`}>
+                <div
+                  className={`p-3 rounded-xl border ${
+                    buildValidation.passed
+                      ? "bg-emerald-950/20 border-emerald-800/40 text-emerald-300"
+                      : "bg-rose-950/20 border-rose-800/40 text-rose-300"
+                  }`}
+                >
                   <div className="font-bold flex items-center gap-2">
-                    {buildValidation.passed ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                    {buildValidation.passed ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <XCircle className="w-4 h-4" />
+                    )}
                     {buildValidation.summary}
                   </div>
                 </div>
@@ -1546,9 +1728,16 @@ function AIEngineeringAgentPage() {
           <div className="bg-[#121215] border-t border-zinc-800 rounded-t-3xl p-4 max-h-[80vh] overflow-y-auto space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
               <h3 className="text-sm font-bold text-zinc-100">
-                {mobileDrawer === "files" ? "شجرة الملفات والجلسات" : mobileDrawer === "preview" ? "المعاينة الحية" : "سجلات النظام"}
+                {mobileDrawer === "files"
+                  ? "شجرة الملفات والجلسات"
+                  : mobileDrawer === "preview"
+                    ? "المعاينة الحية"
+                    : "سجلات النظام"}
               </h3>
-              <button onClick={() => setMobileDrawer(null)} className="p-1 rounded-lg text-zinc-400 hover:text-white">
+              <button
+                onClick={() => setMobileDrawer(null)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-white"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1557,9 +1746,15 @@ function AIEngineeringAgentPage() {
               <GleamAccordionSidebar
                 sessions={sessions}
                 activeSessionId={activeSessionId}
-                onSelectSession={(id) => { setActiveSessionId(id); setMobileDrawer(null); }}
+                onSelectSession={(id) => {
+                  setActiveSessionId(id);
+                  setMobileDrawer(null);
+                }}
                 activeFilePath={selectedFile.path}
-                onSelectFile={(file) => { setSelectedFile(file); setMobileDrawer(null); }}
+                onSelectFile={(file) => {
+                  setSelectedFile(file);
+                  setMobileDrawer(null);
+                }}
                 pendingTask={pendingTask}
               />
             )}
@@ -1575,15 +1770,11 @@ function AIEngineeringAgentPage() {
             )}
 
             {mobileDrawer === "logs" && (
-              <ExecutionJournalPanel
-                logs={journalLogs}
-                persistentEvents={persistentEvents}
-              />
+              <ExecutionJournalPanel logs={journalLogs} persistentEvents={persistentEvents} />
             )}
           </div>
         </div>
       )}
-
 
       {/* Command Palette Modal */}
       <CommandPalette
@@ -1631,27 +1822,57 @@ function TaskStatusBadge({ status }: { status: string }) {
   const config: Record<string, { icon: typeof Clock; color: string; label: string }> = {
     idle: { icon: Clock, color: "text-muted-foreground bg-muted", label: "جديد" },
     planning: { icon: Sparkles, color: "text-violet-500 bg-violet-500/10", label: "تخطيط" },
-    waiting_approval: { icon: Shield, color: "text-amber-400 bg-amber-500/20 border border-amber-500/30", label: "في انتظار الموافقة ⏸" },
+    waiting_approval: {
+      icon: Shield,
+      color: "text-amber-400 bg-amber-500/20 border border-amber-500/30",
+      label: "في انتظار الموافقة ⏸",
+    },
     executing: { icon: Play, color: "text-amber-500 bg-amber-500/10", label: "جاري التنفيذ" },
     queued: { icon: Clock, color: "text-blue-500 bg-blue-500/10", label: "في الطابور" },
     testing: { icon: Zap, color: "text-cyan-500 bg-cyan-500/10", label: "فحص البناء" },
     building: { icon: Cpu, color: "text-indigo-400 bg-indigo-500/10", label: "تجمع الإنتاج" },
-    success: { icon: CheckCircle, color: "text-emerald-500 bg-emerald-500/10", label: "تم بنجاح ✨" },
+    success: {
+      icon: CheckCircle,
+      color: "text-emerald-500 bg-emerald-500/10",
+      label: "تم بنجاح ✨",
+    },
     completed: { icon: CheckCircle, color: "text-emerald-600 bg-emerald-500/10", label: "مكتمل" },
     failed: { icon: XCircle, color: "text-destructive bg-destructive/10", label: "فشل" },
-    rolled_back: { icon: AlertTriangle, color: "text-orange-500 bg-orange-500/10", label: "تم التراجع 🔄" },
-    blocked: { icon: Shield, color: "text-red-400 bg-red-500/20 border border-red-500/30", label: "محظور 🛑" },
-    permission_error: { icon: Shield, color: "text-orange-400 bg-orange-500/20", label: "خطأ صلاحيات ⛔" },
-    validation_error: { icon: AlertTriangle, color: "text-amber-400 bg-amber-500/20", label: "خطأ تفعيل ⚠️" },
+    rolled_back: {
+      icon: AlertTriangle,
+      color: "text-orange-500 bg-orange-500/10",
+      label: "تم التراجع 🔄",
+    },
+    blocked: {
+      icon: Shield,
+      color: "text-red-400 bg-red-500/20 border border-red-500/30",
+      label: "محظور 🛑",
+    },
+    permission_error: {
+      icon: Shield,
+      color: "text-orange-400 bg-orange-500/20",
+      label: "خطأ صلاحيات ⛔",
+    },
+    validation_error: {
+      icon: AlertTriangle,
+      color: "text-amber-400 bg-amber-500/20",
+      label: "خطأ تفعيل ⚠️",
+    },
     build_error: { icon: XCircle, color: "text-red-400 bg-red-500/20", label: "فشل البناء 🛠️" },
-    database_error: { icon: AlertTriangle, color: "text-purple-400 bg-purple-500/20", label: "خطأ داتا بيز 🗄️" },
+    database_error: {
+      icon: AlertTriangle,
+      color: "text-purple-400 bg-purple-500/20",
+      label: "خطأ داتا بيز 🗄️",
+    },
   };
 
   const c = config[status] || config.idle;
   const Icon = c.icon;
 
   return (
-    <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-bold ${c.color}`}>
+    <span
+      className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-bold ${c.color}`}
+    >
       <Icon className="h-2.5 w-2.5" /> {c.label}
     </span>
   );
@@ -1662,13 +1883,18 @@ function RiskBadge({ level }: { level: string }) {
     low: { color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", label: "🟢 منخفض" },
     medium: { color: "text-amber-500 bg-amber-500/10 border-amber-500/20", label: "🟡 متوسط" },
     high: { color: "text-orange-500 bg-orange-500/10 border-orange-500/20", label: "🟠 مرتفع" },
-    critical: { color: "text-destructive bg-destructive/10 border-destructive/20", label: "🔴 حرج" },
+    critical: {
+      color: "text-destructive bg-destructive/10 border-destructive/20",
+      label: "🔴 حرج",
+    },
   };
 
   const c = config[level] || config.low;
 
   return (
-    <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-bold border ${c.color}`}>
+    <span
+      className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-bold border ${c.color}`}
+    >
       {c.label}
     </span>
   );
@@ -1701,12 +1927,21 @@ function MarkdownContent({ content }: { content: string }) {
       </div>`;
     })
     // Inline code
-    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded-md bg-zinc-800 text-violet-300 font-mono text-xs border border-zinc-700/60">$1</code>')
+    .replace(
+      /`([^`]+)`/g,
+      '<code class="px-1.5 py-0.5 rounded-md bg-zinc-800 text-violet-300 font-mono text-xs border border-zinc-700/60">$1</code>',
+    )
     // Bold
     .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-black text-zinc-100">$1</strong>')
     // Headers
-    .replace(/^### (.+)$/gm, '<h3 class="text-sm font-black text-zinc-100 mt-4 mb-1.5 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-base font-black text-zinc-100 mt-5 mb-2 pb-1 border-b border-zinc-800/80">$1</h2>')
+    .replace(
+      /^### (.+)$/gm,
+      '<h3 class="text-sm font-black text-zinc-100 mt-4 mb-1.5 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>$1</h3>',
+    )
+    .replace(
+      /^## (.+)$/gm,
+      '<h2 class="text-base font-black text-zinc-100 mt-5 mb-2 pb-1 border-b border-zinc-800/80">$1</h2>',
+    )
     .replace(/^# (.+)$/gm, '<h1 class="text-lg font-black text-zinc-100 mt-6 mb-2">$1</h1>')
     // Unordered lists
     .replace(/^- (.+)$/gm, '<li class="ms-4 list-disc text-zinc-300 my-0.5">$1</li>')
@@ -1715,9 +1950,14 @@ function MarkdownContent({ content }: { content: string }) {
     // Paragraphs (double newline)
     .replace(/\n\n/g, '</p><p class="mb-2 leading-relaxed text-zinc-200">')
     // Single newline
-    .replace(/\n/g, '<br/>');
+    .replace(/\n/g, "<br/>");
 
-  return <div className="text-zinc-200 leading-relaxed text-sm" dangerouslySetInnerHTML={{ __html: `<p class="mb-2 leading-relaxed">${html}</p>` }} />;
+  return (
+    <div
+      className="text-zinc-200 leading-relaxed text-sm"
+      dangerouslySetInnerHTML={{ __html: `<p class="mb-2 leading-relaxed">${html}</p>` }}
+    />
+  );
 }
 
 function escapeHtml(text: string) {
@@ -1746,7 +1986,10 @@ function DiffPreviewModal({
   const lines = currentDiff.split("\n");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto" dir="rtl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto"
+      dir="rtl"
+    >
       <div className="w-full max-w-4xl rounded-3xl bg-[#1c1c1e] border border-zinc-800 p-6 shadow-2xl space-y-4 my-6">
         <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2">
@@ -1755,7 +1998,10 @@ function DiffPreviewModal({
               معاينة التغييرات الفروقية (Diff Preview — {task.taskId})
             </h3>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white">
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+          >
             ✕
           </button>
         </div>
@@ -1806,7 +2052,10 @@ function DiffPreviewModal({
 
         {/* Footer Actions */}
         <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
-          <button onClick={onClose} className="px-4 py-2 rounded-xl border border-zinc-700 text-xs font-bold text-zinc-300 hover:bg-zinc-800">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl border border-zinc-700 text-xs font-bold text-zinc-300 hover:bg-zinc-800"
+          >
             إغلاق المعاينة
           </button>
           <button
@@ -1817,7 +2066,11 @@ function DiffPreviewModal({
             }}
             className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition shadow-lg shadow-blue-600/20 flex items-center gap-1.5 disabled:opacity-50"
           >
-            {isExecuting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+            {isExecuting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <CheckCircle className="w-3.5 h-3.5" />
+            )}
             اعتماد وتنفيذ التعديلات (Approve & Execute)
           </button>
         </div>

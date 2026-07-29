@@ -1,7 +1,12 @@
 /**
  * Comprehensive Serverless Quality Storage & Production Readiness Test Suite
  */
-import { saveQualityReports, loadLatestReport, isProductionEnvironment, QualityReportSummary } from "./history";
+import {
+  saveQualityReports,
+  loadLatestReport,
+  isProductionEnvironment,
+  QualityReportSummary,
+} from "./history";
 import { saveRuntimeEvents, loadRuntimeEvents } from "./runtime/persistence";
 import { generateAutomatedTestForIncident } from "./intelligence/ai-test-generator";
 import { analyzeQualityTrends } from "./trend-engine";
@@ -45,30 +50,39 @@ async function runComprehensiveStorageTests() {
   const originalVercel = process.env.VERCEL;
   process.env.VERCEL = "1";
 
-  if (!isProductionEnvironment()) throw new Error("❌ Environment detection failed for Vercel production");
+  if (!isProductionEnvironment())
+    throw new Error("❌ Environment detection failed for Vercel production");
 
   // 1a. History Manager (must not throw ENOENT mkdir '/var/task/reports')
   saveQualityReports(mockSummary);
   const prodLoaded = loadLatestReport();
-  console.log(`✅ Production History Save/Load: OverallScore=${prodLoaded?.overallScore} | Grade=${prodLoaded?.grade}`);
-  if (prodLoaded?.overallScore !== 99) throw new Error("❌ Production history report save/load failed");
+  console.log(
+    `✅ Production History Save/Load: OverallScore=${prodLoaded?.overallScore} | Grade=${prodLoaded?.grade}`,
+  );
+  if (prodLoaded?.overallScore !== 99)
+    throw new Error("❌ Production history report save/load failed");
 
   // 1b. Runtime Persistence (must not throw ENOENT mkdir '/var/task/reports/runtime-events')
-  saveRuntimeEvents([{
-    id: "EVENT-PROD-1",
-    type: "NETWORK_404",
-    severity: "HIGH",
-    message: "404 asset missing",
-    evidence: "GET /assets/chunk.js 404",
-    occurrences: 1,
-    firstSeenAt: new Date().toISOString(),
-    lastSeenAt: new Date().toISOString(),
-  }]);
+  saveRuntimeEvents([
+    {
+      id: "EVENT-PROD-1",
+      type: "NETWORK_404",
+      severity: "HIGH",
+      message: "404 asset missing",
+      evidence: "GET /assets/chunk.js 404",
+      occurrences: 1,
+      firstSeenAt: new Date().toISOString(),
+      lastSeenAt: new Date().toISOString(),
+    },
+  ]);
   const loadedEvents = loadRuntimeEvents();
   console.log(`✅ Production Runtime Event Save/Load: EventsCount=${loadedEvents.length}`);
 
   // 1c. AI Test Generator (must not throw ENOENT mkdir '/var/task/reports/generated-tests')
-  const generatedTest = generateAutomatedTestForIncident("INC-PROD-1", "src/routes/product.$slug.tsx");
+  const generatedTest = generateAutomatedTestForIncident(
+    "INC-PROD-1",
+    "src/routes/product.$slug.tsx",
+  );
   console.log(`✅ Production AI Test Generator: GeneratedTestId=${generatedTest.testId}`);
 
   // 1d. Trend Engine
@@ -78,7 +92,9 @@ async function runComprehensiveStorageTests() {
   // Scenario 2: Production Readiness Gate Evaluation
   console.log("⚙️ [2/3] Evaluating Production Readiness Gate...");
   const gateReport = evaluateProductionReadiness();
-  console.log(`✅ Production Readiness Gate: Passed=${gateReport.passed} | Score=${gateReport.score}% | Summary="${gateReport.summary}"`);
+  console.log(
+    `✅ Production Readiness Gate: Passed=${gateReport.passed} | Score=${gateReport.score}% | Summary="${gateReport.summary}"`,
+  );
   if (!gateReport.passed) throw new Error("❌ Production Readiness Gate failed");
 
   // Reset environment

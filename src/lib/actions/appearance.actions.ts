@@ -100,7 +100,7 @@ async function getAdminClientIfAuthorized() {
 /** Parse the raw DB rows into the full StorefrontSettingsShape using safe Zod defaults. */
 function rowsToSettings(
   data: Array<{ key: string; value: unknown; draft_value?: unknown }>,
-  previewMode = false
+  previewMode = false,
 ): StorefrontSettingsShape {
   const settingsMap = new Map<string, unknown>();
   for (const row of data) {
@@ -111,43 +111,41 @@ function rowsToSettings(
 
   return {
     hero: HeroConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.hero).parse(
-      settingsMap.get("hero") ?? {}
+      settingsMap.get("hero") ?? {},
     ),
     theme: ThemeConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.theme).parse(
-      settingsMap.get("theme") ?? {}
+      settingsMap.get("theme") ?? {},
     ),
     products_layout: ProductsLayoutConfigSchema.catch(
-      DEFAULT_STOREFRONT_SETTINGS.products_layout
+      DEFAULT_STOREFRONT_SETTINGS.products_layout,
     ).parse(settingsMap.get("products_layout") ?? {}),
-    product_page: ProductPageConfigSchema.catch(
-      DEFAULT_STOREFRONT_SETTINGS.product_page
-    ).parse(settingsMap.get("product_page") ?? {}),
+    product_page: ProductPageConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.product_page).parse(
+      settingsMap.get("product_page") ?? {},
+    ),
     cart_config: CartConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.cart_config).parse(
-      settingsMap.get("cart_config") ?? {}
+      settingsMap.get("cart_config") ?? {},
     ),
     checkout: CheckoutConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.checkout).parse(
-      settingsMap.get("checkout") ?? {}
+      settingsMap.get("checkout") ?? {},
     ),
     navigation: NavigationConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.navigation).parse(
-      settingsMap.get("navigation") ?? {}
+      settingsMap.get("navigation") ?? {},
     ),
     pages: PagesConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.pages).parse(
-      settingsMap.get("pages") ?? {}
+      settingsMap.get("pages") ?? {},
     ),
     translation: TranslationConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.translation).parse(
-      settingsMap.get("translation") ?? {}
+      settingsMap.get("translation") ?? {},
     ),
     notifications: NotificationsConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.notifications).parse(
-      settingsMap.get("notifications") ?? {}
+      settingsMap.get("notifications") ?? {},
     ),
     sections: SectionsConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.sections).parse(
-      settingsMap.get("sections") ?? {}
+      settingsMap.get("sections") ?? {},
     ),
-    seo: SeoConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.seo).parse(
-      settingsMap.get("seo") ?? {}
-    ),
+    seo: SeoConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.seo).parse(settingsMap.get("seo") ?? {}),
     advanced: AdvancedConfigSchema.catch(DEFAULT_STOREFRONT_SETTINGS.advanced).parse(
-      settingsMap.get("advanced") ?? {}
+      settingsMap.get("advanced") ?? {},
     ),
   };
 }
@@ -300,39 +298,41 @@ export const publishStorefrontSettings = createServerFn({ method: "POST" })
  */
 export const publishAllStorefrontSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ success: boolean; message?: string; published: string[] }> => {
-    try {
-      const { supabase: authSupabase, userId } = context;
+  .handler(
+    async ({ context }): Promise<{ success: boolean; message?: string; published: string[] }> => {
+      try {
+        const { supabase: authSupabase, userId } = context;
 
-      const gate = await resolveCmsScope(authSupabase, userId);
-      if (!gate.allowed) {
-        return { success: false, message: "غير مسموح", published: [] };
+        const gate = await resolveCmsScope(authSupabase, userId);
+        if (!gate.allowed) {
+          return { success: false, message: "غير مسموح", published: [] };
+        }
+
+        // Publish every pending draft (within the caller's scope only).
+        const results = await storefrontService.publishAllDraftKeys(authSupabase, gate.scope);
+        if (results.length === 0) {
+          return { success: true, published: [], message: "لا توجد مسودات معلقة" };
+        }
+
+        const { data: userData } = await authSupabase.auth.getUser();
+        for (const r of results) {
+          await storefrontService.logChange(authSupabase, {
+            userId,
+            userEmail: userData?.user?.email ?? null,
+            actionType: "publish",
+            key: r.key,
+            oldValue: r.oldValue,
+            newValue: r.newValue,
+          });
+        }
+
+        return { success: true, published: results.map((r) => r.key) };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "حدث خطأ";
+        return { success: false, message: msg, published: [] };
       }
-
-      // Publish every pending draft (within the caller's scope only).
-      const results = await storefrontService.publishAllDraftKeys(authSupabase, gate.scope);
-      if (results.length === 0) {
-        return { success: true, published: [], message: "لا توجد مسودات معلقة" };
-      }
-
-      const { data: userData } = await authSupabase.auth.getUser();
-      for (const r of results) {
-        await storefrontService.logChange(authSupabase, {
-          userId,
-          userEmail: userData?.user?.email ?? null,
-          actionType: "publish",
-          key: r.key,
-          oldValue: r.oldValue,
-          newValue: r.newValue,
-        });
-      }
-
-      return { success: true, published: results.map((r) => r.key) };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "حدث خطأ";
-      return { success: false, message: msg, published: [] };
-    }
-  });
+    },
+  );
 
 // ── 5. Get Change Logs ────────────────────────────────────────────────────────
 
@@ -381,51 +381,53 @@ export const getStorefrontChangeLogs = createServerFn({ method: "GET" })
 export const restoreStorefrontVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { logId: string }) => data)
-  .handler(async ({ data, context }): Promise<{ success: boolean; message?: string; key?: string }> => {
-    try {
-      const { supabase: authSupabase, userId } = context;
+  .handler(
+    async ({ data, context }): Promise<{ success: boolean; message?: string; key?: string }> => {
+      try {
+        const { supabase: authSupabase, userId } = context;
 
-      const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
-      if (roleErr || !isAdmin) {
-        return { success: false, message: "غير مسموح: يجب أن تكون مديراً لاستعادة النسخ" };
+        const { data: isAdmin, error: roleErr } = await authSupabase.rpc("has_role", {
+          _user_id: userId,
+          _role: "admin",
+        });
+        if (roleErr || !isAdmin) {
+          return { success: false, message: "غير مسموح: يجب أن تكون مديراً لاستعادة النسخ" };
+        }
+
+        // 1) Read the snapshot, 2) zod-validate it against the key's CURRENT
+        // schema (corrupt/legacy snapshots are rejected before any write),
+        // 3) apply as the live value.
+        const snap = await storefrontService.getLogSnapshot(authSupabase, data.logId);
+        if (!snap.ok) return { success: false, message: snap.message };
+
+        const validated = validateSettingValue(snap.key, snap.oldValue);
+        if (!validated.ok) {
+          return {
+            success: false,
+            message: `تعذّرت الاستعادة — اللقطة لا تطابق مخطط الإعدادات الحالي: ${validated.message}`,
+          };
+        }
+
+        const res = await storefrontService.applyRestore(authSupabase, snap.key, validated.value);
+        if (!res.ok) return { success: false, message: res.message };
+
+        const { data: userData } = await authSupabase.auth.getUser();
+        await storefrontService.logChange(authSupabase, {
+          userId,
+          userEmail: userData?.user?.email ?? null,
+          actionType: "restore",
+          key: snap.key,
+          oldValue: res.previousValue,
+          newValue: validated.value,
+        });
+
+        return { success: true, key: snap.key };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "حدث خطأ أثناء الاستعادة";
+        return { success: false, message: msg };
       }
-
-      // 1) Read the snapshot, 2) zod-validate it against the key's CURRENT
-      // schema (corrupt/legacy snapshots are rejected before any write),
-      // 3) apply as the live value.
-      const snap = await storefrontService.getLogSnapshot(authSupabase, data.logId);
-      if (!snap.ok) return { success: false, message: snap.message };
-
-      const validated = validateSettingValue(snap.key, snap.oldValue);
-      if (!validated.ok) {
-        return {
-          success: false,
-          message: `تعذّرت الاستعادة — اللقطة لا تطابق مخطط الإعدادات الحالي: ${validated.message}`,
-        };
-      }
-
-      const res = await storefrontService.applyRestore(authSupabase, snap.key, validated.value);
-      if (!res.ok) return { success: false, message: res.message };
-
-      const { data: userData } = await authSupabase.auth.getUser();
-      await storefrontService.logChange(authSupabase, {
-        userId,
-        userEmail: userData?.user?.email ?? null,
-        actionType: "restore",
-        key: snap.key,
-        oldValue: res.previousValue,
-        newValue: validated.value,
-      });
-
-      return { success: true, key: snap.key };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "حدث خطأ أثناء الاستعادة";
-      return { success: false, message: msg };
-    }
-  });
+    },
+  );
 
 // ── 6. Legacy: Update Storefront Appearance (write directly to live value) ───
 // Kept for backward compatibility with existing admin.appearance.tsx

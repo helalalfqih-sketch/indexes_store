@@ -23,10 +23,10 @@ export interface BillingProvider {
 
 class NoopBillingProvider implements BillingProvider {
   readonly canCharge = false;
-  async startCheckout() {
+  async startCheckout(
+    _input: Parameters<BillingProvider["startCheckout"]>[0],
+  ): Promise<{ url: string }> {
     throw new Error("Billing not configured. TODO: connect a provider in Phase D.");
-    // eslint-disable-next-line @typescript-eslint/no-unreachable
-    return { url: "" };
   }
   async cancelSubscription() {
     return { ok: true };

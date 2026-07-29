@@ -20,7 +20,20 @@ const TYPE_LABELS: Record<string, { label: string; tone: string }> = {
   subscription_charge: { label: "رسوم اشتراك", tone: "bg-purple-500/10 text-purple-400" },
 };
 
-const MONTHS_AR = ["ينا", "فبر", "مار", "أبر", "ماي", "يون", "يول", "أغس", "سبت", "أكت", "نوف", "ديس"];
+const MONTHS_AR = [
+  "ينا",
+  "فبر",
+  "مار",
+  "أبر",
+  "ماي",
+  "يون",
+  "يول",
+  "أغس",
+  "سبت",
+  "أكت",
+  "نوف",
+  "ديس",
+];
 
 function StoreEarningsPage() {
   const { can } = useStoreContext();
@@ -65,14 +78,24 @@ function StoreEarningsPage() {
           ))}
         </div>
       ) : !d ? (
-        <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">تعذّر تحميل البيانات المالية.</div>
+        <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">
+          تعذّر تحميل البيانات المالية.
+        </div>
       ) : (
         <>
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[
-              { label: "إجمالي المبيعات", value: formatPrice(d.summary.gross), tone: "text-foreground" },
+              {
+                label: "إجمالي المبيعات",
+                value: formatPrice(d.summary.gross),
+                tone: "text-foreground",
+              },
               { label: "رسوم المنصّة", value: formatPrice(d.summary.fees), tone: "text-amber-500" },
-              { label: "الاسترجاعات", value: formatPrice(d.summary.refunds), tone: "text-destructive" },
+              {
+                label: "الاسترجاعات",
+                value: formatPrice(d.summary.refunds),
+                tone: "text-destructive",
+              },
               { label: "صافي الإيرادات", value: formatPrice(d.summary.net), tone: "text-success" },
             ].map((k) => (
               <div key={k.label} className="rounded-2xl glass p-4">
@@ -88,11 +111,19 @@ function StoreEarningsPage() {
             {d.feeRule ? (
               <span>
                 قاعدة الرسوم السارية:{" "}
-                <b>{d.feeRule.type === "percentage" ? `${d.feeRule.value}% من قيمة الطلب` : `${formatPrice(Number(d.feeRule.value))} لكل طلب`}</b>
-                {d.feeRule.tenant_id === null && <span className="text-muted-foreground"> (قاعدة المنصّة الافتراضية)</span>}
+                <b>
+                  {d.feeRule.type === "percentage"
+                    ? `${d.feeRule.value}% من قيمة الطلب`
+                    : `${formatPrice(Number(d.feeRule.value))} لكل طلب`}
+                </b>
+                {d.feeRule.tenant_id === null && (
+                  <span className="text-muted-foreground"> (قاعدة المنصّة الافتراضية)</span>
+                )}
               </span>
             ) : (
-              <span className="text-muted-foreground">لا توجد قاعدة رسوم مفعَّلة حالياً — الإيراد يُسجَّل كاملاً لمتجرك.</span>
+              <span className="text-muted-foreground">
+                لا توجد قاعدة رسوم مفعَّلة حالياً — الإيراد يُسجَّل كاملاً لمتجرك.
+              </span>
             )}
           </div>
 
@@ -119,7 +150,9 @@ function StoreEarningsPage() {
                         />
                         <div
                           className="w-1/3 rounded-t-md bg-success/60"
-                          style={{ height: `${Math.max(2, (Math.max(0, m.net) / maxIncome) * 100)}%` }}
+                          style={{
+                            height: `${Math.max(2, (Math.max(0, m.net) / maxIncome) * 100)}%`,
+                          }}
                           title={`صافي: ${formatPrice(m.net)}`}
                         />
                       </div>
@@ -145,14 +178,28 @@ function StoreEarningsPage() {
             ) : (
               <div className="max-h-96 space-y-1.5 overflow-y-auto">
                 {d.transactions.map((t) => {
-                  const tl = TYPE_LABELS[t.type] ?? { label: t.type, tone: "bg-muted text-muted-foreground" };
-                  const negative = t.type === "platform_fee" || t.type === "refund" || t.type === "subscription_charge";
+                  const tl = TYPE_LABELS[t.type] ?? {
+                    label: t.type,
+                    tone: "bg-muted text-muted-foreground",
+                  };
+                  const negative =
+                    t.type === "platform_fee" ||
+                    t.type === "refund" ||
+                    t.type === "subscription_charge";
                   return (
-                    <div key={t.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-surface p-2.5 text-[11px]">
-                      <span className={`rounded-full px-2 py-0.5 font-bold ${tl.tone}`}>{tl.label}</span>
+                    <div
+                      key={t.id}
+                      className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-surface p-2.5 text-[11px]"
+                    >
+                      <span className={`rounded-full px-2 py-0.5 font-bold ${tl.tone}`}>
+                        {tl.label}
+                      </span>
                       {t.note && <span className="text-muted-foreground">{t.note}</span>}
-                      <span className={`ms-auto font-black ${negative ? "text-destructive" : "text-success"}`}>
-                        {negative ? "−" : "+"}{formatPrice(t.amount)}
+                      <span
+                        className={`ms-auto font-black ${negative ? "text-destructive" : "text-success"}`}
+                      >
+                        {negative ? "−" : "+"}
+                        {formatPrice(t.amount)}
                       </span>
                       <span className="font-mono text-[10px] text-muted-foreground">
                         {new Date(t.created_at).toLocaleString("ar-EG")}

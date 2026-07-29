@@ -63,9 +63,7 @@ export function CollapsibleCard({
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-black">{title}</span>
             {subtitle ? (
-              <span className="block truncate text-xs text-muted-foreground">
-                {subtitle}
-              </span>
+              <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
             ) : null}
           </span>
           <ChevronDown

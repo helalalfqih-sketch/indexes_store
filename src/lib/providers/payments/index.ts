@@ -6,7 +6,12 @@ import { mtnCashAdapter } from "./mtn-cash.adapter";
 import { sabafonCashAdapter } from "./sabafon-cash.adapter";
 import { hawalaAdapter } from "./hawala.adapter";
 
-export type { PaymentProvider, PaymentMethodId, InitiatePaymentInput, InitiatePaymentResult } from "./types";
+export type {
+  PaymentProvider,
+  PaymentMethodId,
+  InitiatePaymentInput,
+  InitiatePaymentResult,
+} from "./types";
 
 const registry: Record<PaymentMethodId, PaymentProvider> = {
   cod: codAdapter,

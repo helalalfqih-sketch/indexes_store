@@ -18,7 +18,10 @@ export interface ActionButtonValidation {
   lifecycleScore: number;
 }
 
-export function validateButtonLifecycle(buttonName: string, targetRoute: string): ActionButtonValidation {
+export function validateButtonLifecycle(
+  buttonName: string,
+  targetRoute: string,
+): ActionButtonValidation {
   const isCreateProduct = buttonName.includes("Create Product") || buttonName.includes("Save");
 
   const checks = {

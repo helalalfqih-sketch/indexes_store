@@ -13,7 +13,9 @@ async function runPhase95Tests() {
   // Test 1: Missing Credentials Scenario (Graceful NOT_CONNECTED return)
   console.log("⚙️ [1/4] Testing Missing Credentials Scenario...");
   const dbUnconnectedStatus = await inspectProductionDatabase();
-  console.log(`✅ Unconnected Inspection: Status=${dbUnconnectedStatus.status} | Score=${dbUnconnectedStatus.rlsEnforcementRatePercentage} | Confidence=${dbUnconnectedStatus.confidenceLevel}`);
+  console.log(
+    `✅ Unconnected Inspection: Status=${dbUnconnectedStatus.status} | Score=${dbUnconnectedStatus.rlsEnforcementRatePercentage} | Confidence=${dbUnconnectedStatus.confidenceLevel}`,
+  );
   console.log(`📝 Not Connected Reason: "${dbUnconnectedStatus.notConnectedReason}"`);
   if (dbUnconnectedStatus.rlsEnforcementRatePercentage === 0) {
     throw new Error("❌ Should return null or NOT_CONNECTED instead of misleading 0% score");
@@ -22,15 +24,32 @@ async function runPhase95Tests() {
   // Test 2: Production Deployment Connector
   console.log("⚙️ [2/4] Testing Production Deployment Connector...");
   const deployStatus = inspectProductionDeployment();
-  console.log(`✅ Deployment Status: Provider=${deployStatus.provider} | Commit=${deployStatus.activeCommitHash} | Confidence=${deployStatus.confidenceLevel}`);
+  console.log(
+    `✅ Deployment Status: Provider=${deployStatus.provider} | Commit=${deployStatus.activeCommitHash} | Confidence=${deployStatus.confidenceLevel}`,
+  );
 
   // Test 3: Evidence Confidence Rules (Connected vs Unconnected)
   console.log("⚙️ [3/4] Testing Evidence Confidence Rules...");
-  const connectedEvidence = adaptEvidenceToProductionSource({ type: "command", value: "select 1" }, "SUPABASE", true);
-  const unconnectedEvidence = adaptEvidenceToProductionSource({ type: "command", value: "select 1" }, "SUPABASE", false);
-  console.log(`✅ Connected Confidence: ${connectedEvidence.confidenceLevel} (${connectedEvidence.confidenceScore}%)`);
-  console.log(`✅ Unconnected Confidence: ${unconnectedEvidence.confidenceLevel} (${unconnectedEvidence.confidenceScore}%)`);
-  if (connectedEvidence.confidenceLevel !== "HIGH" || unconnectedEvidence.confidenceLevel !== "LOW") {
+  const connectedEvidence = adaptEvidenceToProductionSource(
+    { type: "command", value: "select 1" },
+    "SUPABASE",
+    true,
+  );
+  const unconnectedEvidence = adaptEvidenceToProductionSource(
+    { type: "command", value: "select 1" },
+    "SUPABASE",
+    false,
+  );
+  console.log(
+    `✅ Connected Confidence: ${connectedEvidence.confidenceLevel} (${connectedEvidence.confidenceScore}%)`,
+  );
+  console.log(
+    `✅ Unconnected Confidence: ${unconnectedEvidence.confidenceLevel} (${unconnectedEvidence.confidenceScore}%)`,
+  );
+  if (
+    connectedEvidence.confidenceLevel !== "HIGH" ||
+    unconnectedEvidence.confidenceLevel !== "LOW"
+  ) {
     throw new Error("❌ Confidence level rules failed");
   }
 

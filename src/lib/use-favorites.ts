@@ -18,7 +18,9 @@ export function useFavorites() {
       try {
         localStorage.setItem("indexes_favorites", JSON.stringify(next));
         window.dispatchEvent(new Event("favorites_updated"));
-      } catch {}
+      } catch {
+        // localStorage may be unavailable or full; keep the in-memory state.
+      }
       return next;
     });
   };
@@ -28,7 +30,9 @@ export function useFavorites() {
       try {
         const stored = localStorage.getItem("indexes_favorites");
         if (stored) setFavorites(JSON.parse(stored));
-      } catch {}
+      } catch {
+        // Ignore malformed or unavailable persisted favorites.
+      }
     };
     window.addEventListener("favorites_updated", handleSync);
     window.addEventListener("storage", handleSync);

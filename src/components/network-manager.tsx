@@ -20,7 +20,7 @@ export function NetworkManager() {
     const handleOnline = () => {
       setIsOffline(false);
       setJustCameOnline(true);
-      
+
       // Hide the "Back online" message after 3 seconds
       setTimeout(() => {
         setJustCameOnline(false);
@@ -52,7 +52,9 @@ export function NetworkManager() {
                 <WifiOff className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-sm sm:text-base">الاتصال ضعيف — نعرض آخر البيانات المحفوظة</span>
+                <span className="font-bold text-sm sm:text-base">
+                  الاتصال ضعيف — نعرض آخر البيانات المحفوظة
+                </span>
               </div>
             </div>
           ) : (

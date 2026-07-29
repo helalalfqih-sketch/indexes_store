@@ -1,0 +1,99 @@
+name: Type Batch 1 Apply
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/type-batch1.patch.gz.b64
+      - .github/workflows/type-batch-apply.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.actor != 'github-actions[bot]' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/p0-security-critical-clean'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Decode and apply typed cleanup patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .github/type-batch1.patch.gz.b64 | gzip --decompress > /tmp/type-batch1.patch
+          git apply --check /tmp/type-batch1.patch
+          git apply /tmp/type-batch1.patch
+          git diff --check
+
+      - name: Format changed TypeScript files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' files < <(git diff --name-only --diff-filter=ACM -z -- '*.ts' '*.tsx')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No TypeScript files changed."
+            exit 1
+          fi
+          printf 'Formatting %s changed TypeScript files.\n' "${#files[@]}"
+          npx prettier --write "${files[@]}"
+          git diff --check
+
+      - name: Generate file-route types
+        run: npm run build:dev
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint changed TypeScript files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' files < <(git diff --name-only --diff-filter=ACM -z -- '*.ts' '*.tsx')
+          npx eslint "${files[@]}"
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: Security tests
+        run: npm run test:security
+
+      - name: Production build
+        run: npm run build
+
+      - name: Remove temporary repair assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/type-batch1.patch.gz.b64
+          git rm .github/workflows/type-batch-apply.yml
+          git rm .github/workflows/source-snapshot.yml
+
+      - name: Commit verified type cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor(types): remove unsafe any from core boundaries"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

@@ -58,6 +58,7 @@ class LocalFileStorageAdapter implements QualityStorageAdapter {
   private getFsModule() {
     try {
       // Dynamic require to prevent bundling Node fs in production bundles
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- development-only lazy load prevents production fs bundling
       return require("fs");
     } catch {
       return null;
@@ -66,6 +67,7 @@ class LocalFileStorageAdapter implements QualityStorageAdapter {
 
   private getPathModule() {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- development-only lazy load prevents production path bundling
       return require("path");
     } catch {
       return null;
@@ -90,14 +92,27 @@ class LocalFileStorageAdapter implements QualityStorageAdapter {
 
       fs.writeFileSync(path.join(reportsDir, "latest.json"), JSON.stringify(summary, null, 2));
       fs.writeFileSync(path.join(reportsDir, "summary.json"), JSON.stringify(summary, null, 2));
-      fs.writeFileSync(path.join(reportsDir, "manifest.json"), JSON.stringify(summary.manifest, null, 2));
+      fs.writeFileSync(
+        path.join(reportsDir, "manifest.json"),
+        JSON.stringify(summary.manifest, null, 2),
+      );
 
-      fs.writeFileSync(path.join(historyDir, `${timestampStr}.json`), JSON.stringify(summary, null, 2));
-      fs.writeFileSync(path.join(executionsDir, `${timestampStr}-exec.json`), JSON.stringify({
-        manifest: summary.manifest,
-        auditsCount: summary.auditsCount,
-        passedCount: summary.passedCount,
-      }, null, 2));
+      fs.writeFileSync(
+        path.join(historyDir, `${timestampStr}.json`),
+        JSON.stringify(summary, null, 2),
+      );
+      fs.writeFileSync(
+        path.join(executionsDir, `${timestampStr}-exec.json`),
+        JSON.stringify(
+          {
+            manifest: summary.manifest,
+            auditsCount: summary.auditsCount,
+            passedCount: summary.passedCount,
+          },
+          null,
+          2,
+        ),
+      );
     } catch (err) {
       console.warn("[LocalFileStorageAdapter] Soft warning saving dev report:", err);
     }

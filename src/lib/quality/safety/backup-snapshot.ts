@@ -13,7 +13,11 @@ export interface BackupSnapshot {
 
 const snapshotStore: Map<string, BackupSnapshot> = new Map();
 
-export function createBackupSnapshot(proposalId: string, targetFile: string, codeContent: string): BackupSnapshot {
+export function createBackupSnapshot(
+  proposalId: string,
+  targetFile: string,
+  codeContent: string,
+): BackupSnapshot {
   const snapshotId = `SNAP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const snapshot: BackupSnapshot = {
     snapshotId,

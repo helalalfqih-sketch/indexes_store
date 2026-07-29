@@ -53,7 +53,9 @@ export async function resolveProjectImportPath(
   if (importSpecifier.startsWith("@/")) {
     basePath = path.join(PROJECT_ROOT, "src", importSpecifier.slice(2));
   } else if (importSpecifier.startsWith(".")) {
-    const sourceDir = path.dirname(path.resolve(PROJECT_ROOT, sourceFilePath.replace(/^[/\\]+/, "")));
+    const sourceDir = path.dirname(
+      path.resolve(PROJECT_ROOT, sourceFilePath.replace(/^[/\\]+/, "")),
+    );
     basePath = path.resolve(sourceDir, importSpecifier);
   }
 

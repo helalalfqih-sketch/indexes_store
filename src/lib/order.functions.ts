@@ -69,7 +69,9 @@ export interface CreateOrderResult {
  * Never throws for missing/invalid tokens — order creation stays open to guests.
  */
 async function getOptionalUserId(admin: {
-  auth: { getUser: (jwt: string) => Promise<{ data: { user: { id: string } | null }; error: unknown }> };
+  auth: {
+    getUser: (jwt: string) => Promise<{ data: { user: { id: string } | null }; error: unknown }>;
+  };
 }): Promise<string | null> {
   try {
     const req = getRequest();
@@ -126,15 +128,17 @@ export const createOrder = createServerFn({ method: "POST" })
     if (prodErr) throw new Error("تعذّر تحميل المنتجات المطلوبة.");
 
     const byId = new Map(
-      ((products ?? []) as Array<{
-        id: string;
-        name: string;
-        price: number;
-        currency: string | null;
-        sku: string | null;
-        vendor_id: string | null;
-        stock: number | null;
-      }>).map((p) => [p.id, p]),
+      (
+        (products ?? []) as Array<{
+          id: string;
+          name: string;
+          price: number;
+          currency: string | null;
+          sku: string | null;
+          vendor_id: string | null;
+          stock: number | null;
+        }>
+      ).map((p) => [p.id, p]),
     );
 
     const missing = productIds.filter((id) => !byId.has(id));
@@ -174,7 +178,9 @@ export const createOrder = createServerFn({ method: "POST" })
     // Build notes with restock request flag if stock is 0
     let finalNotes = data.notes ?? "";
     if (hasRestockNeededItem) {
-      finalNotes = finalNotes ? `${finalNotes} | [طلب توفير كمية - المخزون 0]` : "[طلب توفير كمية - المخزون 0]";
+      finalNotes = finalNotes
+        ? `${finalNotes} | [طلب توفير كمية - المخزون 0]`
+        : "[طلب توفير كمية - المخزون 0]";
     }
 
     // 5. Insert the order (service role). user_id is our verified value or null.
@@ -241,7 +247,9 @@ export const createOrder = createServerFn({ method: "POST" })
         from_status: null,
         to_status: "pending",
         changed_by: userId,
-        note: hasRestockNeededItem ? "Order created — يحتوي على طلب توفير كمية (المخزون 0)" : "Order created via checkout",
+        note: hasRestockNeededItem
+          ? "Order created — يحتوي على طلب توفير كمية (المخزون 0)"
+          : "Order created via checkout",
       });
       if (histErr) console.warn("[createOrder] status history notice:", histErr.message);
     } catch (histEx) {
@@ -283,7 +291,10 @@ export const getTrackedOrder = createServerFn({ method: "POST" })
     z
       .object({
         orderNumber: z.string().trim().min(8).max(45),
-        phoneLast4: z.string().trim().regex(/^\d{4}$/, "أدخل آخر 4 أرقام من هاتفك"),
+        phoneLast4: z
+          .string()
+          .trim()
+          .regex(/^\d{4}$/, "أدخل آخر 4 أرقام من هاتفك"),
       })
       .parse(raw),
   )

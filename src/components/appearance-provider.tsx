@@ -1,8 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import {
-  DEFAULT_STOREFRONT_SETTINGS,
-  type StorefrontSettingsShape,
-} from "@/lib/domain/appearance";
+import { DEFAULT_STOREFRONT_SETTINGS, type StorefrontSettingsShape } from "@/lib/domain/appearance";
 import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
 import { StorefrontRealtimeService } from "@/lib/services/storefront-realtime.service";
 

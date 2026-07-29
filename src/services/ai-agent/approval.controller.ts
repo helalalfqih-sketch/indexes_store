@@ -21,7 +21,7 @@ export async function processPlanApproval(
   sessionId: string,
   approved: boolean,
   approvedBy = "quality.executor",
-  notes?: string
+  notes?: string,
 ): Promise<ApprovalControllerRecord> {
   const nextState: ExecutionLifecycleState = approved ? "APPROVED" : "FAILED";
   const record: ApprovalControllerRecord = {
@@ -40,10 +40,21 @@ export async function processPlanApproval(
 export async function approveAndExecuteTask(
   taskId: string,
   sessionId: string,
-  approvedBy = "quality.executor"
+  approvedBy = "quality.executor",
 ): Promise<{ success: boolean; record: ApprovalControllerRecord; lifecycleEvents: string[] }> {
-  const record = await processPlanApproval(taskId, sessionId, true, approvedBy, "Approved & Dispatched Execution Orchestrator");
-  const lifecycleEvents: string[] = ["PLAN_CREATED", "EVIDENCE_READY", "APPROVAL_GRANTED", "EXECUTION_STARTED"];
+  const record = await processPlanApproval(
+    taskId,
+    sessionId,
+    true,
+    approvedBy,
+    "Approved & Dispatched Execution Orchestrator",
+  );
+  const lifecycleEvents: string[] = [
+    "PLAN_CREATED",
+    "EVIDENCE_READY",
+    "APPROVAL_GRANTED",
+    "EXECUTION_STARTED",
+  ];
 
   try {
     await logExecutionJournal({
@@ -75,15 +86,18 @@ export async function evaluateAutoApproveGate(
   sessionId: string,
   executionMode: "AUTO" | "MANUAL",
   confidenceScore: number,
-  riskLevel: "LOW" | "MEDIUM" | "HIGH"
+  riskLevel: "LOW" | "MEDIUM" | "HIGH",
 ): Promise<{ autoApproved: boolean; record: ApprovalControllerRecord }> {
-  const shouldAutoApprove = executionMode === "AUTO" && confidenceScore >= 85 && riskLevel === "LOW";
+  const shouldAutoApprove =
+    executionMode === "AUTO" && confidenceScore >= 85 && riskLevel === "LOW";
   const record = await processPlanApproval(
     taskId,
     sessionId,
     shouldAutoApprove,
     shouldAutoApprove ? "auto.gate" : "quality.executor",
-    shouldAutoApprove ? "Auto-approved by policy gate (High Confidence & Low Risk)" : "Pending human review"
+    shouldAutoApprove
+      ? "Auto-approved by policy gate (High Confidence & Low Risk)"
+      : "Pending human review",
   );
 
   return {

@@ -7,10 +7,12 @@ export function buildOrderMessage(
   customer?: { name?: string; phone?: string; address?: string; notes?: string },
   coupon?: string,
   discount?: number,
-  customTemplate?: string
+  customTemplate?: string,
 ) {
   const formattedProducts = items
-    .map((it, idx) => `${idx + 1}. ${it.name} (الكمية: ${it.qty}) — ${formatPrice(it.price * it.qty)}`)
+    .map(
+      (it, idx) => `${idx + 1}. ${it.name} (الكمية: ${it.qty}) — ${formatPrice(it.price * it.qty)}`,
+    )
     .join("\n");
 
   const formattedTotal = formatPrice(total);
@@ -58,8 +60,8 @@ export function whatsappLink(message: string, phone = STORE_CONTACT) {
   const normalized = cleanPhone.startsWith("+")
     ? cleanPhone.slice(1)
     : cleanPhone.startsWith("967")
-    ? cleanPhone
-    : `967${cleanPhone}`;
+      ? cleanPhone
+      : `967${cleanPhone}`;
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }
 

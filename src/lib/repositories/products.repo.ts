@@ -13,7 +13,8 @@ export function isVideoUrl(url?: string | null): boolean {
   const lower = url.trim().toLowerCase();
   if (/\.(mp4|webm|ogg|mov|avi|mkv|m3u8)(\?.*)?$/i.test(lower)) return true;
   if (lower.includes("stream.mux.com") || lower.includes("player.mux.com")) return true;
-  if (lower.includes("youtube.com") || lower.includes("youtu.be") || lower.includes("vimeo.com")) return true;
+  if (lower.includes("youtube.com") || lower.includes("youtu.be") || lower.includes("vimeo.com"))
+    return true;
   if (lower.startsWith("data:video/")) return true;
   return false;
 }
@@ -23,7 +24,11 @@ export function extractMuxId(url?: string | null): string | null {
   const trimmed = url.trim();
   const m = trimmed.match(/(?:stream\.mux\.com\/|player\.mux\.com\/|mux\.com\/)([A-Za-z0-9]+)/);
   if (m) return m[1];
-  if (!trimmed.includes("http") && !trimmed.includes("/") && /^[A-Za-z0-9_-]{10,40}$/.test(trimmed)) {
+  if (
+    !trimmed.includes("http") &&
+    !trimmed.includes("/") &&
+    /^[A-Za-z0-9_-]{10,40}$/.test(trimmed)
+  ) {
     return trimmed;
   }
   return null;
@@ -43,7 +48,7 @@ export function buildProductMediaAndVideos(r: any): {
   // 1. Process joined product_media records if present
   if (Array.isArray(r.product_media) && r.product_media.length > 0) {
     const sortedPM = [...r.product_media].sort(
-      (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+      (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
     );
     for (const pm of sortedPM) {
       const file = pm.media_files;

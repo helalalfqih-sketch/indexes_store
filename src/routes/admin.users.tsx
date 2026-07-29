@@ -103,7 +103,8 @@ function AdminUsersComponent() {
             إدارة المستخدمين والصلاحيات (RBAC)
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            تعيين أدوار فريق العمل وتحديد صلاحيات الوصول الدقيقة لموديلات النظام مع الحماية التامة بروافد RLS.
+            تعيين أدوار فريق العمل وتحديد صلاحيات الوصول الدقيقة لموديلات النظام مع الحماية التامة
+            بروافد RLS.
           </p>
         </div>
       </div>
@@ -112,7 +113,8 @@ function AdminUsersComponent() {
       <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 flex items-center gap-3">
         <Building2 className="h-5 w-5 text-primary shrink-0" />
         <p className="text-xs text-primary font-semibold">
-          نظام حماية المستأجرين (Tenant Isolation): مفعّل ومحمي عبر سياسات الأمان المباشرة Row Level Security (RLS).
+          نظام حماية المستأجرين (Tenant Isolation): مفعّل ومحمي عبر سياسات الأمان المباشرة Row Level
+          Security (RLS).
         </p>
       </div>
 
@@ -142,7 +144,9 @@ function AdminUsersComponent() {
                         {m.profile?.full_name?.charAt(0) || "U"}
                       </div>
                       <div>
-                        <p className="font-bold text-foreground">{m.profile?.full_name || "مستخدم متجر"}</p>
+                        <p className="font-bold text-foreground">
+                          {m.profile?.full_name || "مستخدم متجر"}
+                        </p>
                         <p className="font-mono text-[10px] text-muted-foreground">{m.user_id}</p>
                       </div>
                     </div>
@@ -153,10 +157,10 @@ function AdminUsersComponent() {
                         m.role === "owner"
                           ? "bg-primary/15 text-primary"
                           : m.role === "manager"
-                          ? "bg-success/15 text-success"
-                          : m.role === "marketing"
-                          ? "bg-warning/15 text-warning"
-                          : "bg-muted text-muted-foreground"
+                            ? "bg-success/15 text-success"
+                            : m.role === "marketing"
+                              ? "bg-warning/15 text-warning"
+                              : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {m.role === "owner" && "👑 مالك المتجر (Owner)"}
@@ -169,7 +173,9 @@ function AdminUsersComponent() {
                   <td className="p-4">
                     <div className="flex flex-wrap gap-1 max-w-xs">
                       {m.role === "owner" ? (
-                        <span className="text-[10px] font-bold text-primary">جميع الصلاحيات (Full Control)</span>
+                        <span className="text-[10px] font-bold text-primary">
+                          جميع الصلاحيات (Full Control)
+                        </span>
                       ) : m.permissions.length === 0 ? (
                         <span className="text-[10px] text-muted-foreground">عرض فقط (Viewer)</span>
                       ) : (
@@ -235,7 +241,9 @@ function AdminUsersComponent() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold mb-2">اختر الدور الوظيفي (Role Preset)</label>
+              <label className="block text-xs font-bold mb-2">
+                اختر الدور الوظيفي (Role Preset)
+              </label>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {(["owner", "manager", "marketing", "employee"] as const).map((r) => (
                   <button
@@ -260,7 +268,9 @@ function AdminUsersComponent() {
 
             {/* Permissions Matrix Checklist */}
             <div className="space-y-3">
-              <label className="block text-xs font-bold">مصفوفة الصلاحيات المخصصة (Permissions Matrix)</label>
+              <label className="block text-xs font-bold">
+                مصفوفة الصلاحيات المخصصة (Permissions Matrix)
+              </label>
               <div className="grid gap-2 sm:grid-cols-2">
                 {ALL_PERMISSIONS.map((perm) => {
                   const checked = selectedRole === "owner" || selectedPerms.includes(perm.key);

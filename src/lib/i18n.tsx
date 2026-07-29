@@ -22,7 +22,10 @@ const dict: Dict = {
   "dash.topProducts": { ar: "المنتجات الأعلى", en: "Top Products" },
   "dash.recentSessions": { ar: "أحدث الجلسات", en: "Recent Sessions" },
   "studio.title": { ar: "استوديو المنتجات الذكي", en: "AI Product Studio" },
-  "studio.subtitle": { ar: "ارفع صور المنتج ودع الذكاء يكتب كل شيء", en: "Upload images and let AI craft the listing" },
+  "studio.subtitle": {
+    ar: "ارفع صور المنتج ودع الذكاء يكتب كل شيء",
+    en: "Upload images and let AI craft the listing",
+  },
   "studio.drop": { ar: "اسحب الصور هنا أو انقر للرفع", en: "Drop images here or click to upload" },
   "studio.hint": { ar: "تلميح للذكاء (اختياري)", en: "Hint for AI (optional)" },
   "studio.hintPh": { ar: "مثلاً: ساعة رياضية مقاومة للماء", en: "e.g. Waterproof sports watch" },
@@ -41,7 +44,10 @@ const dict: Dict = {
   "studio.before": { ar: "قبل", en: "Before" },
   "studio.after": { ar: "بعد", en: "After" },
   "products.title": { ar: "المنتجات", en: "Products" },
-  "products.empty": { ar: "لا توجد منتجات بعد — أنشئ واحداً من الاستوديو", en: "No products yet — create one from Studio" },
+  "products.empty": {
+    ar: "لا توجد منتجات بعد — أنشئ واحداً من الاستوديو",
+    en: "No products yet — create one from Studio",
+  },
   "products.status.draft": { ar: "مسودة", en: "Draft" },
   "products.status.published": { ar: "منشور", en: "Published" },
   "products.status.processing": { ar: "قيد المعالجة", en: "Processing" },

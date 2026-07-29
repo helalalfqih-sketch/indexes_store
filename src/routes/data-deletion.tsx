@@ -7,7 +7,10 @@ export const Route = createFileRoute("/data-deletion")({
   head: () => ({
     meta: [
       { title: "حذف بيانات المستخدم — Indexes Store" },
-      { name: "description", content: "تعليمات ونموذج طلب حذف كافة بيانات المستخدم في تطبيق Indexes Store." },
+      {
+        name: "description",
+        content: "تعليمات ونموذج طلب حذف كافة بيانات المستخدم في تطبيق Indexes Store.",
+      },
     ],
   }),
   component: DataDeletionPage,
@@ -54,7 +57,9 @@ function DataDeletionPage() {
             <ShieldAlert className="h-5 w-5" /> كيفية طلب حذف البيانات
           </h2>
           <p>
-            وفقاً لسياسات Meta وتنظيمات حماية البيانات العامة (GDPR)، يمنح تطبيق ومتجر Indexes Store للمستخدمين الحق الكامل في إزالة مسح وحذف كافة بياناتهم وصورهم وسجل طلباتهم المسجلة لدينا.
+            وفقاً لسياسات Meta وتنظيمات حماية البيانات العامة (GDPR)، يمنح تطبيق ومتجر Indexes Store
+            للمستخدمين الحق الكامل في إزالة مسح وحذف كافة بياناتهم وصورهم وسجل طلباتهم المسجلة
+            لدينا.
           </p>
         </div>
 
@@ -65,19 +70,29 @@ function DataDeletionPage() {
               تم تقديم طلب حذف البيانات بنجاح
             </div>
             <p className="text-xs text-muted-foreground">
-              تم تسليم الطلب إلى مسؤول حماية البيانات (<code className="font-mono text-foreground font-bold">smartaccuont@gmail.com</code>).
+              تم تسليم الطلب إلى مسؤول حماية البيانات (
+              <code className="font-mono text-foreground font-bold">smartaccuont@gmail.com</code>).
             </p>
             <div className="p-4 rounded-xl border border-border bg-background space-y-1 text-xs">
-              <p className="text-muted-foreground font-bold">رمز تأكيد الحذف (Confirmation Code):</p>
+              <p className="text-muted-foreground font-bold">
+                رمز تأكيد الحذف (Confirmation Code):
+              </p>
               <code className="font-mono text-sm text-primary font-bold">{confirmationCode}</code>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 bg-surface border border-border p-6 rounded-2xl shadow-sm">
-            <h3 className="text-base font-bold text-foreground">تقديم طلب إزالة وحذف البيانات مباشرة:</h3>
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4 bg-surface border border-border p-6 rounded-2xl shadow-sm"
+          >
+            <h3 className="text-base font-bold text-foreground">
+              تقديم طلب إزالة وحذف البيانات مباشرة:
+            </h3>
 
             <div>
-              <label className="block text-xs font-bold mb-1">البريد الإلكتروني أو رقم الهاتف المسجل</label>
+              <label className="block text-xs font-bold mb-1">
+                البريد الإلكتروني أو رقم الهاتف المسجل
+              </label>
               <input
                 type="text"
                 required
@@ -104,7 +119,11 @@ function DataDeletionPage() {
               disabled={isSubmitting}
               className="flex items-center gap-2 rounded-xl bg-destructive px-6 py-3 text-sm font-bold text-white hover:bg-destructive/90 transition shadow-md disabled:opacity-50"
             >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
               تأكيد إرسال طلب حذف البيانات
             </button>
           </form>

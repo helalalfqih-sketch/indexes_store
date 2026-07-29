@@ -3,7 +3,11 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ShoppingBag, ChevronDown, ChevronUp, Loader2, Package } from "lucide-react";
-import { listTenantOrders, getTenantOrderDetails, updateOrderStatus } from "@/lib/orders-admin.functions";
+import {
+  listTenantOrders,
+  getTenantOrderDetails,
+  updateOrderStatus,
+} from "@/lib/orders-admin.functions";
 import {
   ORDER_STATUS_LABELS_AR,
   ORDER_STATUS_TRANSITIONS,
@@ -21,7 +25,15 @@ export const Route = createFileRoute("/store/orders")({
   component: StoreOrdersPage,
 });
 
-const FILTERS = ["all", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled"] as const;
+const FILTERS = [
+  "all",
+  "pending",
+  "confirmed",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+] as const;
 
 function StoreOrdersPage() {
   const { can } = useStoreContext();
@@ -32,7 +44,9 @@ function StoreOrdersPage() {
   const listQ = useQuery({
     queryKey: ["store-orders", statusFilter],
     queryFn: () =>
-      listTenantOrders({ data: { status: statusFilter === "all" ? undefined : statusFilter, limit: 30 } }),
+      listTenantOrders({
+        data: { status: statusFilter === "all" ? undefined : statusFilter, limit: 30 },
+      }),
   });
 
   const detailsQ = useQuery({
@@ -65,7 +79,9 @@ function StoreOrdersPage() {
         <h1 className="flex items-center gap-2 text-2xl font-black">
           <ShoppingBag className="h-6 w-6 text-primary" /> الطلبات
         </h1>
-        <p className="mt-1 text-xs text-muted-foreground">{listQ.isLoading ? "جارٍ التحميل..." : `${listQ.data?.count ?? 0} طلب`}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {listQ.isLoading ? "جارٍ التحميل..." : `${listQ.data?.count ?? 0} طلب`}
+        </p>
       </div>
 
       <div className="rounded-2xl glass p-3">
@@ -75,7 +91,9 @@ function StoreOrdersPage() {
               key={f}
               onClick={() => setStatusFilter(f)}
               className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold whitespace-nowrap ${
-                statusFilter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                statusFilter === f
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {f === "all" ? "الكل" : ORDER_STATUS_LABELS_AR[f]}
@@ -103,13 +121,28 @@ function StoreOrdersPage() {
             const allowed = d ? (ORDER_STATUS_TRANSITIONS[d.status] ?? []) : [];
             return (
               <div key={ord.id} className="rounded-2xl glass overflow-hidden">
-                <button onClick={() => setOpenId(open ? null : ord.id)} className="flex w-full flex-wrap items-center gap-3 p-4 text-start hover:bg-foreground/5">
-                  <span className="font-mono text-xs font-bold text-primary">{formatOrderNumber(ord.id)}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusTone(ord.status)}`}>{orderStatusLabel(ord.status)}</span>
-                  <span className="text-xs text-muted-foreground">{ord.customer_name || "ضيف"}</span>
+                <button
+                  onClick={() => setOpenId(open ? null : ord.id)}
+                  className="flex w-full flex-wrap items-center gap-3 p-4 text-start hover:bg-foreground/5"
+                >
+                  <span className="font-mono text-xs font-bold text-primary">
+                    {formatOrderNumber(ord.id)}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusTone(ord.status)}`}
+                  >
+                    {orderStatusLabel(ord.status)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {ord.customer_name || "ضيف"}
+                  </span>
                   <span className="ms-auto flex items-center gap-3">
                     <span className="text-sm font-black">{formatPrice(ord.total)}</span>
-                    {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    {open ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
                   </span>
                 </button>
                 {open && (
@@ -129,14 +162,18 @@ function StoreOrdersPage() {
                           {d.items.map((it) => (
                             <li key={it.id} className="flex items-center gap-2">
                               <span className="flex-1 font-bold line-clamp-1">{it.name}</span>
-                              <span className="text-muted-foreground">{it.quantity} × {formatPrice(it.unit_price)}</span>
+                              <span className="text-muted-foreground">
+                                {it.quantity} × {formatPrice(it.unit_price)}
+                              </span>
                               <span className="font-black">{formatPrice(it.total_price)}</span>
                             </li>
                           ))}
                         </ul>
                         {canWrite && allowed.length > 0 && (
                           <div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
-                            <span className="text-xs text-muted-foreground">نقل «{orderStatusLabel(d.status)}» إلى:</span>
+                            <span className="text-xs text-muted-foreground">
+                              نقل «{orderStatusLabel(d.status)}» إلى:
+                            </span>
                             {allowed.map((s) => (
                               <button
                                 key={s}
@@ -150,7 +187,9 @@ function StoreOrdersPage() {
                           </div>
                         )}
                         {canWrite && allowed.length === 0 && (
-                          <p className="border-t border-border/50 pt-2 text-xs text-muted-foreground">حالة نهائية — لا انتقالات متاحة.</p>
+                          <p className="border-t border-border/50 pt-2 text-xs text-muted-foreground">
+                            حالة نهائية — لا انتقالات متاحة.
+                          </p>
                         )}
                       </>
                     )}

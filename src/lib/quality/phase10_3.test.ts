@@ -22,10 +22,18 @@ async function runPhase103Tests() {
   const preCheck1 = checkSessionDeduplication(userId, tenantId, prompt);
   console.log(`✅ Pre-Check 1 (New Prompt): isDuplicate=${preCheck1.isDuplicate}`);
 
-  registerSessionFingerprint(preCheck1.sessionFingerprint, "SESS-LIVE-200", userId, tenantId, prompt);
+  registerSessionFingerprint(
+    preCheck1.sessionFingerprint,
+    "SESS-LIVE-200",
+    userId,
+    tenantId,
+    prompt,
+  );
 
   const preCheck2 = checkSessionDeduplication(userId, tenantId, prompt);
-  console.log(`✅ Pre-Check 2 (Interception Before DB Insert): isDuplicate=${preCheck2.isDuplicate} | ReusedSessionId=${preCheck2.existingSessionId}`);
+  console.log(
+    `✅ Pre-Check 2 (Interception Before DB Insert): isDuplicate=${preCheck2.isDuplicate} | ReusedSessionId=${preCheck2.existingSessionId}`,
+  );
   if (!preCheck2.isDuplicate || preCheck2.existingSessionId !== "SESS-LIVE-200") {
     throw new Error("❌ Pre-creation session deduplication failed");
   }
@@ -37,7 +45,9 @@ async function runPhase103Tests() {
   state = transitionExecutionState(state, "APPROVED");
   state = transitionExecutionState(state, "EXECUTING");
 
-  console.log(`✅ AUTO Approval Transition Executed: PLANNING -> WAITING_APPROVAL -> APPROVED -> EXECUTING (${state})`);
+  console.log(
+    `✅ AUTO Approval Transition Executed: PLANNING -> WAITING_APPROVAL -> APPROVED -> EXECUTING (${state})`,
+  );
   if (state !== "EXECUTING") throw new Error("❌ Auto-approval pipeline transition failed");
 
   // Test 3: Architectural Engineering Plan Validation

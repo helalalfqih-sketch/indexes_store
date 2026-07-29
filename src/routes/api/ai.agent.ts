@@ -55,9 +55,7 @@ export const Route = createFileRoute("/api/ai/agent")({
         const customStream = new ReadableStream({
           async start(controller) {
             const sendEvent = (data: object) => {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
-              );
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
             };
 
             try {

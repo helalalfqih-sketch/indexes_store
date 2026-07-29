@@ -130,7 +130,15 @@ export interface AgentRetryEvent extends AgentEvent {
 
 export interface AgentWhatsAppSyncEvent extends AgentEvent {
   type: "whatsapp_sync";
-  action: "create_product" | "update_product" | "update_price" | "update_images" | "update_video" | "update_inventory" | "disable_product" | "sync_status";
+  action:
+    | "create_product"
+    | "update_product"
+    | "update_price"
+    | "update_images"
+    | "update_video"
+    | "update_inventory"
+    | "disable_product"
+    | "sync_status";
   status: "pending" | "success" | "failed";
   productId?: string;
   metaResponse?: Record<string, unknown>;
@@ -175,11 +183,7 @@ export function makeStatusEvent(status: string, label: string): AgentStatusEvent
   };
 }
 
-export function makeErrorEvent(
-  error: string,
-  detail?: string,
-  retryable = false,
-): AgentErrorEvent {
+export function makeErrorEvent(error: string, detail?: string, retryable = false): AgentErrorEvent {
   return {
     type: "error",
     error,

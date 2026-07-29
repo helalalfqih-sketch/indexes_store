@@ -58,11 +58,7 @@ export interface AgentEngineInput {
 // Model Fallback Chain
 // ─────────────────────────────────────────────────
 
-const MODEL_FALLBACKS = [
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
-  "gemini-1.5-flash",
-];
+const MODEL_FALLBACKS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-1.5-flash"];
 
 // ─────────────────────────────────────────────────
 // System Prompt Builder
@@ -151,7 +147,9 @@ const ExecuteTaskSchema = z.object({
 });
 
 const CreateMigrationSchema = z.object({
-  migration_name: z.string().describe("اسم الـ Migration بالإنجليزية مثل order_notifications_system"),
+  migration_name: z
+    .string()
+    .describe("اسم الـ Migration بالإنجليزية مثل order_notifications_system"),
   sql: z.string().describe("محتوى كود الـ SQL المراد إنشاؤه"),
 });
 
@@ -223,11 +221,7 @@ function buildTools(
       inputSchema: InspectDatabaseSchema,
       execute: async (input: z.infer<typeof InspectDatabaseSchema>) => {
         sendEvent(makeInspectDbEvent(input.table_name));
-        return inspectDatabase(
-          input.table_name,
-          tenantId,
-          input.include_sample_rows ?? false,
-        );
+        return inspectDatabase(input.table_name, tenantId, input.include_sample_rows ?? false);
       },
     };
   }
@@ -235,8 +229,7 @@ function buildTools(
   // ── Propose Edit File (approval_required) ────────────────────
   if (canExecuteTool("edit_file", role).allowed) {
     tools.propose_edit_file = {
-      description:
-        "يقترح تعديلاً على ملف موجود ويعرض الـ diff للمراجعة قبل التطبيق",
+      description: "يقترح تعديلاً على ملف موجود ويعرض الـ diff للمراجعة قبل التطبيق",
       inputSchema: ProposeEditFileSchema,
       execute: async (input: z.infer<typeof ProposeEditFileSchema>) => {
         if (isProtectedPath(input.file_path)) {
@@ -269,8 +262,7 @@ function buildTools(
             status: "approval_required",
             diff: proposal.diff,
             file: input.file_path,
-            message:
-              "يتطلب هذا التعديل موافقتك. راجع الـ diff أعلاه وانقر تنفيذ للمتابعة.",
+            message: "يتطلب هذا التعديل موافقتك. راجع الـ diff أعلاه وانقر تنفيذ للمتابعة.",
           };
         } catch (e: unknown) {
           return { error: String((e as Error)?.message ?? e) };
@@ -308,7 +300,8 @@ function buildTools(
 
   // ── Inspect Project Environment ──────────────────────────────
   tools.inspect_project = {
-    description: "Inspect package manager, available scripts (typecheck, lint, build, test), and workspace configuration",
+    description:
+      "Inspect package manager, available scripts (typecheck, lint, build, test), and workspace configuration",
     inputSchema: z.object({}),
     execute: async () => {
       sendEvent(makeToolCallEvent("inspect_project", {}));
@@ -330,7 +323,8 @@ function buildTools(
 
   // ── Execute Task ────────────────────────────────────────────
   tools.execute_task = {
-    description: "Execute approved engineering steps, apply file modifications, and run build verification",
+    description:
+      "Execute approved engineering steps, apply file modifications, and run build verification",
     inputSchema: ExecuteTaskSchema,
     execute: async (input: z.infer<typeof ExecuteTaskSchema>) => {
       sendEvent(makeToolCallEvent("execute_task", { task_id: input.task_id }));
@@ -387,9 +381,12 @@ function buildTools(
     inputSchema: CreateMigrationSchema,
     execute: async (input: z.infer<typeof CreateMigrationSchema>) => {
       sendEvent(makeToolCallEvent("create_migration", { migration_name: input.migration_name }));
-      const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 14);
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[-:T.Z]/g, "")
+        .slice(0, 14);
       const filePath = `supabase/migrations/${timestamp}_${input.migration_name}.sql`;
-      
+
       const { logExecutionJournal } = await import("./journal.service");
       await logExecutionJournal({
         tenantId,
@@ -417,7 +414,11 @@ function buildTools(
           action: "TOOL_FAILED",
           tool: "create_migration",
           input: { filePath, migration_name: input.migration_name },
-          output: { message: err.message || String(err), stack: err.stack, failed_step: "create_migration" },
+          output: {
+            message: err.message || String(err),
+            stack: err.stack,
+            failed_step: "create_migration",
+          },
           status: "FAILED",
         });
         throw err;
@@ -446,9 +447,11 @@ function buildTools(
       const execAsync = promisify(execFile);
 
       try {
-        const { stdout: tcOut } = await execAsync("npm", ["run", "typecheck"], { cwd: process.cwd() });
+        const { stdout: tcOut } = await execAsync("npm", ["run", "typecheck"], {
+          cwd: process.cwd(),
+        });
         const { stdout: bOut } = await execAsync("npm", ["run", "build"], { cwd: process.cwd() });
-        
+
         await logExecutionJournal({
           tenantId,
           action: "RUN_VALIDATION",
@@ -489,15 +492,7 @@ function buildTools(
 // ─────────────────────────────────────────────────
 
 export async function runAgentEngine(input: AgentEngineInput): Promise<void> {
-  const {
-    tenantId,
-    message,
-    history,
-    projectMemory,
-    agentRole,
-    resolved,
-    sendEvent,
-  } = input;
+  const { tenantId, message, history, projectMemory, agentRole, resolved, sendEvent } = input;
 
   // 1. Load Dynamic Project Code Intelligence Context & Reasoning Engine
   const { AgentTaskState } = await import("./agent.state");
@@ -506,7 +501,12 @@ export async function runAgentEngine(input: AgentEngineInput): Promise<void> {
 
   const dispatchPersistentEvent = (event: any) => {
     sendEvent(event);
-    if (event.type === "status" || event.type === "tool_call" || event.type === "reading_file" || event.type === "searching_code") {
+    if (
+      event.type === "status" ||
+      event.type === "tool_call" ||
+      event.type === "reading_file" ||
+      event.type === "searching_code"
+    ) {
       savePersistentExecutionEvent({
         sessionId: input.sessionId,
         tenantId,
@@ -519,37 +519,70 @@ export async function runAgentEngine(input: AgentEngineInput): Promise<void> {
     }
   };
 
-  dispatchPersistentEvent(makeProgressEvent(AgentTaskState.ANALYZING_REPOSITORY, "✓ Inspecting routes, services & DB migrations...", 10));
+  dispatchPersistentEvent(
+    makeProgressEvent(
+      AgentTaskState.ANALYZING_REPOSITORY,
+      "✓ Inspecting routes, services & DB migrations...",
+      10,
+    ),
+  );
 
   // Gen 1 Base Code Intel & Decision Engine
   const { getProjectContextForAgent } = await import("./code-intelligence.service");
-  const { analyzeEngineeringRequest, generateTechnicalDecision } = await import("./reasoning.engine");
+  const { analyzeEngineeringRequest, generateTechnicalDecision } =
+    await import("./reasoning.engine");
 
   // Gen 2 Agentic Engine 1: Workspace Memory & Knowledge Graph
   const { getWorkspaceKnowledgeGraph } = await import("./workspace-memory.service");
   const workspaceGraph = await getWorkspaceKnowledgeGraph(tenantId);
-  dispatchPersistentEvent(makeProgressEvent(AgentTaskState.ANALYZING_REPOSITORY, `✓ Workspace Memory Loaded (Knowledge Graph Score: ${workspaceGraph.architectureScore}/100)`, 20));
+  dispatchPersistentEvent(
+    makeProgressEvent(
+      AgentTaskState.ANALYZING_REPOSITORY,
+      `✓ Workspace Memory Loaded (Knowledge Graph Score: ${workspaceGraph.architectureScore}/100)`,
+      20,
+    ),
+  );
 
   // Gen 2 Agentic Engine 2: Context Compression Engine
   const { buildCompressedContextWindow } = await import("./context-engine");
   const compressedContext = await buildCompressedContextWindow(message);
-  dispatchPersistentEvent(makeProgressEvent(AgentTaskState.ANALYZING_REPOSITORY, `✓ Context Engine: Compressed context window (-${compressedContext.reductionPercentage}% tokens)`, 30));
+  dispatchPersistentEvent(
+    makeProgressEvent(
+      AgentTaskState.ANALYZING_REPOSITORY,
+      `✓ Context Engine: Compressed context window (-${compressedContext.reductionPercentage}% tokens)`,
+      30,
+    ),
+  );
 
   // Gen 2 Agentic Engine 3: Architecture Audit & Health Scorer
   const { auditProjectArchitecture } = await import("./architecture.service");
   const archReport = await auditProjectArchitecture();
-  dispatchPersistentEvent(makeProgressEvent(AgentTaskState.ANALYZING_REPOSITORY, `✓ Architecture Health Score: ${archReport.score}/100 (${archReport.metrics.totalRoutes} routes, ${archReport.metrics.totalDbTables} tables)`, 35));
+  dispatchPersistentEvent(
+    makeProgressEvent(
+      AgentTaskState.ANALYZING_REPOSITORY,
+      `✓ Architecture Health Score: ${archReport.score}/100 (${archReport.metrics.totalRoutes} routes, ${archReport.metrics.totalDbTables} tables)`,
+      35,
+    ),
+  );
 
   // Gen 2 Agentic Engine 4: Multi-Layer Task Decomposition
   const { decomposeUserRequest } = await import("./task-decomposer");
   const decomposedPlan = decomposeUserRequest(message);
-  dispatchPersistentEvent(makeProgressEvent(AgentTaskState.CREATING_PLAN, `✓ Task Decomposed across ${decomposedPlan.layersCount} Architecture Layers`, 40));
+  dispatchPersistentEvent(
+    makeProgressEvent(
+      AgentTaskState.CREATING_PLAN,
+      `✓ Task Decomposed across ${decomposedPlan.layersCount} Architecture Layers`,
+      40,
+    ),
+  );
 
   // Gen 2 Agentic Engine 5: Multi-Agent Orchestration (Planner, Architect, Backend, Frontend, Reviewer)
   const { runMultiAgentPipeline } = await import("./multi-agent.engine");
   const multiAgentResult = await runMultiAgentPipeline(input.sessionId, message);
   for (const subAgent of multiAgentResult.agentResults) {
-    dispatchPersistentEvent(makeProgressEvent(AgentTaskState.CREATING_PLAN, `✓ ${subAgent.outputMessage}`, 45));
+    dispatchPersistentEvent(
+      makeProgressEvent(AgentTaskState.CREATING_PLAN, `✓ ${subAgent.outputMessage}`, 45),
+    );
   }
 
   const dynamicCodeIntel = await getProjectContextForAgent(tenantId, message);
@@ -582,7 +615,9 @@ export async function runAgentEngine(input: AgentEngineInput): Promise<void> {
     { role: "user" as const, content: message },
   ];
 
-  dispatchPersistentEvent(makeProgressEvent(AgentTaskState.WAITING_APPROVAL, "✓ Engineering plan ready for approval", 50));
+  dispatchPersistentEvent(
+    makeProgressEvent(AgentTaskState.WAITING_APPROVAL, "✓ Engineering plan ready for approval", 50),
+  );
 
   // 3. Stream with model fallback
   const candidates = Array.from(new Set([resolved.modelName, ...MODEL_FALLBACKS]));

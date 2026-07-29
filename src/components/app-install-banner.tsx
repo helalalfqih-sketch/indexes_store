@@ -40,7 +40,9 @@ export function AppInstallBanner() {
       setDeferredPrompt(null);
     } else {
       // Direct action/info if PWA prompt is not available
-      alert("لتحميل وتثبيت التطبيق على هافتك:\nاضغط خيارات المتصفح (⋮) ثم اختر 'إضافة إلى الشاشة الرئيسية' (Add to Home Screen).");
+      alert(
+        "لتحميل وتثبيت التطبيق على هافتك:\nاضغط خيارات المتصفح (⋮) ثم اختر 'إضافة إلى الشاشة الرئيسية' (Add to Home Screen).",
+      );
     }
   };
 

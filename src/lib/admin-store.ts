@@ -51,8 +51,7 @@ export const useAdmin = create<AdminState>()(
         set((s) => ({
           products: s.products.map((p) => (p.id === id ? { ...p, ...patch } : p)),
         })),
-      removeProduct: (id) =>
-        set((s) => ({ products: s.products.filter((p) => p.id !== id) })),
+      removeProduct: (id) => set((s) => ({ products: s.products.filter((p) => p.id !== id) })),
       addSession: (ses) => set((s) => ({ sessions: [ses, ...s.sessions] })),
       updateSession: (id, patch) =>
         set((s) => ({

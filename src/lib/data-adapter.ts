@@ -70,7 +70,8 @@ const seedToCategoryDTO = (c: SeedCategory): CategoryWithMetaDTO => ({
 });
 
 export const fallbackProducts = (): ProductDTO[] => seedProducts.map(seedToProductDTO);
-export const fallbackCategories = (): CategoryWithMetaDTO[] => seedCategories.map(seedToCategoryDTO);
+export const fallbackCategories = (): CategoryWithMetaDTO[] =>
+  seedCategories.map(seedToCategoryDTO);
 
 // ---------- Adapter ----------
 
@@ -155,7 +156,12 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   name: p.name,
   description: p.description,
   price: p.price,
-  oldPrice: p.old_price != null ? p.old_price : (p.compare_at_price != null && p.compare_at_price > p.price ? p.compare_at_price : undefined),
+  oldPrice:
+    p.old_price != null
+      ? p.old_price
+      : p.compare_at_price != null && p.compare_at_price > p.price
+        ? p.compare_at_price
+        : undefined,
   stock: p.stock,
   image: p.images[0] ?? "",
   images: p.images,

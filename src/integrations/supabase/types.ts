@@ -733,7 +733,7 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "media_files";
             referencedColumns: ["id"];
-          }
+          },
         ];
       };
       tenant_audit_logs: {

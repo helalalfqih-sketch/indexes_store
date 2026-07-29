@@ -26,7 +26,9 @@ export const requestProductVideo = createServerFn({ method: "POST" })
     }
 
     // 2. Insert video request
-    const { error: insertErr } = await (supabase.from("product_video_requests" as any) as any).insert({
+    const { error: insertErr } = await (
+      supabase.from("product_video_requests" as any) as any
+    ).insert({
       tenant_id: tenantId,
       product_id: productId,
       product_name: productName,
@@ -54,6 +56,7 @@ export const requestProductVideo = createServerFn({ method: "POST" })
     return {
       ok: true,
       duplicate: false,
-      message: "تم إرسال طلب توفير الفيديو إلى فريق المتجر بنجاح 🎥! سيتم إشعارات عند إضافة الفيديو.",
+      message:
+        "تم إرسال طلب توفير الفيديو إلى فريق المتجر بنجاح 🎥! سيتم إشعارات عند إضافة الفيديو.",
     };
   });

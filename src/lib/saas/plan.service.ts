@@ -7,7 +7,7 @@ import type { Database } from "@/integrations/supabase/types";
 export type Plan = Database["public"]["Enums"]["tenant_plan"];
 
 export interface PlanLimits {
-  maxProducts: number;         // Infinity for unlimited
+  maxProducts: number; // Infinity for unlimited
   maxAdmins: number;
   analytics: boolean;
   customDomain: boolean;

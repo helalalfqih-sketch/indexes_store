@@ -18,7 +18,8 @@ export const Route = createFileRoute("/store/products")({
   component: StoreProductsPage,
 });
 
-const inputCls = "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary";
+const inputCls =
+  "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary";
 
 function StoreProductsPage() {
   const { can } = useStoreContext();
@@ -31,7 +32,13 @@ function StoreProductsPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "drafts" | "low">("all");
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", price: "", stock: "1", image: "", is_published: true });
+  const [form, setForm] = useState({
+    name: "",
+    price: "",
+    stock: "1",
+    image: "",
+    is_published: true,
+  });
 
   const productsQ = useQuery({
     queryKey: ["store-products", { search: search.trim() || undefined, filter }],
@@ -72,7 +79,8 @@ function StoreProductsPage() {
   });
 
   const updateMut = useMutation({
-    mutationFn: (v: { id: string; patch: Record<string, unknown> }) => updateFn({ data: { id: v.id, ...v.patch } }),
+    mutationFn: (v: { id: string; patch: Record<string, unknown> }) =>
+      updateFn({ data: { id: v.id, ...v.patch } }),
     onSuccess: (r) => {
       if (r.success) {
         invalidate();
@@ -103,7 +111,9 @@ function StoreProductsPage() {
           <h1 className="flex items-center gap-2 text-2xl font-black">
             <Package className="h-6 w-6 text-primary" /> المنتجات
           </h1>
-          <p className="mt-1 text-xs text-muted-foreground">{productsQ.isLoading ? "جارٍ التحميل..." : `${products.length} منتج`}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {productsQ.isLoading ? "جارٍ التحميل..." : `${products.length} منتج`}
+          </p>
         </div>
         {canWrite && (
           <button
@@ -119,13 +129,44 @@ function StoreProductsPage() {
         <div className="rounded-2xl glass p-4 space-y-3">
           <h2 className="text-sm font-black">إضافة منتج سريع</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="اسم المنتج" className={inputCls} />
-            <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="السعر" type="number" min="0" dir="ltr" className={inputCls} />
-            <input value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} placeholder="المخزون" type="number" min="0" dir="ltr" className={inputCls} />
-            <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="رابط الصورة (اختياري)" dir="ltr" className={inputCls} />
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="اسم المنتج"
+              className={inputCls}
+            />
+            <input
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+              placeholder="السعر"
+              type="number"
+              min="0"
+              dir="ltr"
+              className={inputCls}
+            />
+            <input
+              value={form.stock}
+              onChange={(e) => setForm({ ...form, stock: e.target.value })}
+              placeholder="المخزون"
+              type="number"
+              min="0"
+              dir="ltr"
+              className={inputCls}
+            />
+            <input
+              value={form.image}
+              onChange={(e) => setForm({ ...form, image: e.target.value })}
+              placeholder="رابط الصورة (اختياري)"
+              dir="ltr"
+              className={inputCls}
+            />
           </div>
           <label className="flex items-center gap-2 text-xs font-bold">
-            <input type="checkbox" checked={form.is_published} onChange={(e) => setForm({ ...form, is_published: e.target.checked })} />
+            <input
+              type="checkbox"
+              checked={form.is_published}
+              onChange={(e) => setForm({ ...form, is_published: e.target.checked })}
+            />
             نشر مباشرةً في المتجر
           </label>
           <button
@@ -147,7 +188,12 @@ function StoreProductsPage() {
       <div className="rounded-2xl glass p-3 flex flex-wrap items-center gap-3">
         <div className="relative min-w-[200px] flex-1">
           <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث..." className={`${inputCls} ps-9`} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="بحث..."
+            className={`${inputCls} ps-9`}
+          />
         </div>
         <div className="flex gap-1 rounded-xl border border-border bg-surface p-1">
           {(
@@ -185,7 +231,11 @@ function StoreProductsPage() {
             <div key={p.id} className="rounded-2xl glass p-4">
               <div className="flex items-start gap-3">
                 {p.images?.[0] ? (
-                  <img src={p.images[0]} alt="" className="h-14 w-14 rounded-xl border border-border object-cover" />
+                  <img
+                    src={p.images[0]}
+                    alt=""
+                    className="h-14 w-14 rounded-xl border border-border object-cover"
+                  />
                 ) : (
                   <div className="grid h-14 w-14 place-items-center rounded-xl bg-muted text-muted-foreground">
                     <Package className="h-5 w-5" />
@@ -197,14 +247,22 @@ function StoreProductsPage() {
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/50 pt-3 text-[11px]">
-                <span className={`rounded-full px-2 py-0.5 font-bold ${p.is_published ? "bg-success/10 text-success" : "bg-amber-500/10 text-amber-500"}`}>
+                <span
+                  className={`rounded-full px-2 py-0.5 font-bold ${p.is_published ? "bg-success/10 text-success" : "bg-amber-500/10 text-amber-500"}`}
+                >
                   {p.is_published ? "منشور" : "مسودة"}
                 </span>
-                <span className={`font-bold ${p.stock <= 5 ? "text-destructive" : "text-muted-foreground"}`}>المخزون: {p.stock}</span>
+                <span
+                  className={`font-bold ${p.stock <= 5 ? "text-destructive" : "text-muted-foreground"}`}
+                >
+                  المخزون: {p.stock}
+                </span>
                 {canWrite && (
                   <span className="ms-auto flex items-center gap-1.5">
                     <button
-                      onClick={() => updateMut.mutate({ id: p.id, patch: { is_published: !p.is_published } })}
+                      onClick={() =>
+                        updateMut.mutate({ id: p.id, patch: { is_published: !p.is_published } })
+                      }
                       disabled={updateMut.isPending}
                       className="rounded-lg bg-primary/10 px-2 py-1 font-bold text-primary hover:bg-primary/20"
                     >

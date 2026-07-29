@@ -22,7 +22,9 @@ export function enrichAuditResultWithEvidence(result: AuditResult): EnrichedAudi
   let notMeasuredReason: string | undefined;
 
   if (result.status === "NOT_MEASURED") {
-    notMeasuredReason = result.error?.message || "Required database connection or environment variables not configured in runner";
+    notMeasuredReason =
+      result.error?.message ||
+      "Required database connection or environment variables not configured in runner";
   }
 
   if (result.commandOrQuery) {
@@ -44,11 +46,7 @@ export function enrichAuditResultWithEvidence(result: AuditResult): EnrichedAudi
   }
 
   const verificationConfidence: "HIGH" | "MEDIUM" | "LOW" =
-    result.status === "PASS"
-      ? "HIGH"
-      : result.status === "WARNING"
-      ? "MEDIUM"
-      : "LOW";
+    result.status === "PASS" ? "HIGH" : result.status === "WARNING" ? "MEDIUM" : "LOW";
 
   return {
     ...result,

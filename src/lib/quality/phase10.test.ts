@@ -1,7 +1,10 @@
 /**
  * Phase 10 Verification Test Suite — Enterprise Admin Intelligence Layer
  */
-import { getNotificationsHandler, markNotificationReadHandler } from "../../services/notification.service";
+import {
+  getNotificationsHandler,
+  markNotificationReadHandler,
+} from "../../services/notification.service";
 import { getAuditLogsHandler } from "../../services/audit.service";
 import { getProjectMemory } from "../../lib/ai-agent.functions";
 
@@ -13,7 +16,9 @@ async function runPhase10Tests() {
   // Test 1: Notification Service
   console.log("⚙️ [1/4] Testing Notification Service & Hub...");
   const notifications = await getNotificationsHandler();
-  console.log(`✅ Loaded Notifications Count: ${notifications.length} (Sample: ${notifications[0]?.title})`);
+  console.log(
+    `✅ Loaded Notifications Count: ${notifications.length} (Sample: ${notifications[0]?.title})`,
+  );
   if (notifications.length === 0) throw new Error("❌ Notification Service test failed");
 
   // Test 2: Mark Notification Read
@@ -25,7 +30,9 @@ async function runPhase10Tests() {
   // Test 3: Audit & Compliance Activity Logs
   console.log("⚙️ [3/4] Testing Audit Logs Tracker...");
   const auditLogs = await getAuditLogsHandler();
-  console.log(`✅ Audit Logs Count: ${auditLogs.length} (Sample Action: ${auditLogs[0]?.action} by ${auditLogs[0]?.userEmail})`);
+  console.log(
+    `✅ Audit Logs Count: ${auditLogs.length} (Sample Action: ${auditLogs[0]?.action} by ${auditLogs[0]?.userEmail})`,
+  );
   if (auditLogs.length === 0) throw new Error("❌ Audit Logs test failed");
 
   // Test 4: AI Memory Manager Query

@@ -79,10 +79,7 @@ export interface StaffOrderDetails extends MyOrderDetails {
 async function countItemsByOrder(db: DB, orderIds: string[]): Promise<Record<string, number>> {
   const counts: Record<string, number> = {};
   if (orderIds.length === 0) return counts;
-  const { data, error } = await db
-    .from("order_items")
-    .select("order_id")
-    .in("order_id", orderIds);
+  const { data, error } = await db.from("order_items").select("order_id").in("order_id", orderIds);
   if (error || !data) return counts;
   for (const row of data as { order_id: string }[]) {
     counts[row.order_id] = (counts[row.order_id] ?? 0) + 1;
@@ -91,13 +88,13 @@ async function countItemsByOrder(db: DB, orderIds: string[]): Promise<Record<str
 }
 
 /** Resolve the first image for a set of product ids. */
-async function imagesByProduct(db: DB, productIds: string[]): Promise<Record<string, string | null>> {
+async function imagesByProduct(
+  db: DB,
+  productIds: string[],
+): Promise<Record<string, string | null>> {
   const images: Record<string, string | null> = {};
   if (productIds.length === 0) return images;
-  const { data } = await db
-    .from("products")
-    .select("id, images")
-    .in("id", productIds);
+  const { data } = await db.from("products").select("id, images").in("id", productIds);
   for (const row of (data ?? []) as { id: string; images: string[] | null }[]) {
     images[row.id] = row.images?.[0] ?? null;
   }
@@ -125,7 +122,10 @@ export async function getMyOrders(db: DB, userId: string): Promise<MyOrderSummar
     currency: string;
   }>;
 
-  const counts = await countItemsByOrder(db, rows.map((r) => r.id));
+  const counts = await countItemsByOrder(
+    db,
+    rows.map((r) => r.id),
+  );
 
   return rows.map((r) => ({
     id: r.id,
@@ -283,7 +283,10 @@ async function loadItems(db: DB, orderId: string): Promise<MyOrderItem[]> {
     product_name_snapshot: string;
   }>;
 
-  const images = await imagesByProduct(db, rows.map((r) => r.product_id));
+  const images = await imagesByProduct(
+    db,
+    rows.map((r) => r.product_id),
+  );
 
   return rows.map((r) => ({
     id: r.id,

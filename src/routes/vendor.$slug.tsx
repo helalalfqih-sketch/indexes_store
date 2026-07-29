@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
-import { supabase } from '@/integrations/supabase/client';
-import { Store, Star, ShieldCheck, MapPin, Phone, Mail, Loader2, Package } from 'lucide-react';
-import { getVendorBySlug, type VendorDetails } from '@/lib/services/vendor.service';
+import { useState, useEffect } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+import { Store, Star, ShieldCheck, MapPin, Phone, Mail, Loader2, Package } from "lucide-react";
+import { getVendorBySlug, type VendorDetails } from "@/lib/services/vendor.service";
 
-export const Route = createFileRoute('/vendor/$slug')({
+export const Route = createFileRoute("/vendor/$slug")({
   component: VendorPublicStorefrontPage,
 });
 
@@ -26,11 +26,11 @@ function VendorPublicStorefrontPage() {
       setVendor(vendorData);
 
       const { data: prodData } = await supabase
-        .from('products')
-        .select('*')
-        .eq('vendor_id', vendorData.id)
-        .eq('is_published', true)
-        .order('created_at', { ascending: false });
+        .from("products")
+        .select("*")
+        .eq("vendor_id", vendorData.id)
+        .eq("is_published", true)
+        .order("created_at", { ascending: false });
 
       setProducts(prodData ?? []);
       setLoading(false);
@@ -67,7 +67,11 @@ function VendorPublicStorefrontPage() {
       {/* Banner */}
       <div className="h-48 sm:h-64 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 relative overflow-hidden">
         {vendor.banner_url && (
-          <img src={vendor.banner_url} alt={vendor.name} className="w-full h-full object-cover opacity-60" />
+          <img
+            src={vendor.banner_url}
+            alt={vendor.name}
+            className="w-full h-full object-cover opacity-60"
+          />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
       </div>
@@ -88,7 +92,9 @@ function VendorPublicStorefrontPage() {
               </span>
             </div>
 
-            <p className="text-slate-400 text-sm max-w-2xl">{vendor.description ?? 'متجر رسمي معتمد لتقديم أجود المنتجات بأفضل الأسعار.'}</p>
+            <p className="text-slate-400 text-sm max-w-2xl">
+              {vendor.description ?? "متجر رسمي معتمد لتقديم أجود المنتجات بأفضل الأسعار."}
+            </p>
 
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-2 text-xs text-slate-400">
               <div className="flex items-center gap-1 text-amber-400 font-bold">
@@ -123,14 +129,21 @@ function VendorPublicStorefrontPage() {
                 >
                   <div className="aspect-square rounded-xl overflow-hidden bg-slate-950 mb-4 border border-slate-800">
                     <img
-                      src={p.images?.[0] ?? 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400'}
+                      src={
+                        p.images?.[0] ??
+                        "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"
+                      }
                       alt={p.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
                     />
                   </div>
-                  <h3 className="font-bold text-white text-sm line-clamp-2 mb-2 group-hover:text-blue-400 transition-colors">{p.name}</h3>
+                  <h3 className="font-bold text-white text-sm line-clamp-2 mb-2 group-hover:text-blue-400 transition-colors">
+                    {p.name}
+                  </h3>
                   <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-800/60">
-                    <span className="text-emerald-400 font-black text-sm">{Number(p.price).toLocaleString()} YER</span>
+                    <span className="text-emerald-400 font-black text-sm">
+                      {Number(p.price).toLocaleString()} YER
+                    </span>
                     <span className="text-[10px] text-slate-400">عرض التفاصيل ←</span>
                   </div>
                 </a>

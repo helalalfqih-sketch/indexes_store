@@ -141,12 +141,16 @@ export function ParticleField({ count = 14, className }: { count?: number; class
     const delay = -((seed * 19) % 14);
     const alpha = 0.25 + ((seed * 23) % 35) / 100;
     const drift = ((seed * 29) % 40) - 20;
-    const tone = i % 5 === 0 ? "var(--teal-glow)" : i % 7 === 0 ? "var(--accent-copper)" : "var(--neon-blue)";
+    const tone =
+      i % 5 === 0 ? "var(--teal-glow)" : i % 7 === 0 ? "var(--accent-copper)" : "var(--neon-blue)";
     return { left, bottom, size, duration, delay, alpha, drift, tone, key: i };
   });
 
   return (
-    <div className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)} aria-hidden>
+    <div
+      className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}
+      aria-hidden
+    >
       {particles.map((p) => (
         <span
           key={p.key}

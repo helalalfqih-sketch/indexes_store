@@ -3,10 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveCurrentTenant } from "@/lib/saas/tenant-resolver";
-import {
-  storeProfileSchema,
-  upsertStoreSettingSchema,
-} from "@/lib/validators/store";
+import { storeProfileSchema, upsertStoreSettingSchema } from "@/lib/validators/store";
 import * as storeService from "@/lib/services/store.service";
 
 /**
@@ -120,7 +117,13 @@ export const updateStoreSetting = createServerFn({ method: "POST" })
       return { success: false, message: "غير مسموح: إعدادات المتجر لصاحب المتجر فقط" };
     }
 
-    const res = await storeService.upsertStoreSetting(supabase, tenantId, data.key, data.value, userId);
+    const res = await storeService.upsertStoreSetting(
+      supabase,
+      tenantId,
+      data.key,
+      data.value,
+      userId,
+    );
     if (!res.ok) return { success: false, message: res.message };
     return { success: true };
   });

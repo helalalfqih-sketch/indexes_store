@@ -2,7 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell, ShoppingBag, Cpu, AlertTriangle, ShieldCheck, Check } from "lucide-react";
-import { getNotificationsFn, markNotificationReadFn, AdminNotification } from "@/services/notification.service";
+import {
+  getNotificationsFn,
+  markNotificationReadFn,
+  AdminNotification,
+} from "@/services/notification.service";
 
 export const Route = createFileRoute("/admin/notifications")({
   head: () => ({
@@ -71,7 +75,9 @@ function AdminNotificationsPage() {
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{n.message}</p>
-                <div className="text-[10px] text-zinc-500 font-mono mt-2">{new Date(n.timestamp).toLocaleString("ar-SA")}</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-2">
+                  {new Date(n.timestamp).toLocaleString("ar-SA")}
+                </div>
               </div>
             </div>
 

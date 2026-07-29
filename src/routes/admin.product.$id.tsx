@@ -213,12 +213,10 @@ function ProductDetailPage() {
   useEffect(() => {
     if (incomingMedia && incomingMedia.length > 0) {
       const sortedMedia = [...incomingMedia].sort(
-        (a, b) => (a.sequence_number || 0) - (b.sequence_number || 0)
+        (a, b) => (a.sequence_number || 0) - (b.sequence_number || 0),
       );
 
-      const images = sortedMedia
-        .filter((m) => m.file_type === "image")
-        .map((m) => m.file_url);
+      const images = sortedMedia.filter((m) => m.file_type === "image").map((m) => m.file_url);
 
       const video = sortedMedia.find((m) => m.file_type === "video");
 
@@ -1070,7 +1068,10 @@ function ProductDetailPage() {
                       dir="ltr"
                     />
                   </FormField>
-                  <FormField label="السعر القديم (قبل الخصم) 🔥" hint="يظهر التخفيض وتكشف العروض عند التعبئة">
+                  <FormField
+                    label="السعر القديم (قبل الخصم) 🔥"
+                    hint="يظهر التخفيض وتكشف العروض عند التعبئة"
+                  >
                     <input
                       type="number"
                       value={form.old_price ?? ""}
@@ -1090,7 +1091,9 @@ function ProductDetailPage() {
                 {/* Show calculated discount badge if valid */}
                 {form.old_price != null && form.old_price > form.price && form.price > 0 && (
                   <div className="flex items-center justify-between rounded-xl bg-success/10 border border-success/30 px-3 py-2 text-xs font-bold text-success">
-                    <span>خصم محتسب تلقائياً: {Math.round((1 - form.price / form.old_price) * 100)}%</span>
+                    <span>
+                      خصم محتسب تلقائياً: {Math.round((1 - form.price / form.old_price) * 100)}%
+                    </span>
                     <span>سوف يظهر المنتج تلقائياً في قسم "عروض اليوم 🔥"</span>
                   </div>
                 )}

@@ -38,7 +38,8 @@ export const DependencyAuditor: QualityAudit = {
       totalDependencies: 88,
     };
 
-    const status = metrics.criticalVulnerabilities === 0 && metrics.highVulnerabilities === 0 ? "PASS" : "FAIL";
+    const status =
+      metrics.criticalVulnerabilities === 0 && metrics.highVulnerabilities === 0 ? "PASS" : "FAIL";
     const score = status === "PASS" ? 95 : 50;
 
     return {

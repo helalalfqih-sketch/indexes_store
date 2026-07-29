@@ -132,7 +132,11 @@ function ProductPage() {
 
   useEffect(() => {
     if (product?.id) {
-      trackEvent("view_product", { productId: product.id, name: product.name, price: product.price });
+      trackEvent("view_product", {
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+      });
     }
   }, [product?.id]);
 
@@ -153,7 +157,6 @@ function ProductPage() {
   };
 
   const orderHref = quickOrderLink(product);
-
 
   return (
     <div
@@ -184,7 +187,11 @@ function ProductPage() {
         aria-label="مسار التنقل"
         className="flex items-center gap-1.5 px-4 py-2 text-[11px] text-showcase-foreground/50 border-b border-showcase-border/30"
       >
-        <Link to="/" className="flex items-center gap-1 hover:text-showcase-foreground transition" aria-label="الرئيسية">
+        <Link
+          to="/"
+          className="flex items-center gap-1 hover:text-showcase-foreground transition"
+          aria-label="الرئيسية"
+        >
           <Home className="h-3 w-3" aria-hidden="true" />
           <span>الرئيسية</span>
         </Link>
@@ -201,7 +208,10 @@ function ProductPage() {
             <ChevronLeft className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
           </>
         )}
-        <span className="text-showcase-foreground/80 font-semibold truncate max-w-[180px]" aria-current="page">
+        <span
+          className="text-showcase-foreground/80 font-semibold truncate max-w-[180px]"
+          aria-current="page"
+        >
           {product.name}
         </span>
       </nav>
@@ -209,7 +219,6 @@ function ProductPage() {
       {/* Main Content Area: 2-Column Responsive Layout */}
       <div ref={heroRef} className="mx-auto max-w-7xl px-4 pt-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          
           {/* Right/Top Column: Interactive Gallery (7 columns on Desktop) */}
           <div className="lg:col-span-7 flex flex-col gap-4">
             <ProductMediaGallery
@@ -227,7 +236,6 @@ function ProductPage() {
 
           {/* Left/Bottom Column: Product Details & Buy Box (5 columns on Desktop) */}
           <div className="lg:col-span-5 flex flex-col gap-6">
-            
             {/* Title & Category */}
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -258,7 +266,9 @@ function ProductPage() {
             {/* Price Box */}
             <div className="rounded-2xl border border-showcase-border bg-showcase-foreground/5 p-4 flex items-baseline justify-between">
               <div>
-                <span className="text-xs font-bold text-showcase-foreground/60 block mb-1">السعر الحالي</span>
+                <span className="text-xs font-bold text-showcase-foreground/60 block mb-1">
+                  السعر الحالي
+                </span>
                 <div className="flex items-baseline gap-3">
                   <span className="text-3xl font-black text-showcase-foreground">
                     {formatPrice(product.price)}
@@ -286,7 +296,9 @@ function ProductPage() {
 
             {/* Quantity Selector */}
             <div className="flex items-center justify-between rounded-xl border border-showcase-border bg-showcase-foreground/5 p-3">
-              <span className="text-xs font-bold text-showcase-foreground">الكمية المطلوب طلبها</span>
+              <span className="text-xs font-bold text-showcase-foreground">
+                الكمية المطلوب طلبها
+              </span>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setQty(Math.max(1, qty - 1))}
@@ -311,7 +323,9 @@ function ProductPage() {
                   href={orderHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => trackEvent("click_whatsapp", { source: "product_page", productId: product.id })}
+                  onClick={() =>
+                    trackEvent("click_whatsapp", { source: "product_page", productId: product.id })
+                  }
                   className="flex items-center justify-center gap-2 rounded-2xl bg-success py-3.5 text-sm font-black text-success-foreground shadow-brand hover:bg-success/90 transition"
                 >
                   <MessageCircle className="h-5 w-5" />
@@ -384,13 +398,14 @@ function ProductPage() {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
         {/* Feature Highlights Grid (Compact Spacing) */}
         <div className="mt-16 border-t border-showcase-border/60 pt-12">
-          <h3 className="text-xl font-black mb-6 text-showcase-foreground">مميزات ومواصفات المنتج</h3>
+          <h3 className="text-xl font-black mb-6 text-showcase-foreground">
+            مميزات ومواصفات المنتج
+          </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[

@@ -7,7 +7,7 @@ export function createExecutionManifest(
   engineInfo: QualityEngineInfo,
   results: AuditResult[],
   skippedAudits: { id: string; reason: string }[],
-  totalDurationMs: number
+  totalDurationMs: number,
 ): ManifestReport {
   return {
     engineInfo,

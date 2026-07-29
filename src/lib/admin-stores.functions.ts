@@ -81,7 +81,12 @@ export const updateStorePlanAdmin = createServerFn({ method: "POST" })
     const gate = await requirePlatformAdmin(supabase, userId);
     if (!gate.ok) return { success: false, message: "غير مسموح: صلاحية مدير المنصّة مطلوبة" };
 
-    const res = await adminStore.updateStorePlan(supabase, data.tenantId, data.plan, data.periodEnd ?? null);
+    const res = await adminStore.updateStorePlan(
+      supabase,
+      data.tenantId,
+      data.plan,
+      data.periodEnd ?? null,
+    );
     if (!res.ok) return { success: false, message: res.message };
 
     await adminStore.logAudit(supabase, {

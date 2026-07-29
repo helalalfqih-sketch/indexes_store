@@ -1,10 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ProductCard } from "@/components/product-card";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import {
-  categoryBySlugQueryOptions,
-  productsByCategoryQueryOptions,
-} from "@/lib/store.queries";
+import { categoryBySlugQueryOptions, productsByCategoryQueryOptions } from "@/lib/store.queries";
 import type { Product } from "@/lib/store-data";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
 import { Home, ChevronLeft } from "lucide-react";
@@ -43,7 +40,9 @@ export const Route = createFileRoute("/category/$id")({
   notFoundComponent: () => (
     <div className="p-8 text-center">
       <p>التصنيف غير موجود</p>
-      <Link to="/" className="text-primary">الرئيسية</Link>
+      <Link to="/" className="text-primary">
+        الرئيسية
+      </Link>
     </div>
   ),
   component: CategoryPage,
@@ -66,20 +65,20 @@ function CategoryPage() {
     lay.columnsTablet === 1
       ? "sm:grid-cols-1"
       : lay.columnsTablet === 2
-      ? "sm:grid-cols-2"
-      : lay.columnsTablet === 4
-      ? "sm:grid-cols-4"
-      : "sm:grid-cols-3";
+        ? "sm:grid-cols-2"
+        : lay.columnsTablet === 4
+          ? "sm:grid-cols-4"
+          : "sm:grid-cols-3";
   const d =
     lay.columnsDesktop === 2
       ? "md:grid-cols-2"
       : lay.columnsDesktop === 3
-      ? "md:grid-cols-3"
-      : lay.columnsDesktop === 5
-      ? "md:grid-cols-5"
-      : lay.columnsDesktop === 6
-      ? "md:grid-cols-6"
-      : "md:grid-cols-4";
+        ? "md:grid-cols-3"
+        : lay.columnsDesktop === 5
+          ? "md:grid-cols-5"
+          : lay.columnsDesktop === 6
+            ? "md:grid-cols-6"
+            : "md:grid-cols-4";
   const gridClass = `grid ${m} ${t} ${d} gap-4`;
 
   return (
@@ -89,7 +88,11 @@ function CategoryPage() {
         aria-label="مسار التنقل"
         className="flex items-center gap-1.5 py-2 text-[11px] text-showcase-foreground/50"
       >
-        <Link to="/" className="flex items-center gap-1 hover:text-showcase-foreground transition" aria-label="الرئيسية">
+        <Link
+          to="/"
+          className="flex items-center gap-1 hover:text-showcase-foreground transition"
+          aria-label="الرئيسية"
+        >
           <Home className="h-3 w-3" aria-hidden="true" />
           <span>الرئيسية</span>
         </Link>
@@ -101,7 +104,9 @@ function CategoryPage() {
 
       <h1 className="text-lg font-black text-showcase-foreground">{cat.name}</h1>
       {items.length === 0 ? (
-        <p className="py-10 text-center text-sm text-showcase-muted">لا توجد منتجات في هذا التصنيف بعد.</p>
+        <p className="py-10 text-center text-sm text-showcase-muted">
+          لا توجد منتجات في هذا التصنيف بعد.
+        </p>
       ) : (
         <div className={gridClass} role="list" aria-label={`منتجات ${cat.name}`}>
           {items.map((p: any) => (
@@ -114,4 +119,3 @@ function CategoryPage() {
     </div>
   );
 }
-

@@ -53,7 +53,15 @@ export interface AuditEntry {
 
 // ── internal helpers ─────────────────────────────────────────────────────────
 
-async function computeOrderStats(db: Db, tenantId: string): Promise<{ ordersCount: number; pendingOrders: number; revenue: number; customers: Set<string> }> {
+async function computeOrderStats(
+  db: Db,
+  tenantId: string,
+): Promise<{
+  ordersCount: number;
+  pendingOrders: number;
+  revenue: number;
+  customers: Set<string>;
+}> {
   const { data } = await db
     .from("orders")
     .select("total, status, user_id")
@@ -71,7 +79,12 @@ async function computeOrderStats(db: Db, tenantId: string): Promise<{ ordersCoun
   return { ordersCount: rows.length, pendingOrders, revenue, customers };
 }
 
-async function headCount(db: Db, table: string, tenantId: string, extra?: (q: any) => any): Promise<number> {
+async function headCount(
+  db: Db,
+  table: string,
+  tenantId: string,
+  extra?: (q: any) => any,
+): Promise<number> {
   let q = db.from(table).select("*", { count: "exact", head: true }).eq("tenant_id", tenantId);
   if (extra) q = extra(q);
   const { count } = await q;
@@ -80,7 +93,13 @@ async function headCount(db: Db, table: string, tenantId: string, extra?: (q: an
 
 export async function logAudit(
   db: Db,
-  entry: { tenantId: string; actorId: string; actorEmail: string | null; action: string; details?: Record<string, any> },
+  entry: {
+    tenantId: string;
+    actorId: string;
+    actorEmail: string | null;
+    action: string;
+    details?: Record<string, any>;
+  },
 ): Promise<void> {
   const { error } = await db.from("tenant_audit_logs").insert({
     tenant_id: entry.tenantId,
@@ -116,7 +135,12 @@ export async function listStoresWithStats(db: Db): Promise<StoreListItem[]> {
         .maybeSingle()
         .then((r: any) => r.data ?? null),
       t.owner_user_id
-        ? db.from("profiles").select("full_name").eq("id", t.owner_user_id).maybeSingle().then((r: any) => r.data ?? null)
+        ? db
+            .from("profiles")
+            .select("full_name")
+            .eq("id", t.owner_user_id)
+            .maybeSingle()
+            .then((r: any) => r.data ?? null)
         : Promise.resolve(null),
     ]);
 
@@ -169,39 +193,47 @@ export async function getStoreDetails(db: Db, tenantId: string): Promise<StoreDe
     .maybeSingle();
   if (error || !tenant) return null;
 
-  const [profile, subscription, membersRaw, orderStats, productsCount, publishedCount, branchesCount, auditRaw] =
-    await Promise.all([
-      getStoreProfile(db, tenantId),
-      db
-        .from("tenant_subscriptions")
-        .select("plan, status, current_period_start, current_period_end, created_at")
-        .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-        .then((r: any) => r.data ?? null),
-      db
-        .from("tenant_members")
-        .select("user_id, role, created_at")
-        .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: true })
-        .then((r: any) => r.data ?? []),
-      computeOrderStats(db, tenantId),
-      headCount(db, "products", tenantId),
-      headCount(db, "products", tenantId, (q) => q.eq("is_published", true)),
-      headCount(db, "branches", tenantId),
-      db
-        .from("tenant_audit_logs")
-        .select("id, action, actor_email, details, created_at")
-        .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: false })
-        .limit(25)
-        .then((r: any) => r.data ?? []),
-    ]);
+  const [
+    profile,
+    subscription,
+    membersRaw,
+    orderStats,
+    productsCount,
+    publishedCount,
+    branchesCount,
+    auditRaw,
+  ] = await Promise.all([
+    getStoreProfile(db, tenantId),
+    db
+      .from("tenant_subscriptions")
+      .select("plan, status, current_period_start, current_period_end, created_at")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then((r: any) => r.data ?? null),
+    db
+      .from("tenant_members")
+      .select("user_id, role, created_at")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: true })
+      .then((r: any) => r.data ?? []),
+    computeOrderStats(db, tenantId),
+    headCount(db, "products", tenantId),
+    headCount(db, "products", tenantId, (q) => q.eq("is_published", true)),
+    headCount(db, "branches", tenantId),
+    db
+      .from("tenant_audit_logs")
+      .select("id, action, actor_email, details, created_at")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: false })
+      .limit(25)
+      .then((r: any) => r.data ?? []),
+  ]);
 
   // Enrich member names (platform admin can read profiles).
   const memberIds = (membersRaw as any[]).map((m) => m.user_id);
-  let namesById: Record<string, string | null> = {};
+  const namesById: Record<string, string | null> = {};
   if (memberIds.length > 0) {
     const { data: profs } = await db.from("profiles").select("id, full_name").in("id", memberIds);
     for (const p of (profs ?? []) as any[]) namesById[p.id] = p.full_name;
@@ -238,7 +270,10 @@ export async function updateStoreStatus(
   tenantId: string,
   status: "active" | "suspended" | "pending",
 ): Promise<{ ok: boolean; message?: string }> {
-  const { error } = await db.from("tenants").update({ status, updated_at: now() }).eq("id", tenantId);
+  const { error } = await db
+    .from("tenants")
+    .update({ status, updated_at: now() })
+    .eq("id", tenantId);
   if (error) return { ok: false, message: error.message };
   return { ok: true };
 }

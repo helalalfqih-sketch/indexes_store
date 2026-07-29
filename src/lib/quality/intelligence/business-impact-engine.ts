@@ -15,7 +15,7 @@ export interface BusinessImpactAssessment {
 export function evaluateBusinessImpact(
   incidentId: string,
   routePath: string,
-  affectedUserCount: number
+  affectedUserCount: number,
 ): BusinessImpactAssessment {
   const isRevenuePath = routePath.includes("checkout") || routePath.includes("payment");
 

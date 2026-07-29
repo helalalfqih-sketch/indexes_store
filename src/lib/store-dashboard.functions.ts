@@ -68,14 +68,16 @@ export const createStoreProduct = createServerFn({ method: "POST" })
       .parse(raw),
   )
   .middleware([requireSupabaseAuth])
-  .handler(async ({ data, context }): Promise<{ success: boolean; message?: string; id?: string }> => {
-    const { supabase, userId, tenantId } = await ctxOf(context);
-    if (!(await allow(supabase, tenantId, userId, "staff"))) {
-      return { success: false, message: "غير مسموح: إدارة المنتجات تتطلب دور موظف فأعلى" };
-    }
-    const res = await svc.createStoreProduct(supabase, tenantId, data);
-    return res.ok ? { success: true, id: res.id } : { success: false, message: res.message };
-  });
+  .handler(
+    async ({ data, context }): Promise<{ success: boolean; message?: string; id?: string }> => {
+      const { supabase, userId, tenantId } = await ctxOf(context);
+      if (!(await allow(supabase, tenantId, userId, "staff"))) {
+        return { success: false, message: "غير مسموح: إدارة المنتجات تتطلب دور موظف فأعلى" };
+      }
+      const res = await svc.createStoreProduct(supabase, tenantId, data);
+      return res.ok ? { success: true, id: res.id } : { success: false, message: res.message };
+    },
+  );
 
 export const updateStoreProduct = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) =>
@@ -116,22 +118,32 @@ export const deleteStoreProduct = createServerFn({ method: "POST" })
 
 export const getStoreInventory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ movements: svc.InventoryMovement[]; lowStock: svc.StoreProduct[] }> => {
-    const { supabase, userId, tenantId } = await ctxOf(context);
-    if (!(await allow(supabase, tenantId, userId, "viewer"))) return { movements: [], lowStock: [] };
-    const [movements, lowStock] = await Promise.all([
-      svc.listInventoryMovements(supabase, tenantId),
-      svc.listStoreProducts(supabase, tenantId, { onlyLow: true }),
-    ]);
-    return { movements, lowStock };
-  });
+  .handler(
+    async ({
+      context,
+    }): Promise<{ movements: svc.InventoryMovement[]; lowStock: svc.StoreProduct[] }> => {
+      const { supabase, userId, tenantId } = await ctxOf(context);
+      if (!(await allow(supabase, tenantId, userId, "viewer")))
+        return { movements: [], lowStock: [] };
+      const [movements, lowStock] = await Promise.all([
+        svc.listInventoryMovements(supabase, tenantId),
+        svc.listStoreProducts(supabase, tenantId, { onlyLow: true }),
+      ]);
+      return { movements, lowStock };
+    },
+  );
 
 export const recordStoreInventory = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) =>
     z
       .object({
         productId: z.string().uuid(),
-        delta: z.number().int().min(-9999).max(9999).refine((v) => v !== 0, "القيمة لا يمكن أن تكون صفراً"),
+        delta: z
+          .number()
+          .int()
+          .min(-9999)
+          .max(9999)
+          .refine((v) => v !== 0, "القيمة لا يمكن أن تكون صفراً"),
         reason: z.enum(["restock", "adjustment", "damage", "return"]),
         note: z.string().trim().max(300).optional(),
       })

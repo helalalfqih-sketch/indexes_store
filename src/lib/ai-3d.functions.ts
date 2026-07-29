@@ -20,7 +20,7 @@ export const generate3DModel = createServerFn({ method: "POST" })
       try {
         const metadataRes = await fetch(
           "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
-          { headers: { "Metadata-Flavor": "Google" } }
+          { headers: { "Metadata-Flavor": "Google" } },
         );
         if (metadataRes.ok) {
           const data = (await metadataRes.json()) as { access_token: string };
@@ -33,11 +33,13 @@ export const generate3DModel = createServerFn({ method: "POST" })
 
     // إذا لم يتم توفير معرف نقطة الاتصال (Endpoint ID) أو التوكن محلياً، نتراجع للنموذج التجريبي NeilArmstrong.glb لتسهيل التطوير المحلي وعدم عرقلة الواجهة.
     if (!endpointId || !token) {
-      console.warn("Vertex AI Endpoint ID or OAuth token is not configured. Falling back to mock 3D model.");
+      console.warn(
+        "Vertex AI Endpoint ID or OAuth token is not configured. Falling back to mock 3D model.",
+      );
       // محاكاة تأخير زمني لعملية المعالجة
       await new Promise((r) => setTimeout(r, 3000));
       return {
-        modelUrl: "https://modelviewer.dev/shared-assets/models/NeilArmstrong.glb"
+        modelUrl: "https://modelviewer.dev/shared-assets/models/NeilArmstrong.glb",
       };
     }
 

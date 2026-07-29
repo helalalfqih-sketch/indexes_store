@@ -26,14 +26,15 @@ export interface OverallDelta {
 export function calculateScoreDeltas(
   currentOverallScore: number,
   currentResults: EnrichedAuditResult[],
-  previousReport?: QualityReportSummary | null
+  previousReport?: QualityReportSummary | null,
 ): OverallDelta {
   const prev = previousReport || loadLatestReport();
   const prevOverall = prev?.overallScore ?? currentOverallScore;
   const overallDiff = currentOverallScore - prevOverall;
 
   const overallSymbol = overallDiff > 0 ? "▲" : overallDiff < 0 ? "▼" : "=";
-  const overallFormatted = overallDiff > 0 ? `▲ +${overallDiff}` : overallDiff < 0 ? `▼ ${overallDiff}` : "= 0";
+  const overallFormatted =
+    overallDiff > 0 ? `▲ +${overallDiff}` : overallDiff < 0 ? `▼ ${overallDiff}` : "= 0";
 
   const auditDeltas: Record<string, AuditDelta> = {};
 

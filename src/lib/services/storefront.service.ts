@@ -55,7 +55,9 @@ export async function fetchPublishedRows(
   tenantId?: string | null,
 ): Promise<Array<{ key: string; value: unknown }> | null> {
   try {
-    let q = db.from("storefront_settings").select(tenantId ? "key, value, tenant_id" : "key, value");
+    let q = db
+      .from("storefront_settings")
+      .select(tenantId ? "key, value, tenant_id" : "key, value");
     if (tenantId) {
       q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
     }
@@ -78,7 +80,9 @@ export async function fetchRowsWithDrafts(
   tenantId?: string | null,
 ): Promise<Array<{ key: string; value: unknown; draft_value: unknown }> | null> {
   try {
-    let q = db.from("storefront_settings").select(tenantId ? "key, value, draft_value, tenant_id" : "key, value, draft_value");
+    let q = db
+      .from("storefront_settings")
+      .select(tenantId ? "key, value, draft_value, tenant_id" : "key, value, draft_value");
     if (tenantId) {
       q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
     }
@@ -228,12 +232,18 @@ export async function publishDraftKey(
     uq = scoped(uq, scope);
     const { error } = await uq;
     if (error) {
-      let uq2 = db.from("storefront_settings").update({ value: row.draft_value, updated_at: now() }).eq("key", key);
+      let uq2 = db
+        .from("storefront_settings")
+        .update({ value: row.draft_value, updated_at: now() })
+        .eq("key", key);
       uq2 = scoped(uq2, scope);
       await uq2;
     }
   } catch {
-    let uq3 = db.from("storefront_settings").update({ value: row.draft_value, updated_at: now() }).eq("key", key);
+    let uq3 = db
+      .from("storefront_settings")
+      .update({ value: row.draft_value, updated_at: now() })
+      .eq("key", key);
     uq3 = scoped(uq3, scope);
     await uq3;
   }
@@ -298,10 +308,7 @@ export async function saveLiveValue(
     const { error } = await uq;
     if (error) {
       // Retry without draft_value (column may not exist in production)
-      let uq2 = db
-        .from("storefront_settings")
-        .update({ value, updated_at: now() })
-        .eq("key", key);
+      let uq2 = db.from("storefront_settings").update({ value, updated_at: now() }).eq("key", key);
       uq2 = scoped(uq2, scope);
       const { error: e2 } = await uq2;
       if (e2) return { ok: false, message: e2.message, oldValue };
@@ -319,10 +326,7 @@ export async function saveLiveValue(
       const { error: fbErr } = await db.from("storefront_settings").insert(fbPayload);
       if (fbErr) {
         // Last resort: attempt update if row created concurrently
-        let uq = db
-          .from("storefront_settings")
-          .update({ value, updated_at: now() })
-          .eq("key", key);
+        let uq = db.from("storefront_settings").update({ value, updated_at: now() }).eq("key", key);
         uq = scoped(uq, scope);
         const { error: updErr } = await uq;
         if (updErr) return { ok: false, message: fbErr.message, oldValue };

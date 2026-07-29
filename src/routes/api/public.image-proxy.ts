@@ -23,7 +23,10 @@ export const Route = createFileRoute("/api/public/image-proxy")({
         try {
           const url = new URL(source);
           if (url.protocol !== "https:") {
-            return new Response("Invalid image URL protocol", { status: 400, headers: CORS_HEADERS });
+            return new Response("Invalid image URL protocol", {
+              status: 400,
+              headers: CORS_HEADERS,
+            });
           }
         } catch {
           return new Response("Invalid image URL format", { status: 400, headers: CORS_HEADERS });
@@ -37,9 +40,9 @@ export const Route = createFileRoute("/api/public/image-proxy")({
             headers: { accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8" },
           });
           if (!upstream.ok) {
-            return new Response("Image not available", { 
+            return new Response("Image not available", {
               status: upstream.status || 502,
-              headers: CORS_HEADERS
+              headers: CORS_HEADERS,
             });
           }
 
@@ -134,10 +137,13 @@ export const Route = createFileRoute("/api/public/image-proxy")({
             console.error("Fallback fetch also failed:", fallbackErr);
           }
 
-          return new Response("Image proxy failed: " + (err instanceof Error ? err.message : String(err)), { 
-            status: 502,
-            headers: CORS_HEADERS
-          });
+          return new Response(
+            "Image proxy failed: " + (err instanceof Error ? err.message : String(err)),
+            {
+              status: 502,
+              headers: CORS_HEADERS,
+            },
+          );
         } finally {
           clearTimeout(timeout);
         }

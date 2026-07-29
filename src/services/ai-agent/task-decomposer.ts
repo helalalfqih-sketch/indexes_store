@@ -41,7 +41,10 @@ function extractTargetDomain(prompt: string): string {
   if (p.includes("review") || p.includes("تقييم")) return "reviews";
 
   // Default slug from query
-  const words = p.replace(/[^a-z0-9\s]/gi, "").split(/\s+/).filter((w) => w.length > 3);
+  const words = p
+    .replace(/[^a-z0-9\s]/gi, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 3);
   return words[0] || "custom_feature";
 }
 
@@ -51,12 +54,21 @@ function extractTargetDomain(prompt: string): string {
 export function decomposeUserRequest(prompt: string): DecomposedTaskPlan {
   const p = prompt.toLowerCase();
   const domain = extractTargetDomain(prompt);
-  const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 14);
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[-:T.Z]/g, "")
+    .slice(0, 14);
 
   const steps: DecomposedTaskStep[] = [];
 
-  const isNewFeature = p.includes("أضف") || p.includes("أنشئ") || p.includes("add") || p.includes("create");
-  const includesDb = p.includes("جدول") || p.includes("database") || p.includes("schema") || p.includes("تخزين") || isNewFeature;
+  const isNewFeature =
+    p.includes("أضف") || p.includes("أنشئ") || p.includes("add") || p.includes("create");
+  const includesDb =
+    p.includes("جدول") ||
+    p.includes("database") ||
+    p.includes("schema") ||
+    p.includes("تخزين") ||
+    isNewFeature;
 
   // Layer 1: Database
   if (includesDb) {

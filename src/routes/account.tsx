@@ -58,14 +58,10 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
-    meta: [
-      { title: "حسابي — اندكس ستور" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ title: "حسابي — اندكس ستور" }, { name: "robots", content: "noindex, nofollow" }],
   }),
   component: AccountPage,
 });
-
 
 type TabType = "overview" | "orders" | "addresses" | "security" | "support";
 
@@ -94,7 +90,13 @@ function AccountPage() {
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [addingAddress, setAddingAddress] = useState(false);
-  const [newAddr, setNewAddr] = useState({ title: "المنزل", city: "صنعاء", address_line: "", phone: "", is_default: false });
+  const [newAddr, setNewAddr] = useState({
+    title: "المنزل",
+    city: "صنعاء",
+    address_line: "",
+    phone: "",
+    is_default: false,
+  });
 
   // Security state
   const [newPassword, setNewPassword] = useState("");
@@ -169,7 +171,13 @@ function AccountPage() {
     if (ok) {
       toast.success("تم حفظ العنوان بنجاح");
       setAddingAddress(false);
-      setNewAddr({ title: "المنزل", city: "صنعاء", address_line: "", phone: "", is_default: false });
+      setNewAddr({
+        title: "المنزل",
+        city: "صنعاء",
+        address_line: "",
+        phone: "",
+        is_default: false,
+      });
       const updated = await getUserAddresses();
       setAddresses(updated);
     } else {
@@ -231,7 +239,11 @@ function AccountPage() {
   // Loading / unauthenticated → skeleton (redirect effect handles navigation).
   if (loadingUser || !user) {
     return (
-      <div className="flex flex-col gap-5 px-4 pt-4 max-w-2xl mx-auto pb-12" dir="rtl" aria-busy="true">
+      <div
+        className="flex flex-col gap-5 px-4 pt-4 max-w-2xl mx-auto pb-12"
+        dir="rtl"
+        aria-busy="true"
+      >
         <div className="h-24 animate-pulse rounded-3xl bg-showcase-foreground/10" />
         <div className="h-10 animate-pulse rounded-xl bg-showcase-foreground/10" />
         <div className="h-40 animate-pulse rounded-2xl bg-showcase-foreground/10" />
@@ -325,7 +337,9 @@ function AccountPage() {
         <button
           onClick={() => setActiveTab("overview")}
           className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
-            activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
+            activeTab === "overview"
+              ? "border-primary text-primary"
+              : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
           <UserIcon className="h-4 w-4" />
@@ -334,7 +348,9 @@ function AccountPage() {
         <button
           onClick={() => setActiveTab("orders")}
           className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
-            activeTab === "orders" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
+            activeTab === "orders"
+              ? "border-primary text-primary"
+              : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
           <Package className="h-4 w-4" />
@@ -343,7 +359,9 @@ function AccountPage() {
         <button
           onClick={() => setActiveTab("addresses")}
           className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
-            activeTab === "addresses" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
+            activeTab === "addresses"
+              ? "border-primary text-primary"
+              : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
           <MapPin className="h-4 w-4" />
@@ -352,7 +370,9 @@ function AccountPage() {
         <button
           onClick={() => setActiveTab("security")}
           className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
-            activeTab === "security" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
+            activeTab === "security"
+              ? "border-primary text-primary"
+              : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
           <ShieldCheck className="h-4 w-4" />
@@ -361,7 +381,9 @@ function AccountPage() {
         <button
           onClick={() => setActiveTab("support")}
           className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-bold transition whitespace-nowrap ${
-            activeTab === "support" ? "border-primary text-primary" : "border-transparent text-showcase-muted hover:text-showcase-foreground"
+            activeTab === "support"
+              ? "border-primary text-primary"
+              : "border-transparent text-showcase-muted hover:text-showcase-foreground"
           }`}
         >
           <HelpCircle className="h-4 w-4" />
@@ -384,7 +406,9 @@ function AccountPage() {
                   </div>
                   <div className="text-right">
                     <span>متابعة وسجل الطلبات</span>
-                    <span className="block text-[10px] font-normal text-showcase-muted">عرض الطلبات السابقة وحالاتها الحالية</span>
+                    <span className="block text-[10px] font-normal text-showcase-muted">
+                      عرض الطلبات السابقة وحالاتها الحالية
+                    </span>
                   </div>
                 </div>
                 <span className="text-showcase-muted text-sm">‹</span>
@@ -401,7 +425,9 @@ function AccountPage() {
                   </div>
                   <div className="text-right">
                     <span>إدارة العناوين والتسليم</span>
-                    <span className="block text-[10px] font-normal text-muted-foreground">عناوين التوصيل المفضلة للطلبات</span>
+                    <span className="block text-[10px] font-normal text-muted-foreground">
+                      عناوين التوصيل المفضلة للطلبات
+                    </span>
                   </div>
                 </div>
                 <span className="text-muted-foreground text-sm">‹</span>
@@ -418,7 +444,9 @@ function AccountPage() {
                   </div>
                   <div className="text-right">
                     <span>الخصوصية وتغيير كلمة المرور</span>
-                    <span className="block text-[10px] font-normal text-showcase-muted">حماية الحساب وإدارة الجلسات</span>
+                    <span className="block text-[10px] font-normal text-showcase-muted">
+                      حماية الحساب وإدارة الجلسات
+                    </span>
                   </div>
                 </div>
                 <span className="text-showcase-muted text-sm">‹</span>
@@ -436,10 +464,7 @@ function AccountPage() {
               <Package className="h-4 w-4 text-primary" />
               طلباتي
             </h2>
-            <Link
-              to="/track"
-              className="text-[11px] font-bold text-primary hover:underline"
-            >
+            <Link to="/track" className="text-[11px] font-bold text-primary hover:underline">
               تتبع طلب كضيف ›
             </Link>
           </div>
@@ -454,7 +479,9 @@ function AccountPage() {
                 <Package className="h-6 w-6" />
               </div>
               <p className="text-sm font-bold">لا توجد طلبات سابقة</p>
-              <p className="text-xs text-showcase-muted">عند قتومك بالشراء ستظهر جميع طلباتك وحالات التوصيل هنا.</p>
+              <p className="text-xs text-showcase-muted">
+                عند قتومك بالشراء ستظهر جميع طلباتك وحالات التوصيل هنا.
+              </p>
               <Link
                 to="/"
                 className="inline-block rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-brand"
@@ -468,16 +495,25 @@ function AccountPage() {
                 const open = openOrderId === ord.id;
                 const detail = orderDetails[ord.id];
                 return (
-                  <div key={ord.id} className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-4 shadow-card space-y-2 backdrop-blur-md">
+                  <div
+                    key={ord.id}
+                    className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-4 shadow-card space-y-2 backdrop-blur-md"
+                  >
                     <div className="flex items-center justify-between border-b border-showcase-border/50 pb-2 text-xs">
                       <span className="font-mono font-bold text-primary">{ord.order_number}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusTone(ord.status)}`}>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusTone(ord.status)}`}
+                      >
                         {orderStatusLabel(ord.status)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="text-showcase-muted">التاريخ: {new Date(ord.created_at).toLocaleDateString("ar-EG")}</span>
-                      <span className="font-black text-showcase-foreground">{formatPrice(ord.total || 0)}</span>
+                      <span className="text-showcase-muted">
+                        التاريخ: {new Date(ord.created_at).toLocaleDateString("ar-EG")}
+                      </span>
+                      <span className="font-black text-showcase-foreground">
+                        {formatPrice(ord.total || 0)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-showcase-muted">
                       <span>{ord.items_count} منتج</span>
@@ -504,16 +540,20 @@ function AccountPage() {
                             </div>
 
                             {/* Order status timeline */}
-                            {(detail.status === "cancelled" || detail.status === "refunded") ? (
+                            {detail.status === "cancelled" || detail.status === "refunded" ? (
                               <div className="flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-                                {detail.status === "cancelled"
-                                  ? <XCircle className="h-4 w-4 shrink-0" />
-                                  : <RotateCcw className="h-4 w-4 shrink-0" />}
+                                {detail.status === "cancelled" ? (
+                                  <XCircle className="h-4 w-4 shrink-0" />
+                                ) : (
+                                  <RotateCcw className="h-4 w-4 shrink-0" />
+                                )}
                                 <div>
                                   <p className="font-bold">{orderStatusLabel(detail.status)}</p>
                                   {detail.history.length > 0 && (
                                     <p className="opacity-70">
-                                      {new Date(detail.history[detail.history.length - 1].created_at).toLocaleString("ar-EG")}
+                                      {new Date(
+                                        detail.history[detail.history.length - 1].created_at,
+                                      ).toLocaleString("ar-EG")}
                                     </p>
                                   )}
                                 </div>
@@ -536,7 +576,9 @@ function AccountPage() {
                                         {!isLast && (
                                           <span
                                             className={`absolute right-[7px] top-5 h-full w-0.5 ${
-                                              reachedIdx > i ? "bg-success/60" : "bg-showcase-border/40"
+                                              reachedIdx > i
+                                                ? "bg-success/60"
+                                                : "bg-showcase-border/40"
                                             }`}
                                           />
                                         )}
@@ -548,9 +590,13 @@ function AccountPage() {
                                           )}
                                         </span>
                                         <div>
-                                          <p className={`text-xs font-bold ${
-                                            reached ? "text-showcase-foreground" : "text-showcase-muted"
-                                          }`}>
+                                          <p
+                                            className={`text-xs font-bold ${
+                                              reached
+                                                ? "text-showcase-foreground"
+                                                : "text-showcase-muted"
+                                            }`}
+                                          >
                                             {orderStatusLabel(s)}
                                           </p>
                                           {date && (
@@ -582,18 +628,24 @@ function AccountPage() {
                                     </div>
                                   )}
                                   <div className="flex flex-1 flex-col">
-                                    <span className="line-clamp-1 text-xs font-bold text-showcase-foreground">{it.name}</span>
+                                    <span className="line-clamp-1 text-xs font-bold text-showcase-foreground">
+                                      {it.name}
+                                    </span>
                                     <span className="text-[11px] text-showcase-muted">
                                       {it.quantity} × {formatPrice(it.unit_price)}
                                     </span>
                                   </div>
-                                  <span className="text-xs font-black text-showcase-foreground">{formatPrice(it.total_price)}</span>
+                                  <span className="text-xs font-black text-showcase-foreground">
+                                    {formatPrice(it.total_price)}
+                                  </span>
                                 </li>
                               ))}
                             </ul>
                           </>
                         ) : (
-                          <p className="text-[11px] text-showcase-muted">تعذّر تحميل تفاصيل الطلب.</p>
+                          <p className="text-[11px] text-showcase-muted">
+                            تعذّر تحميل تفاصيل الطلب.
+                          </p>
                         )}
                       </div>
                     )}
@@ -689,12 +741,17 @@ function AccountPage() {
           ) : addresses.length === 0 ? (
             <div className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-8 text-center space-y-2 backdrop-blur-md">
               <p className="text-sm font-bold">لا توجد عناوين محجوزة</p>
-              <p className="text-xs text-showcase-muted">أضف عنوانك لتسريع عملية الشراء والتوصيل مستقبلاً.</p>
+              <p className="text-xs text-showcase-muted">
+                أضف عنوانك لتسريع عملية الشراء والتوصيل مستقبلاً.
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
               {addresses.map((a) => (
-                <div key={a.id} className="flex items-center justify-between gap-3 rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-4 shadow-card backdrop-blur-md">
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-4 shadow-card backdrop-blur-md"
+                >
                   <div className="space-y-1 text-xs">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-showcase-foreground">{a.title}</span>
@@ -743,7 +800,11 @@ function AccountPage() {
                   disabled={updatingPassword}
                   className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-brand hover:bg-primary/90 disabled:opacity-60"
                 >
-                  {updatingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {updatingPassword ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
                   تحديث كلمة المرور
                 </button>
               </div>

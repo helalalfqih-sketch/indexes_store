@@ -1,5 +1,9 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { VendorRegisterInput, VendorProfileInput, VendorSettingsInput } from '../validators/vendor';
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type {
+  VendorRegisterInput,
+  VendorProfileInput,
+  VendorSettingsInput,
+} from "../validators/vendor";
 
 type DB = SupabaseClient<any>;
 
@@ -12,9 +16,9 @@ export interface VendorDetails {
   logo_url: string | null;
   banner_url: string | null;
   description: string | null;
-  status: 'pending' | 'active' | 'suspended' | 'rejected';
+  status: "pending" | "active" | "suspended" | "rejected";
   is_featured: boolean;
-  commission_type: 'percentage' | 'fixed';
+  commission_type: "percentage" | "fixed";
   commission_rate: number;
   fixed_commission_amount: number;
   rating: number;
@@ -35,11 +39,7 @@ export interface VendorAnalytics {
  * Fetch vendor record associated with a user account.
  */
 export async function getVendorByUserId(db: DB, userId: string): Promise<VendorDetails | null> {
-  const { data, error } = await db
-    .from('vendors')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle();
+  const { data, error } = await db.from("vendors").select("*").eq("user_id", userId).maybeSingle();
 
   if (error || !data) return null;
   return data as VendorDetails;
@@ -50,10 +50,10 @@ export async function getVendorByUserId(db: DB, userId: string): Promise<VendorD
  */
 export async function getVendorBySlug(db: DB, slug: string): Promise<VendorDetails | null> {
   const { data, error } = await db
-    .from('vendors')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'active')
+    .from("vendors")
+    .select("*")
+    .eq("slug", slug)
+    .eq("status", "active")
     .maybeSingle();
 
   if (error || !data) return null;
@@ -67,32 +67,32 @@ export async function registerVendor(
   db: DB,
   userId: string,
   tenantId: string,
-  input: VendorRegisterInput
+  input: VendorRegisterInput,
 ): Promise<VendorDetails | null> {
   const { data, error } = await db
-    .from('vendors')
+    .from("vendors")
     .insert({
       tenant_id: tenantId,
       user_id: userId,
       name: input.name,
       slug: input.slug,
       description: input.description ?? null,
-      status: 'pending',
-      commission_type: 'percentage',
-      commission_rate: 10.00,
+      status: "pending",
+      commission_type: "percentage",
+      commission_rate: 10.0,
     })
-    .select('*')
+    .select("*")
     .single();
 
   if (error || !data) {
-    console.error('Error registering vendor:', error);
+    console.error("Error registering vendor:", error);
     return null;
   }
 
   const vendor = data as VendorDetails;
 
   // Initialize vendor profile
-  await db.from('vendor_profiles').insert({
+  await db.from("vendor_profiles").insert({
     vendor_id: vendor.id,
     business_type: input.business_type,
     contact_email: input.contact_email,
@@ -100,7 +100,7 @@ export async function registerVendor(
   });
 
   // Initialize vendor settings
-  await db.from('vendor_settings').insert({
+  await db.from("vendor_settings").insert({
     vendor_id: vendor.id,
     auto_accept_orders: true,
   });
@@ -113,9 +113,9 @@ export async function registerVendor(
  */
 export async function getVendorProfile(db: DB, vendorId: string) {
   const { data, error } = await db
-    .from('vendor_profiles')
-    .select('*')
-    .eq('vendor_id', vendorId)
+    .from("vendor_profiles")
+    .select("*")
+    .eq("vendor_id", vendorId)
     .maybeSingle();
 
   if (error || !data) return null;
@@ -125,23 +125,19 @@ export async function getVendorProfile(db: DB, vendorId: string) {
 /**
  * Update vendor profile & legal/bank details.
  */
-export async function updateVendorProfile(
-  db: DB,
-  vendorId: string,
-  input: VendorProfileInput
-) {
+export async function updateVendorProfile(db: DB, vendorId: string, input: VendorProfileInput) {
   const { data, error } = await db
-    .from('vendor_profiles')
+    .from("vendor_profiles")
     .upsert({
       vendor_id: vendorId,
       ...input,
       updated_at: new Date().toISOString(),
     })
-    .select('*')
+    .select("*")
     .single();
 
   if (error) {
-    console.error('Error updating vendor profile:', error);
+    console.error("Error updating vendor profile:", error);
     return null;
   }
   return data;
@@ -152,9 +148,12 @@ export async function updateVendorProfile(
  */
 export async function getVendorAnalytics(db: DB, vendorId: string): Promise<VendorAnalytics> {
   const [ordersRes, productsRes, commissionsRes] = await Promise.all([
-    db.from('vendor_orders').select('subtotal, net_amount').eq('vendor_id', vendorId),
-    db.from('products').select('id', { count: 'exact' }).eq('vendor_id', vendorId),
-    db.from('vendor_commissions').select('commission_amount, payout_status').eq('vendor_id', vendorId),
+    db.from("vendor_orders").select("subtotal, net_amount").eq("vendor_id", vendorId),
+    db.from("products").select("id", { count: "exact" }).eq("vendor_id", vendorId),
+    db
+      .from("vendor_commissions")
+      .select("commission_amount, payout_status")
+      .eq("vendor_id", vendorId),
   ]);
 
   const orders = ordersRes.data ?? [];
@@ -164,7 +163,7 @@ export async function getVendorAnalytics(db: DB, vendorId: string): Promise<Vend
 
   const commissions = commissionsRes.data ?? [];
   const pendingCommission = commissions
-    .filter((c) => c.payout_status === 'pending')
+    .filter((c) => c.payout_status === "pending")
     .reduce((sum, c) => sum + Number(c.commission_amount ?? 0), 0);
 
   return {
@@ -181,9 +180,9 @@ export async function getVendorAnalytics(db: DB, vendorId: string): Promise<Vend
  */
 export async function listAllVendorsForAdmin(db: DB) {
   const { data, error } = await db
-    .from('vendors')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .from("vendors")
+    .select("*")
+    .order("created_at", { ascending: false });
 
   if (error || !data) return [];
   return data as VendorDetails[];
@@ -195,9 +194,9 @@ export async function listAllVendorsForAdmin(db: DB) {
 export async function updateVendorStatusByAdmin(
   db: DB,
   vendorId: string,
-  status: 'pending' | 'active' | 'suspended' | 'rejected',
+  status: "pending" | "active" | "suspended" | "rejected",
   commissionRate?: number,
-  commissionType?: 'percentage' | 'fixed'
+  commissionType?: "percentage" | "fixed",
 ) {
   const updatePayload: Record<string, any> = {
     status,
@@ -207,14 +206,14 @@ export async function updateVendorStatusByAdmin(
   if (commissionType !== undefined) updatePayload.commission_type = commissionType;
 
   const { data, error } = await db
-    .from('vendors')
+    .from("vendors")
     .update(updatePayload)
-    .eq('id', vendorId)
-    .select('*')
+    .eq("id", vendorId)
+    .select("*")
     .single();
 
   if (error) {
-    console.error('Error updating vendor status:', error);
+    console.error("Error updating vendor status:", error);
     return null;
   }
   return data as VendorDetails;

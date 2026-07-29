@@ -53,7 +53,14 @@ export async function listStoreProducts(
 export async function createStoreProduct(
   db: Db,
   tenantId: string,
-  input: { name: string; price: number; stock: number; image?: string | null; is_published: boolean; description?: string },
+  input: {
+    name: string;
+    price: number;
+    stock: number;
+    image?: string | null;
+    is_published: boolean;
+    description?: string;
+  },
 ): Promise<{ ok: boolean; message?: string; id?: string }> {
   const slugBase = input.name
     .trim()

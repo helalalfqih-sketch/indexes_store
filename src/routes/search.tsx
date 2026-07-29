@@ -56,9 +56,9 @@ function SearchPage() {
   const [maxPrice, setMaxPrice] = useState<number | undefined>(searchParams.maxPrice);
   const [dealsOnly, setDealsOnly] = useState<boolean>(!!searchParams.dealsOnly);
   const [inStockOnly, setInStockOnly] = useState<boolean>(!!searchParams.inStockOnly);
-  const [sortBy, setSortBy] = useState<"bestselling" | "latest" | "price_asc" | "price_desc" | "rating">(
-    searchParams.sortBy || "bestselling",
-  );
+  const [sortBy, setSortBy] = useState<
+    "bestselling" | "latest" | "price_asc" | "price_desc" | "rating"
+  >(searchParams.sortBy || "bestselling");
 
   const [results, setResults] = useState<LegacyProductShape[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +73,9 @@ function SearchPage() {
 
   // Fetch Categories for Filter
   useEffect(() => {
-    fetchCategories().then((cats) => setCategoriesList(cats)).catch(() => {});
+    fetchCategories()
+      .then((cats) => setCategoriesList(cats))
+      .catch(() => {});
   }, []);
 
   // Sync state with URL params
@@ -168,7 +170,9 @@ function SearchPage() {
         {/* Live Auto-Suggestions Dropdown */}
         {showSuggestions && suggestions.length > 0 && (
           <div className="absolute inset-x-0 top-full mt-2 z-50 rounded-2xl border border-white/10 bg-[#0c1a29]/95 p-3 shadow-2xl backdrop-blur-xl space-y-2">
-            <div className="text-[10px] font-bold text-muted-foreground px-2">اقتراحات البحث الذكي:</div>
+            <div className="text-[10px] font-bold text-muted-foreground px-2">
+              اقتراحات البحث الذكي:
+            </div>
             {suggestions.map((s) => (
               <div
                 key={s.id}
@@ -177,7 +181,11 @@ function SearchPage() {
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   {s.image ? (
-                    <img src={s.image} alt="" className="h-8 w-8 rounded-lg object-cover bg-black" />
+                    <img
+                      src={s.image}
+                      alt=""
+                      className="h-8 w-8 rounded-lg object-cover bg-black"
+                    />
                   ) : (
                     <SearchIcon className="h-4 w-4 text-neon" />
                   )}
@@ -227,11 +235,21 @@ function SearchPage() {
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-transparent text-foreground font-bold outline-none text-xs"
             >
-              <option value="bestselling" className="bg-slate-900 text-white">الأكثر مبيعاً</option>
-              <option value="latest" className="bg-slate-900 text-white">الأحدث</option>
-              <option value="price_asc" className="bg-slate-900 text-white">السعر: الأقل إلى الأعلى</option>
-              <option value="price_desc" className="bg-slate-900 text-white">السعر: الأعلى إلى الأقل</option>
-              <option value="rating" className="bg-slate-900 text-white">الأعلى تقييماً</option>
+              <option value="bestselling" className="bg-slate-900 text-white">
+                الأكثر مبيعاً
+              </option>
+              <option value="latest" className="bg-slate-900 text-white">
+                الأحدث
+              </option>
+              <option value="price_asc" className="bg-slate-900 text-white">
+                السعر: الأقل إلى الأعلى
+              </option>
+              <option value="price_desc" className="bg-slate-900 text-white">
+                السعر: الأعلى إلى الأقل
+              </option>
+              <option value="rating" className="bg-slate-900 text-white">
+                الأعلى تقييماً
+              </option>
             </select>
           </div>
         </div>
@@ -239,7 +257,10 @@ function SearchPage() {
 
       {/* Filter Drawer / Bar (Collapsible) */}
       {showFilterDrawer && (
-        <div className="rounded-2xl border border-primary/30 bg-surface/90 p-4 space-y-4 shadow-lg text-xs" dir="rtl">
+        <div
+          className="rounded-2xl border border-primary/30 bg-surface/90 p-4 space-y-4 shadow-lg text-xs"
+          dir="rtl"
+        >
           <div className="flex items-center justify-between border-b border-border/50 pb-2">
             <h4 className="font-black text-sm flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4 text-primary" /> فلاتر البحث المتقدم
@@ -338,7 +359,9 @@ function SearchPage() {
           <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-showcase-foreground/10 text-showcase-muted">
             <PackageX className="h-7 w-7" />
           </div>
-          <p className="text-base font-black text-showcase-foreground">لم يتم العثور على منتجات مطابقة</p>
+          <p className="text-base font-black text-showcase-foreground">
+            لم يتم العثور على منتجات مطابقة
+          </p>
           <p className="text-xs text-showcase-muted">
             تأكد من صحة كلمة البحث، أو جرب البحث بتصنيف آخر أو تغيير الفلاتر.
           </p>

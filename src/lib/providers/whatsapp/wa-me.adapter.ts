@@ -34,7 +34,11 @@ export const waMeAdapter: WhatsAppProvider = {
   },
 
   buildLink(phone: string, message: string): string {
-    const normalized = phone.startsWith("+") ? phone.slice(1) : phone.startsWith("967") ? phone : `967${phone}`;
+    const normalized = phone.startsWith("+")
+      ? phone.slice(1)
+      : phone.startsWith("967")
+        ? phone
+        : `967${phone}`;
     return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
   },
 

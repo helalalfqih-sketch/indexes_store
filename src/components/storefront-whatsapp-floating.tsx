@@ -47,7 +47,13 @@ export function MobileCommerceBottomBar() {
     { to: "/", label: "الرئيسية", icon: Home },
     { to: "/search", label: "البحث", icon: Search, event: "click_search" },
     { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count },
-    { isWhatsApp: true, href: waHref, label: "واتساب", icon: MessageCircle, event: "click_whatsapp" },
+    {
+      isWhatsApp: true,
+      href: waHref,
+      label: "واتساب",
+      icon: MessageCircle,
+      event: "click_whatsapp",
+    },
     { to: "/account", label: "حسابي", icon: User },
   ];
 

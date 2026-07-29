@@ -36,9 +36,7 @@ export const useCart = create<CartState>()(
           const existing = s.items.find((i) => i.productId === p.id);
           if (existing) {
             return {
-              items: s.items.map((i) =>
-                i.productId === p.id ? { ...i, qty: i.qty + qty } : i,
-              ),
+              items: s.items.map((i) => (i.productId === p.id ? { ...i, qty: i.qty + qty } : i)),
             };
           }
           return {

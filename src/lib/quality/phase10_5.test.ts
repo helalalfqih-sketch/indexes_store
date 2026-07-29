@@ -1,7 +1,10 @@
 /**
  * Phase 10.5 Verification Test Suite — Autonomous Approval Bridge & Execution Orchestrator Connection
  */
-import { approveAndExecuteTask, evaluateAutoApproveGate } from "../../services/ai-agent/approval.controller";
+import {
+  approveAndExecuteTask,
+  evaluateAutoApproveGate,
+} from "../../services/ai-agent/approval.controller";
 
 async function runPhase105Tests() {
   console.log("==========================================");
@@ -10,8 +13,14 @@ async function runPhase105Tests() {
 
   // Test 1: Approve and Execute Task Bridge
   console.log("⚙️ [1/3] Testing approveAndExecuteTask Bridge Dispatcher...");
-  const dispatchRes = await approveAndExecuteTask("TASK-BRIDGE-900", "SESS-BRIDGE-900", "human.admin");
-  console.log(`✅ Dispatch Result: Success=${dispatchRes.success} | State=${dispatchRes.record.state} | Notes="${dispatchRes.record.notes}"`);
+  const dispatchRes = await approveAndExecuteTask(
+    "TASK-BRIDGE-900",
+    "SESS-BRIDGE-900",
+    "human.admin",
+  );
+  console.log(
+    `✅ Dispatch Result: Success=${dispatchRes.success} | State=${dispatchRes.record.state} | Notes="${dispatchRes.record.notes}"`,
+  );
   if (!dispatchRes.success || dispatchRes.record.state !== "APPROVED") {
     throw new Error("❌ approveAndExecuteTask bridge test failed");
   }
@@ -25,8 +34,16 @@ async function runPhase105Tests() {
 
   // Test 3: Auto-Approval Gate Policy Evaluation
   console.log("⚙️ [3/3] Testing Auto-Approve Gate Policy Evaluation...");
-  const gateRes = await evaluateAutoApproveGate("TASK-AUTO-BRIDGE", "SESS-AUTO-BRIDGE", "AUTO", 92, "LOW");
-  console.log(`✅ Auto-Approve Gate: AutoApproved=${gateRes.autoApproved} | State=${gateRes.record.state}`);
+  const gateRes = await evaluateAutoApproveGate(
+    "TASK-AUTO-BRIDGE",
+    "SESS-AUTO-BRIDGE",
+    "AUTO",
+    92,
+    "LOW",
+  );
+  console.log(
+    `✅ Auto-Approve Gate: AutoApproved=${gateRes.autoApproved} | State=${gateRes.record.state}`,
+  );
   if (!gateRes.autoApproved || gateRes.record.state !== "APPROVED") {
     throw new Error("❌ Auto-Approve Gate Policy test failed");
   }

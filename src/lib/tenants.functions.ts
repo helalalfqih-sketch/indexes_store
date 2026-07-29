@@ -70,7 +70,10 @@ export const createTenant = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) =>
     z
       .object({
-        slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
+        slug: z
+          .string()
+          .min(2)
+          .regex(/^[a-z0-9-]+$/),
         name: z.string().min(1),
         owner_user_id: z.string().uuid().nullable().optional(),
         plan: z.enum(["free", "pro", "enterprise"]).optional(),
@@ -85,9 +88,7 @@ export const createTenant = createServerFn({ method: "POST" })
 export const updateTenantPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) =>
-    z
-      .object({ id: z.string().uuid(), plan: z.enum(["free", "pro", "enterprise"]) })
-      .parse(raw),
+    z.object({ id: z.string().uuid(), plan: z.enum(["free", "pro", "enterprise"]) }).parse(raw),
   )
   .handler(async ({ data, context }) => {
     await assertPlatformAdmin(context);

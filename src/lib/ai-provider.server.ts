@@ -98,7 +98,12 @@ export function validateProviderModel(provider: string, rawModelName?: string | 
   return model || "gemini-2.5-flash";
 }
 
-export function createModelFromConfig(provider: AIProviderType | string, apiKey: string | null, rawModelName: string, baseUrl?: string | null) {
+export function createModelFromConfig(
+  provider: AIProviderType | string,
+  apiKey: string | null,
+  rawModelName: string,
+  baseUrl?: string | null,
+) {
   const modelName = validateProviderModel(provider, rawModelName);
   if (provider === "lovable") {
     if (!apiKey) throw new Error("Lovable API Key is required");
@@ -140,7 +145,7 @@ export function createModelFromConfig(provider: AIProviderType | string, apiKey:
   }
 
   if (provider === "vertex") {
-    let raw = apiKey || process.env.VERTEX_PROJECT_ID || process.env.GOOGLE_VERTEX_PROJECT;
+    const raw = apiKey || process.env.VERTEX_PROJECT_ID || process.env.GOOGLE_VERTEX_PROJECT;
     let project = "smartcontentcreator-d49f2";
     let credentials: any = undefined;
 
@@ -178,7 +183,9 @@ export function createModelFromConfig(provider: AIProviderType | string, apiKey:
     }
 
     const location = process.env.VERTEX_LOCATION || "us-central1";
-    console.log(`[AI_AGENT] Provider: vertex | Model: ${modelName} | Project: ${project} | Location: ${location}`);
+    console.log(
+      `[AI_AGENT] Provider: vertex | Model: ${modelName} | Project: ${project} | Location: ${location}`,
+    );
 
     const vertex = createVertex({
       location,
@@ -195,7 +202,10 @@ export function createModelFromConfig(provider: AIProviderType | string, apiKey:
 // 1. Core Provider Resolver (Database priority -> Env fallback)
 // ──────────────────────────────────────────────────────────────
 
-export async function resolveActiveAIProvider(options?: { tenantId?: string | null; providerId?: string }): Promise<ResolvedAIProvider | null> {
+export async function resolveActiveAIProvider(options?: {
+  tenantId?: string | null;
+  providerId?: string;
+}): Promise<ResolvedAIProvider | null> {
   try {
     const tenantId = options?.tenantId || null;
 
@@ -224,8 +234,15 @@ export async function resolveActiveAIProvider(options?: { tenantId?: string | nu
       for (const config of sorted as unknown as AIProviderConfig[]) {
         try {
           const rawKey = decryptApiKey(config.api_key);
-          const model = createModelFromConfig(config.provider, rawKey, config.model, config.base_url);
-          console.log(`[AI_PROVIDER_RESOLVED] Using database provider: ${config.provider} (${config.model})`);
+          const model = createModelFromConfig(
+            config.provider,
+            rawKey,
+            config.model,
+            config.base_url,
+          );
+          console.log(
+            `[AI_PROVIDER_RESOLVED] Using database provider: ${config.provider} (${config.model})`,
+          );
           return {
             model,
             provider: config.provider,
@@ -255,15 +272,18 @@ export async function resolveActiveAIProvider(options?: { tenantId?: string | nu
       const project = creds.project_id || vertexProject || "smartcontentcreator-d49f2";
       const location = process.env.VERTEX_LOCATION || "us-central1";
       const targetModel = "gemini-2.5-flash";
-      const googleAuthOptions = creds.client_email && creds.private_key
-        ? { credentials: { client_email: creds.client_email, private_key: creds.private_key } }
-        : undefined;
+      const googleAuthOptions =
+        creds.client_email && creds.private_key
+          ? { credentials: { client_email: creds.client_email, private_key: creds.private_key } }
+          : undefined;
       const vertex = createVertex({
         location,
         project,
         googleAuthOptions,
       });
-      console.log(`[AI_AGENT] Provider: vertex | Model: ${targetModel} | Project: ${project} | Location: ${location}`);
+      console.log(
+        `[AI_AGENT] Provider: vertex | Model: ${targetModel} | Project: ${project} | Location: ${location}`,
+      );
       return {
         model: vertex(targetModel),
         provider: "vertex",
@@ -304,7 +324,9 @@ export async function resolveActiveAIProvider(options?: { tenantId?: string | nu
       location,
       project: vertexProject,
     });
-    console.log(`[AI_AGENT] Provider: vertex | Model: ${targetModel} | Project: ${vertexProject} | Location: ${location}`);
+    console.log(
+      `[AI_AGENT] Provider: vertex | Model: ${targetModel} | Project: ${vertexProject} | Location: ${location}`,
+    );
     return {
       model: vertex(targetModel),
       provider: "vertex",
@@ -325,7 +347,7 @@ export const listAIProvidersFn = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const db = (context as any).supabase;
     const tenantId = await resolveTenantId(db, { userId: (context as any)?.userId });
-    
+
     const { data, error } = await db
       .from("ai_provider_configs" as any)
       .select("*")
@@ -333,7 +355,11 @@ export const listAIProvidersFn = createServerFn({ method: "GET" })
 
     if (error) {
       // If table doesn't exist yet, return clean empty list
-      if (error.code === "42P01" || error.message?.includes("does not exist") || error.message?.includes("schema cache")) {
+      if (
+        error.code === "42P01" ||
+        error.message?.includes("does not exist") ||
+        error.message?.includes("schema cache")
+      ) {
         return [];
       }
       throw new Error(error.message);
@@ -364,7 +390,9 @@ export const saveAIProviderFn = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const modelToSave = validateProviderModel(data.provider, data.model);
     const db = getSafeDb(context);
-    const tenantId = data.is_global ? null : await resolveTenantId(db, { userId: (context as any)?.userId });
+    const tenantId = data.is_global
+      ? null
+      : await resolveTenantId(db, { userId: (context as any)?.userId });
 
     let encryptedKey = null;
     if (data.api_key && !data.api_key.startsWith("••••")) {
@@ -475,15 +503,17 @@ export const testAIConnectionFn = createServerFn({ method: "POST" })
         }
       }
 
-      const modelsToTry = Array.from(new Set([
-        data.model,
-        "gemini-1.5-flash",
-        "gemini-2.0-flash-001",
-        "gemini-1.5-flash-002",
-        "gemini-2.0-flash-exp",
-        "gemini-1.5-pro",
-        "gemini-2.0-flash",
-      ]));
+      const modelsToTry = Array.from(
+        new Set([
+          data.model,
+          "gemini-1.5-flash",
+          "gemini-2.0-flash-001",
+          "gemini-1.5-flash-002",
+          "gemini-2.0-flash-exp",
+          "gemini-1.5-pro",
+          "gemini-2.0-flash",
+        ]),
+      );
 
       let lastErr: any = null;
       for (const mName of modelsToTry) {
@@ -504,7 +534,9 @@ export const testAIConnectionFn = createServerFn({ method: "POST" })
           lastErr = err;
           // If rate limit / quota / 429 / 404 model not found error, try next fallback model
           if (/quota|rate|429|limit|not found|was not found/i.test(err?.message || "")) {
-            console.warn(`[AI_TEST_FALLBACK] Model ${mName} failed (${err?.message}), trying next fallback...`);
+            console.warn(
+              `[AI_TEST_FALLBACK] Model ${mName} failed (${err?.message}), trying next fallback...`,
+            );
             continue;
           }
           throw err;

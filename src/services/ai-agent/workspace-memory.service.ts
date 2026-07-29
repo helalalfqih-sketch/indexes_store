@@ -125,7 +125,9 @@ export async function buildRealKnowledgeGraph(tenantId: string): Promise<Workspa
 /**
  * Get or load knowledge graph for a tenant
  */
-export async function getWorkspaceKnowledgeGraph(tenantId: string): Promise<WorkspaceKnowledgeGraph> {
+export async function getWorkspaceKnowledgeGraph(
+  tenantId: string,
+): Promise<WorkspaceKnowledgeGraph> {
   if (memoryCache[tenantId]) {
     return memoryCache[tenantId];
   }

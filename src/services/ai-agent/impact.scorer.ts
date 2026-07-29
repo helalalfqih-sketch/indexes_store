@@ -30,7 +30,9 @@ export async function calculateImpactScore(targetFiles: string[]): Promise<Impac
   const hasDatabaseChange = analysis.affectedDatabaseTables.length > 0;
   if (hasDatabaseChange) {
     score += 25;
-    reasons.push(`تغييرات مرتقبة على جداول قواعد البيانات: ${analysis.affectedDatabaseTables.join(", ")}`);
+    reasons.push(
+      `تغييرات مرتقبة على جداول قواعد البيانات: ${analysis.affectedDatabaseTables.join(", ")}`,
+    );
   }
 
   // Security check: Auth, RBAC, Policy, Migrations

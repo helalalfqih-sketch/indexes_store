@@ -22,7 +22,10 @@ export function GleamAccordionSidebar({
   const [activeTab, setActiveTab] = useState<"explorer" | "sessions" | "context">("explorer");
 
   return (
-    <div className="w-full flex flex-col h-full bg-[#121215]/95 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl font-sans" dir="rtl">
+    <div
+      className="w-full flex flex-col h-full bg-[#121215]/95 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl font-sans"
+      dir="rtl"
+    >
       {/* Sidebar Header Tabs */}
       <div className="flex items-center border-b border-zinc-800/80 bg-[#18181c] p-1.5 gap-1 text-[11px] font-bold text-zinc-400">
         <button
@@ -75,10 +78,7 @@ export function GleamAccordionSidebar({
               <span className="text-[10px] text-zinc-500 font-mono">Workspace</span>
             </div>
             <div className="rounded-xl border border-zinc-800/60 bg-[#0a0a0c] p-2">
-              <FileExplorer
-                activeFilePath={activeFilePath}
-                onSelectFile={onSelectFile}
-              />
+              <FileExplorer activeFilePath={activeFilePath} onSelectFile={onSelectFile} />
             </div>
           </div>
         )}
@@ -90,7 +90,9 @@ export function GleamAccordionSidebar({
               <span className="text-[10px] text-violet-400 font-bold">{sessions.length} نشطة</span>
             </div>
             {sessions.length === 0 ? (
-              <div className="p-4 text-center text-zinc-500 text-[11px]">لا توجد جلسات مسجلة حالياً</div>
+              <div className="p-4 text-center text-zinc-500 text-[11px]">
+                لا توجد جلسات مسجلة حالياً
+              </div>
             ) : (
               <div className="space-y-1.5 max-h-[500px] overflow-y-auto pr-1">
                 {sessions.map((sess: any) => (
@@ -107,7 +109,9 @@ export function GleamAccordionSidebar({
                     <div className="truncate text-[11px] font-medium">{sess.title}</div>
                     <div className="text-[10px] text-zinc-500 mt-0.5 flex items-center justify-between">
                       <span className="font-mono">{sess.id.slice(0, 8)}</span>
-                      <span>{sess.createdAt ? new Date(sess.createdAt).toLocaleDateString("ar-SA") : ""}</span>
+                      <span>
+                        {sess.createdAt ? new Date(sess.createdAt).toLocaleDateString("ar-SA") : ""}
+                      </span>
                     </div>
                   </button>
                 ))}
@@ -125,7 +129,9 @@ export function GleamAccordionSidebar({
                   {pendingTask?.taskId || "TASK-027"}
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed">تحسين واستعادة نظام التطوير الذاتي والتفاعل البرمجي المباشر</p>
+              <p className="text-[11px] text-zinc-400 leading-relaxed">
+                تحسين واستعادة نظام التطوير الذاتي والتفاعل البرمجي المباشر
+              </p>
               <div className="flex items-center gap-1.5 pt-1">
                 <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold flex items-center gap-1 border border-emerald-500/30">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> متكامل
@@ -138,4 +144,3 @@ export function GleamAccordionSidebar({
     </div>
   );
 }
-

@@ -31,10 +31,13 @@ const fixPatternMemory: HistoricalFixPattern[] = [
   },
 ];
 
-export function findMatchingFixPattern(incidentType: string, targetComponent: string): HistoricalFixPattern | null {
+export function findMatchingFixPattern(
+  incidentType: string,
+  targetComponent: string,
+): HistoricalFixPattern | null {
   return (
     fixPatternMemory.find(
-      (p) => p.incidentType === incidentType && p.targetComponent === targetComponent
+      (p) => p.incidentType === incidentType && p.targetComponent === targetComponent,
     ) || null
   );
 }

@@ -36,31 +36,47 @@ export type AppPermission =
 
 const ROLE_PERMISSIONS_MATRIX: Record<RoleType, AppPermission[]> = {
   owner: [
-    "view_products", "create_products", "edit_products", "delete_products",
-    "view_orders", "update_order_status", "refund_orders",
-    "manage_store_settings", "manage_payment", "manage_shipping",
-    "use_ai_agent", "approve_ai_changes", "execute_ai_tasks",
+    "view_products",
+    "create_products",
+    "edit_products",
+    "delete_products",
+    "view_orders",
+    "update_order_status",
+    "refund_orders",
+    "manage_store_settings",
+    "manage_payment",
+    "manage_shipping",
+    "use_ai_agent",
+    "approve_ai_changes",
+    "execute_ai_tasks",
   ],
   admin: [
-    "view_products", "create_products", "edit_products", "delete_products",
-    "view_orders", "update_order_status", "refund_orders",
-    "manage_store_settings", "manage_payment", "manage_shipping",
-    "use_ai_agent", "approve_ai_changes", "execute_ai_tasks",
+    "view_products",
+    "create_products",
+    "edit_products",
+    "delete_products",
+    "view_orders",
+    "update_order_status",
+    "refund_orders",
+    "manage_store_settings",
+    "manage_payment",
+    "manage_shipping",
+    "use_ai_agent",
+    "approve_ai_changes",
+    "execute_ai_tasks",
   ],
   manager: [
-    "view_products", "create_products", "edit_products",
-    "view_orders", "update_order_status",
-    "manage_store_settings", "manage_shipping",
+    "view_products",
+    "create_products",
+    "edit_products",
+    "view_orders",
+    "update_order_status",
+    "manage_store_settings",
+    "manage_shipping",
     "use_ai_agent",
   ],
-  staff: [
-    "view_products", "edit_products",
-    "view_orders", "update_order_status",
-  ],
-  viewer: [
-    "view_products",
-    "view_orders",
-  ],
+  staff: ["view_products", "edit_products", "view_orders", "update_order_status"],
+  viewer: ["view_products", "view_orders"],
   customer: [],
 };
 
@@ -92,12 +108,11 @@ export async function enforcePermission(
   }
 
   // Resolve User Roles
-  const { data: roleRows } = await db
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
+  const { data: roleRows } = await db.from("user_roles").select("role").eq("user_id", userId);
 
-  const rawRoles: string[] = ((roleRows ?? []) as { role: string }[]).map((r) => r.role.toLowerCase());
+  const rawRoles: string[] = ((roleRows ?? []) as { role: string }[]).map((r) =>
+    r.role.toLowerCase(),
+  );
 
   // Default role resolution
   let userRole: RoleType = "customer";

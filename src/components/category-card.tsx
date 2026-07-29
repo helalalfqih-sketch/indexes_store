@@ -5,18 +5,20 @@ import { OptimizedImage } from "@/components/optimized-image";
 import type { LegacyCategoryShape } from "@/lib/data-adapter";
 
 export interface CategoryCardProps {
-  category: LegacyCategoryShape | {
-    id: string;
-    slug?: string;
-    name: string;
-    description?: string;
-    imageUrl?: string;
-    image_url?: string;
-    products_count?: number;
-    count?: number;
-    badge?: string;
-    is_new?: boolean;
-  };
+  category:
+    | LegacyCategoryShape
+    | {
+        id: string;
+        slug?: string;
+        name: string;
+        description?: string;
+        imageUrl?: string;
+        image_url?: string;
+        products_count?: number;
+        count?: number;
+        badge?: string;
+        is_new?: boolean;
+      };
 }
 
 export function CategoryCard({ category }: CategoryCardProps) {

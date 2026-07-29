@@ -82,20 +82,15 @@ function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>(DEMO_REVIEWS);
   const [filter, setFilter] = useState<"all" | Review["status"]>("all");
 
-  const filtered =
-    filter === "all" ? reviews : reviews.filter((r) => r.status === filter);
+  const filtered = filter === "all" ? reviews : reviews.filter((r) => r.status === filter);
 
   const approve = (id: string) => {
-    setReviews((rs) =>
-      rs.map((r) => (r.id === id ? { ...r, status: "approved" as const } : r)),
-    );
+    setReviews((rs) => rs.map((r) => (r.id === id ? { ...r, status: "approved" as const } : r)));
     toast.success("تمت الموافقة على التقييم");
   };
 
   const reject = (id: string) => {
-    setReviews((rs) =>
-      rs.map((r) => (r.id === id ? { ...r, status: "rejected" as const } : r)),
-    );
+    setReviews((rs) => rs.map((r) => (r.id === id ? { ...r, status: "rejected" as const } : r)));
     toast.success("تم رفض التقييم");
   };
 
@@ -164,21 +159,18 @@ function ReviewsPage() {
           </div>
         ) : (
           filtered.map((r) => (
-            <div
-              key={r.id}
-              className="rounded-2xl border border-border bg-surface p-4 space-y-3"
-            >
+            <div key={r.id} className="rounded-2xl border border-border bg-surface p-4 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-bold">{r.customer_name}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[r.status]}`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[r.status]}`}
+                    >
                       {STATUS_LABELS[r.status]}
                     </span>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {r.product_name}
-                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{r.product_name}</div>
                   <div className="flex items-center gap-0.5 mt-1">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star

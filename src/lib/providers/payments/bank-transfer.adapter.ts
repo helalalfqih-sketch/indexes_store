@@ -10,8 +10,7 @@ export const bankTransferAdapter: PaymentProvider = {
     // TODO: return dynamic bank account details from system settings
     return {
       kind: "manual",
-      instructions:
-        "يرجى تحويل المبلغ إلى الحساب البنكي المخصص وإرسال إثبات التحويل عبر واتساب.",
+      instructions: "يرجى تحويل المبلغ إلى الحساب البنكي المخصص وإرسال إثبات التحويل عبر واتساب.",
       status: "unpaid",
     };
   },

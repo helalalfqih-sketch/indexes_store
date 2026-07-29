@@ -85,9 +85,7 @@ function PaymentsPage() {
   const [editing, setEditing] = useState<string | null>(null);
 
   const toggle = (id: string) =>
-    setMethods((ms) =>
-      ms.map((m) => (m.id === id ? { ...m, is_active: !m.is_active } : m)),
-    );
+    setMethods((ms) => ms.map((m) => (m.id === id ? { ...m, is_active: !m.is_active } : m)));
 
   const update = (id: string, field: keyof PaymentMethod, value: string | boolean) =>
     setMethods((ms) => ms.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
@@ -105,9 +103,7 @@ function PaymentsPage() {
             <CreditCard className="h-6 w-6 text-primary" />
             طرق الدفع
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {activeCount} طريقة دفع نشطة
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">{activeCount} طريقة دفع نشطة</p>
         </div>
         <button
           onClick={saveAll}
@@ -188,8 +184,8 @@ function PaymentsPage() {
       <div className="rounded-2xl border border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground flex items-start gap-2">
         <Info className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
         <span>
-          التعليمات والتفاصيل المُدخلة ستظهر للعملاء في صفحة السلة عند اختيار طريقة الدفع.
-          تأكد من دقة بيانات الحسابات قبل الحفظ.
+          التعليمات والتفاصيل المُدخلة ستظهر للعملاء في صفحة السلة عند اختيار طريقة الدفع. تأكد من
+          دقة بيانات الحسابات قبل الحفظ.
         </span>
       </div>
     </div>
