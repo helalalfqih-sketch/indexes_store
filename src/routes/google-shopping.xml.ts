@@ -44,7 +44,7 @@ function buildProductItem(p: any, baseUrl: string): string {
 
   const sku = xmlEscape(p.sku || p.id);
   const mpn = xmlEscape(p.mpn || p.sku || p.id);
-  
+
   // GTIN resolution (explicit fields take priority over barcode, no fallback to id)
   const gtinValue = p.gtin14 || p.gtin13 || p.gtin12 || p.gtin8 || p.barcode || null;
   const gtinField = gtinValue ? `    <g:gtin>${xmlEscape(gtinValue)}</g:gtin>\n` : "";
@@ -81,9 +81,7 @@ ${gtinField}    <g:product_type>${xmlEscape(p.categoryId || "عام")}</g:produc
   </item>`;
 }
 
-// @ts-ignore — Route registered after vite build generates routeTree.gen.ts
-export const Route = createFileRoute("/google-shopping/xml")({
-
+export const Route = createFileRoute("/google-shopping.xml")({
   server: {
     handlers: {
       GET: async ({ request }) => {

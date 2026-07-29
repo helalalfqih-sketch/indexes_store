@@ -27,9 +27,7 @@ function urlEntry(loc: string, opts?: { lastmod?: string; changefreq?: string; p
   </url>`;
 }
 
-// @ts-ignore — Route registered after vite build generates routeTree.gen.ts
-export const Route = createFileRoute("/sitemap/xml")({
-
+export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async ({ request }) => {
@@ -63,7 +61,7 @@ export const Route = createFileRoute("/sitemap/xml")({
             lastmod: today,
             changefreq: "weekly",
             priority: "0.8",
-          })
+          }),
         );
 
         const productPages = productList.map((p) =>
@@ -71,7 +69,7 @@ export const Route = createFileRoute("/sitemap/xml")({
             lastmod: today,
             changefreq: "weekly",
             priority: "0.9",
-          })
+          }),
         );
 
         const allEntries = [...staticPages, ...categoryPages, ...productPages].join("\n");
