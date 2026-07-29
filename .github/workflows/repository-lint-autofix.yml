@@ -1,0 +1,91 @@
+name: Repository Lint Autofix
+
+on:
+  push:
+    branches:
+      - fix/p0-security-critical-clean
+    paths:
+      - .github/workflows/repository-lint-autofix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/p0-security-critical-clean
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply safe ESLint and Prettier fixes
+        shell: bash
+        run: |
+          set +e
+          npm run lint -- --fix
+          echo "autofix_exit_code=$?" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Generate residual lint report
+        shell: bash
+        run: |
+          set +e
+          npx eslint . --format json > lint-report.json
+          status=$?
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('lint-report.json', 'utf8'));
+          const counts = new Map();
+          let errors = 0;
+          let warnings = 0;
+          for (const file of report) {
+            errors += file.errorCount || 0;
+            warnings += file.warningCount || 0;
+            for (const message of file.messages || []) {
+              const key = message.ruleId || 'parser';
+              counts.set(key, (counts.get(key) || 0) + 1);
+            }
+          }
+          const rules = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+          const summary = { errors, warnings, rules };
+          fs.writeFileSync('lint-summary.json', JSON.stringify(summary, null, 2));
+          console.log(JSON.stringify(summary, null, 2));
+          NODE
+          echo "residual_lint_exit_code=$status" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Upload lint reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: residual-lint-report
+          path: |
+            lint-report.json
+            lint-summary.json
+          retention-days: 7
+
+      - name: Commit autofixes
+        shell: bash
+        run: |
+          rm -f lint-report.json lint-summary.json
+          if git diff --quiet; then
+            echo "No autofix changes produced."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "style: apply repository-wide lint autofixes"
+          git push origin HEAD:fix/p0-security-critical-clean
