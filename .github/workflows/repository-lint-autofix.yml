@@ -1,4 +1,4 @@
-name: Repository Type Safety Probe
+name: Repository Non-Any Safety Probe
 
 on:
   pull_request:
@@ -32,96 +32,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Replace explicit any with unknown in disposable workspace
+      - name: Remove file-level TypeScript suppression in disposable workspace
         shell: bash
         run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const path = require('node:path');
-          const ts = require('typescript');
+          sed -i '/^\/\/ @ts-nocheck$/d' \
+            src/lib/actions/appearance.actions.ts \
+            src/lib/auth.functions.ts \
+            src/lib/catalog-import.functions.ts \
+            src/lib/onboarding.functions.ts \
+            src/lib/seed.functions.ts \
+            src/lib/tenants.functions.ts
 
-          const roots = ['src', 'tests'];
-          const files = [];
-          const walk = (dir) => {
-            if (!fs.existsSync(dir)) return;
-            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-              const full = path.join(dir, entry.name);
-              if (entry.isDirectory()) walk(full);
-              else if (/\.(ts|tsx)$/.test(entry.name)) files.push(full);
-            }
-          };
-          for (const root of roots) walk(root);
-
-          let replacements = 0;
-          for (const file of files) {
-            let text = fs.readFileSync(file, 'utf8');
-            const kind = file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
-            const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kind);
-            const edits = [];
-            const visit = (node) => {
-              if (node.kind === ts.SyntaxKind.AnyKeyword) {
-                edits.push({ start: node.getStart(source), end: node.getEnd(), value: 'unknown' });
-              }
-              ts.forEachChild(node, visit);
-            };
-            visit(source);
-            if (!edits.length) continue;
-            edits.sort((a, b) => b.start - a.start);
-            for (const edit of edits) {
-              text = text.slice(0, edit.start) + edit.value + text.slice(edit.end);
-              replacements += 1;
-            }
-            fs.writeFileSync(file, text);
-          }
-          console.log(`Replaced ${replacements} explicit any keywords with unknown.`);
-          NODE
-
-          set +e
-          npm run lint -- --fix
-          exit 0
-
-      - name: Generate TypeScript and lint reports
+      - name: Generate TypeScript report
         shell: bash
         run: |
           set +e
-          npm run typecheck > typecheck-after-unknown.log 2>&1
-          typecheck_status=$?
-          npx eslint . --format json > lint-report-after-unknown.json
-          lint_status=$?
-          git diff --binary > unknown-replacement.patch
-
-          node <<'NODE'
-          const fs = require('node:fs');
-          const report = JSON.parse(fs.readFileSync('lint-report-after-unknown.json', 'utf8'));
-          const counts = new Map();
-          let errors = 0;
-          let warnings = 0;
-          for (const file of report) {
-            errors += file.errorCount || 0;
-            warnings += file.warningCount || 0;
-            for (const message of file.messages || []) {
-              const key = message.ruleId || 'parser';
-              counts.set(key, (counts.get(key) || 0) + 1);
-            }
-          }
-          const rules = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-          fs.writeFileSync(
-            'lint-summary-after-unknown.json',
-            JSON.stringify({ errors, warnings, rules }, null, 2),
-          );
-          NODE
-
-          echo "typecheck_exit_code=$typecheck_status" >> "$GITHUB_STEP_SUMMARY"
-          echo "lint_exit_code=$lint_status" >> "$GITHUB_STEP_SUMMARY"
+          npm run typecheck > typecheck-without-nocheck.log 2>&1
+          status=$?
+          echo "typecheck_exit_code=$status" >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
-      - name: Upload type-safety probe
+      - name: Upload report
         uses: actions/upload-artifact@v4
         with:
-          name: type-safety-probe
-          path: |
-            typecheck-after-unknown.log
-            lint-report-after-unknown.json
-            lint-summary-after-unknown.json
-            unknown-replacement.patch
+          name: non-any-safety-probe
+          path: typecheck-without-nocheck.log
           retention-days: 7
