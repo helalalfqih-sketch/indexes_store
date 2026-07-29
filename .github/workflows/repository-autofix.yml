@@ -1,0 +1,49 @@
+name: Repository Autofix
+
+on:
+  push:
+    branches:
+      - fix/p0-security-critical-clean
+
+permissions:
+  contents: write
+
+jobs:
+  autofix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/p0-security-critical-clean
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply safe formatting and ESLint fixes
+        shell: bash
+        run: |
+          npx prettier --write "src/**/*.{ts,tsx}" "tests/**/*.{ts,tsx}" "*.{ts,js,mjs,cjs}"
+          npx eslint . --fix || true
+
+      - name: Remove one-time workflow and commit fixes
+        shell: bash
+        run: |
+          rm -f .github/workflows/repository-autofix.yml
+          if git diff --quiet; then
+            echo "No autofix changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "style: apply repository-wide safe autofixes"
+          git push origin HEAD:fix/p0-security-critical-clean
