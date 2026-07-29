@@ -147,13 +147,49 @@ jobs:
             ! -name '20260705142949_8f7c7ef1-75cd-4899-9dec-879bafb4b78a.sql' \
             -exec cp {} supabase/migrations/ \;
 
-          # Two historical files share migration version 20260722000008. Give
-          # the marketplace file a unique version only in the disposable copy.
-          duplicate_version_file="supabase/migrations/20260722000008_marketplace_domain_layer.sql"
-          if [ -f "$duplicate_version_file" ]; then
-            mv "$duplicate_version_file" \
-              supabase/migrations/20260722000016_marketplace_domain_layer.sql
-          fi
+          rename_ci_migration() {
+            source_path="supabase/migrations/$1"
+            target_path="supabase/migrations/$2"
+            if [ -f "$source_path" ]; then
+              mv "$source_path" "$target_path"
+            fi
+          }
+
+          # Resolve historical duplicate version prefixes only in the disposable
+          # CI migration directory while preserving the original file order.
+          rename_ci_migration \
+            20260722000008_marketplace_domain_layer.sql \
+            20260722000016_marketplace_domain_layer.sql
+          rename_ci_migration \
+            20260726_ai_agent_evaluations.sql \
+            20260726020000_ai_agent_evaluations.sql
+          rename_ci_migration \
+            20260726_ai_agent_tasks_and_memory.sql \
+            20260726030000_ai_agent_tasks_and_memory.sql
+          rename_ci_migration \
+            20260726_ai_execution_history.sql \
+            20260726040000_ai_execution_history.sql
+          rename_ci_migration \
+            20260727000000_order_notifications_system.sql \
+            20260727010000_order_notifications_system.sql
+          rename_ci_migration \
+            20260728_agent_execution_logs.sql \
+            20260728000000_agent_execution_logs.sql
+          rename_ci_migration \
+            20260729_agent_execution_steps.sql \
+            20260729000000_agent_execution_steps.sql
+          rename_ci_migration \
+            20260730_agent_execution_events.sql \
+            20260730000000_agent_execution_events.sql
+          rename_ci_migration \
+            20260731_ai_agent_execution_complete.sql \
+            20260731010000_ai_agent_execution_complete.sql
+          rename_ci_migration \
+            20260731_ai_builder_foundation.sql \
+            20260731020000_ai_builder_foundation.sql
+          rename_ci_migration \
+            20260731_fix_agent_rls_policies.sql \
+            20260731030000_fix_agent_rls_policies.sql
 
           # The legacy migration below drops an index before the owning unique
           # constraint. Remove only that redundant statement in the disposable
