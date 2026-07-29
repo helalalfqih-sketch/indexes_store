@@ -97,8 +97,16 @@ jobs:
 
           edit('src/lib/saas/billing.service.ts', (text) =>
             text.replace(
-              '    throw new Error("Billing not configured. TODO: connect a provider in Phase D.");\n    // eslint-disable-next-line @typescript-eslint/no-unreachable\n    return { url: "" };',
-              '    throw new Error("Billing not configured. TODO: connect a provider in Phase D.");',
+              `  async startCheckout() {
+    throw new Error("Billing not configured. TODO: connect a provider in Phase D.");
+    // eslint-disable-next-line @typescript-eslint/no-unreachable
+    return { url: "" };
+  }`,
+              `  async startCheckout(
+    _input: Parameters<BillingProvider["startCheckout"]>[0],
+  ): Promise<{ url: string }> {
+    throw new Error("Billing not configured. TODO: connect a provider in Phase D.");
+  }`,
             ),
           );
 
@@ -117,6 +125,9 @@ jobs:
             src/lib/quality/history.ts \
             src/lib/saas/billing.service.ts \
             'src/routes/admin.stores.$tenantId.tsx'
+
+      - name: Generate file-route types
+        run: npm run build:dev
 
       - name: Verify TypeScript
         run: npm run typecheck
