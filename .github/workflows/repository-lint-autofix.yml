@@ -1,4 +1,4 @@
-name: Repository Lint Autofix
+name: Repository Type Safety Probe
 
 on:
   pull_request:
@@ -8,10 +8,10 @@ on:
       - .github/workflows/repository-lint-autofix.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  autofix:
+  probe:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -32,23 +32,67 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Apply safe ESLint and Prettier fixes
+      - name: Replace explicit any with unknown in disposable workspace
         shell: bash
         run: |
-          set +e
-          npm run lint -- --fix
-          echo "autofix_exit_code=$?" >> "$GITHUB_STEP_SUMMARY"
-          exit 0
-
-      - name: Generate residual lint report
-        shell: bash
-        run: |
-          set +e
-          npx eslint . --format json > lint-report.json
-          status=$?
           node <<'NODE'
           const fs = require('node:fs');
-          const report = JSON.parse(fs.readFileSync('lint-report.json', 'utf8'));
+          const path = require('node:path');
+          const ts = require('typescript');
+
+          const roots = ['src', 'tests'];
+          const files = [];
+          const walk = (dir) => {
+            if (!fs.existsSync(dir)) return;
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const full = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else if (/\.(ts|tsx)$/.test(entry.name)) files.push(full);
+            }
+          };
+          for (const root of roots) walk(root);
+
+          let replacements = 0;
+          for (const file of files) {
+            let text = fs.readFileSync(file, 'utf8');
+            const kind = file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+            const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kind);
+            const edits = [];
+            const visit = (node) => {
+              if (node.kind === ts.SyntaxKind.AnyKeyword) {
+                edits.push({ start: node.getStart(source), end: node.getEnd(), value: 'unknown' });
+              }
+              ts.forEachChild(node, visit);
+            };
+            visit(source);
+            if (!edits.length) continue;
+            edits.sort((a, b) => b.start - a.start);
+            for (const edit of edits) {
+              text = text.slice(0, edit.start) + edit.value + text.slice(edit.end);
+              replacements += 1;
+            }
+            fs.writeFileSync(file, text);
+          }
+          console.log(`Replaced ${replacements} explicit any keywords with unknown.`);
+          NODE
+
+          set +e
+          npm run lint -- --fix
+          exit 0
+
+      - name: Generate TypeScript and lint reports
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck > typecheck-after-unknown.log 2>&1
+          typecheck_status=$?
+          npx eslint . --format json > lint-report-after-unknown.json
+          lint_status=$?
+          git diff --binary > unknown-replacement.patch
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('lint-report-after-unknown.json', 'utf8'));
           const counts = new Map();
           let errors = 0;
           let warnings = 0;
@@ -61,32 +105,23 @@ jobs:
             }
           }
           const rules = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-          const summary = { errors, warnings, rules };
-          fs.writeFileSync('lint-summary.json', JSON.stringify(summary, null, 2));
-          console.log(JSON.stringify(summary, null, 2));
+          fs.writeFileSync(
+            'lint-summary-after-unknown.json',
+            JSON.stringify({ errors, warnings, rules }, null, 2),
+          );
           NODE
-          echo "residual_lint_exit_code=$status" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "typecheck_exit_code=$typecheck_status" >> "$GITHUB_STEP_SUMMARY"
+          echo "lint_exit_code=$lint_status" >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
-      - name: Upload lint reports
+      - name: Upload type-safety probe
         uses: actions/upload-artifact@v4
         with:
-          name: residual-lint-report
+          name: type-safety-probe
           path: |
-            lint-report.json
-            lint-summary.json
+            typecheck-after-unknown.log
+            lint-report-after-unknown.json
+            lint-summary-after-unknown.json
+            unknown-replacement.patch
           retention-days: 7
-
-      - name: Commit autofixes
-        shell: bash
-        run: |
-          rm -f lint-report.json lint-summary.json
-          if git diff --quiet; then
-            echo "No autofix changes produced."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "style: apply repository-wide lint autofixes"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
