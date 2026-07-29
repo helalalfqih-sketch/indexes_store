@@ -78,7 +78,7 @@ jobs:
 
   migration-reset:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
@@ -89,10 +89,22 @@ jobs:
         with:
           version: latest
 
+      - name: Prepare isolated legacy baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f combined_migration.sql
+          mkdir -p /tmp/repository-migrations
+          cp -a supabase/migrations/. /tmp/repository-migrations/
+          rm -rf supabase/migrations
+          mkdir -p supabase/migrations
+          cp combined_migration.sql supabase/migrations/20250719000000_legacy_foundation_for_ci.sql
+          find /tmp/repository-migrations -maxdepth 1 -type f -name '[0-9]*_*.sql' -exec cp {} supabase/migrations/ \;
+
       - name: Start isolated local Supabase
         run: supabase start
 
-      - name: Reset database from repository migrations
+      - name: Reset database from foundation and repository migrations
         run: supabase db reset --local
 
       - name: Run database regression tests

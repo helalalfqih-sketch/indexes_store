@@ -2,11 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveTenantId } from "@/lib/saas/tenant-context";
-import {
-  getAgentDb,
-  resolveAgentRole,
-  type ProjectSupabaseClient,
-} from "./ai-agent-db";
+import { getAgentDb, resolveAgentRole } from "./ai-agent-db";
 import {
   assertExecutableApproval,
   computePlanHash,
@@ -82,8 +78,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function toAgentDb(db: ProjectSupabaseClient): AgentDb {
-  return db as unknown as AgentDb;
+function toAgentDb(value: unknown): AgentDb {
+  return value as AgentDb;
 }
 
 function toRow<T>(value: unknown, label: string): T {
@@ -109,9 +105,7 @@ function sanitizeLegacyResult(value: unknown): SafeExecutionResult {
     throw new Error("Legacy execution returned an invalid response");
   }
 
-  const result: SafeExecutionResult = {
-    success: value.success === true,
-  };
+  const result: SafeExecutionResult = { success: value.success === true };
   if (typeof value.buildOutput === "string") result.buildOutput = value.buildOutput;
   if (typeof value.failureDetails !== "undefined") {
     result.failureDetails = toJsonValue(value.failureDetails);
@@ -123,7 +117,6 @@ async function requireRole(
   context: unknown,
   minimumRole: AgentRole,
 ): Promise<{
-  db: ProjectSupabaseClient;
   agentDb: AgentDb;
   tenantId: string;
   userId: string;
@@ -143,7 +136,7 @@ async function requireRole(
     throw new Error(`403: Operation requires '${minimumRole}' role or higher.`);
   }
 
-  return { db, agentDb: toAgentDb(db), tenantId, userId, role };
+  return { agentDb: toAgentDb(db), tenantId, userId, role };
 }
 
 async function loadTask(agentDb: AgentDb, tenantId: string, taskId: string): Promise<TaskRow> {
@@ -170,9 +163,7 @@ async function loadPlan(
 
   const result = await agentDb
     .from("ai_agent_plans")
-    .select(
-      "status, approved_plan_hash, approved_revision, plan_hash, revision",
-    )
+    .select("status, approved_plan_hash, approved_revision, plan_hash, revision")
     .eq("tenant_id", tenantId)
     .or(`id.eq.${sessionId},session_id.eq.${sessionId}`)
     .maybeSingle();
@@ -187,7 +178,7 @@ export async function verifyApproval(
   expectedHash?: string,
   expectedRevision?: number,
 ): Promise<TaskRow> {
-  const agentDb = dbValue as AgentDb;
+  const agentDb = toAgentDb(dbValue);
   const task = await loadTask(agentDb, tenantId, taskId);
   assertExecutableApproval({
     status: task.status,
@@ -218,7 +209,7 @@ export const approveAgentTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(approvalInput)
   .handler(async ({ data, context }) => {
-    const { agentDb, tenantId, userId } = await requireRole(context, "admin");
+    const { agentDb, tenantId, userId } = await requireRole(context as unknown, "admin");
     const task = await loadTask(agentDb, tenantId, data.taskId);
     const currentStatus = task.status.toLowerCase();
     if (currentStatus !== "waiting_approval" && currentStatus !== "planning") {
@@ -338,9 +329,7 @@ async function executeApprovedTaskCore(
   }) => Promise<unknown>;
 
   try {
-    const result = sanitizeLegacyResult(
-      await invokeLegacy({ data: { taskId }, context }),
-    );
+    const result = sanitizeLegacyResult(await invokeLegacy({ data: { taskId }, context }));
     const finalStatus = result.success ? "completed" : "failed";
     const statusUpdate = await agentDb
       .from("ai_agent_tasks")
@@ -367,22 +356,16 @@ async function executeApprovedTaskCore(
 export const executeApprovedTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(z.object({ taskId: z.string().min(1) }))
-  .handler(async ({ data, context }) => executeApprovedTaskCore(data.taskId, context));
+  .handler(async ({ data, context }) => executeApprovedTaskCore(data.taskId, context as unknown));
 
 export const startExecutionTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(z.object({ taskId: z.string().min(1), sessionId: z.string().optional() }))
-  .handler(async ({ data, context }) => executeApprovedTaskCore(data.taskId, context));
+  .handler(async ({ data, context }) => executeApprovedTaskCore(data.taskId, context as unknown));
 
 export const getAgentRole = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    if (!isRecord(context) || typeof context.userId !== "string" || !context.userId) {
-      throw new Error("401: Unauthorized");
-    }
-    const db = await getAgentDb(context);
-    const tenantId = await resolveTenantId(db, { userId: context.userId });
-    if (!tenantId) throw new Error("CONFIGURATION_ERROR: Tenant could not be resolved.");
-    const role = await resolveAgentRole(db, context.userId, tenantId);
-    return { role, tenantId, userId: context.userId };
+    const { tenantId, userId, role } = await requireRole(context as unknown, "viewer");
+    return { role, tenantId, userId };
   });

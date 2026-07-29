@@ -3,10 +3,11 @@ import type { Database } from "@/integrations/supabase/types";
 import type { AgentRole } from "@/services/ai-agent/agent.permissions";
 
 export type ProjectSupabaseClient = SupabaseClient<Database>;
+export type DynamicSupabaseClient = SupabaseClient;
 
 interface AuthenticatedContext {
   userId: string;
-  supabase: ProjectSupabaseClient;
+  supabase: unknown;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -23,16 +24,22 @@ function requireContext(value: unknown): AuthenticatedContext {
 
   return {
     userId: value.userId,
-    supabase: value.supabase as ProjectSupabaseClient,
+    supabase: value.supabase,
   };
 }
 
-export async function getAdminDb(context?: unknown): Promise<ProjectSupabaseClient> {
-  return requireContext(context).supabase;
+/**
+ * Dynamic administrative callers use tables that are not yet represented in the
+ * generated Database type. This remains the authenticated request client; it is
+ * not a service-role escalation.
+ */
+export async function getAdminDb(context?: unknown): Promise<DynamicSupabaseClient> {
+  return requireContext(context).supabase as DynamicSupabaseClient;
 }
 
+/** Typed client used by tenant/RBAC code whose tables are in generated types. */
 export async function getAgentDb(context?: unknown): Promise<ProjectSupabaseClient> {
-  return getAdminDb(context);
+  return requireContext(context).supabase as ProjectSupabaseClient;
 }
 
 export async function resolveAgentRole(
@@ -80,7 +87,8 @@ export async function resolveAgentRole(
     throw new Error("403: Access denied. Active tenant membership is required.");
   }
 
-  switch (member.role) {
+  const memberRole = String(member.role);
+  switch (memberRole) {
     case "owner":
       return "owner";
     case "manager":
@@ -92,6 +100,6 @@ export async function resolveAgentRole(
     case "viewer":
       return "viewer";
     default:
-      throw new Error(`403: Access denied. Unknown tenant role '${String(member.role)}'.`);
+      throw new Error(`403: Access denied. Unknown tenant role '${memberRole}'.`);
   }
 }
