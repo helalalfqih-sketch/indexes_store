@@ -28,11 +28,11 @@ jobs:
             --exclude=node_modules \
             --exclude=.output \
             --exclude=dist \
-            -czf repository-source.tgz .
+            -czf /tmp/repository-source.tgz .
 
       - name: Upload source archive
         uses: actions/upload-artifact@v4
         with:
           name: repository-source
-          path: repository-source.tgz
+          path: /tmp/repository-source.tgz
           retention-days: 2
