@@ -20,8 +20,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run preview -- --host 127.0.0.1 --port 4173",
+    command: "node .output/server/index.mjs",
     url: "http://127.0.0.1:4173",
+    env: {
+      PORT: "4173",
+      HOST: "127.0.0.1",
+      NITRO_PORT: "4173",
+      NITRO_HOST: "127.0.0.1",
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

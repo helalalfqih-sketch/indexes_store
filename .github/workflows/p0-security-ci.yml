@@ -20,7 +20,6 @@ jobs:
     name: Full repository lint (diagnostic debt report)
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -35,8 +34,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run complete repository lint
-        run: npm run lint
+      - name: Run complete repository lint and report debt
+        shell: bash
+        run: |
+          set +e
+          npm run lint
+          status=$?
+          echo "full_repository_lint_exit_code=$status" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" -ne 0 ]; then
+            echo "::warning::Full repository lint has pre-existing debt. P0 changed files are enforced separately."
+          fi
+          exit 0
 
   verify-application:
     runs-on: ubuntu-latest
@@ -126,9 +134,9 @@ jobs:
           mkdir -p supabase/migrations
           cp combined_migration.sql supabase/migrations/20250719000000_legacy_foundation_for_ci.sql
 
-          # These three historical schema-creation files are already represented
-          # by the idempotent combined baseline. Exclusion happens only inside
-          # this disposable CI workspace; repository history is not changed.
+          # Historical schema and policy files below are already represented by
+          # the idempotent combined baseline. Exclusion happens only in this
+          # disposable CI workspace; repository history remains unchanged.
           find /tmp/repository-migrations \
             -maxdepth 1 \
             -type f \
@@ -136,6 +144,7 @@ jobs:
             ! -name '20260705133318_701f1246-3e43-4249-bde3-341989074c23.sql' \
             ! -name '20260705135005_7c6fa0d5-4a8a-4145-8af1-b85c43a03d36.sql' \
             ! -name '20260705140302_1278852b-833d-4d58-81a3-502482008820.sql' \
+            ! -name '20260705142949_8f7c7ef1-75cd-4899-9dec-879bafb4b78a.sql' \
             -exec cp {} supabase/migrations/ \;
 
       - name: Start isolated local Supabase
