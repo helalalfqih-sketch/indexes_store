@@ -113,7 +113,10 @@ function StoreDetailsPage() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-store-details", tenantId] });
 
-  const mkMut = (fn: (v: any) => Promise<{ success: boolean; message?: string }>, okMsg: string) =>
+  const useStoreMutation = (
+    fn: (v: any) => Promise<{ success: boolean; message?: string }>,
+    okMsg: string,
+  ) =>
     useMutation({
       mutationFn: fn,
       onSuccess: (r) => {
@@ -126,20 +129,23 @@ function StoreDetailsPage() {
       onError: (e: Error) => toast.error(e.message),
     });
 
-  const statusMut = mkMut(
+  const statusMut = useStoreMutation(
     (status: any) => setStatus({ data: { tenantId, status } }),
     "تم تحديث حالة المتجر",
   );
-  const planMut = mkMut((plan: any) => setPlan({ data: { tenantId, plan } }), "تم تحديث الخطة");
-  const profileMut = mkMut(
+  const planMut = useStoreMutation(
+    (plan: any) => setPlan({ data: { tenantId, plan } }),
+    "تم تحديث الخطة",
+  );
+  const profileMut = useStoreMutation(
     () => saveProfile({ data: { tenantId, profile: form } }),
     "تم حفظ هوية المتجر",
   );
-  const memberMut = mkMut(
+  const memberMut = useStoreMutation(
     (v: any) => upsertMember({ data: { tenantId, userId: v.userId, role: v.role } }),
     "تم تحديث العضوية",
   );
-  const removeMut = mkMut(
+  const removeMut = useStoreMutation(
     (userId: any) => removeMember({ data: { tenantId, userId } }),
     "تمت إزالة العضو",
   );

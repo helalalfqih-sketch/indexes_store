@@ -1779,7 +1779,7 @@ export const readProjectFileContentFn = createServerFn({ method: "POST" })
       const path = await import("node:path");
 
       const rootDir = process.cwd();
-      const sanitizedRelPath = data.path.replace(/^(\.\.[\/\\])+/, "").replace(/\\/g, "/");
+      const sanitizedRelPath = data.path.replace(/^(\.\.[/\\])+/, "").replace(/\\/g, "/");
       const absPath = path.resolve(rootDir, sanitizedRelPath);
 
       if (!absPath.startsWith(rootDir)) {
@@ -1863,7 +1863,7 @@ export const parseProjectFileFn = createServerFn({ method: "POST" })
         const path = await import("node:path");
 
         const rootDir = process.cwd();
-        const sanitizedRelPath = data.path.replace(/^(\.\.[\/\\])+/, "").replace(/\\/g, "/");
+        const sanitizedRelPath = data.path.replace(/^(\.\.[/\\])+/, "").replace(/\\/g, "/");
         const absPath = path.resolve(rootDir, sanitizedRelPath);
 
         if (!absPath.startsWith(rootDir)) {

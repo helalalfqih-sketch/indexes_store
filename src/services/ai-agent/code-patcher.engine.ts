@@ -41,7 +41,7 @@ export async function applyCodePatch(
 ): Promise<{ success: boolean; backupId: string; targetFile: string; error?: string }> {
   try {
     const rootDir = process.cwd();
-    const sanitizedRelPath = options.targetFile.replace(/^(\.\.[\/\\])+/, "").replace(/\\/g, "/");
+    const sanitizedRelPath = options.targetFile.replace(/^(\.\.[/\\])+/, "").replace(/\\/g, "/");
     const absPath = path.resolve(rootDir, sanitizedRelPath);
 
     // Security check: Ensure file stays within project root

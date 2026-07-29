@@ -28,7 +28,9 @@ export function registerConsoleMonitor() {
         timestamp: new Date().toISOString(),
       });
       if (consoleErrorBuffer.length > 50) consoleErrorBuffer.shift();
-    } catch {}
+    } catch {
+      // Console arguments may contain circular or non-serializable values.
+    }
     originalConsoleError.apply(console, args);
   };
 }

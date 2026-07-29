@@ -12,11 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrackRouteImport } from './routes/track'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StoreRouteImport } from './routes/store'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OffersRouteImport } from './routes/offers'
 import { Route as ImmersiveStoreRouteImport } from './routes/immersive-store'
+import { Route as GoogleShoppingDotxmlRouteImport } from './routes/google-shopping[.]xml'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CartRouteImport } from './routes/cart'
@@ -37,11 +40,8 @@ import { Route as StoreEarningsRouteImport } from './routes/store.earnings'
 import { Route as StoreDashboardRouteImport } from './routes/store.dashboard'
 import { Route as StoreCustomersRouteImport } from './routes/store.customers'
 import { Route as StoreAnalyticsRouteImport } from './routes/store.analytics'
-import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
-import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
-import { Route as GoogleShoppingXmlRouteImport } from './routes/google-shopping.xml'
 import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
@@ -101,9 +101,19 @@ const StoreRoute = StoreRouteImport.update({
   path: '/store',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
@@ -124,6 +134,11 @@ const OffersRoute = OffersRouteImport.update({
 const ImmersiveStoreRoute = ImmersiveStoreRouteImport.update({
   id: '/immersive-store',
   path: '/immersive-store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoogleShoppingDotxmlRoute = GoogleShoppingDotxmlRouteImport.update({
+  id: '/google-shopping.xml',
+  path: '/google-shopping.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DataDeletionRoute = DataDeletionRouteImport.update({
@@ -226,16 +241,6 @@ const StoreAnalyticsRoute = StoreAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => StoreRoute,
 } as any)
-const SitemapXmlRoute = SitemapXmlRouteImport.update({
-  id: '/sitemap/xml',
-  path: '/sitemap/xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RobotsTxtRoute = RobotsTxtRouteImport.update({
-  id: '/robots/txt',
-  path: '/robots/txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProductSlugRoute = ProductSlugRouteImport.update({
   id: '/product/$slug',
   path: '/product/$slug',
@@ -244,11 +249,6 @@ const ProductSlugRoute = ProductSlugRouteImport.update({
 const PagesSlugRoute = PagesSlugRouteImport.update({
   id: '/pages/$slug',
   path: '/pages/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GoogleShoppingXmlRoute = GoogleShoppingXmlRouteImport.update({
-  id: '/google-shopping/xml',
-  path: '/google-shopping/xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Demo3dViewerRoute = Demo3dViewerRouteImport.update({
@@ -477,11 +477,14 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/data-deletion': typeof DataDeletionRoute
+  '/google-shopping.xml': typeof GoogleShoppingDotxmlRoute
   '/immersive-store': typeof ImmersiveStoreRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/search': typeof SearchRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/store': typeof StoreRouteWithChildren
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
@@ -519,11 +522,8 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
-  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
-  '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
@@ -554,11 +554,14 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/data-deletion': typeof DataDeletionRoute
+  '/google-shopping.xml': typeof GoogleShoppingDotxmlRoute
   '/immersive-store': typeof ImmersiveStoreRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/search': typeof SearchRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/admin/ai-agent': typeof AdminAiAgentRoute
@@ -595,11 +598,8 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
-  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
-  '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
@@ -632,11 +632,14 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/data-deletion': typeof DataDeletionRoute
+  '/google-shopping.xml': typeof GoogleShoppingDotxmlRoute
   '/immersive-store': typeof ImmersiveStoreRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/search': typeof SearchRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/store': typeof StoreRouteWithChildren
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
@@ -674,11 +677,8 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
-  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
-  '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
@@ -712,11 +712,14 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/data-deletion'
+    | '/google-shopping.xml'
     | '/immersive-store'
     | '/offers'
     | '/onboarding'
     | '/privacy-policy'
+    | '/robots.txt'
     | '/search'
+    | '/sitemap.xml'
     | '/store'
     | '/terms'
     | '/track'
@@ -754,11 +757,8 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/category/$id'
     | '/demo/3d-viewer'
-    | '/google-shopping/xml'
     | '/pages/$slug'
     | '/product/$slug'
-    | '/robots/txt'
-    | '/sitemap/xml'
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
@@ -789,11 +789,14 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/data-deletion'
+    | '/google-shopping.xml'
     | '/immersive-store'
     | '/offers'
     | '/onboarding'
     | '/privacy-policy'
+    | '/robots.txt'
     | '/search'
+    | '/sitemap.xml'
     | '/terms'
     | '/track'
     | '/admin/ai-agent'
@@ -830,11 +833,8 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/category/$id'
     | '/demo/3d-viewer'
-    | '/google-shopping/xml'
     | '/pages/$slug'
     | '/product/$slug'
-    | '/robots/txt'
-    | '/sitemap/xml'
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
@@ -866,11 +866,14 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/data-deletion'
+    | '/google-shopping.xml'
     | '/immersive-store'
     | '/offers'
     | '/onboarding'
     | '/privacy-policy'
+    | '/robots.txt'
     | '/search'
+    | '/sitemap.xml'
     | '/store'
     | '/terms'
     | '/track'
@@ -908,11 +911,8 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/category/$id'
     | '/demo/3d-viewer'
-    | '/google-shopping/xml'
     | '/pages/$slug'
     | '/product/$slug'
-    | '/robots/txt'
-    | '/sitemap/xml'
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
@@ -945,21 +945,21 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   DataDeletionRoute: typeof DataDeletionRoute
+  GoogleShoppingDotxmlRoute: typeof GoogleShoppingDotxmlRoute
   ImmersiveStoreRoute: typeof ImmersiveStoreRoute
   OffersRoute: typeof OffersRoute
   OnboardingRoute: typeof OnboardingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   SearchRoute: typeof SearchRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StoreRoute: typeof StoreRouteWithChildren
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
-  GoogleShoppingXmlRoute: typeof GoogleShoppingXmlRoute
   PagesSlugRoute: typeof PagesSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
-  RobotsTxtRoute: typeof RobotsTxtRoute
-  SitemapXmlRoute: typeof SitemapXmlRoute
   VendorSlugRoute: typeof VendorSlugRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
   ApiAiAgentRoute: typeof ApiAiAgentRoute
@@ -992,11 +992,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy-policy': {
@@ -1025,6 +1039,13 @@ declare module '@tanstack/react-router' {
       path: '/immersive-store'
       fullPath: '/immersive-store'
       preLoaderRoute: typeof ImmersiveStoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/google-shopping.xml': {
+      id: '/google-shopping.xml'
+      path: '/google-shopping.xml'
+      fullPath: '/google-shopping.xml'
+      preLoaderRoute: typeof GoogleShoppingDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/data-deletion': {
@@ -1167,20 +1188,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreAnalyticsRouteImport
       parentRoute: typeof StoreRoute
     }
-    '/sitemap/xml': {
-      id: '/sitemap/xml'
-      path: '/sitemap/xml'
-      fullPath: '/sitemap/xml'
-      preLoaderRoute: typeof SitemapXmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/robots/txt': {
-      id: '/robots/txt'
-      path: '/robots/txt'
-      fullPath: '/robots/txt'
-      preLoaderRoute: typeof RobotsTxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/product/$slug': {
       id: '/product/$slug'
       path: '/product/$slug'
@@ -1193,13 +1200,6 @@ declare module '@tanstack/react-router' {
       path: '/pages/$slug'
       fullPath: '/pages/$slug'
       preLoaderRoute: typeof PagesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/google-shopping/xml': {
-      id: '/google-shopping/xml'
-      path: '/google-shopping/xml'
-      fullPath: '/google-shopping/xml'
-      preLoaderRoute: typeof GoogleShoppingXmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/3d-viewer': {
@@ -1634,21 +1634,21 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   DataDeletionRoute: DataDeletionRoute,
+  GoogleShoppingDotxmlRoute: GoogleShoppingDotxmlRoute,
   ImmersiveStoreRoute: ImmersiveStoreRoute,
   OffersRoute: OffersRoute,
   OnboardingRoute: OnboardingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   SearchRoute: SearchRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   StoreRoute: StoreRouteWithChildren,
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
-  GoogleShoppingXmlRoute: GoogleShoppingXmlRoute,
   PagesSlugRoute: PagesSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
-  RobotsTxtRoute: RobotsTxtRoute,
-  SitemapXmlRoute: SitemapXmlRoute,
   VendorSlugRoute: VendorSlugRoute,
   VendorDashboardRoute: VendorDashboardRoute,
   ApiAiAgentRoute: ApiAiAgentRoute,

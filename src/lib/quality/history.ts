@@ -58,6 +58,7 @@ class LocalFileStorageAdapter implements QualityStorageAdapter {
   private getFsModule() {
     try {
       // Dynamic require to prevent bundling Node fs in production bundles
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- development-only lazy load prevents production fs bundling
       return require("fs");
     } catch {
       return null;
@@ -66,6 +67,7 @@ class LocalFileStorageAdapter implements QualityStorageAdapter {
 
   private getPathModule() {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- development-only lazy load prevents production path bundling
       return require("path");
     } catch {
       return null;

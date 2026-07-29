@@ -81,7 +81,7 @@ export async function createPatchRecord(options: {
 }> {
   try {
     const { db, tenantId, sessionId, filePath, operation, afterContent } = options;
-    const sanitizedRelPath = filePath.replace(/^(\.\.[\/\\])+/, "").replace(/\\/g, "/");
+    const sanitizedRelPath = filePath.replace(/^(\.\.[/\\])+/, "").replace(/\\/g, "/");
     const absPath = path.resolve(process.cwd(), sanitizedRelPath);
 
     let beforeContent = "";

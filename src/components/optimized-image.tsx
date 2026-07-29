@@ -118,7 +118,7 @@ export function OptimizedImage({
           )}
           loading={loadingAttr}
           decoding="async"
-          // @ts-ignore — fetchpriority is valid HTML5 but not yet in TS types
+          // @ts-expect-error -- fetchpriority is supported by browsers before React typings expose it
           fetchpriority={fetchPriority}
           width={
             naturalWidth ??
