@@ -1,4 +1,4 @@
-name: Repository Non-Any Safety Probe
+name: Repository Safe Lint Fixes
 
 on:
   pull_request:
@@ -8,10 +8,10 @@ on:
       - .github/workflows/repository-lint-autofix.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  probe:
+  fix:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -32,29 +32,154 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Remove file-level TypeScript suppression in disposable workspace
+      - name: Apply deterministic safe fixes
         shell: bash
         run: |
-          sed -i '/^\/\/ @ts-nocheck$/d' \
-            src/lib/actions/appearance.actions.ts \
-            src/lib/auth.functions.ts \
-            src/lib/catalog-import.functions.ts \
-            src/lib/onboarding.functions.ts \
-            src/lib/seed.functions.ts \
-            src/lib/tenants.functions.ts
+          node <<'NODE'
+          const fs = require('node:fs');
 
-      - name: Generate TypeScript report
+          function edit(path, transform) {
+            const before = fs.readFileSync(path, 'utf8');
+            const after = transform(before);
+            if (after === before) {
+              console.log(`No change: ${path}`);
+              return;
+            }
+            fs.writeFileSync(path, after);
+            console.log(`Updated: ${path}`);
+          }
+
+          edit('src/components/optimized-image.tsx', (text) =>
+            text.replace(
+              '// @ts-ignore — fetchpriority is valid HTML5 but not yet in TS types',
+              '// @ts-expect-error -- fetchpriority is supported by browsers before React typings expose it',
+            ),
+          );
+
+          for (const path of [
+            'src/lib/ai-agent.legacy.ts',
+            'src/services/ai-agent/code-patcher.engine.ts',
+            'src/services/ai-agent/patch-engine.service.ts',
+          ]) {
+            edit(path, (text) => text.split('[\\/\\\\]').join('[/\\\\]'));
+          }
+
+          edit('src/lib/quality/runtime/console-monitor.ts', (text) =>
+            text.replace(
+              '    } catch {}',
+              '    } catch {\n      // Console arguments may contain circular or non-serializable values.\n    }',
+            ),
+          );
+
+          edit('src/lib/use-favorites.ts', (text) =>
+            text
+              .replace(
+                '      } catch {}',
+                '      } catch {\n        // localStorage may be unavailable or full; keep the in-memory state.\n      }',
+              )
+              .replace(
+                '      } catch {}',
+                '      } catch {\n        // Ignore malformed or unavailable persisted favorites.\n      }',
+              ),
+          );
+
+          edit('src/lib/quality/history.ts', (text) =>
+            text
+              .replace(
+                '      return require("fs");',
+                '      // eslint-disable-next-line @typescript-eslint/no-require-imports -- development-only lazy load prevents production fs bundling\n      return require("fs");',
+              )
+              .replace(
+                '      return require("path");',
+                '      // eslint-disable-next-line @typescript-eslint/no-require-imports -- development-only lazy load prevents production path bundling\n      return require("path");',
+              ),
+          );
+
+          edit('src/lib/saas/billing.service.ts', (text) =>
+            text.replace(
+              '    throw new Error("Billing not configured. TODO: connect a provider in Phase D.");\n    // eslint-disable-next-line @typescript-eslint/no-unreachable\n    return { url: "" };',
+              '    throw new Error("Billing not configured. TODO: connect a provider in Phase D.");',
+            ),
+          );
+
+          edit('src/routes/admin.stores.$tenantId.tsx', (text) =>
+            text.replace(/\bmkMut\b/g, 'useStoreMutation'),
+          );
+          NODE
+
+          npx prettier --write \
+            src/components/optimized-image.tsx \
+            src/lib/ai-agent.legacy.ts \
+            src/services/ai-agent/code-patcher.engine.ts \
+            src/services/ai-agent/patch-engine.service.ts \
+            src/lib/quality/runtime/console-monitor.ts \
+            src/lib/use-favorites.ts \
+            src/lib/quality/history.ts \
+            src/lib/saas/billing.service.ts \
+            'src/routes/admin.stores.$tenantId.tsx'
+
+      - name: Verify TypeScript
+        run: npm run typecheck
+
+      - name: Verify targeted lint rules
         shell: bash
         run: |
           set +e
-          npm run typecheck > typecheck-without-nocheck.log 2>&1
+          npx eslint . --format json > lint-after-safe-fixes.json
           status=$?
-          echo "typecheck_exit_code=$status" >> "$GITHUB_STEP_SUMMARY"
-          exit 0
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('lint-after-safe-fixes.json', 'utf8'));
+          const counts = new Map();
+          let errors = 0;
+          let warnings = 0;
+          for (const file of report) {
+            errors += file.errorCount || 0;
+            warnings += file.warningCount || 0;
+            for (const message of file.messages || []) {
+              const key = message.ruleId || 'parser';
+              counts.set(key, (counts.get(key) || 0) + 1);
+            }
+          }
+          const rules = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+          const summary = { errors, warnings, rules };
+          fs.writeFileSync('lint-summary-after-safe-fixes.json', JSON.stringify(summary, null, 2));
+          console.log(JSON.stringify(summary, null, 2));
 
-      - name: Upload report
+          const mustBeZero = [
+            'no-useless-escape',
+            'no-empty',
+            '@typescript-eslint/no-require-imports',
+            '@typescript-eslint/no-unreachable',
+            'react-hooks/rules-of-hooks',
+          ];
+          const failures = mustBeZero.filter((rule) => (counts.get(rule) || 0) > 0);
+          if (failures.length) {
+            console.error(`Targeted rules still failing: ${failures.join(', ')}`);
+            process.exit(1);
+          }
+          NODE
+          echo "full_lint_exit_code=$status" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload residual lint report
         uses: actions/upload-artifact@v4
         with:
-          name: non-any-safety-probe
-          path: typecheck-without-nocheck.log
+          name: residual-lint-after-safe-fixes
+          path: |
+            lint-after-safe-fixes.json
+            lint-summary-after-safe-fixes.json
           retention-days: 7
+
+      - name: Commit safe fixes
+        shell: bash
+        run: |
+          rm -f lint-after-safe-fixes.json lint-summary-after-safe-fixes.json
+          if git diff --quiet; then
+            echo "No changes produced."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(lint): resolve safe repository rule violations"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
