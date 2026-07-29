@@ -147,6 +147,14 @@ jobs:
             ! -name '20260705142949_8f7c7ef1-75cd-4899-9dec-879bafb4b78a.sql' \
             -exec cp {} supabase/migrations/ \;
 
+          # Two historical files share migration version 20260722000008. Give
+          # the marketplace file a unique version only in the disposable copy.
+          duplicate_version_file="supabase/migrations/20260722000008_marketplace_domain_layer.sql"
+          if [ -f "$duplicate_version_file" ]; then
+            mv "$duplicate_version_file" \
+              supabase/migrations/20260722000016_marketplace_domain_layer.sql
+          fi
+
           # The legacy migration below drops an index before the owning unique
           # constraint. Remove only that redundant statement in the disposable
           # CI copy; the repository migration file itself is never modified.
