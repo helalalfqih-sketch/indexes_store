@@ -10,7 +10,14 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "npm run test:unit && npm run test:integration && npm run test:security",
+    "test:unit": "vitest run tests/unit src/tests/unit",
+    "test:integration": "vitest run tests/integration src/tests/integration",
+    "test:security": "vitest run tests/security src/tests/security",
+    "test:coverage": "vitest run tests/unit tests/integration tests/security src/tests/unit src/tests/integration src/tests/security --coverage",
+    "test:e2e": "playwright test tests/e2e/seo-routes.spec.ts",
+    "test:accessibility": "playwright test tests/e2e/accessibility.spec.ts"
   },
   "dependencies": {
     "@ai-sdk/google-vertex": "^5.0.14",
@@ -88,13 +95,16 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "2.7.1",
+    "@playwright/test": "^1.62.0",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/three": "^0.185.1",
     "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
@@ -105,6 +115,7 @@
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vitest": "^4.1.10"
   }
 }
