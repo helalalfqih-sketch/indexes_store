@@ -155,6 +155,29 @@ jobs:
             sed -i '/DROP INDEX IF EXISTS public.products_tenant_external_id_key;/d' "$legacy_index_migration"
           fi
 
+          # The historical file uses a non-idempotent ADD COLUMN although the
+          # combined baseline already defines the column. Replace only the
+          # disposable CI copy with an equivalent idempotent migration.
+          cat > supabase/migrations/20260710182200_add_meta_sync_status.sql <<'SQL'
+          ALTER TABLE public.products
+            ADD COLUMN IF NOT EXISTS meta_sync_status text DEFAULT 'not_synced';
+
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1
+              FROM pg_constraint c
+              WHERE c.conrelid = 'public.products'::regclass
+                AND c.conname = 'products_meta_sync_status_check'
+            ) THEN
+              ALTER TABLE public.products
+                ADD CONSTRAINT products_meta_sync_status_check
+                CHECK (meta_sync_status IN ('not_synced', 'syncing', 'synced', 'failed'));
+            END IF;
+          END
+          $$;
+          SQL
+
       - name: Start isolated local Supabase
         run: supabase start
 
