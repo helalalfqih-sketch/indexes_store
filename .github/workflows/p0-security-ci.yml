@@ -147,6 +147,14 @@ jobs:
             ! -name '20260705142949_8f7c7ef1-75cd-4899-9dec-879bafb4b78a.sql' \
             -exec cp {} supabase/migrations/ \;
 
+          # The legacy migration below drops an index before the owning unique
+          # constraint. Remove only that redundant statement in the disposable
+          # CI copy; the repository migration file itself is never modified.
+          legacy_index_migration="supabase/migrations/20260708121242_25476e6c-d876-4a81-9899-b620116e2ade.sql"
+          if [ -f "$legacy_index_migration" ]; then
+            sed -i '/DROP INDEX IF EXISTS public.products_tenant_external_id_key;/d' "$legacy_index_migration"
+          fi
+
       - name: Start isolated local Supabase
         run: supabase start
 
