@@ -34,7 +34,8 @@ $$;
 REVOKE ALL ON FUNCTION public.storage_object_tenant_id(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.storage_object_tenant_id(text) TO authenticated, service_role;
 
--- Remove every known broad policy name before creating restrictive replacements.
+-- Remove broad legacy policies and this migration's own policy names so a
+-- repair/replay remains deterministic.
 DROP POLICY IF EXISTS "Allow Public Read" ON storage.objects;
 DROP POLICY IF EXISTS "Allow Storage Insert" ON storage.objects;
 DROP POLICY IF EXISTS "Allow Storage Update" ON storage.objects;
@@ -43,6 +44,9 @@ DROP POLICY IF EXISTS "Public read media buckets" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated upload media buckets" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated update media buckets" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated delete media buckets" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated upload tenant media" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated update tenant media" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated delete tenant media" ON storage.objects;
 
 -- Storefront assets remain publicly readable. Writes require an authenticated
 -- staff-or-higher member of the tenant encoded in the object path.
