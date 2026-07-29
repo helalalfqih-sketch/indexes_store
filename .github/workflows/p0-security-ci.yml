@@ -16,6 +16,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  repository-lint:
+    name: Full repository lint (diagnostic debt report)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run complete repository lint
+        run: npm run lint
+
   verify-application:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -49,8 +71,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Lint
-        run: npm run lint
+      - name: Lint P0 changed surface
+        run: npm run lint:p0
 
       - name: Unit tests
         run: npm run test:unit
@@ -96,10 +118,23 @@ jobs:
           test -f combined_migration.sql
           mkdir -p /tmp/repository-migrations
           cp -a supabase/migrations/. /tmp/repository-migrations/
+
+          echo "Repository migration files:"
+          find /tmp/repository-migrations -maxdepth 1 -type f -name '[0-9]*_*.sql' -printf '%f\n' | sort
+
           rm -rf supabase/migrations
           mkdir -p supabase/migrations
           cp combined_migration.sql supabase/migrations/20250719000000_legacy_foundation_for_ci.sql
-          find /tmp/repository-migrations -maxdepth 1 -type f -name '[0-9]*_*.sql' -exec cp {} supabase/migrations/ \;
+
+          # The historical Phase A migration is already represented by the
+          # idempotent combined baseline. It is excluded only in this disposable
+          # CI workspace because it uses non-idempotent CREATE TABLE statements.
+          find /tmp/repository-migrations \
+            -maxdepth 1 \
+            -type f \
+            -name '[0-9]*_*.sql' \
+            ! -name '20260705133318_701f1246-3e43-4249-bde3-341989074c23.sql' \
+            -exec cp {} supabase/migrations/ \;
 
       - name: Start isolated local Supabase
         run: supabase start

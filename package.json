@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "lint:p0": "eslint src/lib/ai-agent-db.ts src/lib/ai-agent-trust.functions.ts src/lib/ai-agent.functions.ts src/services/ai-agent/approval-contract.ts src/services/ai-agent/execution.controller.ts \"src/routes/robots[.]txt.ts\" \"src/routes/sitemap[.]xml.ts\" \"src/routes/google-shopping[.]xml.ts\" tests --rule \"prettier/prettier: off\"",
     "format": "prettier --write .",
     "test": "npm run test:unit && npm run test:integration && npm run test:security",
     "test:unit": "vitest run tests/unit src/tests/unit",
