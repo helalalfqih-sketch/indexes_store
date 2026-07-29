@@ -1,21 +1,5 @@
 /**
  * Google Merchant Center Product Feed — google-shopping.xml
- * ──────────────────────────────────────────────────────────
- * Generates a complete RSS 2.0 / Google Shopping XML feed using
- * Google's required Product Data Specification fields:
- *
- *   Required:
- *     g:id, g:title, g:description, g:link, g:image_link,
- *     g:availability, g:price, g:condition
- *
- *   Recommended:
- *     g:brand, g:mpn, g:gtin (gtin8/12/13/14), g:sku,
- *     g:product_type, g:google_product_category,
- *     g:additional_image_link, g:shipping
- *
- * Merchant Center submission:
- *   Submit this URL in Merchant Center → Feeds → RSS 2.0
- *   URL: https://indexes-store.com/google-shopping.xml
  */
 
 import { createFileRoute } from "@tanstack/react-router";
@@ -29,31 +13,47 @@ import {
   STORE_COUNTRY,
 } from "@/lib/seo";
 
-/** Format price for Google Merchant: "1234.00 YER" */
+interface MerchantProduct {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  image?: string | null;
+  images?: string[] | null;
+  stock?: number | null;
+  availability?: string | null;
+  condition?: string | null;
+  brand?: string | null;
+  sku?: string | null;
+  mpn?: string | null;
+  gtin14?: string | null;
+  gtin13?: string | null;
+  gtin12?: string | null;
+  gtin8?: string | null;
+  barcode?: string | null;
+  categoryId?: string | null;
+  is_published?: boolean | null;
+}
+
 function merchantPrice(price: number): string {
   return `${price.toFixed(2)} ${STORE_CURRENCY}`;
 }
 
-/** Build a single <item> block for the Google feed */
-function buildProductItem(p: any, baseUrl: string): string {
+function buildProductItem(p: MerchantProduct, baseUrl: string): string {
   const productUrl = `${baseUrl}/product/${xmlEscape(p.slug)}`;
-  const imageUrl = xmlEscape(p.image || "");
-  const availability = merchantAvailability(p.stock, p.availability);
-  const condition = merchantCondition(p.condition);
+  const imageUrl = xmlEscape(p.image || p.images?.[0] || "");
+  const availability = merchantAvailability(p.stock ?? 0, p.availability ?? undefined);
+  const condition = merchantCondition(p.condition ?? undefined);
   const price = merchantPrice(p.price);
-
   const sku = xmlEscape(p.sku || p.id);
   const mpn = xmlEscape(p.mpn || p.sku || p.id);
-
-  // GTIN resolution (explicit fields take priority over barcode, no fallback to id)
   const gtinValue = p.gtin14 || p.gtin13 || p.gtin12 || p.gtin8 || p.barcode || null;
   const gtinField = gtinValue ? `    <g:gtin>${xmlEscape(gtinValue)}</g:gtin>\n` : "";
-
-  // Additional images (all except the primary)
   const extraImages = Array.isArray(p.images)
     ? p.images
-        .slice(1, 11) // Merchant Center supports up to 10 additional images
-        .map((img: string) => `    <g:additional_image_link>${xmlEscape(img)}</g:additional_image_link>`)
+        .slice(1, 11)
+        .map((img) => `    <g:additional_image_link>${xmlEscape(img)}</g:additional_image_link>`)
         .join("\n")
     : "";
 
@@ -88,9 +88,9 @@ export const Route = createFileRoute("/google-shopping.xml")({
         const origin = new URL(request.url).origin;
         const baseUrl = process.env.SITE_URL || (origin !== "null" ? origin : "");
 
-        let products: any[] = [];
+        let products: MerchantProduct[] = [];
         try {
-          products = await fetchProducts({ limit: 500 });
+          products = (await fetchProducts({ limit: 500 })) as unknown as MerchantProduct[];
         } catch {
           products = [];
         }

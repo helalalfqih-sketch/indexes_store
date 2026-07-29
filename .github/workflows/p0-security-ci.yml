@@ -126,14 +126,16 @@ jobs:
           mkdir -p supabase/migrations
           cp combined_migration.sql supabase/migrations/20250719000000_legacy_foundation_for_ci.sql
 
-          # The historical Phase A migration is already represented by the
-          # idempotent combined baseline. It is excluded only in this disposable
-          # CI workspace because it uses non-idempotent CREATE TABLE statements.
+          # These three historical schema-creation files are already represented
+          # by the idempotent combined baseline. Exclusion happens only inside
+          # this disposable CI workspace; repository history is not changed.
           find /tmp/repository-migrations \
             -maxdepth 1 \
             -type f \
             -name '[0-9]*_*.sql' \
             ! -name '20260705133318_701f1246-3e43-4249-bde3-341989074c23.sql' \
+            ! -name '20260705135005_7c6fa0d5-4a8a-4145-8af1-b85c43a03d36.sql' \
+            ! -name '20260705140302_1278852b-833d-4d58-81a3-502482008820.sql' \
             -exec cp {} supabase/migrations/ \;
 
       - name: Start isolated local Supabase
