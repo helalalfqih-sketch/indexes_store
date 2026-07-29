@@ -98,6 +98,9 @@ import { GleamDevicePreview } from "@/components/ai-agent/gleam-device-preview";
 import { GleamAccordionSidebar } from "@/components/ai-agent/gleam-accordion-sidebar";
 import { VisualArchitectureMap } from "@/components/ai-agent/visual-architecture-map";
 
+import { listRuntimeIncidents } from "@/lib/runtime-incidents.functions";
+import { ProductionIncidentCenterTab } from "@/features/runtime-incidents/components/incident-center-tab";
+
 export const Route = createFileRoute("/admin/ai-developer")({
   head: () => ({
     meta: [
@@ -169,7 +172,7 @@ function AIEngineeringAgentPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Lovable IDE & AI Builder States
-  const [workMode, setWorkMode] = useState<"PLAN" | "BUILD">("BUILD");
+  const [workMode, setWorkMode] = useState<"PLAN" | "BUILD" | "INCIDENTS">("INCIDENTS");
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"EDITOR" | "PREVIEW">("EDITOR");
   const [showFileExplorer, setShowFileExplorer] = useState(true);
   const [selectedFile, setSelectedFile] = useState<FileItem>({
@@ -192,10 +195,12 @@ function AIEngineeringAgentPage() {
     passed: boolean;
     errorCount: number;
     summary: string;
+    measured?: boolean;
   }>({
-    passed: true,
+    passed: false,
     errorCount: 0,
-    summary: "Build validated cleanly with 0 errors.",
+    summary: "لم يتم فحص وقياس البناء بعد (NOT_MEASURED).",
+    measured: false,
   });
   const [isValidatingBuild, setIsValidatingBuild] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -385,13 +390,13 @@ function AIEngineeringAgentPage() {
   });
   const persistentEvents = (rawPersistentEvents || []) as any[];
 
-  const getQualityIncidentsServerFn = async (): Promise<any> => ({ recommendations: [] });
+  const listIncidentsServerFn = useServerFn(listRuntimeIncidents);
   const { data: qualityData } = useQuery({
     queryKey: ["quality-incidents-data"],
-    queryFn: () => getQualityIncidentsServerFn(),
+    queryFn: () => listIncidentsServerFn(),
     refetchInterval: 10000,
   });
-  const qualityRecommendations = (qualityData as any)?.recommendations || [];
+  const qualityRecommendations = (qualityData as any)?.incidents || [];
 
   const { data: perfOverview } = useQuery({
     queryKey: ["ai-agent-performance"],
@@ -944,6 +949,18 @@ function AIEngineeringAgentPage() {
           <div className="flex items-center gap-1 bg-[#18181c] p-1 rounded-xl border border-zinc-800 text-xs">
             <button
               type="button"
+              onClick={() => setWorkMode("INCIDENTS")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition ${
+                workMode === "INCIDENTS"
+                  ? "bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md shadow-red-600/20"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+              }`}
+            >
+              <Shield className="h-3.5 w-3.5 text-red-400" />
+              أعطال الإنتاج 🛡️
+            </button>
+            <button
+              type="button"
               onClick={() => setWorkMode("PLAN")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition ${
                 workMode === "PLAN"
@@ -1126,7 +1143,12 @@ function AIEngineeringAgentPage() {
           {/* Mode Switch Content Body */}
           <div className="flex-1 flex flex-col overflow-hidden relative">
 
-            {workMode === "BUILD" ? (
+            {workMode === "INCIDENTS" ? (
+              /* INCIDENTS MODE: Production Incident Intelligence Center */
+              <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#09090b] p-6">
+                <ProductionIncidentCenterTab />
+              </div>
+            ) : workMode === "BUILD" ? (
               /* BUILD MODE: Monaco Code Editor */
               <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#09090b]">
                 <MonacoCodeEditor
