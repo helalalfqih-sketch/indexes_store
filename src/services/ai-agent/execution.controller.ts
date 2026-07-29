@@ -1,6 +1,7 @@
 import { executeApprovedTask, getAdminDb } from "@/lib/ai-agent.functions";
 import { logExecutionJournal, savePersistentExecutionEvent } from "./journal.service";
 import { AgentTaskState } from "./agent.state";
+import type { JsonValue } from "./approval-contract";
 
 export interface ExecutionControllerOptions {
   taskId: string;
@@ -13,8 +14,7 @@ export interface ExecutionControllerOptions {
 interface ExecutionResult {
   success?: boolean;
   buildOutput?: string;
-  failureDetails?: unknown;
-  [key: string]: unknown;
+  failureDetails?: JsonValue;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -27,17 +27,28 @@ function errorMessage(value: unknown): string {
   return String(value);
 }
 
+function toJsonValue(value: unknown): JsonValue {
+  if (typeof value === "undefined") return null;
+  try {
+    return JSON.parse(JSON.stringify(value)) as JsonValue;
+  } catch {
+    return String(value);
+  }
+}
+
 /**
  * Approval is owned by approveAgentTask. The controller must never synthesize
  * approvals or move a task directly to executing.
  */
-export async function approvePlan(): Promise<never> {
+export async function approvePlan(
+  _options: ExecutionControllerOptions,
+): Promise<never> {
   throw new Error("APPROVAL_ENTRYPOINT_DISABLED: use approveAgentTask with authenticated context");
 }
 
 export async function verifyProjectStructure(
   options: ExecutionControllerOptions,
-): Promise<{ success: boolean; details: Record<string, unknown> }> {
+): Promise<{ success: boolean; details: Record<string, JsonValue> }> {
   if (!options.context) {
     return {
       success: false,
@@ -52,13 +63,14 @@ export async function verifyProjectStructure(
     db.from("ai_agent_plans").select("id").limit(1),
   ]);
 
-  const details: Record<string, unknown> = {
+  const errors = checks
+    .map((check) => check.error?.message)
+    .filter((message): message is string => Boolean(message));
+  const details: Record<string, JsonValue> = {
     ordersTableExists: !checks[0].error,
     tasksTableExists: !checks[1].error,
     plansTableExists: !checks[2].error,
-    errors: checks
-      .map((check) => check.error?.message)
-      .filter((message): message is string => Boolean(message)),
+    errors,
   };
 
   const success = !checks[1].error && !checks[2].error;
@@ -80,7 +92,7 @@ export async function verifyProjectStructure(
 
 export async function startExecution(
   options: ExecutionControllerOptions,
-): Promise<{ success: boolean; output?: string; failureDetails?: unknown }> {
+): Promise<{ success: boolean; output?: string; failureDetails?: JsonValue }> {
   if (!options.context) {
     return {
       success: false,
@@ -116,7 +128,15 @@ export async function startExecution(
       throw new Error("Execution returned an invalid response");
     }
 
-    const result = raw as ExecutionResult;
+    const result: ExecutionResult = {
+      success: raw.success === true,
+      buildOutput: typeof raw.buildOutput === "string" ? raw.buildOutput : undefined,
+      failureDetails:
+        typeof raw.failureDetails === "undefined"
+          ? undefined
+          : toJsonValue(raw.failureDetails),
+    };
+
     await savePersistentExecutionEvent({
       sessionId: options.sessionId,
       taskId: options.taskId,
@@ -132,7 +152,7 @@ export async function startExecution(
 
     return {
       success: result.success === true,
-      output: typeof result.buildOutput === "string" ? result.buildOutput : undefined,
+      output: result.buildOutput,
       failureDetails: result.failureDetails,
     };
   } catch (error: unknown) {

@@ -5,11 +5,13 @@ export * from "./ai-agent.legacy";
 export {
   approveAgentTask,
   executeApprovedTask,
-  getAdminDb,
-  getAgentDb,
   getAgentRole,
-  resolveAgentRole,
   startExecutionTask,
   verifyApproval,
-  type AgentDb,
 } from "./ai-agent-trust.functions";
+export {
+  getAdminDb,
+  getAgentDb,
+  resolveAgentRole,
+  type ProjectSupabaseClient,
+} from "./ai-agent-db";

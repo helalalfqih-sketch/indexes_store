@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate file-route types
+        run: npm run build:dev
+
       - name: Typecheck
         run: npm run typecheck
 
