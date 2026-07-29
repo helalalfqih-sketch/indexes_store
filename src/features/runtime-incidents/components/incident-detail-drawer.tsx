@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getIncidentDetails } from "@/lib/runtime-incidents.functions";
+import { getIncidentDetails } from "@/lib/runtime-incidents.server";
 import { IncidentRecord, IncidentOccurrenceRecord } from "../types/incident.types";
 import { AlertTriangle, Clock, Terminal, CheckCircle, ShieldAlert, ArrowLeftRight, X } from "lucide-react";
 

@@ -98,7 +98,7 @@ import { GleamDevicePreview } from "@/components/ai-agent/gleam-device-preview";
 import { GleamAccordionSidebar } from "@/components/ai-agent/gleam-accordion-sidebar";
 import { VisualArchitectureMap } from "@/components/ai-agent/visual-architecture-map";
 
-import { listRuntimeIncidents } from "@/lib/runtime-incidents.functions";
+import { listRuntimeIncidents } from "@/lib/runtime-incidents.server";
 import { ProductionIncidentCenterTab } from "@/features/runtime-incidents/components/incident-center-tab";
 
 export const Route = createFileRoute("/admin/ai-developer")({

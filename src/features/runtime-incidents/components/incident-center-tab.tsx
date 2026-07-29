@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { listRuntimeIncidents } from "@/lib/runtime-incidents.functions";
+import { listRuntimeIncidents } from "@/lib/runtime-incidents.server";
 import { IncidentRecord, IncidentStats, IncidentSeverity } from "../types/incident.types";
 import { IncidentDetailDrawer } from "./incident-detail-drawer";
 import { ShieldAlert, AlertTriangle, Activity, RefreshCw, Filter, Eye, Cpu, CheckCircle2 } from "lucide-react";
