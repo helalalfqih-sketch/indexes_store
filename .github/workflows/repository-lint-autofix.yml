@@ -1,18 +1,18 @@
 name: Repository Safe Lint Fixes
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - fix/p0-security-critical-clean
     paths:
       - .github/workflows/repository-lint-autofix.yml
+      - scripts/fix-safe-lint.mjs
 
 permissions:
   contents: write
 
 jobs:
   fix:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -20,7 +20,7 @@ jobs:
       - name: Checkout source branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: fix/p0-security-critical-clean
           fetch-depth: 0
 
       - name: Set up Node.js
@@ -33,88 +33,10 @@ jobs:
         run: npm ci
 
       - name: Apply deterministic safe fixes
-        shell: bash
+        run: node scripts/fix-safe-lint.mjs
+
+      - name: Format changed source files
         run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-
-          function edit(path, transform) {
-            const before = fs.readFileSync(path, 'utf8');
-            const after = transform(before);
-            if (after === before) {
-              console.log(`No change: ${path}`);
-              return;
-            }
-            fs.writeFileSync(path, after);
-            console.log(`Updated: ${path}`);
-          }
-
-          edit('src/components/optimized-image.tsx', (text) =>
-            text.replace(
-              '// @ts-ignore — fetchpriority is valid HTML5 but not yet in TS types',
-              '// @ts-expect-error -- fetchpriority is supported by browsers before React typings expose it',
-            ),
-          );
-
-          for (const path of [
-            'src/lib/ai-agent.legacy.ts',
-            'src/services/ai-agent/code-patcher.engine.ts',
-            'src/services/ai-agent/patch-engine.service.ts',
-          ]) {
-            edit(path, (text) => text.split('[\\/\\\\]').join('[/\\\\]'));
-          }
-
-          edit('src/lib/quality/runtime/console-monitor.ts', (text) =>
-            text.replace(
-              '    } catch {}',
-              '    } catch {\n      // Console arguments may contain circular or non-serializable values.\n    }',
-            ),
-          );
-
-          edit('src/lib/use-favorites.ts', (text) =>
-            text
-              .replace(
-                '      } catch {}',
-                '      } catch {\n        // localStorage may be unavailable or full; keep the in-memory state.\n      }',
-              )
-              .replace(
-                '      } catch {}',
-                '      } catch {\n        // Ignore malformed or unavailable persisted favorites.\n      }',
-              ),
-          );
-
-          edit('src/lib/quality/history.ts', (text) =>
-            text
-              .replace(
-                '      return require("fs");',
-                '      // eslint-disable-next-line @typescript-eslint/no-require-imports -- development-only lazy load prevents production fs bundling\n      return require("fs");',
-              )
-              .replace(
-                '      return require("path");',
-                '      // eslint-disable-next-line @typescript-eslint/no-require-imports -- development-only lazy load prevents production path bundling\n      return require("path");',
-              ),
-          );
-
-          edit('src/lib/saas/billing.service.ts', (text) =>
-            text.replace(
-              `  async startCheckout() {
-    throw new Error("Billing not configured. TODO: connect a provider in Phase D.");
-    // eslint-disable-next-line @typescript-eslint/no-unreachable
-    return { url: "" };
-  }`,
-              `  async startCheckout(
-    _input: Parameters<BillingProvider["startCheckout"]>[0],
-  ): Promise<{ url: string }> {
-    throw new Error("Billing not configured. TODO: connect a provider in Phase D.");
-  }`,
-            ),
-          );
-
-          edit('src/routes/admin.stores.$tenantId.tsx', (text) =>
-            text.replace(/\bmkMut\b/g, 'useStoreMutation'),
-          );
-          NODE
-
           npx prettier --write \
             src/components/optimized-image.tsx \
             src/lib/ai-agent.legacy.ts \
@@ -193,4 +115,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "fix(lint): resolve safe repository rule violations"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git push origin HEAD:fix/p0-security-critical-clean
