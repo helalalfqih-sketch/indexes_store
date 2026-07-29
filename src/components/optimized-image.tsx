@@ -114,14 +114,32 @@ export function OptimizedImage({
           onError={handleError}
           className={cn(
             "h-full w-full object-cover transition-opacity duration-500 ease-in-out",
-            isLoaded || eager ? "opacity-100" : "opacity-0 absolute inset-0"
+            isLoaded || eager ? "opacity-100" : "opacity-0 absolute inset-0",
           )}
           loading={loadingAttr}
           decoding="async"
           // @ts-ignore — fetchpriority is valid HTML5 but not yet in TS types
           fetchpriority={fetchPriority}
-          width={naturalWidth ?? (size === "thumbnail" ? 128 : size === "card" ? 384 : size === "large" ? 800 : undefined)}
-          height={naturalHeight ?? (size === "thumbnail" ? 128 : size === "card" ? 384 : size === "large" ? 800 : undefined)}
+          width={
+            naturalWidth ??
+            (size === "thumbnail"
+              ? 128
+              : size === "card"
+                ? 384
+                : size === "large"
+                  ? 800
+                  : undefined)
+          }
+          height={
+            naturalHeight ??
+            (size === "thumbnail"
+              ? 128
+              : size === "card"
+                ? 384
+                : size === "large"
+                  ? 800
+                  : undefined)
+          }
           {...props}
         />
       )}

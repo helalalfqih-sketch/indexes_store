@@ -4,7 +4,8 @@
  */
 import { EvidenceItem } from "../evidence-engine";
 
-export type EvidenceSourceOrigin = "LOCAL" | "CI" | "VERCEL" | "SUPABASE" | "BROWSER" | "USER_SESSION";
+export type EvidenceSourceOrigin =
+  "LOCAL" | "CI" | "VERCEL" | "SUPABASE" | "BROWSER" | "USER_SESSION";
 
 export interface ProductionEvidenceItem extends EvidenceItem {
   origin: EvidenceSourceOrigin;
@@ -16,7 +17,7 @@ export interface ProductionEvidenceItem extends EvidenceItem {
 export function adaptEvidenceToProductionSource(
   item: EvidenceItem,
   origin: EvidenceSourceOrigin,
-  isConnected = true
+  isConnected = true,
 ): ProductionEvidenceItem {
   let confidenceLevel: "HIGH" | "MEDIUM" | "LOW" = "HIGH";
   let confidenceScore = 98;

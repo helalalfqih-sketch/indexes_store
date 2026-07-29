@@ -40,4 +40,3 @@ export const claimFirstAdmin = createServerFn({ method: "POST" })
 
     return { granted: true };
   });
-

@@ -26,7 +26,10 @@ export function inspectProjectEnvironment(cwd: string = process.cwd()): ProjectE
     packageManager = "pnpm";
   } else if (fs.existsSync(path.join(cwd, "yarn.lock"))) {
     packageManager = "yarn";
-  } else if (fs.existsSync(path.join(cwd, "bun.lockb")) || fs.existsSync(path.join(cwd, "bun.lock"))) {
+  } else if (
+    fs.existsSync(path.join(cwd, "bun.lockb")) ||
+    fs.existsSync(path.join(cwd, "bun.lock"))
+  ) {
     packageManager = "bun";
   }
 
@@ -86,7 +89,8 @@ export function inspectProjectEnvironment(cwd: string = process.cwd()): ProjectE
   }
 
   const hasWorkspaces =
-    fs.existsSync(path.join(cwd, "turbo.json")) || fs.existsSync(path.join(cwd, "pnpm-workspace.yaml"));
+    fs.existsSync(path.join(cwd, "turbo.json")) ||
+    fs.existsSync(path.join(cwd, "pnpm-workspace.yaml"));
 
   return {
     packageManager,

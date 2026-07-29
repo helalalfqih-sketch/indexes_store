@@ -39,9 +39,7 @@ export const SCHEMA_BY_KEY: Record<string, { safeParse: (v: unknown) => any }> =
   advanced: AdvancedConfigSchema,
 };
 
-export type ValidationResult =
-  | { ok: true; value: unknown }
-  | { ok: false; message: string };
+export type ValidationResult = { ok: true; value: unknown } | { ok: false; message: string };
 
 /**
  * Validate an incoming CMS value against its key's schema.

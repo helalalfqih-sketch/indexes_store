@@ -19,7 +19,9 @@ export function registerConsoleMonitor() {
   const originalConsoleError = console.error;
   console.error = (...args: any[]) => {
     try {
-      const msg = args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" ");
+      const msg = args
+        .map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a)))
+        .join(" ");
       consoleErrorBuffer.push({
         id: `ERR-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         message: msg,

@@ -10,8 +10,10 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
   const storeName = settings.navigation.storeName || "اندكس ستور";
   const tagline = settings.navigation.tagline || "اختيارك الأفضل";
   const phone = settings.navigation.whatsappPhone || "967771370740";
-  const address = settings.navigation.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية";
-  const deliveryInfo = settings.navigation.deliveryInfoText || "متوفر لدينا خدمة التوصيل لجميع المحافظات 🇾🇪";
+  const address =
+    settings.navigation.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية";
+  const deliveryInfo =
+    settings.navigation.deliveryInfoText || "متوفر لدينا خدمة التوصيل لجميع المحافظات 🇾🇪";
   const copyright = settings.navigation.copyrightText || "جميع الحقوق محفوظة";
 
   const waHref = whatsappLink("مرحباً، لدي استفسار عن " + storeName, phone);
@@ -86,22 +88,42 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
         {settings.navigation.socialLinks && (
           <div className="flex items-center justify-center gap-4 pt-2 border-t border-border/20 text-xs">
             {settings.navigation.socialLinks.facebook && (
-              <a href={settings.navigation.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
+              <a
+                href={settings.navigation.socialLinks.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-showcase-muted hover:text-primary transition font-bold"
+              >
                 فيسبوك
               </a>
             )}
             {settings.navigation.socialLinks.instagram && (
-              <a href={settings.navigation.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
+              <a
+                href={settings.navigation.socialLinks.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-showcase-muted hover:text-primary transition font-bold"
+              >
                 إنستغرام
               </a>
             )}
             {settings.navigation.socialLinks.tiktok && (
-              <a href={settings.navigation.socialLinks.tiktok} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
+              <a
+                href={settings.navigation.socialLinks.tiktok}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-showcase-muted hover:text-primary transition font-bold"
+              >
                 تيك توك
               </a>
             )}
             {settings.navigation.socialLinks.twitter && (
-              <a href={settings.navigation.socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
+              <a
+                href={settings.navigation.socialLinks.twitter}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-showcase-muted hover:text-primary transition font-bold"
+              >
                 إكس (تويتر)
               </a>
             )}
@@ -110,27 +132,51 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
 
         {/* CMS Pages Footer Links */}
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border/20 pt-3 text-[11px] font-semibold text-muted-foreground">
-          <Link to="/pages/$slug" params={{ slug: "about-us" }} className="hover:text-primary transition">
+          <Link
+            to="/pages/$slug"
+            params={{ slug: "about-us" }}
+            className="hover:text-primary transition"
+          >
             من نحن
           </Link>
           <span>•</span>
-          <Link to="/pages/$slug" params={{ slug: "privacy-policy" }} className="hover:text-primary transition">
+          <Link
+            to="/pages/$slug"
+            params={{ slug: "privacy-policy" }}
+            className="hover:text-primary transition"
+          >
             سياسة الخصوصية
           </Link>
           <span>•</span>
-          <Link to="/pages/$slug" params={{ slug: "terms" }} className="hover:text-primary transition">
+          <Link
+            to="/pages/$slug"
+            params={{ slug: "terms" }}
+            className="hover:text-primary transition"
+          >
             الشروط والأحكام
           </Link>
           <span>•</span>
-          <Link to="/pages/$slug" params={{ slug: "return-policy" }} className="hover:text-primary transition">
+          <Link
+            to="/pages/$slug"
+            params={{ slug: "return-policy" }}
+            className="hover:text-primary transition"
+          >
             سياسة الإرجاع
           </Link>
           <span>•</span>
-          <Link to="/pages/$slug" params={{ slug: "shipping-policy" }} className="hover:text-primary transition">
+          <Link
+            to="/pages/$slug"
+            params={{ slug: "shipping-policy" }}
+            className="hover:text-primary transition"
+          >
             سياسة الشحن
           </Link>
           <span>•</span>
-          <Link to="/pages/$slug" params={{ slug: "faq" }} className="hover:text-primary transition">
+          <Link
+            to="/pages/$slug"
+            params={{ slug: "faq" }}
+            className="hover:text-primary transition"
+          >
             الأسئلة الشائعة
           </Link>
         </div>

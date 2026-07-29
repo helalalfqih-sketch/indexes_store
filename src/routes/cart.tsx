@@ -23,7 +23,6 @@ export const Route = createFileRoute("/cart")({
   component: CartPage,
 });
 
-
 function CartPage() {
   const { coupon } = Route.useSearch();
   const items = useCart((s) => s.items);
@@ -92,11 +91,12 @@ function CartPage() {
       const template = settings.cart_config.whatsappOrderTemplate;
       if (template) {
         const prodList = items.map((it) => `- ${it.name} (${it.qty}x)`).join("\n");
-        orderMessage = template
-          .replace("{products}", prodList)
-          .replace("{total}", formatPrice(finalTotal))
-          .replace("{name}", name || "غير محدد")
-          .replace("{address}", address || "غير محدد") + orderFooter;
+        orderMessage =
+          template
+            .replace("{products}", prodList)
+            .replace("{total}", formatPrice(finalTotal))
+            .replace("{name}", name || "غير محدد")
+            .replace("{address}", address || "غير محدد") + orderFooter;
       } else {
         orderMessage =
           buildOrderMessage(items, finalTotal, { name, phone, address, notes }, coupon, discount) +
@@ -123,11 +123,13 @@ function CartPage() {
 
       <ul className="flex flex-col gap-2">
         {items.map((it) => (
-          <li
-            key={it.productId}
-            className="flex gap-3 rounded-3xl glass-float p-3"
-          >
-            <OptimizedImage src={it.image} alt={it.name} size="thumbnail" className="h-24 w-24 rounded-2xl object-cover" />
+          <li key={it.productId} className="flex gap-3 rounded-3xl glass-float p-3">
+            <OptimizedImage
+              src={it.image}
+              alt={it.name}
+              size="thumbnail"
+              className="h-24 w-24 rounded-2xl object-cover"
+            />
             <div className="flex flex-1 flex-col justify-between">
               <div className="flex items-start justify-between gap-2">
                 <h3 className="line-clamp-2 text-xs font-bold leading-tight">{it.name}</h3>
@@ -284,6 +286,3 @@ function CartPage() {
     </div>
   );
 }
-
-
-

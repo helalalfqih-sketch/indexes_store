@@ -12,7 +12,11 @@ import type { Database } from "@/integrations/supabase/types";
 import type { ProductDTO } from "@/lib/domain/product";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabase } from "@/integrations/supabase/client";
-import { productsRepo, buildProductMediaAndVideos, type ProductFilters } from "@/lib/repositories/products.repo";
+import {
+  productsRepo,
+  buildProductMediaAndVideos,
+  type ProductFilters,
+} from "@/lib/repositories/products.repo";
 import { categoriesRepo } from "@/lib/repositories/categories.repo";
 import { inventoryRepo } from "@/lib/repositories/inventory.repo";
 import { generateText } from "ai";
@@ -47,10 +51,7 @@ const resolvePublicTenant = async (
   override?: string | null,
 ): Promise<string> => resolveTenantId(db, { override, headers: await readHeaders() });
 
-const assertAdmin = async (ctx: {
-  supabase: SupabaseClient<Database>;
-  userId: string;
-}) => {
+const assertAdmin = async (ctx: { supabase: SupabaseClient<Database>; userId: string }) => {
   if (process.env.NODE_ENV === "development") return;
   const { data, error } = await ctx.supabase.rpc("has_role", {
     _user_id: ctx.userId,
@@ -80,7 +81,8 @@ const resolveAdminTenant = async (
 };
 
 // -------- CSV Feed Parser & Helpers for storefront --------
-const GLOBAL_CSV_URL = "https://firebasestorage.googleapis.com/v0/b/smartcontentcreator-d49f2.firebasestorage.app/o/catalogs%2Fglobal%2Fcatalog.csv?alt=media&token=8d793707-b96a-4ee9-bca1-0912af180138&ext=.csv";
+const GLOBAL_CSV_URL =
+  "https://firebasestorage.googleapis.com/v0/b/smartcontentcreator-d49f2.firebasestorage.app/o/catalogs%2Fglobal%2Fcatalog.csv?alt=media&token=8d793707-b96a-4ee9-bca1-0912af180138&ext=.csv";
 
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
@@ -91,20 +93,31 @@ function parseCsv(text: string): string[][] {
     const c = text[i];
     if (inQuotes) {
       if (c === '"') {
-        if (text[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = false; }
+        if (text[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
       } else cur += c;
     } else {
       if (c === '"') inQuotes = true;
-      else if (c === ",") { row.push(cur); cur = ""; }
-      else if (c === "\n" || c === "\r") {
+      else if (c === ",") {
+        row.push(cur);
+        cur = "";
+      } else if (c === "\n" || c === "\r") {
         if (c === "\r" && text[i + 1] === "\n") i++;
-        row.push(cur); cur = "";
+        row.push(cur);
+        cur = "";
         if (row.length > 1 || row[0] !== "") rows.push(row);
         row = [];
       } else cur += c;
     }
   }
-  if (cur.length > 0 || row.length > 0) { row.push(cur); rows.push(row); }
+  if (cur.length > 0 || row.length > 0) {
+    row.push(cur);
+    rows.push(row);
+  }
   return rows;
 }
 
@@ -141,7 +154,7 @@ async function fetchCsvProducts() {
 
     const header = rows[0].map((h) => h.trim());
     const col = (name: string) => header.indexOf(name);
-    
+
     const idIdx = col("id");
     const titleIdx = col("title");
     const descIdx = col("description");
@@ -155,7 +168,7 @@ async function fetchCsvProducts() {
 
     // V2 columns
     const skuIdx = col("sku");
-    const barcodeIdx = header.findIndex(h => h === "gtin" || h === "barcode");
+    const barcodeIdx = header.findIndex((h) => h === "gtin" || h === "barcode");
     const salePriceIdx = col("sale_price");
     const costPriceIdx = col("cost_price");
     const colorIdx = col("color");
@@ -177,10 +190,12 @@ async function fetchCsvProducts() {
       const title = (row[titleIdx] || "").trim();
       if (!title) continue;
       const externalId = idIdx >= 0 ? (row[idIdx] || "").trim() || null : null;
-      
+
       const { price: regPrice, currency } = parsePrice(row[priceIdx] || "");
-      const { price: salePrice } = salePriceIdx >= 0 ? parsePrice(row[salePriceIdx] || "") : { price: 0 };
-      const { price: costPrice } = costPriceIdx >= 0 ? parsePrice(row[costPriceIdx] || "") : { price: 0 };
+      const { price: salePrice } =
+        salePriceIdx >= 0 ? parsePrice(row[salePriceIdx] || "") : { price: 0 };
+      const { price: costPrice } =
+        costPriceIdx >= 0 ? parsePrice(row[costPriceIdx] || "") : { price: 0 };
 
       let price = regPrice;
       let compareAtPrice: number | null = null;
@@ -196,7 +211,9 @@ async function fetchCsvProducts() {
       let slug = slugify(title, externalId ?? `product-${r}`);
       let uniq = slug;
       let i = 2;
-      while (seenSlugs.has(uniq)) { uniq = `${slug}-${i++}`.slice(0, 60); }
+      while (seenSlugs.has(uniq)) {
+        uniq = `${slug}-${i++}`.slice(0, 60);
+      }
       seenSlugs.add(uniq);
       slug = uniq;
 
@@ -235,7 +252,11 @@ async function fetchCsvProducts() {
       const categoryId = slugify(categoryName, "other");
       const rawLink = linkIdx >= 0 ? (row[linkIdx] || "").trim() : null;
 
-      const { images: cleanImages, videos: cleanVideos, media: cleanMedia } = buildProductMediaAndVideos({
+      const {
+        images: cleanImages,
+        videos: cleanVideos,
+        media: cleanMedia,
+      } = buildProductMediaAndVideos({
         images: images.filter(Boolean),
         source_url: rawLink,
       });
@@ -295,16 +316,16 @@ export const listProducts = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const db = publicClient();
     const tenantId = await resolvePublicTenant(db, data.tenantId ?? null);
-    
+
     // Query database products table
-    let list = await productsRepo.list(db, {
+    const list = await productsRepo.list(db, {
       tenantId,
       categoryId: data.categoryId,
       search: data.search,
       limit: data.limit,
       offset: data.offset,
     });
-    
+
     // If DB is empty, fall back to CSV catalog feed
     if (list.length === 0) {
       let csvList = await fetchCsvProducts();
@@ -319,7 +340,7 @@ export const listProducts = createServerFn({ method: "GET" })
             (p.description ?? "").toLowerCase().includes(s) ||
             (p.sku ?? "").toLowerCase().includes(s) ||
             (p.brand ?? "").toLowerCase().includes(s) ||
-            (p.category_name ?? "").toLowerCase().includes(s)
+            (p.category_name ?? "").toLowerCase().includes(s),
         );
       }
       if (data.offset != null && data.limit) {
@@ -329,7 +350,7 @@ export const listProducts = createServerFn({ method: "GET" })
       }
       return csvList as unknown as ProductDTO[];
     }
-    
+
     return list;
   });
 
@@ -342,7 +363,7 @@ export const getProductBySlug = createServerFn({ method: "GET" })
     const tenantId = await resolvePublicTenant(db, data.tenantId ?? null);
     const prod = await productsRepo.getBySlug(db, data.slug, tenantId);
     if (prod) return prod as unknown as ProductDTO;
-    
+
     // Fall back to CSV catalog
     const list = await fetchCsvProducts();
     return (list.find((p) => p.slug === data.slug) || null) as unknown as ProductDTO | null;
@@ -471,10 +492,7 @@ export const getProductsByIds = createServerFn({ method: "GET" })
 
     results.sort((a, b) => {
       const rank = (p: ProductDTO) =>
-        Math.min(
-          idOrder.get(p.id.toLowerCase()) ?? 999,
-          idOrder.get(p.slug.toLowerCase()) ?? 999,
-        );
+        Math.min(idOrder.get(p.id.toLowerCase()) ?? 999, idOrder.get(p.slug.toLowerCase()) ?? 999);
       return rank(a) - rank(b);
     });
 
@@ -488,7 +506,7 @@ export const listCategories = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const db = publicClient();
     const tenantId = await resolvePublicTenant(db, data.tenantId);
-    
+
     try {
       const dbCategories = await categoriesRepo.list(db, { tenantId, includeInactive: false });
       if (dbCategories && dbCategories.length > 0) {
@@ -497,10 +515,10 @@ export const listCategories = createServerFn({ method: "GET" })
     } catch (err) {
       console.warn("Error fetching Supabase categories, using CSV fallback:", err);
     }
-    
+
     const products = await fetchCsvProducts();
     const categoriesMap = new Map<string, any>();
-    
+
     products.forEach((p) => {
       if (p.category_name && p.category_id) {
         if (!categoriesMap.has(p.category_id)) {
@@ -519,7 +537,7 @@ export const listCategories = createServerFn({ method: "GET" })
         }
       }
     });
-    
+
     return Array.from(categoriesMap.values());
   });
 
@@ -556,7 +574,7 @@ export const adminListProducts = createServerFn({ method: "GET" })
     const tenantId = await resolveAdminTenant(ctx, data.tenantId);
 
     // ── 1. Fetch Supabase products (PRIMARY SOURCE OF TRUTH) ──────────────────
-    let dbProducts = await productsRepo.list(ctx.supabase, {
+    const dbProducts = await productsRepo.list(ctx.supabase, {
       tenantId,
       search: data.search,
       categoryId: data.categoryId,
@@ -586,9 +604,7 @@ export const adminListProducts = createServerFn({ method: "GET" })
 
     // Append CSV products that do not exist in Supabase DB yet
     for (const csv of csvList) {
-      const alreadyInDb =
-        dbProductMap.has(csv.id) ||
-        dbSlugSet.has(csv.slug);
+      const alreadyInDb = dbProductMap.has(csv.id) || dbSlugSet.has(csv.slug);
 
       if (!alreadyInDb) {
         const finalId = UUID_RE.test(csv.id) ? csv.id : csv.id;
@@ -619,7 +635,6 @@ export const adminListProducts = createServerFn({ method: "GET" })
 
     return filtered;
   });
-
 
 export const adminGetProduct = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -684,26 +699,72 @@ export const adminDeleteProduct = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export function inferCategorySlug(title: string, tags: string[] = [], description: string = ""): string {
+export function inferCategorySlug(
+  title: string,
+  tags: string[] = [],
+  description: string = "",
+): string {
   const text = `${title} ${tags.join(" ")} ${description}`.toLowerCase();
 
-  if (text.includes("_gcat:electronics") || text.includes("_gcat:cell phones") || text.includes("_gcat:cameras")) return "electronics";
+  if (
+    text.includes("_gcat:electronics") ||
+    text.includes("_gcat:cell phones") ||
+    text.includes("_gcat:cameras")
+  )
+    return "electronics";
   if (text.includes("_gcat:beauty") || text.includes("_gcat:personal care")) return "beauty-care";
   if (text.includes("_gcat:kitchen") || text.includes("_gcat:cookware")) return "kitchen";
-  if (text.includes("_gcat:home") || text.includes("storage") || text.includes("organization")) return "storage-organization";
+  if (text.includes("_gcat:home") || text.includes("storage") || text.includes("organization"))
+    return "storage-organization";
   if (text.includes("_gcat:health") || text.includes("massage")) return "health-massage";
   if (text.includes("_gcat:sports") || text.includes("fitness")) return "sports-fitness";
   if (text.includes("_gcat:automotive") || text.includes("car")) return "automotive";
-  if (text.includes("_gcat:toys") || text.includes("baby") || text.includes("kids")) return "kids-toys";
+  if (text.includes("_gcat:toys") || text.includes("baby") || text.includes("kids"))
+    return "kids-toys";
 
-  if (/سيار|طلاء|سيارات|داش|كشاف سيارة|صنفرة|فحص سمك|مسدس غسيل|ملمع|خدوش|إطارات|عزم|رافع|رافعة|طوارئ|مكشاف/i.test(text)) return "automotive";
-  if (/مساج|تدليك|رقبة|كتف|مشد|صحة|أنف|تنفس|موسع|قفاز|تأهيل|ركبة|راحة|استرخاء|مرتبة هوائية|طوق|كهربائي للمقاعد/i.test(text)) return "health-massage";
-  if (/مطبخ|مطابخ|خبازة|قهوة|شواية|برجر|ثلج|فرن|قطاعة|موقد|عصارة|ساندويتش|طعام|أواني|قلاية|خلاط|حافظة طعام|صانع ثلج|صانعة الثلج|صانع البرجر/i.test(text)) return "kitchen";
-  if (/حلاقة|شعر|مجفف|تبييض|ليزر|تجميل|بشرة|العين|رموش|ساونا|مربط|استحمام|فوارة|تصفيف|تمليس|تنعيم|شفط الدهون|حب الشباب|مكينة حلاقة/i.test(text)) return "beauty-care";
-  if (/رف|رفوف|ستارة|منظم|دولاب|حامل|تخزين|منشر|ممسحة|لاصق|معجون|سيليكون|عازل|سحري|قماشي|محفظة|مثبتات/i.test(text)) return "storage-organization";
-  if (/رياض|لياقة|قبضة|تمرين|تمارين|سير|دراجة|عصا القوة|الة رياضة|تسلق|واقي ركبة|بدلة ساونا/i.test(text)) return "sports-fitness";
-  if (/طفل|أطفال|لعبة|العاب|سرير أطفال|ناموسية|أسد|يوفو|كرسي أطفال|سيارة التحكم|مقياس طول الأرنب/i.test(text)) return "kids-toys";
-  
+  if (
+    /سيار|طلاء|سيارات|داش|كشاف سيارة|صنفرة|فحص سمك|مسدس غسيل|ملمع|خدوش|إطارات|عزم|رافع|رافعة|طوارئ|مكشاف/i.test(
+      text,
+    )
+  )
+    return "automotive";
+  if (
+    /مساج|تدليك|رقبة|كتف|مشد|صحة|أنف|تنفس|موسع|قفاز|تأهيل|ركبة|راحة|استرخاء|مرتبة هوائية|طوق|كهربائي للمقاعد/i.test(
+      text,
+    )
+  )
+    return "health-massage";
+  if (
+    /مطبخ|مطابخ|خبازة|قهوة|شواية|برجر|ثلج|فرن|قطاعة|موقد|عصارة|ساندويتش|طعام|أواني|قلاية|خلاط|حافظة طعام|صانع ثلج|صانعة الثلج|صانع البرجر/i.test(
+      text,
+    )
+  )
+    return "kitchen";
+  if (
+    /حلاقة|شعر|مجفف|تبييض|ليزر|تجميل|بشرة|العين|رموش|ساونا|مربط|استحمام|فوارة|تصفيف|تمليس|تنعيم|شفط الدهون|حب الشباب|مكينة حلاقة/i.test(
+      text,
+    )
+  )
+    return "beauty-care";
+  if (
+    /رف|رفوف|ستارة|منظم|دولاب|حامل|تخزين|منشر|ممسحة|لاصق|معجون|سيليكون|عازل|سحري|قماشي|محفظة|مثبتات/i.test(
+      text,
+    )
+  )
+    return "storage-organization";
+  if (
+    /رياض|لياقة|قبضة|تمرين|تمارين|سير|دراجة|عصا القوة|الة رياضة|تسلق|واقي ركبة|بدلة ساونا/i.test(
+      text,
+    )
+  )
+    return "sports-fitness";
+  if (
+    /طفل|أطفال|لعبة|العاب|سرير أطفال|ناموسية|أسد|يوفو|كرسي أطفال|سيارة التحكم|مقياس طول الأرنب/i.test(
+      text,
+    )
+  )
+    return "kids-toys";
+
   return "electronics";
 }
 
@@ -719,14 +780,19 @@ export const adminAutoCategorizeProducts = createServerFn({ method: "POST" })
 
     // 1. Fetch categories from DB
     let dbCategories = await categoriesRepo.list(ctx.supabase, { tenantId, includeInactive: true });
-    
+
     // Seed default categories if empty
     if (!dbCategories || dbCategories.length === 0) {
       const defaultCats = [
         { name: "إلكترونيات", slug: "electronics", icon: "Smartphone", color: "purple" },
         { name: "الجمال والعناية", slug: "beauty-care", icon: "Sparkles", color: "pink" },
         { name: "المطبخ والأواني", slug: "kitchen", icon: "Utensils", color: "orange" },
-        { name: "التنظيم والتخزين", slug: "storage-organization", icon: "Archive", color: "yellow" },
+        {
+          name: "التنظيم والتخزين",
+          slug: "storage-organization",
+          icon: "Archive",
+          color: "yellow",
+        },
         { name: "الصحة والمساج", slug: "health-massage", icon: "Activity", color: "red" },
         { name: "الرياضة واللياقة", slug: "sports-fitness", icon: "Flame", color: "emerald" },
         { name: "السيارات والإكسسوارات", slug: "automotive", icon: "Car", color: "blue" },
@@ -743,7 +809,9 @@ export const adminAutoCategorizeProducts = createServerFn({ method: "POST" })
             is_active: true,
             sort: i,
           });
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
       dbCategories = await categoriesRepo.list(ctx.supabase, { tenantId, includeInactive: true });
     }
@@ -756,7 +824,7 @@ export const adminAutoCategorizeProducts = createServerFn({ method: "POST" })
 
     // 2. Fetch CSV products
     const csvProducts = await fetchCsvProducts();
-    
+
     // 3. For each CSV product, compute category and upsert into Supabase
     let categorizedCount = 0;
     const recordsToUpsert = csvProducts.map((p) => {
@@ -792,9 +860,7 @@ export const adminAutoCategorizeProducts = createServerFn({ method: "POST" })
       const BATCH_SIZE = 50;
       for (let i = 0; i < recordsToUpsert.length; i += BATCH_SIZE) {
         const batch = recordsToUpsert.slice(i, i + BATCH_SIZE);
-        await ctx.supabase
-          .from("products")
-          .upsert(batch as any, { onConflict: "tenant_id,slug" });
+        await ctx.supabase.from("products").upsert(batch as any, { onConflict: "tenant_id,slug" });
       }
     }
 
@@ -804,11 +870,13 @@ export const adminAutoCategorizeProducts = createServerFn({ method: "POST" })
 export const adminBulkAssignCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) =>
-    z.object({
-      productIds: z.array(z.string()),
-      categoryId: z.string().uuid(),
-      tenantId: z.string().uuid().optional(),
-    }).parse(raw),
+    z
+      .object({
+        productIds: z.array(z.string()),
+        categoryId: z.string().uuid(),
+        tenantId: z.string().uuid().optional(),
+      })
+      .parse(raw),
   )
   .handler(async ({ data, context }) => {
     const ctx = context as any;
@@ -942,7 +1010,10 @@ const callBack4AppVertexGateway = async (params: {
       throw new Error(json.result?.error || "Unknown Vertex error");
     }
   } catch (vertexErr: any) {
-    console.warn("⚠️ [Web-AI-Gateway] Vertex failed, falling back to Gemini Key Pool:", vertexErr.message || vertexErr);
+    console.warn(
+      "⚠️ [Web-AI-Gateway] Vertex failed, falling back to Gemini Key Pool:",
+      vertexErr.message || vertexErr,
+    );
 
     const response = await fetch(fallbackUrl, {
       method: "POST",
@@ -996,20 +1067,17 @@ const catalogPrompt = `
 [new أو used]
 `;
 
-const requireAuthWithClient = createMiddleware({ type: "function" })
-  .client(async ({ next }) => {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    return next({
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+const requireAuthWithClient = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return next({
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
+});
 
 export const aiAnalyzeImage = createServerFn({ method: "POST" })
   .middleware([requireAuthWithClient, requireSupabaseAuth])
-  .inputValidator((raw: unknown) =>
-    z.object({ image: z.string() }).parse(raw)
-  )
+  .inputValidator((raw: unknown) => z.object({ image: z.string() }).parse(raw))
   .handler(async ({ data }) => {
     let cleanBase64 = data.image;
     let mimeType = "image/jpeg";
@@ -1034,9 +1102,7 @@ export const aiAnalyzeImage = createServerFn({ method: "POST" })
 
 export const aiOptimizeDescription = createServerFn({ method: "POST" })
   .middleware([requireAuthWithClient, requireSupabaseAuth])
-  .inputValidator((raw: unknown) =>
-    z.object({ text: z.string() }).parse(raw)
-  )
+  .inputValidator((raw: unknown) => z.object({ text: z.string() }).parse(raw))
   .handler(async ({ data }) => {
     const cleanedText = data.text;
     const promptText = `

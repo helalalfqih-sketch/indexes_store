@@ -16,10 +16,7 @@ import { useAppearance } from "@/components/appearance-provider";
 
 type BrandSize = "sm" | "md" | "lg";
 
-const SIZES: Record<
-  BrandSize,
-  { box: string; icon: string; name: string; tagline: string }
-> = {
+const SIZES: Record<BrandSize, { box: string; icon: string; name: string; tagline: string }> = {
   sm: { box: "h-7 w-7 rounded-lg", icon: "h-3.5 w-3.5", name: "text-xs", tagline: "text-[9px]" },
   md: { box: "h-9 w-9 rounded-xl", icon: "h-4.5 w-4.5", name: "text-sm", tagline: "text-[11px]" },
   lg: { box: "h-12 w-12 rounded-2xl", icon: "h-6 w-6", name: "text-lg", tagline: "text-xs" },

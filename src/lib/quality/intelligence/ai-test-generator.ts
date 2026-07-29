@@ -25,7 +25,7 @@ function ensureTestsDir() {
 
 export function generateAutomatedTestForIncident(
   incidentId: string,
-  targetFile: string
+  targetFile: string,
 ): GeneratedTestScript {
   const testId = `TEST-${Date.now()}`;
   const testName = `Automated regression test for ${incidentId}`;

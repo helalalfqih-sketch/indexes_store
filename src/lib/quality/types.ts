@@ -6,7 +6,8 @@ export type AuditStatus = "PASS" | "FAIL" | "WARNING" | "NOT_MEASURED";
 export type ExecutionState = "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "SKIPPED";
 export type AuditCategory = "FAST" | "MEDIUM" | "HEAVY";
 export type AuditEnvironment = "local" | "ci" | "production";
-export type AuditSource = "typescript" | "vite" | "supabase" | "postgres" | "lighthouse" | "ci" | "runtime";
+export type AuditSource =
+  "typescript" | "vite" | "supabase" | "postgres" | "lighthouse" | "ci" | "runtime";
 
 export interface AuditError {
   code: string;

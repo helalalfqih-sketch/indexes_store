@@ -46,9 +46,15 @@ async function runPhase11Tests() {
   const ast = parseASTSymbols(sampleTSX, "src/components/Header.tsx");
   assert(ast.imports.includes("react"), "AST Parser extracted react import");
   assert(ast.imports.includes("@/lib/supabase"), "AST Parser extracted @/lib/supabase import");
-  assert(ast.exports.includes("UserProfile") || ast.exports.includes("HeaderComponent"), "AST Parser extracted exports");
+  assert(
+    ast.exports.includes("UserProfile") || ast.exports.includes("HeaderComponent"),
+    "AST Parser extracted exports",
+  );
   assert(ast.components.includes("HeaderComponent"), "AST Parser recognized HeaderComponent");
-  assert(ast.dbReferences.includes("ai_agent_sessions"), "AST Parser recognized db table ai_agent_sessions");
+  assert(
+    ast.dbReferences.includes("ai_agent_sessions"),
+    "AST Parser recognized db table ai_agent_sessions",
+  );
 
   // Test 2: SHA-256 Hash Computation
   const hash1 = computeSHA256Hash("test content 1");
@@ -71,7 +77,10 @@ async function runPhase11Tests() {
   const absTestPath = path.resolve(process.cwd(), testFilePath);
 
   await fs.writeFile(absTestPath, "original file content", "utf-8");
-  const patchRes = await applyCodePatch({ targetFile: testFilePath, newContent: "modified file content" });
+  const patchRes = await applyCodePatch({
+    targetFile: testFilePath,
+    newContent: "modified file content",
+  });
 
   assert(patchRes.success === true, "applyCodePatch successfully mutated test file");
   const writtenContent = await fs.readFile(absTestPath, "utf-8");
@@ -80,13 +89,18 @@ async function runPhase11Tests() {
   const rollbackRes = await rollbackCodePatch(patchRes.backupId);
   assert(rollbackRes.success === true, "rollbackCodePatch executed successfully");
   const restoredContent = await fs.readFile(absTestPath, "utf-8");
-  assert(restoredContent === "original file content", "Disk content cleanly restored to original state");
+  assert(
+    restoredContent === "original file content",
+    "Disk content cleanly restored to original state",
+  );
 
   // Cleanup
   await fs.unlink(absTestPath).catch(() => {});
 
   console.log("=========================================");
-  console.log(`📊 Result: ${passed}/${total} assertions passed (${Math.round((passed / total) * 100)}%)`);
+  console.log(
+    `📊 Result: ${passed}/${total} assertions passed (${Math.round((passed / total) * 100)}%)`,
+  );
   console.log("=========================================");
 
   if (passed !== total) {

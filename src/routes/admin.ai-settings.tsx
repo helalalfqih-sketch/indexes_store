@@ -47,7 +47,9 @@ function AISettingsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<Partial<AIProviderConfig> | null>(null);
   const [isTesting, setIsTesting] = useState<string | null>(null);
-  const [testResults, setTestResults] = useState<Record<string, { success: boolean; time: string; message?: string }>>({});
+  const [testResults, setTestResults] = useState<
+    Record<string, { success: boolean; time: string; message?: string }>
+  >({});
 
   const saveMutation = useMutation({
     mutationFn: (data: any) => saveProvider({ data }),
@@ -88,17 +90,34 @@ function AISettingsPage() {
           base_url: config.base_url,
         },
       });
-      const nowTime = new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      const nowTime = new Date().toLocaleTimeString("ar-EG", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
       if (res.success) {
-        setTestResults((prev) => ({ ...prev, [config.id]: { success: true, time: nowTime, message: res.message } }));
+        setTestResults((prev) => ({
+          ...prev,
+          [config.id]: { success: true, time: nowTime, message: res.message },
+        }));
         toast.success(res.message);
       } else {
-        setTestResults((prev) => ({ ...prev, [config.id]: { success: false, time: nowTime, message: res.error } }));
+        setTestResults((prev) => ({
+          ...prev,
+          [config.id]: { success: false, time: nowTime, message: res.error },
+        }));
         toast.error(`فشل الاتصال: ${res.error}`);
       }
     } catch (err: any) {
-      const nowTime = new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      setTestResults((prev) => ({ ...prev, [config.id]: { success: false, time: nowTime, message: err.message } }));
+      const nowTime = new Date().toLocaleTimeString("ar-EG", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+      setTestResults((prev) => ({
+        ...prev,
+        [config.id]: { success: false, time: nowTime, message: err.message },
+      }));
       toast.error(err.message);
     } finally {
       setIsTesting(null);
@@ -134,12 +153,18 @@ function AISettingsPage() {
 
   const getProviderIcon = (provider: string) => {
     switch (provider) {
-      case "gemini": return <Globe className="h-5 w-5 text-blue-500" />;
-      case "lovable": return <Brain className="h-5 w-5 text-purple-500" />;
-      case "openai": return <Settings2 className="h-5 w-5 text-emerald-500" />;
-      case "vertex": return <ShieldCheck className="h-5 w-5 text-blue-600" />;
-      case "openrouter": return <Zap className="h-5 w-5 text-amber-500" />;
-      default: return <Brain className="h-5 w-5 text-primary" />;
+      case "gemini":
+        return <Globe className="h-5 w-5 text-blue-500" />;
+      case "lovable":
+        return <Brain className="h-5 w-5 text-purple-500" />;
+      case "openai":
+        return <Settings2 className="h-5 w-5 text-emerald-500" />;
+      case "vertex":
+        return <ShieldCheck className="h-5 w-5 text-blue-600" />;
+      case "openrouter":
+        return <Zap className="h-5 w-5 text-amber-500" />;
+      default:
+        return <Brain className="h-5 w-5 text-primary" />;
     }
   };
 
@@ -176,7 +201,8 @@ function AISettingsPage() {
             <ShieldAlert className="h-10 w-10 text-muted-foreground mb-3" />
             <h3 className="text-lg font-bold">لا يوجد مزودي ذكاء اصطناعي مضافين</h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              لم تقم بإضافة أي مفتاح API حتى الآن. أضف Google Gemini أو OpenAI للبدء بتمكين المساعد الذكي.
+              لم تقم بإضافة أي مفتاح API حتى الآن. أضف Google Gemini أو OpenAI للبدء بتمكين المساعد
+              الذكي.
             </p>
           </div>
         ) : (
@@ -184,7 +210,9 @@ function AISettingsPage() {
             <div
               key={p.id}
               className={`relative rounded-2xl border bg-surface p-5 transition-all ${
-                p.enabled ? "border-primary/20 shadow-sm" : "border-border opacity-70 grayscale-[30%]"
+                p.enabled
+                  ? "border-primary/20 shadow-sm"
+                  : "border-border opacity-70 grayscale-[30%]"
               }`}
             >
               <div className="flex items-start justify-between mb-4">
@@ -195,11 +223,13 @@ function AISettingsPage() {
                   <div>
                     <h3 className="font-bold text-base capitalize tracking-wide flex items-center gap-2">
                       {p.provider}
-                      {p.priority === Math.min(...providers.filter(x => x.enabled).map(x => x.priority)) && p.enabled && (
-                        <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-black">
-                          الأساسي
-                        </span>
-                      )}
+                      {p.priority ===
+                        Math.min(...providers.filter((x) => x.enabled).map((x) => x.priority)) &&
+                        p.enabled && (
+                          <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-black">
+                            الأساسي
+                          </span>
+                        )}
                     </h3>
                     <p className="text-xs text-muted-foreground font-mono mt-0.5">{p.model}</p>
                   </div>
@@ -207,7 +237,9 @@ function AISettingsPage() {
                 <button
                   onClick={() => toggleMutation.mutate({ id: p.id, enabled: !p.enabled })}
                   className={`p-1.5 rounded-lg transition ${
-                    p.enabled ? "text-success bg-success/10 hover:bg-success/20" : "text-muted-foreground bg-accent hover:bg-accent/80"
+                    p.enabled
+                      ? "text-success bg-success/10 hover:bg-success/20"
+                      : "text-muted-foreground bg-accent hover:bg-accent/80"
                   }`}
                   title={p.enabled ? "تعطيل" : "تفعيل"}
                 >
@@ -236,7 +268,9 @@ function AISettingsPage() {
                 {testResults[p.id] && (
                   <div className="flex items-center justify-between text-[11px] px-2 py-1 bg-accent/40 rounded-lg text-muted-foreground">
                     <span>آخر اختبار:</span>
-                    <span className="font-mono text-[10px] font-bold">{testResults[p.id].time}</span>
+                    <span className="font-mono text-[10px] font-bold">
+                      {testResults[p.id].time}
+                    </span>
                   </div>
                 )}
 
@@ -261,7 +295,10 @@ function AISettingsPage() {
                   <span className="text-[10px] text-muted-foreground font-bold">القدرات:</span>
                   <div className="flex flex-wrap gap-1">
                     {getCapabilities(p.provider).map((cap) => (
-                      <span key={cap} className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold">
+                      <span
+                        key={cap}
+                        className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold"
+                      >
                         {cap}
                       </span>
                     ))}
@@ -309,7 +346,10 @@ function AISettingsPage() {
       {/* Edit/Add Modal */}
       {isModalOpen && editingProvider && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-surface border shadow-2xl rounded-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200" dir="rtl">
+          <div
+            className="bg-surface border shadow-2xl rounded-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+            dir="rtl"
+          >
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="font-black text-lg flex items-center gap-2">
                 {editingProvider.id ? "تعديل مزود الذكاء الاصطناعي" : "إضافة مزود جديد"}
@@ -318,11 +358,10 @@ function AISettingsPage() {
                 onClick={() => setIsModalOpen(false)}
                 className="text-muted-foreground hover:bg-accent p-1.5 rounded-lg transition"
               >
-                <Trash2 className="h-5 w-5 opacity-0 absolute" /> {/* placeholder spacer */}
-                ✕
+                <Trash2 className="h-5 w-5 opacity-0 absolute" /> {/* placeholder spacer */}✕
               </button>
             </div>
-            
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -331,10 +370,17 @@ function AISettingsPage() {
               className="p-5 space-y-4"
             >
               <div>
-                <label className="text-xs font-bold text-muted-foreground block mb-1">المزود (Provider)</label>
+                <label className="text-xs font-bold text-muted-foreground block mb-1">
+                  المزود (Provider)
+                </label>
                 <select
                   value={editingProvider.provider}
-                  onChange={(e) => setEditingProvider({ ...editingProvider, provider: e.target.value as AIProviderType })}
+                  onChange={(e) =>
+                    setEditingProvider({
+                      ...editingProvider,
+                      provider: e.target.value as AIProviderType,
+                    })
+                  }
                   className="w-full rounded-xl border bg-background p-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/30"
                   required
                 >
@@ -349,26 +395,34 @@ function AISettingsPage() {
               <div>
                 <label className="text-xs font-bold text-muted-foreground block mb-1 flex justify-between">
                   <span>مفتاح الربط (API Key)</span>
-                  {editingProvider.id && <span className="text-[10px] text-primary">اتركه فارغاً لعدم تغييره</span>}
+                  {editingProvider.id && (
+                    <span className="text-[10px] text-primary">اتركه فارغاً لعدم تغييره</span>
+                  )}
                 </label>
                 <input
                   type="text"
                   placeholder={editingProvider.id ? "••••••••••••" : "AIzaSy..."}
                   value={editingProvider.api_key || ""}
-                  onChange={(e) => setEditingProvider({ ...editingProvider, api_key: e.target.value })}
+                  onChange={(e) =>
+                    setEditingProvider({ ...editingProvider, api_key: e.target.value })
+                  }
                   className="w-full rounded-xl border bg-background p-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-primary/30"
                   dir="ltr"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-muted-foreground block mb-1">اسم النموذج (Model Name)</label>
+                <label className="text-xs font-bold text-muted-foreground block mb-1">
+                  اسم النموذج (Model Name)
+                </label>
                 <input
                   type="text"
                   required
                   placeholder="gemini-2.5-flash / google/gemini-2.5-flash / gpt-4o-mini"
                   value={editingProvider.model || ""}
-                  onChange={(e) => setEditingProvider({ ...editingProvider, model: e.target.value })}
+                  onChange={(e) =>
+                    setEditingProvider({ ...editingProvider, model: e.target.value })
+                  }
                   className="w-full rounded-xl border bg-background p-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-primary/30"
                   dir="ltr"
                 />
@@ -376,25 +430,38 @@ function AISettingsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-muted-foreground block mb-1">الأولوية (Priority)</label>
+                  <label className="text-xs font-bold text-muted-foreground block mb-1">
+                    الأولوية (Priority)
+                  </label>
                   <input
                     type="number"
                     required
                     min="1"
                     value={editingProvider.priority || 100}
-                    onChange={(e) => setEditingProvider({ ...editingProvider, priority: parseInt(e.target.value) || 100 })}
+                    onChange={(e) =>
+                      setEditingProvider({
+                        ...editingProvider,
+                        priority: parseInt(e.target.value) || 100,
+                      })
+                    }
                     className="w-full rounded-xl border bg-background p-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-primary/30"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">الرقم الأقل يعني أولوية أعلى (مثال: 1)</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    الرقم الأقل يعني أولوية أعلى (مثال: 1)
+                  </p>
                 </div>
-                
+
                 <div>
-                  <label className="text-xs font-bold text-muted-foreground block mb-1">الرابط المخصص (Base URL)</label>
+                  <label className="text-xs font-bold text-muted-foreground block mb-1">
+                    الرابط المخصص (Base URL)
+                  </label>
                   <input
                     type="url"
                     placeholder="اختياري"
                     value={editingProvider.base_url || ""}
-                    onChange={(e) => setEditingProvider({ ...editingProvider, base_url: e.target.value })}
+                    onChange={(e) =>
+                      setEditingProvider({ ...editingProvider, base_url: e.target.value })
+                    }
                     className="w-full rounded-xl border bg-background p-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-primary/30 text-[10px]"
                     dir="ltr"
                   />
@@ -407,7 +474,11 @@ function AISettingsPage() {
                   disabled={saveMutation.isPending}
                   className="flex-1 bg-primary text-primary-foreground font-bold py-2.5 rounded-xl shadow-brand hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center"
                 >
-                  {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "حفظ المزود"}
+                  {saveMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "حفظ المزود"
+                  )}
                 </button>
                 <button
                   type="button"

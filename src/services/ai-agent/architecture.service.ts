@@ -15,7 +15,8 @@ import { scanProjectStructure } from "./code-intelligence.service";
 export interface ArchitectureViolation {
   file: string;
   severity: "critical" | "warning" | "info";
-  rule: "direct_db_in_ui" | "missing_tenant_filter" | "unprotected_server_fn" | "missing_rls_policy";
+  rule:
+    "direct_db_in_ui" | "missing_tenant_filter" | "unprotected_server_fn" | "missing_rls_policy";
   description: string;
   suggestedFix: string;
 }
@@ -55,8 +56,14 @@ async function scanRlsCoverageInMigrations(knownTables: string[]): Promise<Set<s
 
         for (const table of knownTables) {
           // Check for ALTER TABLE table ENABLE ROW LEVEL SECURITY or CREATE POLICY ... ON table
-          const enableRlsRegex = new RegExp(`alter\\s+table\\s+(${table}|public\\.${table})\\s+enable\\s+row\\s+level\\s+security`, "i");
-          const createPolicyRegex = new RegExp(`create\\s+policy\\s+.*?on\\s+(${table}|public\\.${table})`, "i");
+          const enableRlsRegex = new RegExp(
+            `alter\\s+table\\s+(${table}|public\\.${table})\\s+enable\\s+row\\s+level\\s+security`,
+            "i",
+          );
+          const createPolicyRegex = new RegExp(
+            `create\\s+policy\\s+.*?on\\s+(${table}|public\\.${table})`,
+            "i",
+          );
 
           if (enableRlsRegex.test(content) || createPolicyRegex.test(content)) {
             rlsTables.add(table);
@@ -121,7 +128,8 @@ export async function auditProjectArchitecture(): Promise<ArchitectureHealthRepo
   const rlsTables = await scanRlsCoverageInMigrations(structure.dbTables);
   const totalTables = structure.dbTables.length;
   const tablesWithRlsCount = rlsTables.size;
-  const rlsCoveragePercentage = totalTables > 0 ? Math.round((tablesWithRlsCount / totalTables) * 100) : 100;
+  const rlsCoveragePercentage =
+    totalTables > 0 ? Math.round((tablesWithRlsCount / totalTables) * 100) : 100;
 
   // Add violation for non-RLS tables
   for (const table of structure.dbTables) {

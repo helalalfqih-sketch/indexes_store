@@ -20,7 +20,7 @@ export interface EngineeringTask {
 
 export function convertIncidentToEngineeringTask(
   event: PersistedRuntimeEvent,
-  proposal?: RepairProposal
+  proposal?: RepairProposal,
 ): EngineeringTask {
   const taskId = `TASK-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const isP0 = event.route?.includes("checkout") || event.severity === "CRITICAL";

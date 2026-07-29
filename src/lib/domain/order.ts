@@ -1,11 +1,5 @@
 export type OrderStatus =
-  | "pending"
-  | "confirmed"
-  | "processing"
-  | "shipped"
-  | "delivered"
-  | "cancelled"
-  | "refunded";
+  "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled" | "refunded";
 
 export type PaymentStatus = "unpaid" | "paid" | "refunded" | "failed";
 export type ShippingStatus = "not_shipped" | "in_transit" | "delivered" | "returned";

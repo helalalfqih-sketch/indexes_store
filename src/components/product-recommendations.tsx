@@ -20,7 +20,7 @@ export function ProductRecommendations({ currentProductId, categoryId, productNa
       setLoading(true);
       try {
         let candidateList: LegacyProductShape[] = [];
-        
+
         // 1. Fetch category matched products if available
         if (categoryId) {
           const categoryList = await fetchProductsByCategory(categoryId);

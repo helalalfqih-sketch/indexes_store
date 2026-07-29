@@ -34,7 +34,13 @@ const DEFAULT_PROJECT_CONTEXT: Omit<ProjectContextData, "tenant_id"> = {
     frontend: "TanStack Start + React 19 + TypeScript + TailwindCSS 4 + Shadcn UI + Framer Motion",
     backend: "Supabase PostgreSQL + RLS + Server Functions (createServerFn + requireSupabaseAuth)",
     ai: "Google Vertex AI (Enterprise Project: smartcontentcreator-d49f2) + Gemini Models + Vercel AI SDK",
-    integrations: ["WhatsApp Business API", "Meta Commerce Catalog", "Google Merchant", "Sitemap", "JSON-LD"],
+    integrations: [
+      "WhatsApp Business API",
+      "Meta Commerce Catalog",
+      "Google Merchant",
+      "Sitemap",
+      "JSON-LD",
+    ],
   },
   database_schema: {
     tables: [
@@ -56,7 +62,8 @@ const DEFAULT_PROJECT_CONTEXT: Omit<ProjectContextData, "tenant_id"> = {
     "لا تحذف الملفات والمكونات الموجودة بدون خطة موافقة معتمدة",
     "استخدم Tailwind Tokens و Design Tokens المعتمدة بالمشروع",
   ],
-  technical_notes: "منصة تجارية متكاملة تدعم المتاجر المزدوجة، الربط المباشر مع الواتساب لتنزيل ومزامنة وسائط المنتجات، والمساعد الذكي المستند على Vertex AI.",
+  technical_notes:
+    "منصة تجارية متكاملة تدعم المتاجر المزدوجة، الربط المباشر مع الواتساب لتنزيل ومزامنة وسائط المنتجات، والمساعد الذكي المستند على Vertex AI.",
   file_structure: {
     routes: [
       "src/routes/index.tsx (الصفحة الرئيسية)",
@@ -72,7 +79,8 @@ const DEFAULT_PROJECT_CONTEXT: Omit<ProjectContextData, "tenant_id"> = {
       "src/services/ai/project-context.service.ts (Project Context Engine)",
     ],
   },
-  ai_instructions: "أنت مهندس برمجيات Senior لـ Indexes Store. أجب دائماً بالعربية التقنية الواضحة وقم بتزويد المستخدم بخطوات دقيقة وكود محدد المجموعات.",
+  ai_instructions:
+    "أنت مهندس برمجيات Senior لـ Indexes Store. أجب دائماً بالعربية التقنية الواضحة وقم بتزويد المستخدم بخطوات دقيقة وكود محدد المجموعات.",
   version: 1,
 };
 
@@ -102,7 +110,9 @@ export async function getProjectContext(tenantId: string = "default"): Promise<P
 }
 
 /** Seed default project context for a tenant */
-export async function seedDefaultProjectContext(tenantId: string = "default"): Promise<ProjectContextData> {
+export async function seedDefaultProjectContext(
+  tenantId: string = "default",
+): Promise<ProjectContextData> {
   const initialContext: ProjectContextData = {
     tenant_id: tenantId,
     ...DEFAULT_PROJECT_CONTEXT,

@@ -11,12 +11,12 @@ export interface QualityPolicyConfig {
     performance: { minScore: number };
   };
   weights: {
-    security: number;    // 25%
+    security: number; // 25%
     performance: number; // 20%
-    tests: number;       // 20%
-    build: number;       // 10%
-    typescript: number;  // 10%
-    database: number;    // 10%
+    tests: number; // 20%
+    build: number; // 10%
+    typescript: number; // 10%
+    database: number; // 10%
     codeQuality: number; // 5%
   };
 }

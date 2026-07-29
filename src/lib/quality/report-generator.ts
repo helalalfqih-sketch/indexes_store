@@ -15,7 +15,7 @@ export interface CompleteQualityReport {
 export function generateQualityReport(
   engineInfo: QualityEngineInfo,
   rawResults: AuditResult[],
-  manifest: ManifestReport
+  manifest: ManifestReport,
 ): CompleteQualityReport {
   const previousReport = loadLatestReport();
   const config = loadQualityConfig();
@@ -36,7 +36,8 @@ export function generateQualityReport(
   for (const r of results) {
     if (r.status === "NOT_MEASURED") continue;
     let weight = 10;
-    if (r.auditId.includes("security") || r.auditId.includes("database")) weight = config.weights.security;
+    if (r.auditId.includes("security") || r.auditId.includes("database"))
+      weight = config.weights.security;
     else if (r.auditId.includes("typescript")) weight = config.weights.typescript;
     else if (r.auditId.includes("build")) weight = config.weights.build;
 
@@ -46,7 +47,15 @@ export function generateQualityReport(
 
   const overallScore = totalWeight > 0 ? Math.round(weightedScoreSum / totalWeight) : 100;
   const grade: "A+" | "A" | "B" | "C" | "F" =
-    overallScore >= 95 ? "A+" : overallScore >= 85 ? "A" : overallScore >= 70 ? "B" : overallScore >= 50 ? "C" : "F";
+    overallScore >= 95
+      ? "A+"
+      : overallScore >= 85
+        ? "A"
+        : overallScore >= 70
+          ? "B"
+          : overallScore >= 50
+            ? "C"
+            : "F";
 
   const overallStatus: "PASS" | "FAIL" | "WARNING" =
     failedCount > 0 ? "FAIL" : warningCount > 0 ? "WARNING" : "PASS";

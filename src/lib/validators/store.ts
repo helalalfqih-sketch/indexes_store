@@ -33,7 +33,11 @@ export const storeProfileSchema = z.object({
   business_type: optionalText(60),
   phone: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
-    z.string().trim().regex(/^\+?[0-9]{7,15}$/, "رقم هاتف غير صالح").optional(),
+    z
+      .string()
+      .trim()
+      .regex(/^\+?[0-9]{7,15}$/, "رقم هاتف غير صالح")
+      .optional(),
   ),
   email: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),

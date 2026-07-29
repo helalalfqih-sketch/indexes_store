@@ -104,7 +104,9 @@ function AdminMediaComponent() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "image" | "video">("all");
-  const [filterSource, setFilterSource] = useState<"all" | "upload" | "whatsapp" | "ai_generated">("all");
+  const [filterSource, setFilterSource] = useState<"all" | "upload" | "whatsapp" | "ai_generated">(
+    "all",
+  );
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [sortOption, setSortOption] = useState<string>("newest");
   const [selectedFile, setSelectedFile] = useState<MediaFileRecord | null>(null);
@@ -124,7 +126,14 @@ function AdminMediaComponent() {
 
   // Query Media List
   const { data: mediaFiles = [], isLoading } = useQuery({
-    queryKey: ["admin-media-files", searchTerm, filterType, filterSource, filterCategory, sortOption],
+    queryKey: [
+      "admin-media-files",
+      searchTerm,
+      filterType,
+      filterSource,
+      filterCategory,
+      sortOption,
+    ],
     queryFn: async () => {
       try {
         const res = await fetchMediaFn({
@@ -272,7 +281,7 @@ function AdminMediaComponent() {
   const toggleSelectMedia = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setSelectedMediaIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -306,7 +315,8 @@ function AdminMediaComponent() {
       toast.error("يرجى اختيار المنتج المراد ربط الوسائط به أولاً.");
       return;
     }
-    const idsToAttach = selectedMediaIds.length > 0 ? selectedMediaIds : selectedFile ? [selectedFile.id] : [];
+    const idsToAttach =
+      selectedMediaIds.length > 0 ? selectedMediaIds : selectedFile ? [selectedFile.id] : [];
     if (idsToAttach.length === 0) return;
 
     attachMutation.mutate({
@@ -379,7 +389,11 @@ function AdminMediaComponent() {
             className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface px-3.5 py-2 text-xs font-bold text-foreground hover:bg-accent transition-all disabled:opacity-50"
             title="فحص الملفات التي لا ترتبط بأي منتج"
           >
-            {isScanningUnused ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-amber-500" />}
+            {isScanningUnused ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 text-amber-500" />
+            )}
             فحص المهملات
           </button>
 
@@ -461,7 +475,9 @@ function AdminMediaComponent() {
         {/* Filter Pills (Media Types & Sources) */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3">
           <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
-            <span className="text-[11px] font-bold text-muted-foreground me-1 shrink-0">النوع:</span>
+            <span className="text-[11px] font-bold text-muted-foreground me-1 shrink-0">
+              النوع:
+            </span>
             {[
               { id: "all", label: "الكل" },
               { id: "image", label: "الصور 🖼️" },
@@ -483,7 +499,9 @@ function AdminMediaComponent() {
           </div>
 
           <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
-            <span className="text-[11px] font-bold text-muted-foreground me-1 shrink-0">المصدر:</span>
+            <span className="text-[11px] font-bold text-muted-foreground me-1 shrink-0">
+              المصدر:
+            </span>
             {[
               { id: "all", label: "جميع المصادر" },
               { id: "upload", label: "مرفوع يدويًا" },
@@ -512,12 +530,16 @@ function AdminMediaComponent() {
         <div className="rounded-3xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-xs font-bold text-amber-600 dark:text-amber-400">
             <AlertCircle className="h-5 w-5 shrink-0" />
-            <span>تم العثور على {unusedFiles.length} ملف غير مرتبط بأي منتج أو تصنيف في المتجر.</span>
+            <span>
+              تم العثور على {unusedFiles.length} ملف غير مرتبط بأي منتج أو تصنيف في المتجر.
+            </span>
           </div>
           <button
             type="button"
             onClick={() => {
-              if (confirm(`هل أنت تأكد من حذف ${unusedFiles.length} ملف غير مستخدم لتوفير المساحة؟`)) {
+              if (
+                confirm(`هل أنت تأكد من حذف ${unusedFiles.length} ملف غير مستخدم لتوفير المساحة؟`)
+              ) {
                 unusedFiles.forEach((f) => deleteMutation.mutate(f.id));
                 setUnusedFiles(null);
               }
@@ -555,7 +577,7 @@ function AdminMediaComponent() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {mediaFiles.map((file, idx) => {
             const source = (file as any).source || (file as any).metadata?.source || "upload";
-            const seqNumber = file.sequence_number || (idx + 1);
+            const seqNumber = file.sequence_number || idx + 1;
             const isSelected = selectedMediaIds.includes(file.id);
 
             return (
@@ -627,15 +649,19 @@ function AdminMediaComponent() {
                       </span>
                     )}
                   </div>
-                  {Array.isArray((file.metadata as any)?.tags) && ((file.metadata as any).tags as string[]).length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {((file.metadata as any).tags as string[]).slice(0, 3).map((tag, idx) => (
-                        <span key={idx} className="bg-accent text-muted-foreground text-[9px] px-1.5 py-0.5 rounded font-mono">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  {Array.isArray((file.metadata as any)?.tags) &&
+                    ((file.metadata as any).tags as string[]).length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {((file.metadata as any).tags as string[]).slice(0, 3).map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="bg-accent text-muted-foreground text-[9px] px-1.5 py-0.5 rounded font-mono"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                 </div>
               </div>
             );
@@ -682,7 +708,11 @@ function AdminMediaComponent() {
               disabled={bulkDeleteMutation.isPending}
               className="inline-flex items-center gap-1.5 rounded-2xl bg-destructive/80 px-3 py-2 text-xs font-bold text-destructive-foreground hover:bg-destructive transition"
             >
-              {bulkDeleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {bulkDeleteMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
               حذف
             </button>
 
@@ -700,7 +730,10 @@ function AdminMediaComponent() {
 
       {/* Modal: Attach to Existing Product */}
       {isAttachModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4" dir="rtl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4"
+          dir="rtl"
+        >
           <div className="w-full max-w-lg rounded-3xl bg-surface border border-border p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
@@ -708,9 +741,12 @@ function AdminMediaComponent() {
                   <LinkIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-foreground">دمج الوسائط بمنتج موجود بالمتجر</h3>
+                  <h3 className="text-base font-bold text-foreground">
+                    دمج الوسائط بمنتج موجود بالمتجر
+                  </h3>
                   <p className="text-[11px] text-muted-foreground">
-                    سيتم إضافة الوسائط المحددة ({selectedMediaIds.length || 1} ملفات) لمعرض صور/فيديو المنتج.
+                    سيتم إضافة الوسائط المحددة ({selectedMediaIds.length || 1} ملفات) لمعرض
+                    صور/فيديو المنتج.
                   </p>
                 </div>
               </div>
@@ -742,7 +778,8 @@ function AdminMediaComponent() {
             <div className="max-h-64 overflow-y-auto space-y-2 pe-1 border border-border/50 rounded-2xl p-2 bg-background/50">
               {isLoadingProducts ? (
                 <div className="py-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-emerald-500" /> جاري البحث في المنتجات...
+                  <Loader2 className="h-4 w-4 animate-spin text-emerald-500" /> جاري البحث في
+                  المنتجات...
                 </div>
               ) : targetProducts.length === 0 ? (
                 <div className="py-8 text-center text-xs text-muted-foreground">
@@ -751,7 +788,8 @@ function AdminMediaComponent() {
               ) : (
                 targetProducts.map((product: any) => {
                   const isSelected = selectedTargetProductId === product.id;
-                  const thumb = Array.isArray(product.images) && product.images[0] ? product.images[0] : null;
+                  const thumb =
+                    Array.isArray(product.images) && product.images[0] ? product.images[0] : null;
 
                   return (
                     <div
@@ -772,7 +810,9 @@ function AdminMediaComponent() {
                           )}
                         </div>
                         <div className="truncate">
-                          <p className="text-xs font-bold text-foreground truncate">{product.name}</p>
+                          <p className="text-xs font-bold text-foreground truncate">
+                            {product.name}
+                          </p>
                           <p className="text-[10px] text-muted-foreground">
                             {product.price} {product.currency || "YER"}
                           </p>
@@ -829,7 +869,10 @@ function AdminMediaComponent() {
 
       {/* Selected File Detail Modal Drawer */}
       {selectedFile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" dir="rtl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          dir="rtl"
+        >
           <div className="w-full max-w-xl rounded-3xl bg-surface border border-border p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2 truncate">
@@ -870,7 +913,9 @@ function AdminMediaComponent() {
               </div>
               <div>
                 <span className="text-muted-foreground block">الحجم:</span>
-                <span className="font-bold">{((selectedFile.size_bytes || 0) / (1024 * 1024)).toFixed(2)} MB</span>
+                <span className="font-bold">
+                  {((selectedFile.size_bytes || 0) / (1024 * 1024)).toFixed(2)} MB
+                </span>
               </div>
               <div>
                 <span className="text-muted-foreground block">نوع الملف:</span>
@@ -878,7 +923,9 @@ function AdminMediaComponent() {
               </div>
               <div>
                 <span className="text-muted-foreground block">تاريخ الإضافة:</span>
-                <span className="font-bold">{new Date(selectedFile.created_at).toLocaleDateString("ar-SA")}</span>
+                <span className="font-bold">
+                  {new Date(selectedFile.created_at).toLocaleDateString("ar-SA")}
+                </span>
               </div>
             </div>
 
@@ -915,7 +962,11 @@ function AdminMediaComponent() {
                   onClick={() => handleCopyUrl(selectedFile.file_url, selectedFile.id)}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-bold text-foreground hover:bg-accent transition"
                 >
-                  {copiedId === selectedFile.id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copiedId === selectedFile.id ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
                   {copiedId === selectedFile.id ? "تم النسخ" : "نسخ الرابط"}
                 </button>
 

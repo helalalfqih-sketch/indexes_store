@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { Terminal, CheckCircle2, XCircle, Clock, ChevronUp, ChevronDown, Activity, AlertCircle } from "lucide-react";
+import {
+  Terminal,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ChevronUp,
+  ChevronDown,
+  Activity,
+  AlertCircle,
+} from "lucide-react";
 
 export interface JournalLogItem {
   id?: string;
@@ -16,7 +25,10 @@ interface ExecutionJournalPanelProps {
   persistentEvents?: any[];
 }
 
-export function ExecutionJournalPanel({ logs = [], persistentEvents = [] }: ExecutionJournalPanelProps) {
+export function ExecutionJournalPanel({
+  logs = [],
+  persistentEvents = [],
+}: ExecutionJournalPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [filter, setFilter] = useState<"ALL" | "SUCCESS" | "FAILED">("ALL");
 
@@ -35,7 +47,9 @@ export function ExecutionJournalPanel({ logs = [], persistentEvents = [] }: Exec
       >
         <div className="flex items-center gap-2">
           <Terminal className="h-4 w-4 text-violet-400" />
-          <span className="text-xs font-bold text-zinc-200">سجل التنفيذ المباشر (Execution Journal Stream)</span>
+          <span className="text-xs font-bold text-zinc-200">
+            سجل التنفيذ المباشر (Execution Journal Stream)
+          </span>
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -44,7 +58,10 @@ export function ExecutionJournalPanel({ logs = [], persistentEvents = [] }: Exec
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-[#1a1a20] p-0.5 rounded-lg border border-zinc-800 text-[10px]" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex items-center gap-1 bg-[#1a1a20] p-0.5 rounded-lg border border-zinc-800 text-[10px]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
               onClick={() => setFilter("ALL")}
@@ -94,22 +111,30 @@ export function ExecutionJournalPanel({ logs = [], persistentEvents = [] }: Exec
                     isSuccess
                       ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-300"
                       : isFailed
-                      ? "bg-rose-950/20 border-rose-500/30 text-rose-300"
-                      : "bg-amber-950/20 border-amber-500/30 text-amber-300"
+                        ? "bg-rose-950/20 border-rose-500/30 text-rose-300"
+                        : "bg-amber-950/20 border-amber-500/30 text-amber-300"
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    {isSuccess && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
+                    {isSuccess && (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    )}
                     {isFailed && <XCircle className="h-3.5 w-3.5 text-rose-400 shrink-0" />}
-                    {isPending && <Clock className="h-3.5 w-3.5 text-amber-400 animate-spin shrink-0" />}
+                    {isPending && (
+                      <Clock className="h-3.5 w-3.5 text-amber-400 animate-spin shrink-0" />
+                    )}
 
                     <span className="font-bold">{log.action}</span>
                     {log.tool && <span className="text-zinc-400">({log.tool})</span>}
                   </div>
 
                   <div className="flex items-center gap-3 text-[10px] text-zinc-400">
-                    {log.output?.status && <span className="uppercase font-semibold">{String(log.output.status)}</span>}
-                    <span>{log.createdAt ? new Date(log.createdAt).toLocaleTimeString("ar-SA") : ""}</span>
+                    {log.output?.status && (
+                      <span className="uppercase font-semibold">{String(log.output.status)}</span>
+                    )}
+                    <span>
+                      {log.createdAt ? new Date(log.createdAt).toLocaleTimeString("ar-SA") : ""}
+                    </span>
                   </div>
                 </div>
               );

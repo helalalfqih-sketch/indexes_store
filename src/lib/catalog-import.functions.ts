@@ -21,20 +21,31 @@ function parseCsv(text: string): string[][] {
     const c = text[i];
     if (inQuotes) {
       if (c === '"') {
-        if (text[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = false; }
+        if (text[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
       } else cur += c;
     } else {
       if (c === '"') inQuotes = true;
-      else if (c === ",") { row.push(cur); cur = ""; }
-      else if (c === "\n" || c === "\r") {
+      else if (c === ",") {
+        row.push(cur);
+        cur = "";
+      } else if (c === "\n" || c === "\r") {
         if (c === "\r" && text[i + 1] === "\n") i++;
-        row.push(cur); cur = "";
+        row.push(cur);
+        cur = "";
         if (row.length > 1 || row[0] !== "") rows.push(row);
         row = [];
       } else cur += c;
     }
   }
-  if (cur.length > 0 || row.length > 0) { row.push(cur); rows.push(row); }
+  if (cur.length > 0 || row.length > 0) {
+    row.push(cur);
+    rows.push(row);
+  }
   return rows;
 }
 
@@ -64,18 +75,24 @@ const resolveAdminTenant = async (
   override?: string | null,
 ): Promise<string> => {
   let headers: Headers | null = null;
-  try { headers = getRequest().headers; } catch { /* no request ctx */ }
+  try {
+    headers = getRequest().headers;
+  } catch {
+    /* no request ctx */
+  }
   return resolveTenantId(ctx.supabase, { override, headers, userId: ctx.userId });
 };
 
 export const adminImportCatalogFromUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) =>
-    z.object({
-      url: z.string().url(),
-      tenantId: z.string().uuid().optional(),
-      publish: z.boolean().default(true),
-    }).parse(raw),
+    z
+      .object({
+        url: z.string().url(),
+        tenantId: z.string().uuid().optional(),
+        publish: z.boolean().default(true),
+      })
+      .parse(raw),
   )
   .handler(async ({ data, context }) => {
     // admin check
@@ -109,7 +126,7 @@ export const adminImportCatalogFromUrl = createServerFn({ method: "POST" })
 
     // V2 additional columns
     const skuIdx = col("sku");
-    const barcodeIdx = header.findIndex(h => h === "gtin" || h === "barcode");
+    const barcodeIdx = header.findIndex((h) => h === "gtin" || h === "barcode");
     const salePriceIdx = col("sale_price");
     const costPriceIdx = col("cost_price");
     const colorIdx = col("color");
@@ -136,10 +153,12 @@ export const adminImportCatalogFromUrl = createServerFn({ method: "POST" })
       const title = (row[titleIdx] || "").trim();
       if (!title) continue;
       const externalId = idIdx >= 0 ? (row[idIdx] || "").trim() || null : null;
-      
+
       const { price: regPrice } = parsePrice(row[priceIdx] || "");
-      const { price: salePrice } = salePriceIdx >= 0 ? parsePrice(row[salePriceIdx] || "") : { price: 0 };
-      const { price: costPrice } = costPriceIdx >= 0 ? parsePrice(row[costPriceIdx] || "") : { price: 0 };
+      const { price: salePrice } =
+        salePriceIdx >= 0 ? parsePrice(row[salePriceIdx] || "") : { price: 0 };
+      const { price: costPrice } =
+        costPriceIdx >= 0 ? parsePrice(row[costPriceIdx] || "") : { price: 0 };
 
       let price = regPrice;
       let compareAtPrice: number | null = null;
@@ -155,7 +174,9 @@ export const adminImportCatalogFromUrl = createServerFn({ method: "POST" })
       let slug = slugify(title, externalId ?? `product-${r}`);
       let uniq = slug;
       let i = 2;
-      while (seenSlugs.has(uniq)) { uniq = `${slug}-${i++}`.slice(0, 60); }
+      while (seenSlugs.has(uniq)) {
+        uniq = `${slug}-${i++}`.slice(0, 60);
+      }
       seenSlugs.add(uniq);
       slug = uniq;
 
@@ -226,7 +247,11 @@ export const adminImportCatalogFromUrl = createServerFn({ method: "POST" })
       const { error, count } = await context.supabase
         .from("products")
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .upsert(withoutExt as any, { onConflict: "tenant_id,slug", ignoreDuplicates: true, count: "exact" });
+        .upsert(withoutExt as any, {
+          onConflict: "tenant_id,slug",
+          ignoreDuplicates: true,
+          count: "exact",
+        });
       if (error) throw error;
       processed += count ?? 0;
     }

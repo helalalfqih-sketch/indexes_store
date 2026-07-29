@@ -28,7 +28,9 @@ async function runPhase102Tests() {
   registerSessionFingerprint(fp, "SESS-EXISTING-990", userId, tenantId, prompt);
 
   const duplicateCheck = checkSessionDeduplication(userId, tenantId, prompt);
-  console.log(`✅ Duplicate Session Check: isDuplicate=${duplicateCheck.isDuplicate} | ExistingSessionId=${duplicateCheck.existingSessionId}`);
+  console.log(
+    `✅ Duplicate Session Check: isDuplicate=${duplicateCheck.isDuplicate} | ExistingSessionId=${duplicateCheck.existingSessionId}`,
+  );
   if (!duplicateCheck.isDuplicate || duplicateCheck.existingSessionId !== "SESS-EXISTING-990") {
     throw new Error("❌ Session Deduplication test failed");
   }

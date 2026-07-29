@@ -81,10 +81,16 @@ function PublicCmsPageComponent() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-4xl px-4 py-10" dir="rtl" style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}>
+      <div
+        className="mx-auto max-w-4xl px-4 py-10"
+        dir="rtl"
+        style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}
+      >
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
-          <Link to="/" className="hover:text-primary transition">الرئيسية</Link>
+          <Link to="/" className="hover:text-primary transition">
+            الرئيسية
+          </Link>
           <span>/</span>
           <span className="font-bold text-foreground">{page.title}</span>
         </nav>
@@ -96,7 +102,8 @@ function PublicCmsPageComponent() {
               {page.title}
             </h1>
             <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-success" /> صفحة توثيق رسمية في اندكس ستور · آخر تحديث: {new Date(page.updated_at).toLocaleDateString("ar-YE")}
+              <ShieldCheck className="h-4 w-4 text-success" /> صفحة توثيق رسمية في اندكس ستور · آخر
+              تحديث: {new Date(page.updated_at).toLocaleDateString("ar-YE")}
             </p>
           </header>
 

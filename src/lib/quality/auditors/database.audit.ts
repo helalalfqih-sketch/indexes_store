@@ -78,7 +78,10 @@ export const DatabaseAuditor: QualityAudit = {
         category: "MEDIUM",
         source: "supabase",
         metrics: { envConfigured: false },
-        error: { code: "DB_ENV_NOT_CONFIGURED", message: "Supabase environment variables not available in runner" },
+        error: {
+          code: "DB_ENV_NOT_CONFIGURED",
+          message: "Supabase environment variables not available in runner",
+        },
         measuredAt,
         durationMs: Date.now() - startTime,
       };

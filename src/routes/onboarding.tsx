@@ -46,9 +46,11 @@ function OnboardingPage() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
-  const [slugState, setSlugState] = useState<
-    { checking: boolean; available: boolean | null; reason: string | null }
-  >({ checking: false, available: null, reason: null });
+  const [slugState, setSlugState] = useState<{
+    checking: boolean;
+    available: boolean | null;
+    reason: string | null;
+  }>({ checking: false, available: null, reason: null });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -129,8 +131,12 @@ function OnboardingPage() {
           <code>{status.tenant.slug}</code>)
         </p>
         <div className="flex gap-3">
-          <Link to="/admin" className="btn-primary">لوحة التحكم</Link>
-          <Link to="/" className="btn-ghost">العودة للرئيسية</Link>
+          <Link to="/admin" className="btn-primary">
+            لوحة التحكم
+          </Link>
+          <Link to="/" className="btn-ghost">
+            العودة للرئيسية
+          </Link>
         </div>
       </CenteredCard>
     );
@@ -139,9 +145,7 @@ function OnboardingPage() {
   return (
     <CenteredCard>
       <h1 className="text-2xl font-semibold mb-1">أنشئ متجرك</h1>
-      <p className="text-sm opacity-70 mb-6">
-        دقيقة واحدة — اختر اسماً ومعرّفاً فريداً لمتجرك.
-      </p>
+      <p className="text-sm opacity-70 mb-6">دقيقة واحدة — اختر اسماً ومعرّفاً فريداً لمتجرك.</p>
 
       <form onSubmit={onSubmit} className="space-y-4">
         <label className="block">
@@ -179,9 +183,7 @@ function OnboardingPage() {
           <SlugHint slug={slug} state={slugState} />
         </label>
 
-        {error && (
-          <div className="text-sm text-red-500 bg-red-500/10 rounded-md p-3">{error}</div>
-        )}
+        {error && <div className="text-sm text-red-500 bg-red-500/10 rounded-md p-3">{error}</div>}
 
         <button type="submit" disabled={!canSubmit} className="btn-primary w-full">
           {busy ? "جارٍ الإنشاء…" : "إنشاء المتجر"}

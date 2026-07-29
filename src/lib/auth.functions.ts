@@ -18,7 +18,7 @@ export const getSessionUser = createServerFn({ method: "GET" })
       supabase.from("user_roles").select("role").eq("user_id", userId),
     ]);
 
-    let roles = ((roleRows ?? []) as { role: AppRole }[]).map((r) => r.role);
+    const roles = ((roleRows ?? []) as { role: AppRole }[]).map((r) => r.role);
     const userEmail = ((claims?.email as string | undefined) ?? "").toLowerCase();
 
     // Primary store owner auto-promotion to full Platform Admin

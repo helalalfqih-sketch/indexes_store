@@ -1,5 +1,16 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Search, ShoppingCart, Tag, User, Globe, Activity, Settings, HelpCircle, FileText } from "lucide-react";
+import {
+  Home,
+  Search,
+  ShoppingCart,
+  Tag,
+  User,
+  Globe,
+  Activity,
+  Settings,
+  HelpCircle,
+  FileText,
+} from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useCart } from "@/lib/cart-store";
 import noqtaLogo from "@/assets/noqta-logo.png";
@@ -46,7 +57,7 @@ const ICON_MAP: Record<string, any> = {
   Activity,
   Settings,
   HelpCircle,
-  FileText
+  FileText,
 };
 
 function TopBar({ isHome }: { isHome: boolean }) {
@@ -77,12 +88,43 @@ function TopBar({ isHome }: { isHome: boolean }) {
     });
 
   // Fallback if links are empty
-  const activeLinks = navLinks.length > 0 ? navLinks : [
-    { to: "/", label: "الرئيسية", icon: Home, badge: undefined, external: false, target: "_self" as const },
-    { to: "/offers", label: "العروض", icon: Tag, badge: undefined, external: false, target: "_self" as const },
-    { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count, external: false, target: "_self" as const },
-    { to: "/account", label: "حسابي", icon: User, badge: undefined, external: false, target: "_self" as const },
-  ];
+  const activeLinks =
+    navLinks.length > 0
+      ? navLinks
+      : [
+          {
+            to: "/",
+            label: "الرئيسية",
+            icon: Home,
+            badge: undefined,
+            external: false,
+            target: "_self" as const,
+          },
+          {
+            to: "/offers",
+            label: "العروض",
+            icon: Tag,
+            badge: undefined,
+            external: false,
+            target: "_self" as const,
+          },
+          {
+            to: "/cart",
+            label: "السلة",
+            icon: ShoppingCart,
+            badge: count,
+            external: false,
+            target: "_self" as const,
+          },
+          {
+            to: "/account",
+            label: "حسابي",
+            icon: User,
+            badge: undefined,
+            external: false,
+            target: "_self" as const,
+          },
+        ];
 
   const storeLogo = settings.navigation.logoUrl || noqtaLogo;
   const storeName = settings.navigation.storeName || "اندكس ستور";
@@ -100,7 +142,11 @@ function TopBar({ isHome }: { isHome: boolean }) {
       <div className="mx-auto flex w-full max-w-md md:max-w-6xl lg:max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
         {/* Logo and Name */}
         <Link to="/" className="flex items-center gap-2">
-          <img src={storeLogo} alt={storeName} className="h-10 w-10 rounded-xl shadow-brand object-cover" />
+          <img
+            src={storeLogo}
+            alt={storeName}
+            className="h-10 w-10 rounded-xl shadow-brand object-cover"
+          />
           <div className="leading-tight">
             <div
               className={`text-base font-black tracking-tight ${
@@ -210,12 +256,15 @@ function BottomNav({ isHome }: { isHome: boolean }) {
       };
     });
 
-  const tabs = navLinks.length > 0 ? navLinks : [
-    { to: "/", label: "الرئيسية", icon: Home, badge: undefined, external: false },
-    { to: "/offers", label: "العروض", icon: Tag, badge: undefined, external: false },
-    { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count, external: false },
-    { to: "/account", label: "حسابي", icon: User, badge: undefined, external: false },
-  ];
+  const tabs =
+    navLinks.length > 0
+      ? navLinks
+      : [
+          { to: "/", label: "الرئيسية", icon: Home, badge: undefined, external: false },
+          { to: "/offers", label: "العروض", icon: Tag, badge: undefined, external: false },
+          { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count, external: false },
+          { to: "/account", label: "حسابي", icon: User, badge: undefined, external: false },
+        ];
 
   return (
     <nav

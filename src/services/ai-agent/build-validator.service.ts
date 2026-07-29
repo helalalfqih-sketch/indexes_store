@@ -52,7 +52,10 @@ export async function validateBuildState(): Promise<BuildValidationResult> {
       passed: parsedErrors.length === 0,
       errorCount: parsedErrors.length,
       errors: parsedErrors,
-      summary: parsedErrors.length === 0 ? "Build validation passed cleanly." : `Found ${parsedErrors.length} typecheck errors.`,
+      summary:
+        parsedErrors.length === 0
+          ? "Build validation passed cleanly."
+          : `Found ${parsedErrors.length} typecheck errors.`,
       durationMs,
     };
   } catch (err: any) {
@@ -63,7 +66,10 @@ export async function validateBuildState(): Promise<BuildValidationResult> {
     return {
       passed: false,
       errorCount: parsedErrors.length || 1,
-      errors: parsedErrors.length > 0 ? parsedErrors : [{ file: "workspace", message: err?.message || "Build failed" }],
+      errors:
+        parsedErrors.length > 0
+          ? parsedErrors
+          : [{ file: "workspace", message: err?.message || "Build failed" }],
       summary: `Build validation failed with ${parsedErrors.length || 1} error(s).`,
       durationMs,
     };

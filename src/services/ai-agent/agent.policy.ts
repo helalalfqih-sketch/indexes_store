@@ -49,7 +49,7 @@ export const READ_ONLY_TABLES = [
 // ─────────────────────────────────────────────────
 
 export const SENSITIVE_TABLES = [
-  "ai_provider_configs",  // contains encrypted API keys
+  "ai_provider_configs", // contains encrypted API keys
   "tenants",
   "user_roles",
 ];
@@ -60,15 +60,10 @@ export const SENSITIVE_TABLES = [
 
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 
-export function calculateRiskLevel(
-  plan: AgentPlanStep[],
-  affectedFiles: string[],
-): RiskLevel {
+export function calculateRiskLevel(plan: AgentPlanStep[], affectedFiles: string[]): RiskLevel {
   const mutatingSteps = plan.filter((s) => s.requiresApproval).length;
   const hasMigration = plan.some((s) => s.action === "run_migration");
-  const hasProtectedFile = affectedFiles.some((f) =>
-    PROTECTED_PATHS.some((p) => f.includes(p)),
-  );
+  const hasProtectedFile = affectedFiles.some((f) => PROTECTED_PATHS.some((p) => f.includes(p)));
   const hasCriticalPath = affectedFiles.some(
     (f) =>
       f.includes("auth") ||
@@ -96,10 +91,7 @@ export interface PolicyDecision {
 /**
  * Decide if agent is allowed to proceed with a mutation step based on mode.
  */
-export function evaluatePolicy(
-  mode: AgentMode,
-  step: AgentPlanStep,
-): PolicyDecision {
+export function evaluatePolicy(mode: AgentMode, step: AgentPlanStep): PolicyDecision {
   // Chat mode: only read steps allowed
   if (mode === "chat") {
     if (step.requiresApproval) {

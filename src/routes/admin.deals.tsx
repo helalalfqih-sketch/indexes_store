@@ -222,7 +222,7 @@ function DealsPage() {
               <span className="text-sm font-medium">تفعيل العرض</span>
               <button
                 type="button"
-                onClick={() => setEditing((e) => e ? { ...e, is_deal: !e.is_deal } : e)}
+                onClick={() => setEditing((e) => (e ? { ...e, is_deal: !e.is_deal } : e))}
               >
                 {editing.is_deal ? (
                   <ToggleRight className="h-6 w-6 text-primary" />
@@ -239,7 +239,7 @@ function DealsPage() {
               <input
                 type="number"
                 value={editing.old_price}
-                onChange={(e) => setEditing((s) => s ? { ...s, old_price: e.target.value } : s)}
+                onChange={(e) => setEditing((s) => (s ? { ...s, old_price: e.target.value } : s))}
                 placeholder="مثال: 5000"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
@@ -251,7 +251,7 @@ function DealsPage() {
               </label>
               <input
                 value={editing.badge}
-                onChange={(e) => setEditing((s) => s ? { ...s, badge: e.target.value } : s)}
+                onChange={(e) => setEditing((s) => (s ? { ...s, badge: e.target.value } : s))}
                 placeholder="مثال: خصم 30% 🔥"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
@@ -265,7 +265,9 @@ function DealsPage() {
                 <input
                   type="datetime-local"
                   value={editing.deal_start}
-                  onChange={(e) => setEditing((s) => s ? { ...s, deal_start: e.target.value } : s)}
+                  onChange={(e) =>
+                    setEditing((s) => (s ? { ...s, deal_start: e.target.value } : s))
+                  }
                   className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
@@ -276,7 +278,7 @@ function DealsPage() {
                 <input
                   type="datetime-local"
                   value={editing.deal_end}
-                  onChange={(e) => setEditing((s) => s ? { ...s, deal_end: e.target.value } : s)}
+                  onChange={(e) => setEditing((s) => (s ? { ...s, deal_end: e.target.value } : s))}
                   className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
@@ -323,11 +325,7 @@ function DealRow({
       }`}
     >
       {img && (
-        <img
-          src={img}
-          alt={product.name}
-          className="h-12 w-12 rounded-lg object-cover shrink-0"
-        />
+        <img src={img} alt={product.name} className="h-12 w-12 rounded-lg object-cover shrink-0" />
       )}
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-bold">{product.name}</div>

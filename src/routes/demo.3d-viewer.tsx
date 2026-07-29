@@ -7,7 +7,10 @@ export const Route = createFileRoute("/demo/3d-viewer")({
   head: () => ({
     meta: [
       { title: "3D Viewer Demo" },
-      { name: "description", content: "Preview of the Astryx-powered 3D product viewer and AI generator." },
+      {
+        name: "description",
+        content: "Preview of the Astryx-powered 3D product viewer and AI generator.",
+      },
     ],
   }),
 });
@@ -24,13 +27,9 @@ function DemoPage() {
         </header>
 
         <section className="grid gap-6 md:grid-cols-2">
-          <Product3DViewerCard
-            onAddToCart={() => alert("Added to cart (demo)")}
-          />
+          <Product3DViewerCard onAddToCart={() => alert("Added to cart (demo)")} />
           <Ai3dGeneratorPanel
-            images={[
-              "https://modelviewer.dev/assets/ShopifyModels/Chair.webp",
-            ]}
+            images={["https://modelviewer.dev/assets/ShopifyModels/Chair.webp"]}
           />
         </section>
       </div>

@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const productInputSchema = z.object({
-  slug: z.string().min(1).regex(/^[\p{L}\p{N}-]+$/ui, "الرابط يجب أن يحوي أحرف وأرقام و - فقط"),
+  slug: z
+    .string()
+    .min(1)
+    .regex(/^[\p{L}\p{N}-]+$/iu, "الرابط يجب أن يحوي أحرف وأرقام و - فقط"),
   name: z.string().min(1),
   description: z.string().default(""),
   price: z.number().min(0),
@@ -26,7 +29,11 @@ export const productInputSchema = z.object({
   model_3d_url: z.string().nullable().optional(),
   model_3d_thumbnail: z.string().nullable().optional(),
   model_3d_status: z.string().nullable().optional(),
-  meta_sync_status: z.enum(["not_synced", "syncing", "synced", "failed"]).default("not_synced").nullable().optional(),
+  meta_sync_status: z
+    .enum(["not_synced", "syncing", "synced", "failed"])
+    .default("not_synced")
+    .nullable()
+    .optional(),
   // V3 CMS fields
   featured: z.boolean().default(false).optional(),
   is_deal: z.boolean().default(false).optional(),
@@ -39,9 +46,11 @@ export const productUpdateSchema = productInputSchema.partial().extend({
   id: z.string().min(1),
 });
 
-
 export const categoryInputSchema = z.object({
-  slug: z.string().min(1).regex(/^[\p{L}\p{N}-]+$/ui, "الرابط يجب أن يحوي أحرف وأرقام و - فقط"),
+  slug: z
+    .string()
+    .min(1)
+    .regex(/^[\p{L}\p{N}-]+$/iu, "الرابط يجب أن يحوي أحرف وأرقام و - فقط"),
   name: z.string().min(1),
   description: z.string().nullable().optional(),
   image_url: z.string().url().nullable().optional(),

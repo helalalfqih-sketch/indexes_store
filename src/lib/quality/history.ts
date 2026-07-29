@@ -90,14 +90,27 @@ class LocalFileStorageAdapter implements QualityStorageAdapter {
 
       fs.writeFileSync(path.join(reportsDir, "latest.json"), JSON.stringify(summary, null, 2));
       fs.writeFileSync(path.join(reportsDir, "summary.json"), JSON.stringify(summary, null, 2));
-      fs.writeFileSync(path.join(reportsDir, "manifest.json"), JSON.stringify(summary.manifest, null, 2));
+      fs.writeFileSync(
+        path.join(reportsDir, "manifest.json"),
+        JSON.stringify(summary.manifest, null, 2),
+      );
 
-      fs.writeFileSync(path.join(historyDir, `${timestampStr}.json`), JSON.stringify(summary, null, 2));
-      fs.writeFileSync(path.join(executionsDir, `${timestampStr}-exec.json`), JSON.stringify({
-        manifest: summary.manifest,
-        auditsCount: summary.auditsCount,
-        passedCount: summary.passedCount,
-      }, null, 2));
+      fs.writeFileSync(
+        path.join(historyDir, `${timestampStr}.json`),
+        JSON.stringify(summary, null, 2),
+      );
+      fs.writeFileSync(
+        path.join(executionsDir, `${timestampStr}-exec.json`),
+        JSON.stringify(
+          {
+            manifest: summary.manifest,
+            auditsCount: summary.auditsCount,
+            passedCount: summary.passedCount,
+          },
+          null,
+          2,
+        ),
+      );
     } catch (err) {
       console.warn("[LocalFileStorageAdapter] Soft warning saving dev report:", err);
     }

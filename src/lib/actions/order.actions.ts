@@ -64,7 +64,9 @@ export async function getUserAddresses(): Promise<UserAddress[]> {
   }
 }
 
-export async function saveUserAddress(addr: Omit<UserAddress, "id" | "user_id"> & { id?: string }): Promise<boolean> {
+export async function saveUserAddress(
+  addr: Omit<UserAddress, "id" | "user_id"> & { id?: string },
+): Promise<boolean> {
   try {
     if (!supabase) return false;
     const { data: userData } = await supabase.auth.getUser();
@@ -76,9 +78,7 @@ export async function saveUserAddress(addr: Omit<UserAddress, "id" | "user_id"> 
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await (supabase as any)
-      .from("user_addresses")
-      .upsert(payload);
+    const { error } = await (supabase as any).from("user_addresses").upsert(payload);
 
     return !error;
   } catch (err) {
@@ -90,13 +90,9 @@ export async function saveUserAddress(addr: Omit<UserAddress, "id" | "user_id"> 
 export async function deleteUserAddress(id: string): Promise<boolean> {
   try {
     if (!supabase) return false;
-    const { error } = await (supabase as any)
-      .from("user_addresses")
-      .delete()
-      .eq("id", id);
+    const { error } = await (supabase as any).from("user_addresses").delete().eq("id", id);
     return !error;
   } catch {
     return false;
   }
 }
-

@@ -12,10 +12,10 @@ import type { AgentPlanStep } from "./agent.events";
 // ─────────────────────────────────────────────────
 
 export type AgentMode =
-  | "chat"     // 💬 يشرح فقط — لا يخطط ولا ينفذ
-  | "plan"     // 📋 يخطط فقط — لا ينفذ
-  | "execute"  // ⚙️ ينفذ بعد موافقة المستخدم
-  | "auto";    // 🤖 تنفيذ كامل ضمن الصلاحيات (لاحق)
+  | "chat" // 💬 يشرح فقط — لا يخطط ولا ينفذ
+  | "plan" // 📋 يخطط فقط — لا ينفذ
+  | "execute" // ⚙️ ينفذ بعد موافقة المستخدم
+  | "auto"; // 🤖 تنفيذ كامل ضمن الصلاحيات (لاحق)
 
 // ─────────────────────────────────────────────────
 // Task Status & Real Execution State Machine Enum
@@ -89,8 +89,8 @@ export interface AgentSessionState {
   mode: AgentMode;
   activeTask: ActiveTask | null;
   retry: RetryState;
-  filesRead: string[];           // for activity stream
-  toolsUsed: string[];           // for activity log
+  filesRead: string[]; // for activity stream
+  toolsUsed: string[]; // for activity log
   createdAt: number;
   lastActivityAt: number;
 }

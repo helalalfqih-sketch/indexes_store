@@ -1,10 +1,10 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type DB = SupabaseClient<any>;
 
 export interface CommissionCalculation {
   grossAmount: number;
-  commissionType: 'percentage' | 'fixed';
+  commissionType: "percentage" | "fixed";
   commissionRate: number;
   commissionAmount: number;
   netAmount: number;
@@ -15,13 +15,13 @@ export interface CommissionCalculation {
  */
 export function calculateCommission(
   grossAmount: number,
-  commissionType: 'percentage' | 'fixed',
+  commissionType: "percentage" | "fixed",
   commissionRate: number,
-  fixedAmount: number = 0
+  fixedAmount: number = 0,
 ): CommissionCalculation {
   let commissionAmount = 0;
 
-  if (commissionType === 'percentage') {
+  if (commissionType === "percentage") {
     commissionAmount = (grossAmount * commissionRate) / 100;
   } else {
     commissionAmount = fixedAmount;
@@ -51,20 +51,20 @@ export async function logVendorCommission(
     orderId: string;
     vendorOrderId: string;
     grossAmount: number;
-    commissionType: 'percentage' | 'fixed';
+    commissionType: "percentage" | "fixed";
     commissionRate: number;
     fixedAmount?: number;
-  }
+  },
 ) {
   const calc = calculateCommission(
     params.grossAmount,
     params.commissionType,
     params.commissionRate,
-    params.fixedAmount ?? 0
+    params.fixedAmount ?? 0,
   );
 
   const { data, error } = await db
-    .from('vendor_commissions')
+    .from("vendor_commissions")
     .insert({
       tenant_id: params.tenantId,
       vendor_id: params.vendorId,
@@ -75,13 +75,13 @@ export async function logVendorCommission(
       commission_rate: calc.commissionRate,
       commission_amount: calc.commissionAmount,
       net_amount: calc.netAmount,
-      payout_status: 'pending',
+      payout_status: "pending",
     })
-    .select('*')
+    .select("*")
     .single();
 
   if (error) {
-    console.error('Error logging vendor commission:', error);
+    console.error("Error logging vendor commission:", error);
     return null;
   }
   return data;
@@ -92,10 +92,10 @@ export async function logVendorCommission(
  */
 export async function getVendorCommissionLedger(db: DB, vendorId: string) {
   const { data, error } = await db
-    .from('vendor_commissions')
-    .select('*')
-    .eq('vendor_id', vendorId)
-    .order('created_at', { ascending: false });
+    .from("vendor_commissions")
+    .select("*")
+    .eq("vendor_id", vendorId)
+    .order("created_at", { ascending: false });
 
   if (error || !data) return [];
   return data;

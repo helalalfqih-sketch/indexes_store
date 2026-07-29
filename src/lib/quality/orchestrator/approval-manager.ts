@@ -17,11 +17,13 @@ export function requestHumanApproval(
   task: EngineeringTask,
   role: QualityRole,
   approve: boolean,
-  notes?: string
+  notes?: string,
 ): ApprovalDecision {
   const canApprove = assertQualityPermission(role, "canExecutePatches");
   if (!canApprove) {
-    throw new Error(`Permission Denied: Role '${role}' is not authorized to approve task execution.`);
+    throw new Error(
+      `Permission Denied: Role '${role}' is not authorized to approve task execution.`,
+    );
   }
 
   return {

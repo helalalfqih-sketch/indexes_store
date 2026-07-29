@@ -11,11 +11,7 @@
 type Db = any;
 
 export type TransactionType =
-  | "order_income"
-  | "platform_fee"
-  | "refund"
-  | "adjustment"
-  | "subscription_charge";
+  "order_income" | "platform_fee" | "refund" | "adjustment" | "subscription_charge";
 
 export interface FinancialTransaction {
   id: string;
@@ -58,7 +54,9 @@ export async function resolveActiveFeeRule(db: Db, tenantId: string): Promise<Fe
     .order("effective_from", { ascending: false })
     .limit(10);
   const rules = (data ?? []) as FeeRule[];
-  return rules.find((r) => r.tenant_id === tenantId) ?? rules.find((r) => r.tenant_id === null) ?? null;
+  return (
+    rules.find((r) => r.tenant_id === tenantId) ?? rules.find((r) => r.tenant_id === null) ?? null
+  );
 }
 
 export function calculatePlatformFee(rule: FeeRule | null, base: number): number {
@@ -136,7 +134,9 @@ export async function recordOrderIncome(
       currency: order.currency ?? "YER",
       referenceType: "order",
       referenceId: order.id,
-      note: rule ? `رسوم المنصّة (${rule.type === "percentage" ? `${rule.value}%` : "ثابت"})` : undefined,
+      note: rule
+        ? `رسوم المنصّة (${rule.type === "percentage" ? `${rule.value}%` : "ثابت"})`
+        : undefined,
     });
   }
   return { ok: true };
@@ -192,7 +192,12 @@ export async function getFinancialSummary(db: Db, tenantId: string): Promise<Fin
     .order("created_at", { ascending: false })
     .limit(5000);
 
-  const rows = (data ?? []) as Array<{ type: TransactionType; amount: number; currency: string; created_at: string }>;
+  const rows = (data ?? []) as Array<{
+    type: TransactionType;
+    amount: number;
+    currency: string;
+    created_at: string;
+  }>;
   let gross = 0;
   let fees = 0;
   let refunds = 0;

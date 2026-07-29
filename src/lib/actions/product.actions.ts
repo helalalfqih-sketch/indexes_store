@@ -19,11 +19,7 @@ import {
   inferCategorySlug,
 } from "@/lib/catalog.functions";
 import { fetchCategories } from "@/lib/actions/category.actions";
-import {
-  fallbackProducts,
-  toLegacyProduct,
-  type LegacyProductShape,
-} from "@/lib/data-adapter";
+import { fallbackProducts, toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
 import type { ProductDTO } from "@/lib/domain/product";
 import { products as seedProducts } from "@/lib/store-data";
 
@@ -127,14 +123,15 @@ export async function fetchProductsByCategory(
   }
 
   const matchedCat = categories.find(
-    (c) => c.id === key || c.slug === key || c.slug === cleanKey || c.id === cleanKey
+    (c) => c.id === key || c.slug === key || c.slug === cleanKey || c.id === cleanKey,
   );
   const targetSlug = matchedCat ? matchedCat.slug : cleanKey;
   const targetId = matchedCat ? matchedCat.id : key;
 
   const all = await fetchProducts();
   return all.filter((p) => {
-    if (p.categoryId === targetId || p.categoryId === targetSlug || p.categoryId === cleanKey) return true;
+    if (p.categoryId === targetId || p.categoryId === targetSlug || p.categoryId === cleanKey)
+      return true;
     const inferred = inferCategorySlug(p.name, [], p.description ?? "");
     return inferred === targetSlug || inferred === cleanKey;
   });
@@ -152,7 +149,8 @@ export async function fetchOffers(): Promise<LegacyProductShape[]> {
     (p) =>
       p.isDeal ||
       (typeof p.oldPrice === "number" && p.oldPrice > p.price) ||
-      (p.badge && (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
+      (p.badge &&
+        (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
   );
 
   if (explicitOffers.length > 0) {

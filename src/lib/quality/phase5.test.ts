@@ -31,26 +31,34 @@ async function runPhase5Tests() {
 
   saveRuntimeEvents([mockEvent]);
   const loadedEvents = loadRuntimeEvents();
-  console.log(`✅ Persisted events loaded: ${loadedEvents.length} (Occurrences: ${loadedEvents[0]?.occurrences})`);
+  console.log(
+    `✅ Persisted events loaded: ${loadedEvents.length} (Occurrences: ${loadedEvents[0]?.occurrences})`,
+  );
   if (loadedEvents.length === 0) throw new Error("❌ Persistence test failed");
 
   // Test 2: Security & RBAC Permission Layer
   console.log("⚙️ [2/6] Testing Security RBAC Permission Layer...");
   const viewerCanExecute = assertQualityPermission("quality.viewer", "canExecutePatches");
   const executorCanExecute = assertQualityPermission("quality.executor", "canExecutePatches");
-  console.log(`✅ RBAC Enforcement: viewer.canExecute=${viewerCanExecute}, executor.canExecute=${executorCanExecute}`);
+  console.log(
+    `✅ RBAC Enforcement: viewer.canExecute=${viewerCanExecute}, executor.canExecute=${executorCanExecute}`,
+  );
   if (viewerCanExecute || !executorCanExecute) throw new Error("❌ RBAC permission check failed");
 
   // Test 3: Code Context Analyzer
   console.log("⚙️ [3/6] Testing Code Context Analyzer...");
   const codeContext = analyzeCodeContext(mockEvent);
-  console.log(`✅ Mapped to Target File: ${codeContext.targetFile} (Component: ${codeContext.componentName})`);
+  console.log(
+    `✅ Mapped to Target File: ${codeContext.targetFile} (Component: ${codeContext.componentName})`,
+  );
 
   // Test 4: Root Cause Engine
   console.log("⚙️ [4/6] Testing Root Cause Engine...");
   const rootCause = generateRootCauseReport(mockEvent, codeContext);
   console.log(`📋 Empirical Fact: "${rootCause.empiricalFact}"`);
-  console.log(`💡 Potential Cause: "${rootCause.potentialCause}" (Confidence: ${rootCause.confidenceGrade})`);
+  console.log(
+    `💡 Potential Cause: "${rootCause.potentialCause}" (Confidence: ${rootCause.confidenceGrade})`,
+  );
 
   // Test 5: Repair Patch Planner
   console.log("⚙️ [5/6] Testing Repair Patch Planner...");
@@ -63,13 +71,17 @@ async function runPhase5Tests() {
   console.log("⚙️ [6/6] Testing Patch Executor & Approval Gate...");
   // Attempt unapproved execution -> should fail safely
   const unapprovedResult = await executeApprovedPatch(proposal, "quality.executor");
-  console.log(`🔒 Unapproved Execution Blocked: ${!unapprovedResult.success} | Reason: "${unapprovedResult.error}"`);
+  console.log(
+    `🔒 Unapproved Execution Blocked: ${!unapprovedResult.success} | Reason: "${unapprovedResult.error}"`,
+  );
   if (unapprovedResult.success) throw new Error("❌ Unapproved patch was incorrectly executed!");
 
   // Approve proposal & execute with executor role
   proposal.status = "APPROVED";
   const approvedResult = await executeApprovedPatch(proposal, "quality.executor");
-  console.log(`✅ Approved Execution Success: ${approvedResult.success} | Verification: ${approvedResult.verificationStatus} | Post-Patch Quality Score: ${approvedResult.auditScoreAfterPatch}/100`);
+  console.log(
+    `✅ Approved Execution Success: ${approvedResult.success} | Verification: ${approvedResult.verificationStatus} | Post-Patch Quality Score: ${approvedResult.auditScoreAfterPatch}/100`,
+  );
   if (!approvedResult.success) throw new Error("❌ Approved patch execution failed");
 
   console.log("==========================================");

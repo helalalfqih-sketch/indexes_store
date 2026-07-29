@@ -68,7 +68,9 @@ async function getAdminDb(ctx?: any) {
       if (supabaseAdmin && process.env?.SUPABASE_SERVICE_ROLE_KEY) {
         return supabaseAdmin;
       }
-    } catch { /* fallback */ }
+    } catch {
+      /* fallback */
+    }
   }
   return ctx?.supabase || supabase;
 }
@@ -81,12 +83,11 @@ async function resolveAgentRole(db: any, userId: string, tenantId: string): Prom
 
   // Check if platform admin in user_roles
   try {
-    const { data: roles } = await db
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
+    const { data: roles } = await db.from("user_roles").select("role").eq("user_id", userId);
     if (roles?.some((r: any) => r.role === "admin")) return "owner";
-  } catch { /* skip */ }
+  } catch {
+    /* skip */
+  }
 
   // Check if tenant owner
   const { data: tenant } = await db
@@ -108,12 +109,16 @@ async function resolveAgentRole(db: any, userId: string, tenantId: string): Prom
   if (!member) return "owner"; // Default to owner for admin panel access if authenticated
 
   switch (member.role) {
-    case "owner": return "owner";
-    case "manager": return "admin";
+    case "owner":
+      return "owner";
+    case "manager":
+      return "admin";
     case "marketing":
     case "employee":
-    case "staff": return "developer";
-    default: return "owner";
+    case "staff":
+      return "developer";
+    default:
+      return "owner";
   }
 }
 
@@ -147,7 +152,7 @@ async function recordUsage(
 ) {
   try {
     const total = usage.promptTokens + usage.completionTokens;
-    const cost = (usage.promptTokens * 0.00000015) + (usage.completionTokens * 0.0000006);
+    const cost = usage.promptTokens * 0.00000015 + usage.completionTokens * 0.0000006;
 
     await db.from("ai_agent_usage").insert({
       tenant_id: tenantId,
@@ -316,8 +321,18 @@ export const getAgentSession = createServerFn({ method: "GET" })
       const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
       const [sessionRes, messagesRes] = await Promise.all([
-        db.from("ai_agent_sessions").select("*").eq("id", sessionId).eq("tenant_id", tenantId).single(),
-        db.from("ai_agent_messages").select("*").eq("session_id", sessionId).eq("tenant_id", tenantId).order("created_at", { ascending: true }),
+        db
+          .from("ai_agent_sessions")
+          .select("*")
+          .eq("id", sessionId)
+          .eq("tenant_id", tenantId)
+          .single(),
+        db
+          .from("ai_agent_messages")
+          .select("*")
+          .eq("session_id", sessionId)
+          .eq("tenant_id", tenantId)
+          .order("created_at", { ascending: true }),
       ]);
 
       if (sessionRes.error) throw new Error("الجلسة غير موجودة");
@@ -359,7 +374,8 @@ export const createAgentSession = createServerFn({ method: "POST" })
 
     try {
       const sessionTitle = data.title || "جلسة جديدة";
-      const { checkSessionDeduplication, registerSessionFingerprint } = await import("@/services/ai-agent/session-deduplicator");
+      const { checkSessionDeduplication, registerSessionFingerprint } =
+        await import("@/services/ai-agent/session-deduplicator");
       const dedupCheck = checkSessionDeduplication(ctx.userId, tenantId, sessionTitle);
 
       if (dedupCheck.isDuplicate && dedupCheck.existingSessionId) {
@@ -396,25 +412,30 @@ export const createAgentSession = createServerFn({ method: "POST" })
       // Guarantee initial task row creation in public.ai_agent_tasks
       const { data: createdTask, error: taskErr } = await db
         .from("ai_agent_tasks")
-        .upsert({
-          id: taskId,
-          session_id: session.id,
-          tenant_id: tenantId,
-          user_id: ctx.userId,
-          status: "PENDING",
-          plan: [],
-          affected_files: [],
-          risk_level: "low",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "id" })
+        .upsert(
+          {
+            id: taskId,
+            session_id: session.id,
+            tenant_id: tenantId,
+            user_id: ctx.userId,
+            status: "PENDING",
+            plan: [],
+            affected_files: [],
+            risk_level: "low",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        )
         .select()
         .single();
 
       console.log("[TASK_INSERT_RESULT]", {
         taskId,
         createdTask,
-        taskErr: taskErr ? { message: taskErr.message, code: taskErr.code, details: taskErr.details } : null,
+        taskErr: taskErr
+          ? { message: taskErr.message, code: taskErr.code, details: taskErr.details }
+          : null,
       });
 
       console.log("[TASK_VERIFY_AFTER_CREATE]", createdTask);
@@ -422,7 +443,7 @@ export const createAgentSession = createServerFn({ method: "POST" })
         taskId: createdTask?.id,
         sessionId: session.id,
         planId: session.id,
-        status: createdTask?.status
+        status: createdTask?.status,
       });
 
       console.log("[TASK_CREATION_CHECK]", {
@@ -437,7 +458,13 @@ export const createAgentSession = createServerFn({ method: "POST" })
         status: "planning",
       });
       console.log("[PlanCreated]", { planId: taskId, sessionId: session.id, status: "planning" });
-      registerSessionFingerprint(dedupCheck.sessionFingerprint, session.id, ctx.userId, tenantId, sessionTitle);
+      registerSessionFingerprint(
+        dedupCheck.sessionFingerprint,
+        session.id,
+        ctx.userId,
+        tenantId,
+        sessionTitle,
+      );
       await logAudit(db, tenantId, ctx.userId, "session_created", session.id, { task_id: taskId });
 
       return session as AgentSession;
@@ -510,17 +537,19 @@ export const saveAgentMessage = createServerFn({ method: "POST" })
 /** Update session task status */
 export const updateSessionTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: {
-    sessionId: string;
-    taskId?: string;
-    taskStatus?: string;
-    taskPlan?: any;
-    taskReport?: any;
-    affectedFiles?: any;
-    riskLevel?: string;
-    title?: string;
-    diffs?: any;
-  }) => data)
+  .validator(
+    (data: {
+      sessionId: string;
+      taskId?: string;
+      taskStatus?: string;
+      taskPlan?: any;
+      taskReport?: any;
+      affectedFiles?: any;
+      riskLevel?: string;
+      title?: string;
+      diffs?: any;
+    }) => data,
+  )
   .handler(async ({ data, context }) => {
     const ctx = context as any;
     const db = await getAdminDb(ctx);
@@ -565,17 +594,20 @@ export const updateSessionTask = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     // Guarantee persistence into public.ai_agent_tasks so executeApprovedTask never fails
-    await db.from("ai_agent_tasks").upsert({
-      id: targetTaskId,
-      session_id: data.sessionId,
-      tenant_id: tenantId,
-      status: data.taskStatus || "waiting_approval",
-      plan: data.taskPlan || [],
-      affected_files: data.affectedFiles || [],
-      risk_level: data.riskLevel || "low",
-      diffs: data.diffs || {},
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "id" });
+    await db.from("ai_agent_tasks").upsert(
+      {
+        id: targetTaskId,
+        session_id: data.sessionId,
+        tenant_id: tenantId,
+        status: data.taskStatus || "waiting_approval",
+        plan: data.taskPlan || [],
+        affected_files: data.affectedFiles || [],
+        risk_level: data.riskLevel || "low",
+        diffs: data.diffs || {},
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
 
     await logAudit(db, tenantId, ctx.userId, "task_status_updated", data.sessionId, {
       new_status: data.taskStatus,
@@ -611,13 +643,69 @@ export const getProjectMemory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const defaultMemoryEntries: AgentMemoryEntry[] = [
-      { id: "1", tenant_id: "default", category: "project", key: "name", value: "Indexes Store", created_at: "", updated_at: "" },
-      { id: "2", tenant_id: "default", category: "project", key: "stack", value: "TanStack Start + React 19 + TypeScript + TailwindCSS 4 + Supabase", created_at: "", updated_at: "" },
-      { id: "3", tenant_id: "default", category: "project", key: "architecture", value: "Multi-Tenant SaaS E-commerce Platform", created_at: "", updated_at: "" },
-      { id: "4", tenant_id: "default", category: "design", key: "direction", value: "RTL (Arabic-first)", created_at: "", updated_at: "" },
-      { id: "5", tenant_id: "default", category: "design", key: "theme", value: "Premium Dark Theme with glass morphism, rounded-2xl, shadow-xs", created_at: "", updated_at: "" },
-      { id: "6", tenant_id: "default", category: "rules", key: "storage_bucket", value: "product-images only — no 'public' bucket", created_at: "", updated_at: "" },
-      { id: "7", tenant_id: "default", category: "rules", key: "auth_pattern", value: "requireSupabaseAuth middleware on all server functions", created_at: "", updated_at: "" },
+      {
+        id: "1",
+        tenant_id: "default",
+        category: "project",
+        key: "name",
+        value: "Indexes Store",
+        created_at: "",
+        updated_at: "",
+      },
+      {
+        id: "2",
+        tenant_id: "default",
+        category: "project",
+        key: "stack",
+        value: "TanStack Start + React 19 + TypeScript + TailwindCSS 4 + Supabase",
+        created_at: "",
+        updated_at: "",
+      },
+      {
+        id: "3",
+        tenant_id: "default",
+        category: "project",
+        key: "architecture",
+        value: "Multi-Tenant SaaS E-commerce Platform",
+        created_at: "",
+        updated_at: "",
+      },
+      {
+        id: "4",
+        tenant_id: "default",
+        category: "design",
+        key: "direction",
+        value: "RTL (Arabic-first)",
+        created_at: "",
+        updated_at: "",
+      },
+      {
+        id: "5",
+        tenant_id: "default",
+        category: "design",
+        key: "theme",
+        value: "Premium Dark Theme with glass morphism, rounded-2xl, shadow-xs",
+        created_at: "",
+        updated_at: "",
+      },
+      {
+        id: "6",
+        tenant_id: "default",
+        category: "rules",
+        key: "storage_bucket",
+        value: "product-images only — no 'public' bucket",
+        created_at: "",
+        updated_at: "",
+      },
+      {
+        id: "7",
+        tenant_id: "default",
+        category: "rules",
+        key: "auth_pattern",
+        value: "requireSupabaseAuth middleware on all server functions",
+        created_at: "",
+        updated_at: "",
+      },
     ];
 
     try {
@@ -648,15 +736,16 @@ export const saveProjectMemory = createServerFn({ method: "POST" })
       const db = await getAdminDb(ctx);
       const tenantId = await resolveTenantId(db, { userId: ctx.userId });
 
-      const { error } = await db
-        .from("ai_agent_memory")
-        .upsert({
+      const { error } = await db.from("ai_agent_memory").upsert(
+        {
           tenant_id: tenantId,
           category: data.category,
           key: data.key,
           value: data.value,
           updated_at: new Date().toISOString(),
-        }, { onConflict: "tenant_id,category,key" });
+        },
+        { onConflict: "tenant_id,category,key" },
+      );
 
       if (error) throw new Error(error.message);
 
@@ -689,25 +778,65 @@ export const seedProjectMemory = createServerFn({ method: "POST" })
 
       const defaults = [
         { category: "project", key: "name", value: "Indexes Store" },
-        { category: "project", key: "stack", value: "TanStack Start + React 19 + TypeScript + TailwindCSS 4 + Supabase" },
-        { category: "project", key: "architecture", value: "Multi-Tenant SaaS E-commerce Platform" },
+        {
+          category: "project",
+          key: "stack",
+          value: "TanStack Start + React 19 + TypeScript + TailwindCSS 4 + Supabase",
+        },
+        {
+          category: "project",
+          key: "architecture",
+          value: "Multi-Tenant SaaS E-commerce Platform",
+        },
         { category: "design", key: "direction", value: "RTL (Arabic-first)" },
-        { category: "design", key: "theme", value: "Premium Dark Theme with glass morphism, rounded-2xl, shadow-xs" },
-        { category: "design", key: "colors", value: "primary (brand), emerald (success), amber (warning), destructive (error)" },
+        {
+          category: "design",
+          key: "theme",
+          value: "Premium Dark Theme with glass morphism, rounded-2xl, shadow-xs",
+        },
+        {
+          category: "design",
+          key: "colors",
+          value: "primary (brand), emerald (success), amber (warning), destructive (error)",
+        },
         { category: "design", key: "font", value: "Tajawal (Arabic), system sans-serif" },
-        { category: "rules", key: "storage_bucket", value: "product-images only — no 'public' bucket" },
-        { category: "rules", key: "auth_pattern", value: "requireSupabaseAuth middleware on all server functions" },
-        { category: "rules", key: "server_fn_pattern", value: "createServerFn({ method }) .middleware([requireSupabaseAuth]) .validator() .handler()" },
-        { category: "rules", key: "tenant_isolation", value: "All queries MUST include tenant_id filter" },
-        { category: "rules", key: "no_div_rule", value: "Prefer semantic Astryx/Radix components over raw divs where possible" },
+        {
+          category: "rules",
+          key: "storage_bucket",
+          value: "product-images only — no 'public' bucket",
+        },
+        {
+          category: "rules",
+          key: "auth_pattern",
+          value: "requireSupabaseAuth middleware on all server functions",
+        },
+        {
+          category: "rules",
+          key: "server_fn_pattern",
+          value:
+            "createServerFn({ method }) .middleware([requireSupabaseAuth]) .validator() .handler()",
+        },
+        {
+          category: "rules",
+          key: "tenant_isolation",
+          value: "All queries MUST include tenant_id filter",
+        },
+        {
+          category: "rules",
+          key: "no_div_rule",
+          value: "Prefer semantic Astryx/Radix components over raw divs where possible",
+        },
       ];
 
       for (const entry of defaults) {
-        await db.from("ai_agent_memory").upsert({
-          tenant_id: tenantId,
-          ...entry,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "tenant_id,category,key" });
+        await db.from("ai_agent_memory").upsert(
+          {
+            tenant_id: tenantId,
+            ...entry,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "tenant_id,category,key" },
+        );
       }
 
       return { seeded: true, count: defaults.length };
@@ -735,7 +864,10 @@ export const getAgentUsageStats = createServerFn({ method: "GET" })
 
     const entries = data || [];
     const totalTokens = entries.reduce((sum: number, e: any) => sum + (e.total_tokens || 0), 0);
-    const totalCost = entries.reduce((sum: number, e: any) => sum + parseFloat(e.estimated_cost_usd || "0"), 0);
+    const totalCost = entries.reduce(
+      (sum: number, e: any) => sum + parseFloat(e.estimated_cost_usd || "0"),
+      0,
+    );
 
     return {
       totalTokens,
@@ -755,7 +887,6 @@ export const getAgentRole = createServerFn({ method: "GET" })
     const role = await resolveAgentRole(db, ctx.userId, tenantId);
     return { role, tenantId, userId: ctx.userId };
   });
-
 
 // ──────────────────────────────────────────────────────────────
 // Exported constants for context building
@@ -791,36 +922,45 @@ export const approveAgentTask = createServerFn({ method: "POST" })
       new_status: "APPROVED",
       approval_saved: true,
     });
-    console.log("[PlanApproved]", { approvedTaskId: data.taskId, approvedSessionId: cleanSessionId });
+    console.log("[PlanApproved]", {
+      approvedTaskId: data.taskId,
+      approvedSessionId: cleanSessionId,
+    });
     console.log("[DIAGNOSTIC_APPROVE] Starting plan/task approval", {
       taskId: data.taskId,
       cleanSessionId,
       tenantId: auth.tenantId,
     });
 
-    const taskUpsertRes = await db.from("ai_agent_tasks").upsert({
-      id: data.taskId,
-      session_id: cleanSessionId,
-      tenant_id: auth.tenantId,
-      status: "executing",
-      user_approved_at: nowIso,
-      updated_at: nowIso,
-    }, { onConflict: "id" });
+    const taskUpsertRes = await db.from("ai_agent_tasks").upsert(
+      {
+        id: data.taskId,
+        session_id: cleanSessionId,
+        tenant_id: auth.tenantId,
+        status: "executing",
+        user_approved_at: nowIso,
+        updated_at: nowIso,
+      },
+      { onConflict: "id" },
+    );
 
     console.log("[DIAGNOSTIC_APPROVE] ai_agent_tasks update result", {
       error: taskUpsertRes.error?.message || null,
       status: taskUpsertRes.status,
     });
 
-    const planUpsertRes = await db.from("ai_agent_plans").upsert({
-      id: cleanSessionId,
-      session_id: cleanSessionId,
-      tenant_id: auth.tenantId,
-      objective: "الموافقة على الخطة الهندسية وبدء التنفيذ",
-      status: "APPROVED",
-      approved_at: nowIso,
-      created_at: nowIso,
-    }, { onConflict: "id" });
+    const planUpsertRes = await db.from("ai_agent_plans").upsert(
+      {
+        id: cleanSessionId,
+        session_id: cleanSessionId,
+        tenant_id: auth.tenantId,
+        objective: "الموافقة على الخطة الهندسية وبدء التنفيذ",
+        status: "APPROVED",
+        approved_at: nowIso,
+        created_at: nowIso,
+      },
+      { onConflict: "id" },
+    );
 
     console.log("[DIAGNOSTIC_APPROVE] ai_agent_plans update result", {
       error: planUpsertRes.error?.message || null,
@@ -832,19 +972,26 @@ export const approveAgentTask = createServerFn({ method: "POST" })
       .select("id, status, user_approved_at")
       .or(`id.eq.${data.taskId},session_id.eq.${cleanSessionId}`)
       .maybeSingle();
-    const { data: verifyPlan } = await db.from("ai_agent_plans").select("id, session_id, status, approved_at").eq("id", cleanSessionId).maybeSingle();
+    const { data: verifyPlan } = await db
+      .from("ai_agent_plans")
+      .select("id, session_id, status, approved_at")
+      .eq("id", cleanSessionId)
+      .maybeSingle();
 
     if (!verifyTask) {
       const { data: autoCreatedTask, error: autoErr } = await db
         .from("ai_agent_tasks")
-        .upsert({
-          id: data.taskId,
-          session_id: cleanSessionId,
-          tenant_id: auth.tenantId,
-          status: "executing",
-          user_approved_at: nowIso,
-          updated_at: nowIso,
-        }, { onConflict: "id" })
+        .upsert(
+          {
+            id: data.taskId,
+            session_id: cleanSessionId,
+            tenant_id: auth.tenantId,
+            status: "executing",
+            user_approved_at: nowIso,
+            updated_at: nowIso,
+          },
+          { onConflict: "id" },
+        )
         .select()
         .maybeSingle();
 
@@ -869,10 +1016,12 @@ export const approveAgentTask = createServerFn({ method: "POST" })
 /** Reject an agent task plan — transitions to cancelled (Requires admin/owner role) */
 export const rejectAgentTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(z.object({
-    taskId: z.string().min(1),
-    reason: z.string().optional(),
-  }))
+  .validator(
+    z.object({
+      taskId: z.string().min(1),
+      reason: z.string().optional(),
+    }),
+  )
   .handler(async ({ data, context }) => {
     const { enforceAgentRole } = await import("@/services/ai-agent/agent.rbac");
     const auth = await enforceAgentRole(context, "admin");
@@ -973,7 +1122,8 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
     // Enforce Owner permission
     const { enforceAgentRole } = await import("@/services/ai-agent/agent.rbac");
     const agentRole = await enforceAgentRole(ctx, "owner");
-    const { recordExecutionHistory } = await import("@/services/ai-agent/execution-history.service");
+    const { recordExecutionHistory } =
+      await import("@/services/ai-agent/execution-history.service");
 
     // Fetch Task with robust fallback
     let task: any = null;
@@ -1025,7 +1175,8 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
     }
 
     // Step 1: Update status to 'executing' (EXECUTION_STARTED phase)
-    const { logExecutionJournal, savePersistentExecutionEvent, hasExecutionStartedLog } = await import("@/services/ai-agent/journal.service");
+    const { logExecutionJournal, savePersistentExecutionEvent, hasExecutionStartedLog } =
+      await import("@/services/ai-agent/journal.service");
     const { AgentTaskState } = await import("@/services/ai-agent/agent.state");
 
     await db
@@ -1036,32 +1187,37 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
     // Initial EXECUTION_STARTED journal entry with deduplication guard
     const alreadyStarted = await hasExecutionStartedLog(data.taskId, db);
     if (!alreadyStarted) {
-      await logExecutionJournal({
-        taskId: data.taskId,
-        tenantId,
-        action: "EXECUTION_STARTED",
-        tool: "execute_approved_task",
-        input: { taskId: data.taskId },
-        output: { status: "started" },
-        status: "PENDING",
-      }, db);
+      await logExecutionJournal(
+        {
+          taskId: data.taskId,
+          tenantId,
+          action: "EXECUTION_STARTED",
+          tool: "execute_approved_task",
+          input: { taskId: data.taskId },
+          output: { status: "started" },
+          status: "PENDING",
+        },
+        db,
+      );
 
-      await savePersistentExecutionEvent({
-        sessionId: task.session_id || "default",
-        taskId: data.taskId,
-        tenantId,
-        eventType: "STATE_CHANGE",
-        state: AgentTaskState.EXECUTING,
-        message: "⚙️ Starting task execution and file modifications...",
-        progress: 60,
-      }, db);
+      await savePersistentExecutionEvent(
+        {
+          sessionId: task.session_id || "default",
+          taskId: data.taskId,
+          tenantId,
+          eventType: "STATE_CHANGE",
+          state: AgentTaskState.EXECUTING,
+          message: "⚙️ Starting task execution and file modifications...",
+          progress: 60,
+        },
+        db,
+      );
     }
 
     try {
       // Step 2: Sandbox Layer — Create snapshot of original files before applying edits
-      const { applyEditFile, createFileSnapshots, rollbackFileSnapshots } = await import(
-        "@/services/ai-agent/agent.tools"
-      );
+      const { applyEditFile, createFileSnapshots, rollbackFileSnapshots } =
+        await import("@/services/ai-agent/agent.tools");
       const affectedFiles = (task.affected_files as string[]) || [];
       const taskPlan = (task.plan as any[]) || [];
       const snapshots = await createFileSnapshots(affectedFiles);
@@ -1074,7 +1230,9 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
         const filePath = filePaths[i];
         const isSql = filePath.endsWith(".sql");
         const actionType = isSql ? "RUNNING_DATABASE_CHANGES" : "MODIFYING_FILES";
-        const stateEnum = isSql ? AgentTaskState.RUNNING_DATABASE_CHANGES : AgentTaskState.MODIFYING_FILES;
+        const stateEnum = isSql
+          ? AgentTaskState.RUNNING_DATABASE_CHANGES
+          : AgentTaskState.MODIFYING_FILES;
 
         await savePersistentExecutionEvent({
           sessionId: task.session_id || "default",
@@ -1114,15 +1272,18 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
           .eq("task_id", data.taskId)
           .eq("target_file", filePath);
 
-        await logExecutionJournal({
-          taskId: data.taskId,
-          tenantId,
-          action: actionType,
-          tool: isSql ? "create_migration" : "apply_edit_file",
-          input: { filePath },
-          output: { status: "COMPLETED" },
-          status: "SUCCESS",
-        }, db);
+        await logExecutionJournal(
+          {
+            taskId: data.taskId,
+            tenantId,
+            action: actionType,
+            tool: isSql ? "create_migration" : "apply_edit_file",
+            input: { filePath },
+            output: { status: "COMPLETED" },
+            status: "SUCCESS",
+          },
+          db,
+        );
       }
 
       // Step 4: Run Automated Verification via Dynamic Validation Resolver
@@ -1143,55 +1304,69 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
           .update({ status: valTask.action.toLowerCase(), updated_at: new Date().toISOString() })
           .eq("id", data.taskId);
 
-        await savePersistentExecutionEvent({
-          sessionId: task.session_id || "default",
-          taskId: data.taskId,
-          tenantId,
-          eventType: "STATE_CHANGE",
-          state: valTask.stateEnum || AgentTaskState.RUNNING_TESTS,
-          message: `✓ Running ${valTask.action} (${valTask.command})...`,
-          progress: 85 + valTask.order * 3,
-        }, db);
+        await savePersistentExecutionEvent(
+          {
+            sessionId: task.session_id || "default",
+            taskId: data.taskId,
+            tenantId,
+            eventType: "STATE_CHANGE",
+            state: valTask.stateEnum || AgentTaskState.RUNNING_TESTS,
+            message: `✓ Running ${valTask.action} (${valTask.command})...`,
+            progress: 85 + valTask.order * 3,
+          },
+          db,
+        );
 
         try {
           const { stdout, stderr } = await execAsync(valTask.command, { cwd: process.cwd() });
           const taskOut = stdout || stderr || "PASSED";
           outputs.push(`[${valTask.action}] ${taskOut.slice(0, 300)}`);
 
-          await logExecutionJournal({
-            taskId: data.taskId,
-            tenantId,
-            action: valTask.action,
-            tool: valTask.tool,
-            input: { command: valTask.command },
-            output: { stdout: taskOut.slice(0, 500) },
-            status: "SUCCESS",
-          }, db);
+          await logExecutionJournal(
+            {
+              taskId: data.taskId,
+              tenantId,
+              action: valTask.action,
+              tool: valTask.tool,
+              input: { command: valTask.command },
+              output: { stdout: taskOut.slice(0, 500) },
+              status: "SUCCESS",
+            },
+            db,
+          );
         } catch (err: any) {
           buildSuccess = false;
-          const rawErrOutput = [err?.stdout, err?.stderr, err?.message].filter(Boolean).join("\n\n");
+          const rawErrOutput = [err?.stdout, err?.stderr, err?.message]
+            .filter(Boolean)
+            .join("\n\n");
           const taskErr = rawErrOutput || `Verification Error: ${err?.message || String(err)}`;
           buildOutput = taskErr;
 
-          await logExecutionJournal({
-            taskId: data.taskId,
-            tenantId,
-            action: valTask.action,
-            tool: valTask.tool,
-            input: { command: valTask.command },
-            output: { error: taskErr.slice(0, 1000) },
-            status: "FAILED",
-          }, db);
+          await logExecutionJournal(
+            {
+              taskId: data.taskId,
+              tenantId,
+              action: valTask.action,
+              tool: valTask.tool,
+              input: { command: valTask.command },
+              output: { error: taskErr.slice(0, 1000) },
+              status: "FAILED",
+            },
+            db,
+          );
 
-          await savePersistentExecutionEvent({
-            sessionId: task.session_id || "default",
-            taskId: data.taskId,
-            tenantId,
-            eventType: "ERROR",
-            state: AgentTaskState.FAILED,
-            message: `❌ ${valTask.action} failed: ${taskErr.slice(0, 150)}...`,
-            progress: 95,
-          }, db);
+          await savePersistentExecutionEvent(
+            {
+              sessionId: task.session_id || "default",
+              taskId: data.taskId,
+              tenantId,
+              eventType: "ERROR",
+              state: AgentTaskState.FAILED,
+              message: `❌ ${valTask.action} failed: ${taskErr.slice(0, 150)}...`,
+              progress: 95,
+            },
+            db,
+          );
 
           break; // Stop validation pipeline on first failing step
         }
@@ -1203,7 +1378,8 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
 
       const executionTimeMs = Date.now() - startTime;
 
-      const { analyzeExecutionFailure } = await import("@/services/ai-agent/failure-analysis.engine");
+      const { analyzeExecutionFailure } =
+        await import("@/services/ai-agent/failure-analysis.engine");
       const { executeSelfHealingLoop } = await import("@/services/ai-agent/retry.controller");
 
       if (!buildSuccess) {
@@ -1239,15 +1415,26 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
           execution_time_ms: executionTimeMs,
         });
 
-        await logAudit(db, tenantId, ctx.userId, "ai_task_execution_failed_rolled_back", task.session_id, {
-          taskId: data.taskId,
-          error: buildOutput,
-          failureAnalysis,
-          retryAttempts: retryResult.attemptsCount,
-        });
+        await logAudit(
+          db,
+          tenantId,
+          ctx.userId,
+          "ai_task_execution_failed_rolled_back",
+          task.session_id,
+          {
+            taskId: data.taskId,
+            error: buildOutput,
+            failureAnalysis,
+            retryAttempts: retryResult.attemptsCount,
+          },
+        );
 
-        const { analyzeAndFormatFailure } = await import("@/services/ai-agent/failure-response.engine");
-        const failureDetails = analyzeAndFormatFailure(buildOutput, { affectedFiles, taskId: data.taskId });
+        const { analyzeAndFormatFailure } =
+          await import("@/services/ai-agent/failure-response.engine");
+        const failureDetails = analyzeAndFormatFailure(buildOutput, {
+          affectedFiles,
+          taskId: data.taskId,
+        });
 
         // Evaluate Failure & Penalty (Phase 9 📊)
         const { evaluateTaskExecution } = await import("@/services/ai-agent/evaluation.engine");
@@ -1330,10 +1517,17 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
         affected_files: task.affected_files,
       });
 
-      return { success: true, status: "success", buildOutput, executionTimeMs, evaluation: evalReport };
+      return {
+        success: true,
+        status: "success",
+        buildOutput,
+        executionTimeMs,
+        evaluation: evalReport,
+      };
     } catch (e: any) {
       const executionTimeMs = Date.now() - startTime;
-      const { analyzeAndFormatFailure } = await import("@/services/ai-agent/failure-response.engine");
+      const { analyzeAndFormatFailure } =
+        await import("@/services/ai-agent/failure-response.engine");
       const failureDetails = analyzeAndFormatFailure(e, {
         affectedFiles: (task?.affected_files as string[]) || [],
         taskId: data.taskId,
@@ -1348,15 +1542,18 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
         tool_name: "executeApprovedTask",
       };
 
-      await logExecutionJournal({
-        taskId: data.taskId,
-        tenantId,
-        action: "EXECUTION_FAILED",
-        tool: "executeApprovedTask",
-        input: { taskId: data.taskId },
-        output: { error: errPayload, failureDetails },
-        status: "FAILED",
-      }, db);
+      await logExecutionJournal(
+        {
+          taskId: data.taskId,
+          tenantId,
+          action: "EXECUTION_FAILED",
+          tool: "executeApprovedTask",
+          input: { taskId: data.taskId },
+          output: { error: errPayload, failureDetails },
+          status: "FAILED",
+        },
+        db,
+      );
 
       await db
         .from("ai_agent_tasks")
@@ -1368,7 +1565,8 @@ export const executeApprovedTask = createServerFn({ method: "POST" })
         })
         .eq("id", data.taskId);
 
-      const { recordExecutionHistory } = await import("@/services/ai-agent/execution-history.service");
+      const { recordExecutionHistory } =
+        await import("@/services/ai-agent/execution-history.service");
       await recordExecutionHistory({
         tenant_id: tenantId,
         task_id: data.taskId,
@@ -1531,7 +1729,9 @@ export const getRealProjectTreeFn = createServerFn({ method: "GET" })
               const stat = await fs.stat(childAbsPath);
               size = stat.size;
               updatedAt = stat.mtime.toISOString();
-            } catch { /* stat fallback */ }
+            } catch {
+              /* stat fallback */
+            }
 
             nodes.push({
               id: childRelPath,
@@ -1564,7 +1764,14 @@ export const readProjectFileContentFn = createServerFn({ method: "POST" })
   .validator(z.object({ path: z.string().min(1) }))
   .handler(async ({ data }) => {
     if (typeof process === "undefined") {
-      return { content: "", path: data.path, name: "", size: 0, updatedAt: "", language: "plaintext" };
+      return {
+        content: "",
+        path: data.path,
+        name: "",
+        size: 0,
+        updatedAt: "",
+        language: "plaintext",
+      };
     }
 
     try {
@@ -1643,99 +1850,111 @@ const fileParseCache = new Map<string, ProjectFileParsedContext>();
 export const parseProjectFileFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(z.object({ path: z.string().min(1) }))
-  .handler(async ({ data }): Promise<{ success: boolean; fileContext?: ProjectFileParsedContext; error?: string }> => {
-    if (typeof process === "undefined") {
-      return { success: false, error: "Server-side process unavailable" };
-    }
-
-    try {
-      const fs = await import("node:fs/promises");
-      const path = await import("node:path");
-
-      const rootDir = process.cwd();
-      const sanitizedRelPath = data.path.replace(/^(\.\.[\/\\])+/, "").replace(/\\/g, "/");
-      const absPath = path.resolve(rootDir, sanitizedRelPath);
-
-      if (!absPath.startsWith(rootDir)) {
-        return { success: false, error: "Access denied: Path outside workspace root" };
+  .handler(
+    async ({
+      data,
+    }): Promise<{ success: boolean; fileContext?: ProjectFileParsedContext; error?: string }> => {
+      if (typeof process === "undefined") {
+        return { success: false, error: "Server-side process unavailable" };
       }
 
-      const basename = path.basename(sanitizedRelPath);
+      try {
+        const fs = await import("node:fs/promises");
+        const path = await import("node:path");
 
-      if (
-        basename.startsWith(".env") ||
-        sanitizedRelPath.includes("node_modules") ||
-        sanitizedRelPath.includes(".git") ||
-        sanitizedRelPath.includes("secrets") ||
-        sanitizedRelPath.includes("credentials")
-      ) {
-        return { success: false, error: "Protected file cannot be inspected" };
-      }
+        const rootDir = process.cwd();
+        const sanitizedRelPath = data.path.replace(/^(\.\.[\/\\])+/, "").replace(/\\/g, "/");
+        const absPath = path.resolve(rootDir, sanitizedRelPath);
 
-      const stat = await fs.stat(absPath);
-      const ext = path.extname(sanitizedRelPath).toLowerCase();
-
-      const cacheKey = `${sanitizedRelPath}:${stat.mtimeMs}`;
-      if (fileParseCache.has(cacheKey)) {
-        return { success: true, fileContext: fileParseCache.get(cacheKey)! };
-      }
-
-      let language = "plaintext";
-      if (ext === ".ts" || ext === ".tsx") language = "typescript";
-      else if (ext === ".js" || ext === ".jsx") language = "javascript";
-      else if (ext === ".css") language = "css";
-      else if (ext === ".json") language = "json";
-      else if (ext === ".md") language = "markdown";
-      else if (ext === ".sql") language = "sql";
-
-      const content = await fs.readFile(absPath, "utf-8");
-      const lines = content.split("\n");
-      const lineCount = lines.length;
-
-      const dependenciesSet = new Set<string>();
-      const importRegex = /(?:import|export)\s+.*?\s+from\s+['"]([^'"]+)['"]/g;
-      const requireRegex = /require\(['"]([^'"]+)['"]\)/g;
-
-      let match;
-      while ((match = importRegex.exec(content)) !== null) {
-        const imp = match[1];
-        if (imp && !imp.startsWith("react") && !imp.startsWith("@tanstack") && !imp.startsWith("lucide")) {
-          dependenciesSet.add(imp.replace(/^@\//, "src/"));
+        if (!absPath.startsWith(rootDir)) {
+          return { success: false, error: "Access denied: Path outside workspace root" };
         }
-      }
-      while ((match = requireRegex.exec(content)) !== null) {
-        const imp = match[1];
-        if (imp && !imp.startsWith("react")) {
-          dependenciesSet.add(imp.replace(/^@\//, "src/"));
+
+        const basename = path.basename(sanitizedRelPath);
+
+        if (
+          basename.startsWith(".env") ||
+          sanitizedRelPath.includes("node_modules") ||
+          sanitizedRelPath.includes(".git") ||
+          sanitizedRelPath.includes("secrets") ||
+          sanitizedRelPath.includes("credentials")
+        ) {
+          return { success: false, error: "Protected file cannot be inspected" };
         }
+
+        const stat = await fs.stat(absPath);
+        const ext = path.extname(sanitizedRelPath).toLowerCase();
+
+        const cacheKey = `${sanitizedRelPath}:${stat.mtimeMs}`;
+        if (fileParseCache.has(cacheKey)) {
+          return { success: true, fileContext: fileParseCache.get(cacheKey)! };
+        }
+
+        let language = "plaintext";
+        if (ext === ".ts" || ext === ".tsx") language = "typescript";
+        else if (ext === ".js" || ext === ".jsx") language = "javascript";
+        else if (ext === ".css") language = "css";
+        else if (ext === ".json") language = "json";
+        else if (ext === ".md") language = "markdown";
+        else if (ext === ".sql") language = "sql";
+
+        const content = await fs.readFile(absPath, "utf-8");
+        const lines = content.split("\n");
+        const lineCount = lines.length;
+
+        const dependenciesSet = new Set<string>();
+        const importRegex = /(?:import|export)\s+.*?\s+from\s+['"]([^'"]+)['"]/g;
+        const requireRegex = /require\(['"]([^'"]+)['"]\)/g;
+
+        let match;
+        while ((match = importRegex.exec(content)) !== null) {
+          const imp = match[1];
+          if (
+            imp &&
+            !imp.startsWith("react") &&
+            !imp.startsWith("@tanstack") &&
+            !imp.startsWith("lucide")
+          ) {
+            dependenciesSet.add(imp.replace(/^@\//, "src/"));
+          }
+        }
+        while ((match = requireRegex.exec(content)) !== null) {
+          const imp = match[1];
+          if (imp && !imp.startsWith("react")) {
+            dependenciesSet.add(imp.replace(/^@\//, "src/"));
+          }
+        }
+
+        let hashNum = 0;
+        for (let i = 0; i < content.length; i++) {
+          hashNum = (hashNum << 5) - hashNum + content.charCodeAt(i);
+          hashNum |= 0;
+        }
+        const hash = `h_${Math.abs(hashNum).toString(36)}`;
+
+        const parsed: ProjectFileParsedContext = {
+          fileName: basename,
+          path: sanitizedRelPath,
+          type: language,
+          size: stat.size,
+          lineCount,
+          language,
+          content:
+            lineCount > 2000
+              ? lines.slice(0, 2000).join("\n") + "\n// [Truncated at 2000 lines]"
+              : content,
+          dependencies: Array.from(dependenciesSet).slice(0, 15),
+          hash,
+          updatedAt: stat.mtime.toISOString(),
+        };
+
+        fileParseCache.set(cacheKey, parsed);
+        return { success: true, fileContext: parsed };
+      } catch (err: any) {
+        return { success: false, error: err?.message || "Error parsing file" };
       }
-
-      let hashNum = 0;
-      for (let i = 0; i < content.length; i++) {
-        hashNum = (hashNum << 5) - hashNum + content.charCodeAt(i);
-        hashNum |= 0;
-      }
-      const hash = `h_${Math.abs(hashNum).toString(36)}`;
-
-      const parsed: ProjectFileParsedContext = {
-        fileName: basename,
-        path: sanitizedRelPath,
-        type: language,
-        size: stat.size,
-        lineCount,
-        language,
-        content: lineCount > 2000 ? lines.slice(0, 2000).join("\n") + "\n// [Truncated at 2000 lines]" : content,
-        dependencies: Array.from(dependenciesSet).slice(0, 15),
-        hash,
-        updatedAt: stat.mtime.toISOString(),
-      };
-
-      fileParseCache.set(cacheKey, parsed);
-      return { success: true, fileContext: parsed };
-    } catch (err: any) {
-      return { success: false, error: err?.message || "Error parsing file" };
-    }
-  });
+    },
+  );
 
 /** Apply code patch safely with backup snapshot */
 export const applyCodePatchFn = createServerFn({ method: "POST" })
@@ -1772,11 +1991,15 @@ export const publishToProductionFn = createServerFn({ method: "POST" })
       const { promisify } = await import("node:util");
       const execAsync = promisify(exec);
 
-      const msg = data.commitMessage || `feat(builder): autonomous publication for session ${data.sessionId}`;
+      const msg =
+        data.commitMessage || `feat(builder): autonomous publication for session ${data.sessionId}`;
 
-      await execAsync(`git add . && git commit -m "${msg.replace(/"/g, '\\"')}" && git push origin main`, {
-        cwd: process.cwd(),
-      });
+      await execAsync(
+        `git add . && git commit -m "${msg.replace(/"/g, '\\"')}" && git push origin main`,
+        {
+          cwd: process.cwd(),
+        },
+      );
 
       await logAudit(db, tenantId, ctx.userId, "production_published", data.sessionId, {
         commitMessage: msg,
@@ -1792,7 +2015,9 @@ export const publishToProductionFn = createServerFn({ method: "POST" })
 /** Index project file AST symbols & store memory in ai_project_files */
 export const indexProjectFileFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(z.object({ sessionId: z.string().optional(), filePath: z.string(), content: z.string() }))
+  .validator(
+    z.object({ sessionId: z.string().optional(), filePath: z.string(), content: z.string() }),
+  )
   .handler(async ({ data, context }) => {
     const ctx = context as any;
     const db = await getAdminDb(ctx);
@@ -1840,7 +2065,7 @@ export const createCodePatchRecordFn = createServerFn({ method: "POST" })
       filePath: z.string(),
       operation: z.enum(["create", "modify", "delete"]).optional(),
       afterContent: z.string(),
-    })
+    }),
   )
   .handler(async ({ data, context }) => {
     const ctx = context as any;
@@ -1866,7 +2091,7 @@ export const applyCodePatchRecordFn = createServerFn({ method: "POST" })
       patchId: z.string(),
       targetFile: z.string().optional(),
       newContent: z.string().optional(),
-    })
+    }),
   )
   .handler(async ({ data, context }) => {
     const ctx = context as any;
@@ -1882,6 +2107,3 @@ export const applyCodePatchRecordFn = createServerFn({ method: "POST" })
       newContent: data.newContent,
     });
   });
-
-
-

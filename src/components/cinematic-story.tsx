@@ -111,12 +111,8 @@ export function CinematicStory() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-showcase-muted">
                   {b.kicker}
                 </p>
-                <h3 className="mt-1.5 text-base font-black text-showcase-foreground">
-                  {b.title}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-showcase-foreground/80">
-                  {b.body}
-                </p>
+                <h3 className="mt-1.5 text-base font-black text-showcase-foreground">{b.title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-showcase-foreground/80">{b.body}</p>
               </div>
             </div>
           ))}

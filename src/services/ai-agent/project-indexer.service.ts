@@ -41,7 +41,8 @@ export function parseASTSymbols(content: string, filePath: string): SymbolAnalys
     }
 
     // 2. Extract Exports
-    const exportRegex = /export\s+(?:const|function|class|type|interface|default)\s+([A-Za-z0-9_]+)/g;
+    const exportRegex =
+      /export\s+(?:const|function|class|type|interface|default)\s+([A-Za-z0-9_]+)/g;
     while ((match = exportRegex.exec(content)) !== null) {
       const name = match[1];
       exportsSet.add(name);
@@ -73,7 +74,8 @@ export function parseASTSymbols(content: string, filePath: string): SymbolAnalys
       dbReferencesSet.add(match[1]);
     }
   } else if (ext === ".sql") {
-    const tableRegex = /(?:CREATE TABLE|ALTER TABLE|UPDATE|FROM|INTO)\s+(?:IF NOT EXISTS\s+)?(?:public\.)?([A-Za-z0-9_]+)/gi;
+    const tableRegex =
+      /(?:CREATE TABLE|ALTER TABLE|UPDATE|FROM|INTO)\s+(?:IF NOT EXISTS\s+)?(?:public\.)?([A-Za-z0-9_]+)/gi;
     let match: RegExpExecArray | null;
     while ((match = tableRegex.exec(content)) !== null) {
       dbReferencesSet.add(match[1]);
@@ -135,7 +137,7 @@ export async function indexProjectFileRecord(options: {
           },
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "tenant_id,file_path" }
+        { onConflict: "tenant_id,file_path" },
       );
 
       if (error) {

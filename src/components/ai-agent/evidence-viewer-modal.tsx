@@ -1,5 +1,13 @@
 import React from "react";
-import { ShieldCheck, AlertTriangle, FileCode2, Database, CheckCircle2, Play, X } from "lucide-react";
+import {
+  ShieldCheck,
+  AlertTriangle,
+  FileCode2,
+  Database,
+  CheckCircle2,
+  Play,
+  X,
+} from "lucide-react";
 
 export interface ProposalEvidenceMetrics {
   title: string;
@@ -17,16 +25,30 @@ interface EvidenceViewerModalProps {
   onClose: () => void;
 }
 
-export function EvidenceViewerModal({ proposal, onApprove, onReject, onClose }: EvidenceViewerModalProps) {
+export function EvidenceViewerModal({
+  proposal,
+  onApprove,
+  onReject,
+  onClose,
+}: EvidenceViewerModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4" dir="rtl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4"
+      dir="rtl"
+    >
       <div className="w-full max-w-xl rounded-3xl border border-violet-500/30 bg-surface p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
         <div className="flex items-center justify-between border-b border-border/80 pb-4">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-violet-400" />
-            <h2 className="text-lg font-black text-foreground">معاينة أدلة التغيير الهندسي (AI Proposal Evidence)</h2>
+            <h2 className="text-lg font-black text-foreground">
+              معاينة أدلة التغيير الهندسي (AI Proposal Evidence)
+            </h2>
           </div>
-          <button type="button" onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:bg-accent">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-lg text-muted-foreground hover:bg-accent"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -38,9 +60,13 @@ export function EvidenceViewerModal({ proposal, onApprove, onReject, onClose }: 
               <span className="px-2.5 py-0.5 rounded bg-violet-500/20 text-violet-300 font-bold">
                 درجة الثقة: {proposal.confidenceScore}%
               </span>
-              <span className={`px-2.5 py-0.5 rounded font-bold ${
-                proposal.riskLevel === "LOW" ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"
-              }`}>
+              <span
+                className={`px-2.5 py-0.5 rounded font-bold ${
+                  proposal.riskLevel === "LOW"
+                    ? "bg-emerald-500/20 text-emerald-300"
+                    : "bg-amber-500/20 text-amber-300"
+                }`}
+              >
                 مستوى المخاطرة: {proposal.riskLevel}
               </span>
             </div>
@@ -72,7 +98,10 @@ export function EvidenceViewerModal({ proposal, onApprove, onReject, onClose }: 
             </div>
             <div className="flex flex-wrap gap-1.5">
               {proposal.requiredTests.map((test, idx) => (
-                <span key={idx} className="px-2 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-300 font-mono">
+                <span
+                  key={idx}
+                  className="px-2 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-300 font-mono"
+                >
                   {test}
                 </span>
               ))}

@@ -6,7 +6,7 @@ import type { LegacyProductShape } from "@/lib/data-adapter";
 import { useAppearance } from "@/components/appearance-provider";
 
 function lazyWithRetry<T extends React.ComponentType<any>>(
-  factory: () => Promise<{ default: T }>
+  factory: () => Promise<{ default: T }>,
 ): React.LazyExoticComponent<T> {
   return lazy(() =>
     factory().catch((err) => {
@@ -17,7 +17,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
         return new Promise(() => {}) as never;
       }
       throw err;
-    })
+    }),
   );
 }
 

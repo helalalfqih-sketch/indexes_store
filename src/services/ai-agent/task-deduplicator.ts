@@ -14,7 +14,11 @@ export interface TaskDeduplicationRecord {
 const activeTaskFingerprints: Map<string, TaskDeduplicationRecord> = new Map();
 const COOLDOWN_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
-export function generateTaskFingerprint(sessionId: string, taskTitle: string, targetFile = ""): string {
+export function generateTaskFingerprint(
+  sessionId: string,
+  taskTitle: string,
+  targetFile = "",
+): string {
   const raw = `${sessionId}:${taskTitle.trim().toLowerCase()}:${targetFile.trim().toLowerCase()}`;
   let hash = 0;
   for (let i = 0; i < raw.length; i++) {
@@ -24,7 +28,11 @@ export function generateTaskFingerprint(sessionId: string, taskTitle: string, ta
   return `FP-${Math.abs(hash)}`;
 }
 
-export function checkTaskDeduplication(sessionId: string, taskTitle: string, targetFile = ""): {
+export function checkTaskDeduplication(
+  sessionId: string,
+  taskTitle: string,
+  targetFile = "",
+): {
   isDuplicate: boolean;
   fingerprint: string;
   timeRemainingSeconds?: number;

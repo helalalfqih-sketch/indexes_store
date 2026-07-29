@@ -44,7 +44,7 @@ async function fetchMetaMediaUrl(mediaId: string, waToken: string): Promise<stri
  */
 async function downloadBinary(
   metaUrl: string,
-  waToken: string
+  waToken: string,
 ): Promise<{ buffer: ArrayBuffer; contentType: string } | null> {
   try {
     const res = await fetch(metaUrl, {
@@ -71,46 +71,49 @@ async function uploadToStorage(
   db: any,
   storagePath: string,
   buffer: ArrayBuffer,
-  contentType: string
+  contentType: string,
 ): Promise<string | null> {
   const bucketsToTry = [STORAGE_BUCKET, "media", "uploads"];
 
   for (const bucketName of bucketsToTry) {
     try {
       console.log(`[WA Storage] Attempting upload to bucket="${bucketName}" path="${storagePath}"`);
-      let { data, error } = await db.storage
-        .from(bucketName)
-        .upload(storagePath, buffer, {
-          contentType,
-          upsert: true,
-          cacheControl: "2592000", // 30 days
-        });
+      let { data, error } = await db.storage.from(bucketName).upload(storagePath, buffer, {
+        contentType,
+        upsert: true,
+        cacheControl: "2592000", // 30 days
+      });
 
       if (error && error.message?.toLowerCase().includes("not found")) {
         console.log(`[WA Storage] Bucket "${bucketName}" not found. Auto-creating bucket...`);
         await db.storage.createBucket(bucketName, { public: true });
-        const retryRes = await db.storage
-          .from(bucketName)
-          .upload(storagePath, buffer, {
-            contentType,
-            upsert: true,
-            cacheControl: "2592000",
-          });
+        const retryRes = await db.storage.from(bucketName).upload(storagePath, buffer, {
+          contentType,
+          upsert: true,
+          cacheControl: "2592000",
+        });
         error = retryRes.error;
         data = retryRes.data;
       }
 
       if (error) {
-        console.error(`[WA Storage] Failed bucket="${bucketName}": ${error.message} (status: ${(error as any)?.status || 'unknown'})`);
+        console.error(
+          `[WA Storage] Failed bucket="${bucketName}": ${error.message} (status: ${(error as any)?.status || "unknown"})`,
+        );
         continue;
       }
 
       const { data: urlData } = db.storage.from(bucketName).getPublicUrl(storagePath);
       const publicUrl = urlData?.publicUrl || null;
-      console.log(`[WA Storage] ✅ Successfully uploaded to bucket="${bucketName}" -> ${publicUrl}`);
+      console.log(
+        `[WA Storage] ✅ Successfully uploaded to bucket="${bucketName}" -> ${publicUrl}`,
+      );
       return publicUrl;
     } catch (err: any) {
-      console.error(`[WA Storage] Exception uploading to bucket="${bucketName}":`, err?.message || err);
+      console.error(
+        `[WA Storage] Exception uploading to bucket="${bucketName}":`,
+        err?.message || err,
+      );
     }
   }
   return null;
@@ -125,8 +128,7 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
         const mode = url.searchParams.get("hub.mode");
         const token = url.searchParams.get("hub.verify_token");
         const challenge = url.searchParams.get("hub.challenge");
-        const expectedToken =
-          process.env.WHATSAPP_VERIFY_TOKEN || "indexes_wa_secret_verify_2026";
+        const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN || "indexes_wa_secret_verify_2026";
 
         if (mode === "subscribe" && token === expectedToken) {
           console.log("[WA Webhook] ✅ Handshake verified");
@@ -166,7 +168,10 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
         const messageType: string = message.type;
 
         if (!["image", "video", "document"].includes(messageType)) {
-          return Response.json({ status: "ignored", reason: `non-media type: ${messageType}` }, { status: 200 });
+          return Response.json(
+            { status: "ignored", reason: `non-media type: ${messageType}` },
+            { status: 200 },
+          );
         }
 
         const mediaObj = message[messageType] || {};
@@ -174,11 +179,15 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
         const caption: string = mediaObj.caption || "";
         const mimeType: string =
           mediaObj.mime_type ||
-          (messageType === "video" ? "video/mp4" : messageType === "document" ? "application/pdf" : "image/jpeg");
+          (messageType === "video"
+            ? "video/mp4"
+            : messageType === "document"
+              ? "application/pdf"
+              : "image/jpeg");
 
         const fileName = sanitizeFileName(
           caption || mediaObj.filename || `wa_${messageType}_${Date.now()}`,
-          mimeType
+          mimeType,
         );
         const { category, tags } = extractCategoryAndTagsFromCaption(caption || fileName);
         const storagePath = `whatsapp/${senderPhone}/${Date.now()}_${fileName}`;
@@ -187,7 +196,9 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
         const db = await getAdminDb();
 
         // Diagnostics
-        console.log(`[WA] 🔍 mediaId=${mediaId} hasToken=${!!waToken} tokenLen=${waToken?.length ?? 0}`);
+        console.log(
+          `[WA] 🔍 mediaId=${mediaId} hasToken=${!!waToken} tokenLen=${waToken?.length ?? 0}`,
+        );
         console.log(`[WA] 🔍 messageType=${messageType} mimeType=${mimeType} fileName=${fileName}`);
 
         // Resolve the real tenant_id from DB (FK-safe — never hardcode)
@@ -213,19 +224,30 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
           // 1. Get temporary Meta CDN URL
           console.log(`[WA] ⬇️  Step 1: fetching Meta CDN URL for mediaId=${mediaId}`);
           const metaTempUrl = await fetchMetaMediaUrl(mediaId, waToken);
-          console.log(`[WA] Step 1 result: metaTempUrl=${metaTempUrl ? metaTempUrl.slice(0, 60) + "..." : "NULL"}`);
+          console.log(
+            `[WA] Step 1 result: metaTempUrl=${metaTempUrl ? metaTempUrl.slice(0, 60) + "..." : "NULL"}`,
+          );
 
           if (metaTempUrl) {
             // 2. Download binary from Meta CDN
             console.log(`[WA] ⬇️  Step 2: downloading binary from Meta CDN`);
             const binary = await downloadBinary(metaTempUrl, waToken);
-            console.log(`[WA] Step 2 result: binary=${binary ? binary.buffer.byteLength + " bytes" : "NULL"}`);
+            console.log(
+              `[WA] Step 2 result: binary=${binary ? binary.buffer.byteLength + " bytes" : "NULL"}`,
+            );
 
             if (binary) {
               downloadedBytes = binary.buffer.byteLength;
               // 3. Upload to Supabase Storage
-              console.log(`[WA] ⬆️  Step 3: uploading to Supabase Storage bucket="${STORAGE_BUCKET}" path="${storagePath}"`);
-              const pubUrl = await uploadToStorage(db, storagePath, binary.buffer, binary.contentType);
+              console.log(
+                `[WA] ⬆️  Step 3: uploading to Supabase Storage bucket="${STORAGE_BUCKET}" path="${storagePath}"`,
+              );
+              const pubUrl = await uploadToStorage(
+                db,
+                storagePath,
+                binary.buffer,
+                binary.contentType,
+              );
               console.log(`[WA] Step 3 result: pubUrl=${pubUrl ?? "NULL"}`);
 
               if (pubUrl) {
@@ -276,7 +298,9 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
         }
 
         const mediaFileId = mediaRecord?.id || null;
-        console.log(`[WA] 📦 media_file saved: id=${mediaFileId} upload=${uploadSuccess} bytes=${downloadedBytes}`);
+        console.log(
+          `[WA] 📦 media_file saved: id=${mediaFileId} upload=${uploadSuccess} bytes=${downloadedBytes}`,
+        );
 
         return Response.json(
           {
@@ -289,7 +313,7 @@ export const Route = createFileRoute("/api/webhooks/whatsapp")({
             tags,
             bytes: downloadedBytes,
           },
-          { status: 200 }
+          { status: 200 },
         );
       },
     },

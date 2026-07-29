@@ -85,7 +85,14 @@ export interface AgentPlan {
   implementationSteps: Array<{ step: number; action: string; description: string; file?: string }>;
   risks: Array<{ risk: string; mitigation: string }>;
   validationCommands: string[];
-  status: "PLAN_CREATED" | "WAITING_APPROVAL" | "APPROVED" | "EXECUTING" | "VALIDATING" | "COMPLETED" | "FAILED";
+  status:
+    | "PLAN_CREATED"
+    | "WAITING_APPROVAL"
+    | "APPROVED"
+    | "EXECUTING"
+    | "VALIDATING"
+    | "COMPLETED"
+    | "FAILED";
   approvedAt?: string;
   createdAt?: string;
 }
@@ -160,7 +167,8 @@ export async function createAgentTask(params: {
     session_id: params.sessionId,
     tenant_id: params.tenantId,
     user_id: params.userId,
-    status: (params.plan?.length > 0 || params.affectedFiles?.length > 0) ? "waiting_approval" : "planning",
+    status:
+      params.plan?.length > 0 || params.affectedFiles?.length > 0 ? "waiting_approval" : "planning",
     plan: params.plan,
     affected_files: params.affectedFiles,
     risk_level: params.riskLevel ?? "low",
@@ -172,22 +180,20 @@ export async function createAgentTask(params: {
 
   try {
     const db = await getAdminDb({});
-    const { error } = await (db as any)
-      .from("ai_agent_tasks")
-      .insert({
-        id: task.id,
-        session_id: task.session_id,
-        tenant_id: task.tenant_id,
-        user_id: task.user_id,
-        status: task.status,
-        plan: task.plan as any,
-        affected_files: task.affected_files,
-        risk_level: task.risk_level,
-        diffs: task.diffs as any,
-        result: task.result as any,
-        created_at: task.created_at,
-        updated_at: task.updated_at,
-      });
+    const { error } = await (db as any).from("ai_agent_tasks").insert({
+      id: task.id,
+      session_id: task.session_id,
+      tenant_id: task.tenant_id,
+      user_id: task.user_id,
+      status: task.status,
+      plan: task.plan as any,
+      affected_files: task.affected_files,
+      risk_level: task.risk_level,
+      diffs: task.diffs as any,
+      result: task.result as any,
+      created_at: task.created_at,
+      updated_at: task.updated_at,
+    });
 
     if (error) {
       console.warn("[AgentTask] Failed to persist task:", error.message);
@@ -221,13 +227,13 @@ export async function updateTaskStatus(
     updated_at: new Date().toISOString(),
   };
 
-  if (extras?.userApprovedAt)  updatePayload.user_approved_at = extras.userApprovedAt;
-  if (extras?.userRejectedAt)  updatePayload.user_rejected_at = extras.userRejectedAt;
+  if (extras?.userApprovedAt) updatePayload.user_approved_at = extras.userApprovedAt;
+  if (extras?.userRejectedAt) updatePayload.user_rejected_at = extras.userRejectedAt;
   if (extras?.rejectionReason) updatePayload.rejection_reason = extras.rejectionReason;
-  if (extras?.buildOutput)     updatePayload.build_output = extras.buildOutput;
+  if (extras?.buildOutput) updatePayload.build_output = extras.buildOutput;
   if (extras?.buildSuccess !== undefined) updatePayload.build_success = extras.buildSuccess;
-  if (extras?.result)          updatePayload.result = extras.result;
-  if (extras?.diffs)           updatePayload.diffs = extras.diffs;
+  if (extras?.result) updatePayload.result = extras.result;
+  if (extras?.diffs) updatePayload.diffs = extras.diffs;
 
   try {
     const db = await getAdminDb({});

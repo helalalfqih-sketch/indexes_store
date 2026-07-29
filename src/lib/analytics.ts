@@ -1,11 +1,7 @@
 /** Store Analytics Event Tracking Helper */
 
 export type AnalyticsEvent =
-  | "click_search"
-  | "click_whatsapp"
-  | "click_install_app"
-  | "add_to_cart"
-  | "view_product";
+  "click_search" | "click_whatsapp" | "click_install_app" | "add_to_cart" | "view_product";
 
 export function trackEvent(event: AnalyticsEvent, payload?: Record<string, any>) {
   if (typeof window === "undefined") return;

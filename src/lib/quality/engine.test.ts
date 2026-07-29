@@ -83,7 +83,9 @@ async function runPhase1Tests() {
   registry.register(mockFailingAuditor);
   registry.register(mockTimeoutAuditor);
 
-  console.log(`✅ [1/5] Registry test passed: ${registry.getAllAuditors().length} auditors registered.`);
+  console.log(
+    `✅ [1/5] Registry test passed: ${registry.getAllAuditors().length} auditors registered.`,
+  );
 
   // Test 4: Run Engine & Test Fault Isolation + Timeout
   console.log("⚙️ Running unified quality audit engine...");
@@ -102,8 +104,13 @@ async function runPhase1Tests() {
     throw new Error("❌ Success Auditor test failed");
   }
 
-  if (failingResult?.status === "FAIL" && failingResult.error?.message.includes("Simulated auditor failure")) {
-    console.log("✅ [3/5] Fault Isolation verified: Single auditor exception caught safely without crashing engine.");
+  if (
+    failingResult?.status === "FAIL" &&
+    failingResult.error?.message.includes("Simulated auditor failure")
+  ) {
+    console.log(
+      "✅ [3/5] Fault Isolation verified: Single auditor exception caught safely without crashing engine.",
+    );
   } else {
     throw new Error("❌ Fault Isolation test failed");
   }
@@ -117,10 +124,15 @@ async function runPhase1Tests() {
   // Test 5: AbortSignal Cancellation Test
   const controller = new AbortController();
   controller.abort();
-  const cancelledSummary = await runQualityAudit({ environment: "local", signal: controller.signal });
+  const cancelledSummary = await runQualityAudit({
+    environment: "local",
+    signal: controller.signal,
+  });
 
   if (cancelledSummary.manifest.skippedAudits.length === registry.getAllAuditors().length) {
-    console.log("✅ [5/5] AbortController Signal verified: All audits correctly skipped upon cancellation.");
+    console.log(
+      "✅ [5/5] AbortController Signal verified: All audits correctly skipped upon cancellation.",
+    );
   } else {
     throw new Error("❌ AbortController test failed");
   }

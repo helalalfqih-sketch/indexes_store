@@ -18,7 +18,10 @@ function toXmlDate(d = new Date()): string {
   return d.toISOString().split("T")[0];
 }
 
-function urlEntry(loc: string, opts?: { lastmod?: string; changefreq?: string; priority?: string }) {
+function urlEntry(
+  loc: string,
+  opts?: { lastmod?: string; changefreq?: string; priority?: string },
+) {
   return `  <url>
     <loc>${loc}</loc>
     ${opts?.lastmod ? `<lastmod>${opts.lastmod}</lastmod>` : ""}

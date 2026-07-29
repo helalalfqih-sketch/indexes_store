@@ -19,7 +19,7 @@ export interface PatchExecutionResult {
 
 export async function executeApprovedPatch(
   proposal: RepairProposal,
-  role: QualityRole
+  role: QualityRole,
 ): Promise<PatchExecutionResult> {
   const canExecute = assertQualityPermission(role, "canExecutePatches");
   if (!canExecute) {

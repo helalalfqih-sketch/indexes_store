@@ -37,7 +37,7 @@ export function isPathProtected(relPath: string): boolean {
  * Safely applies a code patch to a file in the workspace after creating a rollback snapshot.
  */
 export async function applyCodePatch(
-  options: CodePatchOptions
+  options: CodePatchOptions,
 ): Promise<{ success: boolean; backupId: string; targetFile: string; error?: string }> {
   try {
     const rootDir = process.cwd();
@@ -108,7 +108,7 @@ export async function applyCodePatch(
  * Rollback a code patch to its original state using the backup snapshot.
  */
 export async function rollbackCodePatch(
-  backupId: string
+  backupId: string,
 ): Promise<{ success: boolean; targetFile: string; error?: string }> {
   const record = backupStore.get(backupId);
   if (!record) {

@@ -73,7 +73,11 @@ export function analyzeAndFormatFailure(
     requiredAction = "تحديث ملفات الهجرة Migration لتضمين سياسة الوصول.";
   }
   // 4. Missing Environment Variables
-  else if (errorMsg.includes("ENV") || errorMsg.includes("API_KEY") || errorMsg.includes("missing key")) {
+  else if (
+    errorMsg.includes("ENV") ||
+    errorMsg.includes("API_KEY") ||
+    errorMsg.includes("missing key")
+  ) {
     errorType = "validation_error";
     reason = "فقدان مفاتيح الاتصال أو متغيرات البيئة الأساسية (Env Variables).";
     affectedSystem = "Environment Configuration";
@@ -82,7 +86,11 @@ export function analyzeAndFormatFailure(
     requiredAction = "إضافة المتغيرات المفقودة في لوحة التحكم.";
   }
   // 5. TypeScript / Compilation Errors
-  else if (errorMsg.includes("TS") || errorMsg.includes("Typecheck") || errorMsg.includes("Cannot find name")) {
+  else if (
+    errorMsg.includes("TS") ||
+    errorMsg.includes("Typecheck") ||
+    errorMsg.includes("Cannot find name")
+  ) {
     errorType = "build_error";
     reason = "تعارض في تعريف الأنواع (TypeScript Compiler Error).";
     affectedSystem = "Frontend & Server Function Types";

@@ -3,10 +3,33 @@ import { z } from "zod";
 export const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
 
 export const RESERVED_SLUGS = new Set([
-  "www", "app", "admin", "api", "auth", "assets", "static", "cdn",
-  "default", "public", "root", "system", "support", "help", "docs",
-  "mail", "billing", "checkout", "cart", "login", "signup", "signin",
-  "dashboard", "onboarding", "settings", "account", "platform",
+  "www",
+  "app",
+  "admin",
+  "api",
+  "auth",
+  "assets",
+  "static",
+  "cdn",
+  "default",
+  "public",
+  "root",
+  "system",
+  "support",
+  "help",
+  "docs",
+  "mail",
+  "billing",
+  "checkout",
+  "cart",
+  "login",
+  "signup",
+  "signin",
+  "dashboard",
+  "onboarding",
+  "settings",
+  "account",
+  "platform",
 ]);
 
 export const onboardingSchema = z.object({

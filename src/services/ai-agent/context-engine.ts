@@ -62,7 +62,8 @@ export async function buildCompressedContextWindow(
   const importantModules = index.serverFunctions.filter((f) =>
     q.split(" ").some((kw) => kw.length > 2 && f.toLowerCase().includes(kw)),
   );
-  const selectedModules = importantModules.length > 0 ? importantModules : index.serverFunctions.slice(0, 6);
+  const selectedModules =
+    importantModules.length > 0 ? importantModules : index.serverFunctions.slice(0, 6);
 
   // Calculate real character counts
   const rawContextText = [
@@ -86,7 +87,13 @@ export async function buildCompressedContextWindow(
   const compressedTokensEstimate = estimateTokens(summary);
   const reductionPercentage =
     rawTokensEstimate > 0
-      ? Math.max(0, Math.min(95, Math.round(((rawTokensEstimate - compressedTokensEstimate) / rawTokensEstimate) * 100)))
+      ? Math.max(
+          0,
+          Math.min(
+            95,
+            Math.round(((rawTokensEstimate - compressedTokensEstimate) / rawTokensEstimate) * 100),
+          ),
+        )
       : 0;
 
   return {

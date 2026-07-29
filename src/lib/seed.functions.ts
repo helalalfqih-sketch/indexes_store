@@ -11,7 +11,9 @@ import { seedCatalog } from "@/lib/seed/seed-catalog";
 
 export const runCatalogSeed = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((raw: unknown) => z.object({ force: z.boolean().default(false) }).parse(raw ?? {}))
+  .inputValidator((raw: unknown) =>
+    z.object({ force: z.boolean().default(false) }).parse(raw ?? {}),
+  )
   .handler(async ({ data, context }) => {
     const { data: isAdmin, error } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,

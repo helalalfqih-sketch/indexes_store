@@ -10,10 +10,10 @@
 // ─────────────────────────────────────────────────
 
 export type PermissionLevel =
-  | "read"               // مسموح مباشرة — لا يحتاج موافقة
-  | "approval_required"  // يحتاج موافقة صريحة من المستخدم
-  | "admin_only"         // محظور على المطورين العاديين
-  | "denied";            // محظور تماماً
+  | "read" // مسموح مباشرة — لا يحتاج موافقة
+  | "approval_required" // يحتاج موافقة صريحة من المستخدم
+  | "admin_only" // محظور على المطورين العاديين
+  | "denied"; // محظور تماماً
 
 // ─────────────────────────────────────────────────
 // Agent Role → Permission Mapping
@@ -156,7 +156,11 @@ export function canExecuteTool(
   }
 
   if (role === "viewer") {
-    return { allowed: false, reason: "المشاهدون لا يملكون أي صلاحيات تنفيذ", requiresApproval: false };
+    return {
+      allowed: false,
+      reason: "المشاهدون لا يملكون أي صلاحيات تنفيذ",
+      requiresApproval: false,
+    };
   }
 
   if (tool.permission === "denied" || tool.permission === "admin_only") {
@@ -188,10 +192,9 @@ export function getAvailableTools(role: AgentRole): {
 } {
   const all = Object.values(TOOL_REGISTRY);
   const readTools = all.filter((t) => t.permission === "read" && role !== "viewer");
-  const mutationTools =
-    ROLE_ALLOWED_MUTATIONS[role]
-      ? all.filter((t) => t.permission === "approval_required")
-      : [];
+  const mutationTools = ROLE_ALLOWED_MUTATIONS[role]
+    ? all.filter((t) => t.permission === "approval_required")
+    : [];
 
   return { readTools, mutationTools };
 }

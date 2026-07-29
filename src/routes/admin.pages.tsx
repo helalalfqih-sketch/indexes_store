@@ -334,7 +334,9 @@ function AdminPagesComponent() {
                   required
                   placeholder="shipping-policy"
                   value={editingPage.slug || ""}
-                  onChange={(e) => setEditingPage({ ...editingPage, slug: slugify(e.target.value) })}
+                  onChange={(e) =>
+                    setEditingPage({ ...editingPage, slug: slugify(e.target.value) })
+                  }
                   className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20"
                   dir="ltr"
                 />
@@ -347,7 +349,9 @@ function AdminPagesComponent() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold mb-1">محتوى الصفحة (HTML / Rich Text)</label>
+              <label className="block text-xs font-bold mb-1">
+                محتوى الصفحة (HTML / Rich Text)
+              </label>
               <textarea
                 rows={10}
                 placeholder="أدخل محتوى الصفحة هنا..."
@@ -377,12 +381,16 @@ function AdminPagesComponent() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold mb-1">وصف Meta Description</label>
+                  <label className="block text-[11px] font-semibold mb-1">
+                    وصف Meta Description
+                  </label>
                   <input
                     type="text"
                     placeholder="وصف مختصر لمحل محركات البحث..."
                     value={editingPage.meta_description || ""}
-                    onChange={(e) => setEditingPage({ ...editingPage, meta_description: e.target.value })}
+                    onChange={(e) =>
+                      setEditingPage({ ...editingPage, meta_description: e.target.value })
+                    }
                     className="w-full rounded-xl border border-border bg-surface px-3 py-1.5 text-xs"
                   />
                 </div>
@@ -404,7 +412,9 @@ function AdminPagesComponent() {
                 <input
                   type="checkbox"
                   checked={editingPage.is_published ?? true}
-                  onChange={(e) => setEditingPage({ ...editingPage, is_published: e.target.checked })}
+                  onChange={(e) =>
+                    setEditingPage({ ...editingPage, is_published: e.target.checked })
+                  }
                   className="h-4 w-4 rounded accent-primary"
                 />
                 نشر الصفحة وإتاحتها للعملاء في المتجر
@@ -420,7 +430,10 @@ function AdminPagesComponent() {
                 </button>
                 <button
                   type="button"
-                  disabled={saveMutation.isPending || (!!editingPage.slug && RESERVED_SLUGS.has(editingPage.slug))}
+                  disabled={
+                    saveMutation.isPending ||
+                    (!!editingPage.slug && RESERVED_SLUGS.has(editingPage.slug))
+                  }
                   onClick={() => {
                     if (!editingPage.title || !editingPage.slug) {
                       toast.error("يرجى ملء العنوان والرابط الخاص بالصفحة.");
@@ -473,11 +486,15 @@ function AdminPagesComponent() {
             ) : (
               <div className="max-h-80 overflow-y-auto divide-y divide-border/60 pe-1">
                 {pageVersions.map((ver) => (
-                  <div key={ver.id} className="py-3 flex items-center justify-between gap-3 text-xs">
+                  <div
+                    key={ver.id}
+                    className="py-3 flex items-center justify-between gap-3 text-xs"
+                  >
                     <div>
                       <p className="font-bold">{ver.title_snapshot}</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {new Date(ver.created_at).toLocaleString("ar-YE")} — {ver.editor_email || "مدير النظام"}
+                        {new Date(ver.created_at).toLocaleString("ar-YE")} —{" "}
+                        {ver.editor_email || "مدير النظام"}
                       </p>
                     </div>
                     <button

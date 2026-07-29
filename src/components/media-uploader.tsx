@@ -92,7 +92,7 @@ export function MediaUploader({
   const [isUploading, setIsUploading] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [libraryFilter, setLibraryFilter] = useState<"all" | "image" | "video">(
-    mediaType === "all" ? "all" : mediaType
+    mediaType === "all" ? "all" : mediaType,
   );
   const [librarySearch, setLibrarySearch] = useState("");
 
@@ -102,8 +102,8 @@ export function MediaUploader({
   const currentValues: string[] = Array.isArray(value)
     ? value.filter(Boolean)
     : value
-    ? [value]
-    : [];
+      ? [value]
+      : [];
 
   // Query media library items for modal picker
   const { data: libraryFiles = [], isLoading: isLoadingLibrary } = useQuery({
@@ -198,11 +198,7 @@ export function MediaUploader({
         type="file"
         multiple={multiple}
         accept={
-          mediaType === "image"
-            ? "image/*"
-            : mediaType === "video"
-            ? "video/*"
-            : "image/*,video/*"
+          mediaType === "image" ? "image/*" : mediaType === "video" ? "video/*" : "image/*,video/*"
         }
         className="hidden"
         onChange={(e) => handleProcessFiles(Array.from(e.target.files || []))}
@@ -214,13 +210,12 @@ export function MediaUploader({
           <div className="space-y-2">
             <div
               className={`grid gap-3 ${
-                multiple
-                  ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
-                  : "grid-cols-1"
+                multiple ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4" : "grid-cols-1"
               }`}
             >
               {currentValues.map((url, idx) => {
-                const isVideo = url.endsWith(".mp4") || url.endsWith(".webm") || url.includes("video");
+                const isVideo =
+                  url.endsWith(".mp4") || url.endsWith(".webm") || url.includes("video");
 
                 return (
                   <div
@@ -309,12 +304,18 @@ export function MediaUploader({
             {isUploading ? (
               <div className="flex flex-col items-center gap-2 py-3">
                 <Loader2 className="h-7 w-7 animate-spin text-primary" />
-                <span className="text-xs font-bold text-primary">جاري رفع الملفات إلى الوسائط...</span>
+                <span className="text-xs font-bold text-primary">
+                  جاري رفع الملفات إلى الوسائط...
+                </span>
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  {mediaType === "video" ? <Film className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
+                  {mediaType === "video" ? (
+                    <Film className="h-5 w-5" />
+                  ) : (
+                    <Upload className="h-5 w-5" />
+                  )}
                 </div>
                 <div>
                   <p className="text-xs font-bold text-foreground">
@@ -324,8 +325,8 @@ export function MediaUploader({
                     {mediaType === "video"
                       ? "يدعم الفيديوهات (MP4, WebM حتى 50MB)"
                       : mediaType === "image"
-                      ? "يدعم الصور (JPG, PNG, WebP, SVG حتى 10MB)"
-                      : "يدعم الصور والفيديوهات والبنرات"}
+                        ? "يدعم الصور (JPG, PNG, WebP, SVG حتى 10MB)"
+                        : "يدعم الصور والفيديوهات والبنرات"}
                   </p>
                 </div>
 
@@ -359,7 +360,9 @@ export function MediaUploader({
             <div className="flex items-center justify-between border-b border-border pb-3 shrink-0">
               <div className="flex items-center gap-2">
                 <FolderOpen className="h-5 w-5 text-primary" />
-                <h3 className="text-base font-bold text-foreground">اختيار وسيطة من مكتبة المتجر</h3>
+                <h3 className="text-base font-bold text-foreground">
+                  اختيار وسيطة من مكتبة المتجر
+                </h3>
               </div>
               <button
                 type="button"

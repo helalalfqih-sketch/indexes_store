@@ -14,7 +14,8 @@ export const Route = createFileRoute("/store/settings")({
   component: StoreSettingsPage,
 });
 
-const inputCls = "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary";
+const inputCls =
+  "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary";
 
 function StoreSettingsPage() {
   const { store, can, refetch } = useStoreContext();
@@ -66,9 +67,15 @@ function StoreSettingsPage() {
 
   const businessMut = useMutation({
     mutationFn: async () => {
-      const r1 = await saveSetting({ data: { key: "contact", value: { address: business.address } } });
-      const r2 = await saveSetting({ data: { key: "working_hours", value: { text: business.hours } } });
-      return r1.success && r2.success ? { success: true as const } : { success: false as const, message: r1.message || r2.message };
+      const r1 = await saveSetting({
+        data: { key: "contact", value: { address: business.address } },
+      });
+      const r2 = await saveSetting({
+        data: { key: "working_hours", value: { text: business.hours } },
+      });
+      return r1.success && r2.success
+        ? { success: true as const }
+        : { success: false as const, message: r1.message || r2.message };
     },
     onSuccess: (r) => {
       if (r.success) {
@@ -101,30 +108,63 @@ function StoreSettingsPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="space-y-1 text-xs font-bold">
             اسم المتجر
-            <input value={identity.display_name} onChange={(e) => setIdentity({ ...identity, display_name: e.target.value })} className={inputCls} />
+            <input
+              value={identity.display_name}
+              onChange={(e) => setIdentity({ ...identity, display_name: e.target.value })}
+              className={inputCls}
+            />
           </label>
           <label className="space-y-1 text-xs font-bold">
             البريد
-            <input value={identity.email} onChange={(e) => setIdentity({ ...identity, email: e.target.value })} dir="ltr" className={inputCls} />
+            <input
+              value={identity.email}
+              onChange={(e) => setIdentity({ ...identity, email: e.target.value })}
+              dir="ltr"
+              className={inputCls}
+            />
           </label>
           <label className="space-y-1 text-xs font-bold">
             الهاتف
-            <input value={identity.phone} onChange={(e) => setIdentity({ ...identity, phone: e.target.value })} dir="ltr" className={inputCls} />
+            <input
+              value={identity.phone}
+              onChange={(e) => setIdentity({ ...identity, phone: e.target.value })}
+              dir="ltr"
+              className={inputCls}
+            />
           </label>
           <label className="space-y-1 text-xs font-bold">
             رابط الشعار
-            <input value={identity.logo_url} onChange={(e) => setIdentity({ ...identity, logo_url: e.target.value })} dir="ltr" className={inputCls} />
+            <input
+              value={identity.logo_url}
+              onChange={(e) => setIdentity({ ...identity, logo_url: e.target.value })}
+              dir="ltr"
+              className={inputCls}
+            />
           </label>
           <label className="space-y-1 text-xs font-bold sm:col-span-2">
             رابط البانر
-            <input value={identity.banner_url} onChange={(e) => setIdentity({ ...identity, banner_url: e.target.value })} dir="ltr" className={inputCls} />
+            <input
+              value={identity.banner_url}
+              onChange={(e) => setIdentity({ ...identity, banner_url: e.target.value })}
+              dir="ltr"
+              className={inputCls}
+            />
           </label>
           <label className="space-y-1 text-xs font-bold sm:col-span-2">
             وصف المتجر
-            <textarea value={identity.description} onChange={(e) => setIdentity({ ...identity, description: e.target.value })} rows={3} className={inputCls} />
+            <textarea
+              value={identity.description}
+              onChange={(e) => setIdentity({ ...identity, description: e.target.value })}
+              rows={3}
+              className={inputCls}
+            />
           </label>
         </div>
-        <button onClick={() => profileMut.mutate()} disabled={profileMut.isPending} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60">
+        <button
+          onClick={() => profileMut.mutate()}
+          disabled={profileMut.isPending}
+          className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+        >
           {profileMut.isPending ? "جارٍ الحفظ..." : "حفظ الهوية"}
         </button>
       </section>
@@ -137,14 +177,27 @@ function StoreSettingsPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="space-y-1 text-xs font-bold">
             العنوان
-            <input value={business.address} onChange={(e) => setBusiness({ ...business, address: e.target.value })} className={inputCls} />
+            <input
+              value={business.address}
+              onChange={(e) => setBusiness({ ...business, address: e.target.value })}
+              className={inputCls}
+            />
           </label>
           <label className="space-y-1 text-xs font-bold">
             ساعات العمل
-            <input value={business.hours} onChange={(e) => setBusiness({ ...business, hours: e.target.value })} placeholder="مثال: 9ص – 10م يومياً" className={inputCls} />
+            <input
+              value={business.hours}
+              onChange={(e) => setBusiness({ ...business, hours: e.target.value })}
+              placeholder="مثال: 9ص – 10م يومياً"
+              className={inputCls}
+            />
           </label>
         </div>
-        <button onClick={() => businessMut.mutate()} disabled={businessMut.isPending} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60">
+        <button
+          onClick={() => businessMut.mutate()}
+          disabled={businessMut.isPending}
+          className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+        >
           {businessMut.isPending ? "جارٍ الحفظ..." : "حفظ بيانات العمل"}
         </button>
       </section>
@@ -159,8 +212,16 @@ function StoreSettingsPage() {
         ) : (
           <div className="space-y-2">
             {(membersQ.data ?? []).map((m) => (
-              <div key={m.user_id} className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 text-xs">
-                <span className="flex-1 truncate font-mono text-[10px] text-muted-foreground" dir="ltr">{m.user_id}</span>
+              <div
+                key={m.user_id}
+                className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 text-xs"
+              >
+                <span
+                  className="flex-1 truncate font-mono text-[10px] text-muted-foreground"
+                  dir="ltr"
+                >
+                  {m.user_id}
+                </span>
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 font-bold text-primary">
                   {STORE_ROLE_LABELS[m.role as keyof typeof STORE_ROLE_LABELS] ?? m.role}
                 </span>
@@ -168,7 +229,9 @@ function StoreSettingsPage() {
             ))}
           </div>
         )}
-        <p className="text-[11px] text-muted-foreground">إدارة الأدوار والإضافة/الإزالة تتم حالياً عبر إدارة المنصّة.</p>
+        <p className="text-[11px] text-muted-foreground">
+          إدارة الأدوار والإضافة/الإزالة تتم حالياً عبر إدارة المنصّة.
+        </p>
       </section>
 
       {/* Appearance — per-store CMS overrides (P5) */}
@@ -210,7 +273,9 @@ function AppearanceQuickEditor() {
 
   const themeMut = useMutation({
     mutationFn: () =>
-      updateStorefrontAppearance({ data: { key: "theme", value: { ...settings.theme, ...theme } } }),
+      updateStorefrontAppearance({
+        data: { key: "theme", value: { ...settings.theme, ...theme } },
+      }),
     onSuccess: (r) => {
       if (r.success) {
         toast.success("تم حفظ ثيم متجرك ونشره");
@@ -279,11 +344,19 @@ function AppearanceQuickEditor() {
       <div className="grid gap-3 border-t border-border/50 pt-4 sm:grid-cols-2">
         <label className="space-y-1 text-xs font-bold">
           عنوان الواجهة (Hero)
-          <input value={hero.title} onChange={(e) => setHero({ ...hero, title: e.target.value })} className={inputCls} />
+          <input
+            value={hero.title}
+            onChange={(e) => setHero({ ...hero, title: e.target.value })}
+            className={inputCls}
+          />
         </label>
         <label className="space-y-1 text-xs font-bold">
           العنوان الفرعي
-          <input value={hero.subtitle} onChange={(e) => setHero({ ...hero, subtitle: e.target.value })} className={inputCls} />
+          <input
+            value={hero.subtitle}
+            onChange={(e) => setHero({ ...hero, subtitle: e.target.value })}
+            className={inputCls}
+          />
         </label>
       </div>
       <button

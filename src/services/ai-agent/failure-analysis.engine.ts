@@ -73,7 +73,8 @@ export function analyzeExecutionFailure(
   } else if (buildOutput.includes("Property") && buildOutput.includes("does not exist")) {
     problem = "خاصية غير موجوة في نوع البيانات (Property does not exist).";
     rootCause = "استخدام اسم خاصية قديم أو غير مطابق للأنواع الرسمية.";
-    suggestedFix = "تعديل المسمى ليتطابق مع الواجهة البرمجية المعرفة في store-data / Supabase Types.";
+    suggestedFix =
+      "تعديل المسمى ليتطابق مع الواجهة البرمجية المعرفة في store-data / Supabase Types.";
     riskLevel = "low";
   } else if (buildOutput.includes("supabase") || buildOutput.includes("migration")) {
     errorCategory = "database";

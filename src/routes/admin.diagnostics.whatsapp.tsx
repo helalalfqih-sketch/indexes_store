@@ -40,7 +40,12 @@ function WhatsAppDiagnosticsComponent() {
   const [isBackfilling, setIsBackfilling] = useState(false);
   const [backfillProgress, setBackfillProgress] = useState<string>("");
 
-  const { data: mediaList = [], isLoading, isRefetching, refetch } = useQuery({
+  const {
+    data: mediaList = [],
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-whatsapp-diagnostics"],
     queryFn: () => getDiagnosticsFn(),
     staleTime: 5000,
@@ -115,7 +120,10 @@ function WhatsAppDiagnosticsComponent() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b border-border/60 pb-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground mb-1">
-            <Link to="/admin/media" className="hover:text-primary transition flex items-center gap-1">
+            <Link
+              to="/admin/media"
+              className="hover:text-primary transition flex items-center gap-1"
+            >
               <ArrowRight className="h-3.5 w-3.5" /> مكتبة الوسائط
             </Link>
             <span>/</span>
@@ -128,7 +136,8 @@ function WhatsAppDiagnosticsComponent() {
             تشخيص وسائط WhatsApp Media Sync
           </h1>
           <p className="mt-1 text-xs font-medium text-muted-foreground">
-            لوحة الفحص الفني والتدقيق لآخر 50 ملف وسائط مستوردة عبر Meta Graph API v25.0 و WhatsApp WABA.
+            لوحة الفحص الفني والتدقيق لآخر 50 ملف وسائط مستوردة عبر Meta Graph API v25.0 و WhatsApp
+            WABA.
           </p>
         </div>
 
@@ -149,7 +158,11 @@ function WhatsAppDiagnosticsComponent() {
             disabled={isBackfilling}
             className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition disabled:opacity-50"
           >
-            {isBackfilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {isBackfilling ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
             معالجة بوسترات الفيديوهات القديمة (Backfill)
           </button>
         </div>
@@ -166,11 +179,15 @@ function WhatsAppDiagnosticsComponent() {
       {/* Diagnostics Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-3xl border border-border bg-surface p-4 shadow-xs">
-          <span className="text-[11px] font-bold text-muted-foreground block">إجمالي الوسائط المفحوصة</span>
+          <span className="text-[11px] font-bold text-muted-foreground block">
+            إجمالي الوسائط المفحوصة
+          </span>
           <span className="text-xl font-black text-foreground mt-1 block">{mediaList.length}</span>
         </div>
         <div className="rounded-3xl border border-border bg-surface p-4 shadow-xs">
-          <span className="text-[11px] font-bold text-muted-foreground block">الصور المستوردة 🖼️</span>
+          <span className="text-[11px] font-bold text-muted-foreground block">
+            الصور المستوردة 🖼️
+          </span>
           <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block">
             {mediaList.filter((m) => m.file_type === "image").length}
           </span>
@@ -182,7 +199,9 @@ function WhatsAppDiagnosticsComponent() {
           </span>
         </div>
         <div className="rounded-3xl border border-border bg-surface p-4 shadow-xs">
-          <span className="text-[11px] font-bold text-muted-foreground block">حالة المزامنة السحابية</span>
+          <span className="text-[11px] font-bold text-muted-foreground block">
+            حالة المزامنة السحابية
+          </span>
           <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
             <ShieldCheck className="h-4 w-4" /> Bucket: product-images
           </span>
@@ -216,7 +235,8 @@ function WhatsAppDiagnosticsComponent() {
               <tbody className="divide-y divide-border/60">
                 {mediaList.map((file) => {
                   const uploadSuccess = (file.metadata as any)?.upload_success !== false;
-                  const thumb = file.thumbnail_url || (file.file_type === "image" ? file.file_url : null);
+                  const thumb =
+                    file.thumbnail_url || (file.file_type === "image" ? file.file_url : null);
 
                   return (
                     <tr key={file.id} className="hover:bg-accent/40 transition">
@@ -246,7 +266,10 @@ function WhatsAppDiagnosticsComponent() {
                         )}
                       </td>
 
-                      <td className="p-3 font-mono text-[10px] text-muted-foreground max-w-[180px] truncate" title={file.file_path}>
+                      <td
+                        className="p-3 font-mono text-[10px] text-muted-foreground max-w-[180px] truncate"
+                        title={file.file_path}
+                      >
                         {file.file_path}
                       </td>
 
@@ -284,7 +307,9 @@ function WhatsAppDiagnosticsComponent() {
                             onClick={async () => {
                               const dataUri = await processVideoFrame(file.file_url);
                               if (dataUri) {
-                                await updateThumbnailFn({ data: { mediaId: file.id, thumbnailUrl: dataUri } });
+                                await updateThumbnailFn({
+                                  data: { mediaId: file.id, thumbnailUrl: dataUri },
+                                });
                                 toast.success("تم توليد البوستر بنجاح!");
                                 refetch();
                               } else {

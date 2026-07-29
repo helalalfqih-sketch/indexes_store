@@ -13,9 +13,33 @@ export interface FunnelStepHealth {
 
 export function auditConversionFunnel(): FunnelStepHealth[] {
   return [
-    { stepIndex: 1, stepName: "Product View", conversionRate: 100, dropoffRate: 0, status: "OPTIMAL" },
-    { stepIndex: 2, stepName: "Add to Cart", conversionRate: 78, dropoffRate: 22, status: "OPTIMAL" },
-    { stepIndex: 3, stepName: "Open Checkout", conversionRate: 64, dropoffRate: 14, status: "OPTIMAL" },
-    { stepIndex: 4, stepName: "Payment Button", conversionRate: 42, dropoffRate: 22, status: "ATTENTION_REQUIRED" },
+    {
+      stepIndex: 1,
+      stepName: "Product View",
+      conversionRate: 100,
+      dropoffRate: 0,
+      status: "OPTIMAL",
+    },
+    {
+      stepIndex: 2,
+      stepName: "Add to Cart",
+      conversionRate: 78,
+      dropoffRate: 22,
+      status: "OPTIMAL",
+    },
+    {
+      stepIndex: 3,
+      stepName: "Open Checkout",
+      conversionRate: 64,
+      dropoffRate: 14,
+      status: "OPTIMAL",
+    },
+    {
+      stepIndex: 4,
+      stepName: "Payment Button",
+      conversionRate: 42,
+      dropoffRate: 22,
+      status: "ATTENTION_REQUIRED",
+    },
   ];
 }

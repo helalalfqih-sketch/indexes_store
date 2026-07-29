@@ -3,10 +3,7 @@
  * Admin CRUD screens (Phase 4B) will consume these.
  */
 import { z } from "zod";
-import {
-  adminRecordInventory,
-  adminListInventory,
-} from "@/lib/catalog.functions";
+import { adminRecordInventory, adminListInventory } from "@/lib/catalog.functions";
 
 export const adjustStockInput = z.object({
   productId: z.string().uuid(),

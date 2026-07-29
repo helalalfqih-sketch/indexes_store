@@ -147,7 +147,10 @@ function TrackPage() {
           />
         </label>
         {error && (
-          <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          >
             {error}
           </div>
         )}
@@ -156,7 +159,11 @@ function TrackPage() {
           disabled={busy}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-black text-primary-foreground shadow-brand disabled:opacity-60 hover:scale-[1.01] transition-transform"
         >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <PackageSearch className="h-4 w-4" />}
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <PackageSearch className="h-4 w-4" />
+          )}
           {busy ? "جارٍ البحث..." : "تتبع الطلب"}
         </button>
       </form>
@@ -166,7 +173,9 @@ function TrackPage() {
         <section className="rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 p-5 shadow-card backdrop-blur-md space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-showcase-border/50 pb-3">
             <span className="font-mono text-sm font-bold text-primary">{order.order_number}</span>
-            <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${orderStatusTone(order.status)}`}>
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${orderStatusTone(order.status)}`}
+            >
               {orderStatusLabel(order.status)}
             </span>
           </div>
@@ -180,12 +189,18 @@ function TrackPage() {
           {/* Terminated states */}
           {isTerminatedBadly ? (
             <div className="flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-              {order.status === "cancelled" ? <XCircle className="h-5 w-5 shrink-0" /> : <RotateCcw className="h-5 w-5 shrink-0" />}
+              {order.status === "cancelled" ? (
+                <XCircle className="h-5 w-5 shrink-0" />
+              ) : (
+                <RotateCcw className="h-5 w-5 shrink-0" />
+              )}
               <div>
                 <p className="font-bold">{orderStatusLabel(order.status)}</p>
                 {order.history.length > 0 && (
                   <p className="text-xs opacity-80">
-                    {new Date(order.history[order.history.length - 1].created_at).toLocaleString("ar-EG")}
+                    {new Date(order.history[order.history.length - 1].created_at).toLocaleString(
+                      "ar-EG",
+                    )}
                   </p>
                 )}
               </div>
@@ -214,7 +229,9 @@ function TrackPage() {
                       )}
                     </span>
                     <div>
-                      <p className={`text-sm font-bold ${reached ? "text-showcase-foreground" : "text-showcase-muted"}`}>
+                      <p
+                        className={`text-sm font-bold ${reached ? "text-showcase-foreground" : "text-showcase-muted"}`}
+                      >
                         {orderStatusLabel(s)}
                       </p>
                       {date && (
@@ -234,13 +251,19 @@ function TrackPage() {
             {order.items.map((it) => (
               <li key={it.id} className="flex items-center gap-3">
                 {it.image ? (
-                  <img src={it.image} alt={it.name} className="h-11 w-11 rounded-lg border border-showcase-border/50 object-cover" />
+                  <img
+                    src={it.image}
+                    alt={it.name}
+                    className="h-11 w-11 rounded-lg border border-showcase-border/50 object-cover"
+                  />
                 ) : (
                   <div className="grid h-11 w-11 place-items-center rounded-lg bg-showcase-foreground/10 text-showcase-muted">
                     <Package className="h-4 w-4" />
                   </div>
                 )}
-                <span className="flex-1 text-xs font-bold text-showcase-foreground line-clamp-1">{it.name}</span>
+                <span className="flex-1 text-xs font-bold text-showcase-foreground line-clamp-1">
+                  {it.name}
+                </span>
                 <span className="text-[11px] text-showcase-muted">
                   {it.quantity} × {formatPrice(it.unit_price)}
                 </span>

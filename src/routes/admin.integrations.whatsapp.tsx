@@ -29,7 +29,10 @@ export const Route = createFileRoute("/admin/integrations/whatsapp")({
   head: () => ({
     meta: [
       { title: "تكامل WhatsApp Media Sync — لوحة الإدارة" },
-      { name: "description", content: "ربط واستقبال وسائط منتجات الواتساب وتحويلها تلقائياً بالذكاء الاصطناعي." },
+      {
+        name: "description",
+        content: "ربط واستقبال وسائط منتجات الواتساب وتحويلها تلقائياً بالذكاء الاصطناعي.",
+      },
     ],
   }),
   component: WhatsAppIntegrationComponent,
@@ -48,7 +51,7 @@ function WhatsAppIntegrationComponent() {
 
   // Test Simulator state
   const [simFileUrl, setSimFileUrl] = useState(
-    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop"
+    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop",
   );
   const [simCaption, setSimCaption] = useState("ساعة ابل واش الترا سوداء فاخرة");
   const [simPhone, setSimPhone] = useState("+967771370740");
@@ -104,9 +107,10 @@ function WhatsAppIntegrationComponent() {
     );
   }
 
-  const webhookEndpoint = typeof window !== "undefined"
-    ? `${window.location.origin}/api/webhooks/whatsapp`
-    : "https://indexes-store.com/api/webhooks/whatsapp";
+  const webhookEndpoint =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/api/webhooks/whatsapp`
+      : "https://indexes-store.com/api/webhooks/whatsapp";
 
   const copyToClipboard = (text: string, type: "webhook" | "token") => {
     navigator.clipboard.writeText(text);
@@ -130,7 +134,8 @@ function WhatsAppIntegrationComponent() {
             تكامل WhatsApp Media Sync
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            استقبال صور وفيديوهات المنتجات مباشرة من الواتساب وتحويلها تلقائياً إلى مكتبة الوسائط مع اقتراحات الذكاء الاصطناعي.
+            استقبال صور وفيديوهات المنتجات مباشرة من الواتساب وتحويلها تلقائياً إلى مكتبة الوسائط مع
+            اقتراحات الذكاء الاصطناعي.
           </p>
         </div>
 
@@ -139,7 +144,11 @@ function WhatsAppIntegrationComponent() {
           disabled={saveMutation.isPending}
           className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 shadow-brand disabled:opacity-50"
         >
-          {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
           حفظ إعدادات الربط
         </button>
       </div>
@@ -164,16 +173,20 @@ function WhatsAppIntegrationComponent() {
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-4 space-y-1">
-          <span className="text-xs text-muted-foreground font-semibold">إجمالي وسائط الواتساب المستوردة</span>
-          <p className="text-lg font-black text-primary pt-1">
-            {formData.mediaCount} وسيلة إعلام
-          </p>
+          <span className="text-xs text-muted-foreground font-semibold">
+            إجمالي وسائط الواتساب المستوردة
+          </span>
+          <p className="text-lg font-black text-primary pt-1">{formData.mediaCount} وسيلة إعلام</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-4 space-y-1">
-          <span className="text-xs text-muted-foreground font-semibold">آخر مزامنة (Last Sync)</span>
+          <span className="text-xs text-muted-foreground font-semibold">
+            آخر مزامنة (Last Sync)
+          </span>
           <p className="text-xs font-mono font-bold text-muted-foreground pt-2 truncate" dir="ltr">
-            {formData.lastSyncAt ? new Date(formData.lastSyncAt).toLocaleString("ar-YE") : "قبل قليل"}
+            {formData.lastSyncAt
+              ? new Date(formData.lastSyncAt).toLocaleString("ar-YE")
+              : "قبل قليل"}
           </p>
         </div>
       </div>
@@ -183,7 +196,8 @@ function WhatsAppIntegrationComponent() {
         {/* WhatsApp Cloud API Credentials */}
         <div className="space-y-4 bg-surface border border-border p-5 rounded-2xl shadow-sm">
           <h3 className="text-base font-bold flex items-center gap-2 text-foreground">
-            <ShieldCheck className="h-5 w-5 text-emerald-500" /> بيّانات الواتساب (WhatsApp Cloud API)
+            <ShieldCheck className="h-5 w-5 text-emerald-500" /> بيّانات الواتساب (WhatsApp Cloud
+            API)
           </h3>
 
           <div>
@@ -223,7 +237,9 @@ function WhatsAppIntegrationComponent() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold mb-1">البريد الإلكتروني للاتصال بالمسؤول (Contact Email)</label>
+            <label className="block text-xs font-bold mb-1">
+              البريد الإلكتروني للاتصال بالمسؤول (Contact Email)
+            </label>
             <input
               type="email"
               value={formData.contactEmail || "smartaccuont@gmail.com"}
@@ -235,7 +251,9 @@ function WhatsAppIntegrationComponent() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold mb-1">معرّف رقم الهاتف (Phone Number ID)</label>
+            <label className="block text-xs font-bold mb-1">
+              معرّف رقم الهاتف (Phone Number ID)
+            </label>
             <input
               type="text"
               value={formData.phoneNumberId || "1307082469145976"}
@@ -247,7 +265,9 @@ function WhatsAppIntegrationComponent() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold mb-1">رمز التحقق المالي للويب هوك (Verify Token)</label>
+            <label className="block text-xs font-bold mb-1">
+              رمز التحقق المالي للويب هوك (Verify Token)
+            </label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -261,7 +281,11 @@ function WhatsAppIntegrationComponent() {
                 onClick={() => copyToClipboard(formData.verifyToken, "token")}
                 className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold hover:bg-accent flex items-center gap-1 shrink-0"
               >
-                {copiedToken ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copiedToken ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
                 نسخ
               </button>
             </div>
@@ -270,7 +294,9 @@ function WhatsAppIntegrationComponent() {
           <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-background">
             <div>
               <p className="text-xs font-bold">معالجة الذكاء الاصطناعي التلقائية (AI Auto-Draft)</p>
-              <p className="text-[11px] text-muted-foreground">توليد اسم المنتج والوصف والسعر تلقائياً فور وصول الوسائط</p>
+              <p className="text-[11px] text-muted-foreground">
+                توليد اسم المنتج والوصف والسعر تلقائياً فور وصول الوسائط
+              </p>
             </div>
             <input
               type="checkbox"
@@ -284,7 +310,8 @@ function WhatsAppIntegrationComponent() {
         {/* Webhook Configuration Guide */}
         <div className="space-y-4 bg-surface border border-border p-5 rounded-2xl shadow-sm">
           <h3 className="text-base font-bold flex items-center gap-2 text-foreground">
-            <ExternalLink className="h-5 w-5 text-emerald-500" /> إعداد الويب هوك في Meta Developer Portal
+            <ExternalLink className="h-5 w-5 text-emerald-500" /> إعداد الويب هوك في Meta Developer
+            Portal
           </h3>
 
           <div>
@@ -302,7 +329,11 @@ function WhatsAppIntegrationComponent() {
                 onClick={() => copyToClipboard(webhookEndpoint, "webhook")}
                 className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold hover:bg-accent flex items-center gap-1 shrink-0"
               >
-                {copiedWebhook ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copiedWebhook ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
                 نسخ
               </button>
             </div>
@@ -313,10 +344,20 @@ function WhatsAppIntegrationComponent() {
               <ShieldCheck className="h-4 w-4 text-emerald-500" /> خطوات تفعيل المزامنة مع Meta:
             </p>
             <ol className="list-decimal list-inside space-y-1 text-[11px]">
-              <li>ادخل إلى بوابة <strong className="text-foreground">Meta App Dashboard</strong> ثم اختر <strong className="text-foreground">WhatsApp Webhook</strong>.</li>
-              <li>انسخ <strong>Callback URL</strong> الموضح أعلاه وضيعه في خانة Webhook URL.</li>
-              <li>انسخ <strong>Verify Token</strong> وضعه في خانة Verification Token.</li>
-              <li>فعّل اشتراك الأحدث على: <strong className="text-foreground font-mono">messages</strong>.</li>
+              <li>
+                ادخل إلى بوابة <strong className="text-foreground">Meta App Dashboard</strong> ثم
+                اختر <strong className="text-foreground">WhatsApp Webhook</strong>.
+              </li>
+              <li>
+                انسخ <strong>Callback URL</strong> الموضح أعلاه وضيعه في خانة Webhook URL.
+              </li>
+              <li>
+                انسخ <strong>Verify Token</strong> وضعه في خانة Verification Token.
+              </li>
+              <li>
+                فعّل اشتراك الأحدث على:{" "}
+                <strong className="text-foreground font-mono">messages</strong>.
+              </li>
             </ol>
           </div>
         </div>
@@ -325,7 +366,8 @@ function WhatsAppIntegrationComponent() {
       {/* Meta WhatsApp Accounts List */}
       <div className="rounded-2xl border border-border bg-surface p-5 space-y-4 shadow-sm">
         <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-emerald-500" /> حسابات واتساب للأعمال المسجلة في Meta (Meta WABA Accounts)
+          <MessageSquare className="h-5 w-5 text-emerald-500" /> حسابات واتساب للأعمال المسجلة في
+          Meta (Meta WABA Accounts)
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -333,12 +375,25 @@ function WhatsAppIntegrationComponent() {
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-black text-sm text-foreground">اندكس للتجارة</span>
-              <span className="text-[11px] font-bold bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-full">مسجّل ✅</span>
+              <span className="text-[11px] font-bold bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-full">
+                مسجّل ✅
+              </span>
             </div>
             <div className="space-y-1 text-xs text-muted-foreground">
-              <p><strong className="text-foreground">معرف حساب الواتساب (WABA ID):</strong> <code className="font-mono text-emerald-400">28459237033683884</code></p>
-              <p><strong className="text-foreground">رقم الهاتف:</strong> <span className="font-mono" dir="ltr">+967 738 609 222</span></p>
-              <p><strong className="text-foreground">معرف رقم الهاتف (Phone ID):</strong> <code className="font-mono">1307082469145976</code></p>
+              <p>
+                <strong className="text-foreground">معرف حساب الواتساب (WABA ID):</strong>{" "}
+                <code className="font-mono text-emerald-400">28459237033683884</code>
+              </p>
+              <p>
+                <strong className="text-foreground">رقم الهاتف:</strong>{" "}
+                <span className="font-mono" dir="ltr">
+                  +967 738 609 222
+                </span>
+              </p>
+              <p>
+                <strong className="text-foreground">معرف رقم الهاتف (Phone ID):</strong>{" "}
+                <code className="font-mono">1307082469145976</code>
+              </p>
             </div>
           </div>
 
@@ -346,12 +401,25 @@ function WhatsAppIntegrationComponent() {
           <div className="rounded-xl border border-border bg-background p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-black text-sm text-foreground">اندكس للتجارة 1</span>
-              <span className="text-[11px] font-bold bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full">لم يتم التحقق ⚠️</span>
+              <span className="text-[11px] font-bold bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full">
+                لم يتم التحقق ⚠️
+              </span>
             </div>
             <div className="space-y-1 text-xs text-muted-foreground">
-              <p><strong className="text-foreground">معرف حساب الواتساب (WABA ID):</strong> <code className="font-mono text-muted-foreground">2347070759160644</code></p>
-              <p><strong className="text-foreground">رقم الهاتف:</strong> <span className="font-mono" dir="ltr">+967 785 574 271</span></p>
-              <p><strong className="text-foreground">معرف رقم الهاتف (Phone ID):</strong> <code className="font-mono">1282161161642455</code></p>
+              <p>
+                <strong className="text-foreground">معرف حساب الواتساب (WABA ID):</strong>{" "}
+                <code className="font-mono text-muted-foreground">2347070759160644</code>
+              </p>
+              <p>
+                <strong className="text-foreground">رقم الهاتف:</strong>{" "}
+                <span className="font-mono" dir="ltr">
+                  +967 785 574 271
+                </span>
+              </p>
+              <p>
+                <strong className="text-foreground">معرف رقم الهاتف (Phone ID):</strong>{" "}
+                <code className="font-mono">1282161161642455</code>
+              </p>
             </div>
           </div>
         </div>
@@ -362,9 +430,13 @@ function WhatsAppIntegrationComponent() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
           <div>
             <h3 className="text-base font-black text-foreground flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-emerald-500" /> مسار الأتمتة الكامل: من المورد إلى الكتالوجات (Automated Pipeline)
+              <Sparkles className="h-5 w-5 text-emerald-500" /> مسار الأتمتة الكامل: من المورد إلى
+              الكتالوجات (Automated Pipeline)
             </h3>
-            <p className="text-xs text-muted-foreground">تدفق البيانات الذكي من رسالة الواتساب حتى النشر في المتجر و Meta Catalog و Google Merchant</p>
+            <p className="text-xs text-muted-foreground">
+              تدفق البيانات الذكي من رسالة الواتساب حتى النشر في المتجر و Meta Catalog و Google
+              Merchant
+            </p>
           </div>
           <span className="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-3 py-1 rounded-full shrink-0">
             Auto-Sync Pipeline ⚡
@@ -410,10 +482,12 @@ function WhatsAppIntegrationComponent() {
         <div className="border-b border-border pb-3 flex items-center justify-between">
           <div>
             <h3 className="text-base font-black text-foreground flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-emerald-500" /> محاكاة استقبال وسائط واتساب واختبار الذكاء الاصطناعي
+              <Sparkles className="h-5 w-5 text-emerald-500" /> محاكاة استقبال وسائط واتساب واختبار
+              الذكاء الاصطناعي
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              اختبر تدفق المزامنة وتوليد بطاقات المنتجات من الوسائط مباشرة بدون الحاجة لإرسال رسالة فعلية
+              اختبر تدفق المزامنة وتوليد بطاقات المنتجات من الوسائط مباشرة بدون الحاجة لإرسال رسالة
+              فعلية
             </p>
           </div>
           <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full">
@@ -461,7 +535,11 @@ function WhatsAppIntegrationComponent() {
                 disabled={simMutation.isPending}
                 className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shrink-0 hover:bg-emerald-700 disabled:opacity-50"
               >
-                {simMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                {simMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
                 ارسال المحاكاة
               </button>
             </div>
@@ -487,15 +565,21 @@ function WhatsAppIntegrationComponent() {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-surface p-3 rounded-lg border border-border text-xs">
               <div>
                 <span className="text-muted-foreground block text-[10px]">اسم المنتج المقترح:</span>
-                <span className="font-bold text-foreground">{lastSimResult.aiSuggestion?.title}</span>
+                <span className="font-bold text-foreground">
+                  {lastSimResult.aiSuggestion?.title}
+                </span>
               </div>
               <div>
                 <span className="text-muted-foreground block text-[10px]">التصنيف المقترح:</span>
-                <span className="font-bold text-primary">{lastSimResult.aiSuggestion?.category}</span>
+                <span className="font-bold text-primary">
+                  {lastSimResult.aiSuggestion?.category}
+                </span>
               </div>
               <div>
                 <span className="text-muted-foreground block text-[10px]">السعر التقديري:</span>
-                <span className="font-bold text-emerald-500">{lastSimResult.aiSuggestion?.price} YER</span>
+                <span className="font-bold text-emerald-500">
+                  {lastSimResult.aiSuggestion?.price} YER
+                </span>
               </div>
               <div>
                 <span className="text-muted-foreground block text-[10px]">مصدر الوسيط:</span>

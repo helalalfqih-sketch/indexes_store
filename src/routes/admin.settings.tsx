@@ -55,21 +55,32 @@ function SettingsPage() {
   const [brandSettings, setBrandSettings] = useState<BrandSettings>({
     storeName: settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور",
     shortName: settings.brand_settings?.shortName || "NOQTA",
-    description: settings.brand_settings?.description || settings.navigation?.footerDescription || "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد.",
+    description:
+      settings.brand_settings?.description ||
+      settings.navigation?.footerDescription ||
+      "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد.",
     tagline: settings.brand_settings?.tagline || settings.navigation?.tagline || "اختيارك الأفضل",
-    primaryColor: settings.brand_settings?.primaryColor || settings.theme?.primaryColor || "#4f8cff",
-    secondaryColor: settings.brand_settings?.secondaryColor || settings.theme?.secondaryColor || "#a259ff",
+    primaryColor:
+      settings.brand_settings?.primaryColor || settings.theme?.primaryColor || "#4f8cff",
+    secondaryColor:
+      settings.brand_settings?.secondaryColor || settings.theme?.secondaryColor || "#a259ff",
     accentColor: settings.brand_settings?.accentColor || "#ff6b35",
   });
 
   // 3. Social Media Links state
   const [socialLinks, setSocialLinks] = useState<SocialLinksSettings>({
     facebook: {
-      url: settings.social_links?.facebook?.url || settings.navigation?.socialLinks?.facebook || "https://facebook.com/indexes.store",
+      url:
+        settings.social_links?.facebook?.url ||
+        settings.navigation?.socialLinks?.facebook ||
+        "https://facebook.com/indexes.store",
       enabled: settings.social_links?.facebook?.enabled ?? true,
     },
     instagram: {
-      url: settings.social_links?.instagram?.url || settings.navigation?.socialLinks?.instagram || "https://instagram.com/indexes.store",
+      url:
+        settings.social_links?.instagram?.url ||
+        settings.navigation?.socialLinks?.instagram ||
+        "https://instagram.com/indexes.store",
       enabled: settings.social_links?.instagram?.enabled ?? true,
     },
     tiktok: {
@@ -81,7 +92,11 @@ function SettingsPage() {
       enabled: settings.social_links?.youtube?.enabled ?? false,
     },
     whatsapp: {
-      url: settings.social_links?.whatsapp?.url || (settings.navigation?.whatsappPhone ? `https://wa.me/${settings.navigation.whatsappPhone}` : "https://wa.me/967771370740"),
+      url:
+        settings.social_links?.whatsapp?.url ||
+        (settings.navigation?.whatsappPhone
+          ? `https://wa.me/${settings.navigation.whatsappPhone}`
+          : "https://wa.me/967771370740"),
       enabled: settings.social_links?.whatsapp?.enabled ?? true,
     },
     telegram: {
@@ -93,9 +108,16 @@ function SettingsPage() {
   // 4. General Store Settings state
   const [generalSettings, setGeneralSettings] = useState<GeneralStoreSettings>({
     phone: settings.general_settings?.phone || settings.navigation?.whatsappPhone || "967771370740",
-    whatsapp: settings.general_settings?.whatsapp || settings.navigation?.whatsappPhone || "967771370740",
-    email: settings.general_settings?.email || settings.navigation?.supportEmail || "support@indexes-store.com",
-    address: settings.general_settings?.address || settings.navigation?.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية",
+    whatsapp:
+      settings.general_settings?.whatsapp || settings.navigation?.whatsappPhone || "967771370740",
+    email:
+      settings.general_settings?.email ||
+      settings.navigation?.supportEmail ||
+      "support@indexes-store.com",
+    address:
+      settings.general_settings?.address ||
+      settings.navigation?.addressText ||
+      "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية",
     currency: settings.general_settings?.currency || "YER",
     language: settings.general_settings?.language || "ar",
     country: settings.general_settings?.country || "اليمن",
@@ -285,7 +307,11 @@ function SettingsPage() {
         <div className="p-4 rounded-xl bg-background border border-border flex items-center gap-4">
           <div className="flex items-center gap-2 bg-surface px-3 py-1.5 rounded-lg border text-xs font-semibold text-foreground">
             {storeIdentity.faviconUrl ? (
-              <img src={storeIdentity.faviconUrl} alt="Favicon" className="h-4 w-4 object-contain" />
+              <img
+                src={storeIdentity.faviconUrl}
+                alt="Favicon"
+                className="h-4 w-4 object-contain"
+              />
             ) : (
               <Globe className="h-4 w-4 text-primary" />
             )}
@@ -294,7 +320,11 @@ function SettingsPage() {
           {storeIdentity.logoUrl && (
             <div className="flex items-center gap-2 border-r border-border pr-4">
               <span className="text-xs text-muted-foreground">الشعار:</span>
-              <img src={storeIdentity.logoUrl} alt="Logo" className="h-8 max-w-[120px] object-contain" />
+              <img
+                src={storeIdentity.logoUrl}
+                alt="Logo"
+                className="h-8 max-w-[120px] object-contain"
+              />
             </div>
           )}
         </div>
@@ -311,7 +341,9 @@ function SettingsPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <label className="text-xs font-bold text-muted-foreground block mb-1">اسم المتجر الكامل</label>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">
+              اسم المتجر الكامل
+            </label>
             <input
               value={brandSettings.storeName}
               onChange={(e) => setBrandSettings({ ...brandSettings, storeName: e.target.value })}
@@ -320,7 +352,9 @@ function SettingsPage() {
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-muted-foreground block mb-1">الاسم المختصر (Short Name)</label>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">
+              الاسم المختصر (Short Name)
+            </label>
             <input
               value={brandSettings.shortName}
               onChange={(e) => setBrandSettings({ ...brandSettings, shortName: e.target.value })}
@@ -330,7 +364,9 @@ function SettingsPage() {
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-muted-foreground block mb-1">الشعار النصي (Tagline)</label>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">
+              الشعار النصي (Tagline)
+            </label>
             <input
               value={brandSettings.tagline}
               onChange={(e) => setBrandSettings({ ...brandSettings, tagline: e.target.value })}
@@ -339,7 +375,9 @@ function SettingsPage() {
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-muted-foreground block mb-1">وصف المتجر المختصر</label>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">
+              وصف المتجر المختصر
+            </label>
             <input
               value={brandSettings.description}
               onChange={(e) => setBrandSettings({ ...brandSettings, description: e.target.value })}
@@ -351,18 +389,24 @@ function SettingsPage() {
 
         {/* Brand Colors */}
         <div className="pt-2 border-t border-border/50">
-          <label className="text-xs font-bold text-foreground block mb-3">ألوان الهوية البصرية (Brand Palette)</label>
+          <label className="text-xs font-bold text-foreground block mb-3">
+            ألوان الهوية البصرية (Brand Palette)
+          </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background">
               <input
                 type="color"
                 value={brandSettings.primaryColor}
-                onChange={(e) => setBrandSettings({ ...brandSettings, primaryColor: e.target.value })}
+                onChange={(e) =>
+                  setBrandSettings({ ...brandSettings, primaryColor: e.target.value })
+                }
                 className="h-9 w-9 rounded-lg border-0 cursor-pointer"
               />
               <div>
                 <span className="text-xs font-bold block">اللون الرئيسي (Primary)</span>
-                <span className="text-[11px] font-mono text-muted-foreground">{brandSettings.primaryColor}</span>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  {brandSettings.primaryColor}
+                </span>
               </div>
             </div>
 
@@ -370,12 +414,16 @@ function SettingsPage() {
               <input
                 type="color"
                 value={brandSettings.secondaryColor}
-                onChange={(e) => setBrandSettings({ ...brandSettings, secondaryColor: e.target.value })}
+                onChange={(e) =>
+                  setBrandSettings({ ...brandSettings, secondaryColor: e.target.value })
+                }
                 className="h-9 w-9 rounded-lg border-0 cursor-pointer"
               />
               <div>
                 <span className="text-xs font-bold block">اللون الثانوي (Secondary)</span>
-                <span className="text-[11px] font-mono text-muted-foreground">{brandSettings.secondaryColor}</span>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  {brandSettings.secondaryColor}
+                </span>
               </div>
             </div>
 
@@ -383,12 +431,16 @@ function SettingsPage() {
               <input
                 type="color"
                 value={brandSettings.accentColor}
-                onChange={(e) => setBrandSettings({ ...brandSettings, accentColor: e.target.value })}
+                onChange={(e) =>
+                  setBrandSettings({ ...brandSettings, accentColor: e.target.value })
+                }
                 className="h-9 w-9 rounded-lg border-0 cursor-pointer"
               />
               <div>
                 <span className="text-xs font-bold block">لون التميز (Accent)</span>
-                <span className="text-[11px] font-mono text-muted-foreground">{brandSettings.accentColor}</span>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  {brandSettings.accentColor}
+                </span>
               </div>
             </div>
           </div>
@@ -413,15 +465,27 @@ function SettingsPage() {
             <input
               type="checkbox"
               checked={socialLinks.facebook.enabled}
-              onChange={(e) => setSocialLinks({ ...socialLinks, facebook: { ...socialLinks.facebook, enabled: e.target.checked } })}
+              onChange={(e) =>
+                setSocialLinks({
+                  ...socialLinks,
+                  facebook: { ...socialLinks.facebook, enabled: e.target.checked },
+                })
+              }
               className="h-4 w-4 rounded accent-primary cursor-pointer"
             />
             <div className="flex-1">
-              <label className="text-xs font-bold text-muted-foreground block mb-1">فيسبوك (Facebook)</label>
+              <label className="text-xs font-bold text-muted-foreground block mb-1">
+                فيسبوك (Facebook)
+              </label>
               <input
                 type="url"
                 value={socialLinks.facebook.url}
-                onChange={(e) => setSocialLinks({ ...socialLinks, facebook: { ...socialLinks.facebook, url: e.target.value } })}
+                onChange={(e) =>
+                  setSocialLinks({
+                    ...socialLinks,
+                    facebook: { ...socialLinks.facebook, url: e.target.value },
+                  })
+                }
                 placeholder="https://facebook.com/..."
                 className="w-full rounded-lg border border-border bg-surface p-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
                 dir="ltr"
@@ -434,15 +498,27 @@ function SettingsPage() {
             <input
               type="checkbox"
               checked={socialLinks.instagram.enabled}
-              onChange={(e) => setSocialLinks({ ...socialLinks, instagram: { ...socialLinks.instagram, enabled: e.target.checked } })}
+              onChange={(e) =>
+                setSocialLinks({
+                  ...socialLinks,
+                  instagram: { ...socialLinks.instagram, enabled: e.target.checked },
+                })
+              }
               className="h-4 w-4 rounded accent-primary cursor-pointer"
             />
             <div className="flex-1">
-              <label className="text-xs font-bold text-muted-foreground block mb-1">إنستغرام (Instagram)</label>
+              <label className="text-xs font-bold text-muted-foreground block mb-1">
+                إنستغرام (Instagram)
+              </label>
               <input
                 type="url"
                 value={socialLinks.instagram.url}
-                onChange={(e) => setSocialLinks({ ...socialLinks, instagram: { ...socialLinks.instagram, url: e.target.value } })}
+                onChange={(e) =>
+                  setSocialLinks({
+                    ...socialLinks,
+                    instagram: { ...socialLinks.instagram, url: e.target.value },
+                  })
+                }
                 placeholder="https://instagram.com/..."
                 className="w-full rounded-lg border border-border bg-surface p-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
                 dir="ltr"
@@ -455,15 +531,27 @@ function SettingsPage() {
             <input
               type="checkbox"
               checked={socialLinks.tiktok.enabled}
-              onChange={(e) => setSocialLinks({ ...socialLinks, tiktok: { ...socialLinks.tiktok, enabled: e.target.checked } })}
+              onChange={(e) =>
+                setSocialLinks({
+                  ...socialLinks,
+                  tiktok: { ...socialLinks.tiktok, enabled: e.target.checked },
+                })
+              }
               className="h-4 w-4 rounded accent-primary cursor-pointer"
             />
             <div className="flex-1">
-              <label className="text-xs font-bold text-muted-foreground block mb-1">تيك توك (TikTok)</label>
+              <label className="text-xs font-bold text-muted-foreground block mb-1">
+                تيك توك (TikTok)
+              </label>
               <input
                 type="url"
                 value={socialLinks.tiktok.url}
-                onChange={(e) => setSocialLinks({ ...socialLinks, tiktok: { ...socialLinks.tiktok, url: e.target.value } })}
+                onChange={(e) =>
+                  setSocialLinks({
+                    ...socialLinks,
+                    tiktok: { ...socialLinks.tiktok, url: e.target.value },
+                  })
+                }
                 placeholder="https://tiktok.com/@..."
                 className="w-full rounded-lg border border-border bg-surface p-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
                 dir="ltr"
@@ -476,15 +564,27 @@ function SettingsPage() {
             <input
               type="checkbox"
               checked={socialLinks.youtube.enabled}
-              onChange={(e) => setSocialLinks({ ...socialLinks, youtube: { ...socialLinks.youtube, enabled: e.target.checked } })}
+              onChange={(e) =>
+                setSocialLinks({
+                  ...socialLinks,
+                  youtube: { ...socialLinks.youtube, enabled: e.target.checked },
+                })
+              }
               className="h-4 w-4 rounded accent-primary cursor-pointer"
             />
             <div className="flex-1">
-              <label className="text-xs font-bold text-muted-foreground block mb-1">يوتيوب (YouTube)</label>
+              <label className="text-xs font-bold text-muted-foreground block mb-1">
+                يوتيوب (YouTube)
+              </label>
               <input
                 type="url"
                 value={socialLinks.youtube.url}
-                onChange={(e) => setSocialLinks({ ...socialLinks, youtube: { ...socialLinks.youtube, url: e.target.value } })}
+                onChange={(e) =>
+                  setSocialLinks({
+                    ...socialLinks,
+                    youtube: { ...socialLinks.youtube, url: e.target.value },
+                  })
+                }
                 placeholder="https://youtube.com/@..."
                 className="w-full rounded-lg border border-border bg-surface p-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
                 dir="ltr"
@@ -497,15 +597,27 @@ function SettingsPage() {
             <input
               type="checkbox"
               checked={socialLinks.whatsapp.enabled}
-              onChange={(e) => setSocialLinks({ ...socialLinks, whatsapp: { ...socialLinks.whatsapp, enabled: e.target.checked } })}
+              onChange={(e) =>
+                setSocialLinks({
+                  ...socialLinks,
+                  whatsapp: { ...socialLinks.whatsapp, enabled: e.target.checked },
+                })
+              }
               className="h-4 w-4 rounded accent-primary cursor-pointer"
             />
             <div className="flex-1">
-              <label className="text-xs font-bold text-muted-foreground block mb-1">واتساب (WhatsApp Link)</label>
+              <label className="text-xs font-bold text-muted-foreground block mb-1">
+                واتساب (WhatsApp Link)
+              </label>
               <input
                 type="url"
                 value={socialLinks.whatsapp.url}
-                onChange={(e) => setSocialLinks({ ...socialLinks, whatsapp: { ...socialLinks.whatsapp, url: e.target.value } })}
+                onChange={(e) =>
+                  setSocialLinks({
+                    ...socialLinks,
+                    whatsapp: { ...socialLinks.whatsapp, url: e.target.value },
+                  })
+                }
                 placeholder="https://wa.me/967..."
                 className="w-full rounded-lg border border-border bg-surface p-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
                 dir="ltr"
@@ -518,15 +630,27 @@ function SettingsPage() {
             <input
               type="checkbox"
               checked={socialLinks.telegram.enabled}
-              onChange={(e) => setSocialLinks({ ...socialLinks, telegram: { ...socialLinks.telegram, enabled: e.target.checked } })}
+              onChange={(e) =>
+                setSocialLinks({
+                  ...socialLinks,
+                  telegram: { ...socialLinks.telegram, enabled: e.target.checked },
+                })
+              }
               className="h-4 w-4 rounded accent-primary cursor-pointer"
             />
             <div className="flex-1">
-              <label className="text-xs font-bold text-muted-foreground block mb-1">تيليجرام (Telegram)</label>
+              <label className="text-xs font-bold text-muted-foreground block mb-1">
+                تيليجرام (Telegram)
+              </label>
               <input
                 type="url"
                 value={socialLinks.telegram.url}
-                onChange={(e) => setSocialLinks({ ...socialLinks, telegram: { ...socialLinks.telegram, url: e.target.value } })}
+                onChange={(e) =>
+                  setSocialLinks({
+                    ...socialLinks,
+                    telegram: { ...socialLinks.telegram, url: e.target.value },
+                  })
+                }
                 placeholder="https://t.me/..."
                 className="w-full rounded-lg border border-border bg-surface p-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
                 dir="ltr"
@@ -597,7 +721,9 @@ function SettingsPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
           <div>
-            <label className="text-xs font-bold text-muted-foreground block mb-1">العملة الافتراضية</label>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">
+              العملة الافتراضية
+            </label>
             <select
               value={generalSettings.currency}
               onChange={(e) => setGeneralSettings({ ...generalSettings, currency: e.target.value })}
@@ -609,7 +735,9 @@ function SettingsPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs font-bold text-muted-foreground block mb-1">اللغة الافتراضية</label>
+            <label className="text-xs font-bold text-muted-foreground block mb-1">
+              اللغة الافتراضية
+            </label>
             <select
               value={generalSettings.language}
               onChange={(e) => setGeneralSettings({ ...generalSettings, language: e.target.value })}
@@ -643,7 +771,9 @@ function SettingsPage() {
             </label>
             <input
               value={generalSettings.workingHours}
-              onChange={(e) => setGeneralSettings({ ...generalSettings, workingHours: e.target.value })}
+              onChange={(e) =>
+                setGeneralSettings({ ...generalSettings, workingHours: e.target.value })
+              }
               placeholder="يومياً 9:00 ص - 10:00 م"
               className="w-full rounded-xl border border-border bg-background p-2.5 text-xs outline-none focus:ring-2 focus:ring-primary/30"
             />

@@ -82,9 +82,7 @@ function CouponsPage() {
     if (!form) return;
     if (!form.code.trim()) return toast.error("أدخل كود الكوبون");
     if (editId) {
-      setCoupons((cs) =>
-        cs.map((c) => (c.id === editId ? { ...c, ...form } : c)),
-      );
+      setCoupons((cs) => cs.map((c) => (c.id === editId ? { ...c, ...form } : c)));
       toast.success("تم تحديث الكوبون");
     } else {
       setCoupons((cs) => [...cs, { ...form, id: Date.now().toString(), used_count: 0 }]);
@@ -100,9 +98,7 @@ function CouponsPage() {
   };
 
   const toggle = (id: string) =>
-    setCoupons((cs) =>
-      cs.map((c) => (c.id === id ? { ...c, is_active: !c.is_active } : c)),
-    );
+    setCoupons((cs) => cs.map((c) => (c.id === id ? { ...c, is_active: !c.is_active } : c)));
 
   return (
     <div className="space-y-6">
@@ -151,9 +147,7 @@ function CouponsPage() {
                 <td className="px-4 py-3">
                   {c.used_count} / {c.max_uses || "∞"}
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {c.expires_at || "بلا حد"}
-                </td>
+                <td className="px-4 py-3 text-muted-foreground">{c.expires_at || "بلا حد"}</td>
                 <td className="px-4 py-3">
                   <button onClick={() => toggle(c.id)}>
                     {c.is_active ? (
@@ -194,10 +188,14 @@ function CouponsPage() {
             </h2>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">كود الكوبون</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                كود الكوبون
+              </label>
               <input
                 value={form.code}
-                onChange={(e) => setForm((f) => f ? { ...f, code: e.target.value.toUpperCase() } : f)}
+                onChange={(e) =>
+                  setForm((f) => (f ? { ...f, code: e.target.value.toUpperCase() } : f))
+                }
                 placeholder="مثال: SAVE20"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
@@ -205,10 +203,14 @@ function CouponsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">النوع</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                  النوع
+                </label>
                 <select
                   value={form.type}
-                  onChange={(e) => setForm((f) => f ? { ...f, type: e.target.value as "percent" | "fixed" } : f)}
+                  onChange={(e) =>
+                    setForm((f) => (f ? { ...f, type: e.target.value as "percent" | "fixed" } : f))
+                  }
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   <option value="percent">نسبة مئوية (%)</option>
@@ -222,7 +224,9 @@ function CouponsPage() {
                 <input
                   type="number"
                   value={form.value}
-                  onChange={(e) => setForm((f) => f ? { ...f, value: Number(e.target.value) } : f)}
+                  onChange={(e) =>
+                    setForm((f) => (f ? { ...f, value: Number(e.target.value) } : f))
+                  }
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
@@ -230,21 +234,29 @@ function CouponsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">الحد الأدنى للطلب</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                  الحد الأدنى للطلب
+                </label>
                 <input
                   type="number"
                   value={form.min_order}
-                  onChange={(e) => setForm((f) => f ? { ...f, min_order: Number(e.target.value) } : f)}
+                  onChange={(e) =>
+                    setForm((f) => (f ? { ...f, min_order: Number(e.target.value) } : f))
+                  }
                   placeholder="0 = بلا حد"
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">حد الاستخدام</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                  حد الاستخدام
+                </label>
                 <input
                   type="number"
                   value={form.max_uses}
-                  onChange={(e) => setForm((f) => f ? { ...f, max_uses: Number(e.target.value) } : f)}
+                  onChange={(e) =>
+                    setForm((f) => (f ? { ...f, max_uses: Number(e.target.value) } : f))
+                  }
                   placeholder="0 = بلا حد"
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
@@ -258,7 +270,7 @@ function CouponsPage() {
               <input
                 type="date"
                 value={form.expires_at}
-                onChange={(e) => setForm((f) => f ? { ...f, expires_at: e.target.value } : f)}
+                onChange={(e) => setForm((f) => (f ? { ...f, expires_at: e.target.value } : f))}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
@@ -271,7 +283,10 @@ function CouponsPage() {
                 حفظ
               </button>
               <button
-                onClick={() => { setForm(null); setEditId(null); }}
+                onClick={() => {
+                  setForm(null);
+                  setEditId(null);
+                }}
                 className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-accent transition"
               >
                 إلغاء

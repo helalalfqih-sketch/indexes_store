@@ -23,9 +23,21 @@ export function generateEvidenceTimeline(incidentId: string): EvidenceTimeline {
     conclusion: "Asset chunk loading failure caused 143 user session abandonments.",
     events: [
       { timestamp: "10:32:00", eventType: "USER_ACTION", description: "User opened product page" },
-      { timestamp: "10:32:05", eventType: "NETWORK_RESPONSE", description: "Image request failed with HTTP 404" },
-      { timestamp: "10:32:08", eventType: "SESSION_ABANDONMENT", description: "User abandoned page after 8.2s wait" },
-      { timestamp: "10:35:00", eventType: "ERROR_TRIGGER", description: "143 additional user sessions repeated identical sequence" },
+      {
+        timestamp: "10:32:05",
+        eventType: "NETWORK_RESPONSE",
+        description: "Image request failed with HTTP 404",
+      },
+      {
+        timestamp: "10:32:08",
+        eventType: "SESSION_ABANDONMENT",
+        description: "User abandoned page after 8.2s wait",
+      },
+      {
+        timestamp: "10:35:00",
+        eventType: "ERROR_TRIGGER",
+        description: "143 additional user sessions repeated identical sequence",
+      },
     ],
   };
 }

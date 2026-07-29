@@ -24,10 +24,10 @@ export function CachedProductImage({
     aspectRatio === "square"
       ? "aspect-square"
       : aspectRatio === "video"
-      ? "aspect-video"
-      : aspectRatio === "4/3"
-      ? "aspect-[4/3]"
-      : "";
+        ? "aspect-video"
+        : aspectRatio === "4/3"
+          ? "aspect-[4/3]"
+          : "";
 
   const fallbackDataUrl =
     blurDataUrl ||

@@ -8,7 +8,16 @@ import { RepairProposal } from "../ai/patch-planner";
 import { QualityRole } from "../security/rbac";
 
 export interface PipelineExecutionResult {
-  pipelineStep: "DETECT" | "ANALYZE" | "PLAN" | "APPROVE" | "BACKUP" | "EXECUTE" | "VERIFY" | "ROLLBACK" | "COMPLETED";
+  pipelineStep:
+    | "DETECT"
+    | "ANALYZE"
+    | "PLAN"
+    | "APPROVE"
+    | "BACKUP"
+    | "EXECUTE"
+    | "VERIFY"
+    | "ROLLBACK"
+    | "COMPLETED";
   patchResult: PatchExecutionResult;
   snapshotId: string;
   qualityScoreBefore: number;
@@ -18,12 +27,17 @@ export interface PipelineExecutionResult {
 
 export async function runProductionSafetyPipeline(
   proposal: RepairProposal,
-  role: QualityRole
+  role: QualityRole,
 ): Promise<PipelineExecutionResult> {
-  const snapshot = createBackupSnapshot(proposal.proposalId, proposal.targetFile, proposal.beforeCodeSnippet);
+  const snapshot = createBackupSnapshot(
+    proposal.proposalId,
+    proposal.targetFile,
+    proposal.beforeCodeSnippet,
+  );
   const patchResult = await executeApprovedPatch(proposal, role);
 
-  const rollbackTriggered = !patchResult.success || patchResult.verificationStatus === "ROLLED_BACK";
+  const rollbackTriggered =
+    !patchResult.success || patchResult.verificationStatus === "ROLLED_BACK";
 
   return {
     pipelineStep: rollbackTriggered ? "ROLLBACK" : "COMPLETED",

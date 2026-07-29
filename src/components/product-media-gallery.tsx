@@ -68,7 +68,8 @@ function isVideoUrl(url?: string | null): boolean {
   const lower = url.trim().toLowerCase();
   if (/\.(mp4|webm|ogg|mov|avi|mkv|m3u8)(\?.*)?$/i.test(lower)) return true;
   if (lower.includes("stream.mux.com") || lower.includes("player.mux.com")) return true;
-  if (lower.includes("youtube.com") || lower.includes("youtu.be") || lower.includes("vimeo.com")) return true;
+  if (lower.includes("youtube.com") || lower.includes("youtu.be") || lower.includes("vimeo.com"))
+    return true;
   if (lower.startsWith("data:video/")) return true;
   return false;
 }
@@ -79,7 +80,11 @@ function extractMuxId(url?: string | null): string | null {
   const trimmed = url.trim();
   const m = trimmed.match(/(?:stream\.mux\.com\/|player\.mux\.com\/|mux\.com\/)([A-Za-z0-9]+)/);
   if (m) return m[1];
-  if (!trimmed.includes("http") && !trimmed.includes("/") && /^[A-Za-z0-9_-]{10,40}$/.test(trimmed)) {
+  if (
+    !trimmed.includes("http") &&
+    !trimmed.includes("/") &&
+    /^[A-Za-z0-9_-]{10,40}$/.test(trimmed)
+  ) {
     return trimmed;
   }
   return null;
@@ -164,7 +169,10 @@ function buildMediaList(product: Props["product"], has3D: boolean): MediaItem[] 
   if (product.videoPlaybackId) {
     const muxId = extractMuxId(product.videoPlaybackId) || product.videoPlaybackId;
     const vUrl = `https://stream.mux.com/${muxId}.m3u8`;
-    if (!seenUrls.has(vUrl) && !items.some((m) => m.kind === "video-mux" && m.playbackId === muxId)) {
+    if (
+      !seenUrls.has(vUrl) &&
+      !items.some((m) => m.kind === "video-mux" && m.playbackId === muxId)
+    ) {
       seenUrls.add(vUrl);
       const poster = `https://image.mux.com/${muxId}/thumbnail.webp`;
       items.push({ kind: "video-mux", playbackId: muxId, poster });
@@ -278,7 +286,10 @@ export function ProductMediaGallery({ product }: Props) {
   const has3D = mounted && !!modelFor(product.id);
 
   const mediaList = buildMediaList(product, has3D);
-  const imageItems = mediaList.filter((m) => m.kind === "image") as Extract<MediaItem, { kind: "image" }>[];
+  const imageItems = mediaList.filter((m) => m.kind === "image") as Extract<
+    MediaItem,
+    { kind: "image" }
+  >[];
   const hasAnyVideo = mediaList.some((m) => m.kind === "video-url" || m.kind === "video-mux");
 
   const [activeIndex, setActiveIndex] = useState(0);
@@ -390,7 +401,10 @@ export function ProductMediaGallery({ product }: Props) {
               onClick={() => setVideoModal({ muxId: activeItem.playbackId })}
             >
               <OptimizedImage
-                src={activeItem.poster || `https://image.mux.com/${activeItem.playbackId}/thumbnail.webp`}
+                src={
+                  activeItem.poster ||
+                  `https://image.mux.com/${activeItem.playbackId}/thumbnail.webp`
+                }
                 alt={product.name}
                 size="large"
                 className="h-full w-full object-cover opacity-50 group-hover:opacity-40 transition"
@@ -461,7 +475,8 @@ export function ProductMediaGallery({ product }: Props) {
           {activeItem?.kind === "image" && imageItems.length > 1 && (
             <span className="flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-bold text-white/70 backdrop-blur-md">
               <ImageIcon className="h-3 w-3" />
-              {(activeItem as Extract<MediaItem, { kind: "image" }>).index + 1} / {imageItems.length}
+              {(activeItem as Extract<MediaItem, { kind: "image" }>).index + 1} /{" "}
+              {imageItems.length}
             </span>
           )}
         </div>
@@ -558,7 +573,9 @@ export function ProductMediaGallery({ product }: Props) {
             <Video className="h-4 w-4 text-primary" />
           )}
           <span>
-            {requestSent ? "✅ تم إرسال طلب الفيديو — سنضيفه فور تجهيزه" : "اطلب توفير فيديو لهذا المنتج"}
+            {requestSent
+              ? "✅ تم إرسال طلب الفيديو — سنضيفه فور تجهيزه"
+              : "اطلب توفير فيديو لهذا المنتج"}
           </span>
         </button>
       )}

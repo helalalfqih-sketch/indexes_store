@@ -1,5 +1,5 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { calculateCommission } from './commission.service';
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { calculateCommission } from "./commission.service";
 
 type DB = SupabaseClient<any>;
 
@@ -22,13 +22,13 @@ export async function splitOrderIntoVendorOrders(
     tenantId: string;
     orderId: string;
     items: OrderItemWithVendor[];
-  }
+  },
 ) {
   // Group items by vendor_id (null vendor_id = main store items)
   const vendorGroups: Record<string, OrderItemWithVendor[]> = {};
 
   for (const item of params.items) {
-    const key = item.vendor_id ?? 'MAIN_STORE';
+    const key = item.vendor_id ?? "MAIN_STORE";
     if (!vendorGroups[key]) vendorGroups[key] = [];
     vendorGroups[key].push(item);
   }
@@ -37,13 +37,13 @@ export async function splitOrderIntoVendorOrders(
 
   for (const [vendorKey, groupItems] of Object.entries(vendorGroups)) {
     // If items belong to main store, no vendor_orders sub-record needed
-    if (vendorKey === 'MAIN_STORE') continue;
+    if (vendorKey === "MAIN_STORE") continue;
 
     // Fetch vendor details for commission rates
     const { data: vendor } = await db
-      .from('vendors')
-      .select('id, commission_type, commission_rate, fixed_commission_amount')
-      .eq('id', vendorKey)
+      .from("vendors")
+      .select("id, commission_type, commission_rate, fixed_commission_amount")
+      .eq("id", vendorKey)
       .maybeSingle();
 
     if (!vendor) continue;
@@ -52,9 +52,9 @@ export async function splitOrderIntoVendorOrders(
 
     const commission = calculateCommission(
       subtotal,
-      vendor.commission_type ?? 'percentage',
+      vendor.commission_type ?? "percentage",
       Number(vendor.commission_rate ?? 10),
-      Number(vendor.fixed_commission_amount ?? 0)
+      Number(vendor.fixed_commission_amount ?? 0),
     );
 
     // Generate vendor order number: VORD-{8-hex}-{short-vendor-id}
@@ -64,7 +64,7 @@ export async function splitOrderIntoVendorOrders(
 
     // Create sub-order
     const { data: subOrder, error: subOrderErr } = await db
-      .from('vendor_orders')
+      .from("vendor_orders")
       .insert({
         tenant_id: params.tenantId,
         order_id: params.orderId,
@@ -73,13 +73,13 @@ export async function splitOrderIntoVendorOrders(
         subtotal: commission.grossAmount,
         commission_amount: commission.commissionAmount,
         net_amount: commission.netAmount,
-        status: 'pending',
+        status: "pending",
       })
-      .select('*')
+      .select("*")
       .single();
 
     if (subOrderErr || !subOrder) {
-      console.error('Error creating vendor sub-order:', subOrderErr);
+      console.error("Error creating vendor sub-order:", subOrderErr);
       continue;
     }
 
@@ -93,10 +93,10 @@ export async function splitOrderIntoVendorOrders(
       total_price: item.total_price,
     }));
 
-    await db.from('vendor_order_items').insert(lineItemsPayload);
+    await db.from("vendor_order_items").insert(lineItemsPayload);
 
     // Log commission entry
-    await db.from('vendor_commissions').insert({
+    await db.from("vendor_commissions").insert({
       tenant_id: params.tenantId,
       vendor_id: vendor.id,
       order_id: params.orderId,
@@ -106,7 +106,7 @@ export async function splitOrderIntoVendorOrders(
       commission_rate: commission.commissionRate,
       commission_amount: commission.commissionAmount,
       net_amount: commission.netAmount,
-      payout_status: 'pending',
+      payout_status: "pending",
     });
 
     createdSubOrders.push(subOrder);
@@ -120,8 +120,9 @@ export async function splitOrderIntoVendorOrders(
  */
 export async function getVendorOrders(db: DB, vendorId: string) {
   const { data, error } = await db
-    .from('vendor_orders')
-    .select(`
+    .from("vendor_orders")
+    .select(
+      `
       *,
       orders (
         customer_name,
@@ -129,9 +130,10 @@ export async function getVendorOrders(db: DB, vendorId: string) {
         customer_address,
         created_at
       )
-    `)
-    .eq('vendor_id', vendorId)
-    .order('created_at', { ascending: false });
+    `,
+    )
+    .eq("vendor_id", vendorId)
+    .order("created_at", { ascending: false });
 
   if (error || !data) return [];
   return data;
@@ -144,8 +146,8 @@ export async function updateVendorOrderStatus(
   db: DB,
   vendorOrderId: string,
   vendorId: string,
-  newStatus: 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled',
-  trackingNumber?: string
+  newStatus: "confirmed" | "processing" | "shipped" | "delivered" | "cancelled",
+  trackingNumber?: string,
 ) {
   const payload: Record<string, any> = {
     status: newStatus,
@@ -154,15 +156,15 @@ export async function updateVendorOrderStatus(
   if (trackingNumber) payload.tracking_number = trackingNumber;
 
   const { data, error } = await db
-    .from('vendor_orders')
+    .from("vendor_orders")
     .update(payload)
-    .eq('id', vendorOrderId)
-    .eq('vendor_id', vendorId)
-    .select('*')
+    .eq("id", vendorOrderId)
+    .eq("vendor_id", vendorId)
+    .select("*")
     .single();
 
   if (error) {
-    console.error('Error updating vendor order status:', error);
+    console.error("Error updating vendor order status:", error);
     return null;
   }
   return data;

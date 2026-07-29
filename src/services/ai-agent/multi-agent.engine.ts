@@ -14,12 +14,7 @@ import { decomposeUserRequest } from "./task-decomposer";
 import { auditProjectArchitecture } from "./architecture.service";
 
 export type SubAgentRole =
-  | "planner"
-  | "architect"
-  | "backend"
-  | "frontend"
-  | "reviewer"
-  | "deployer";
+  "planner" | "architect" | "backend" | "frontend" | "reviewer" | "deployer";
 
 export interface SubAgentTaskResult {
   agentRole: SubAgentRole;

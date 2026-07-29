@@ -95,11 +95,7 @@ function resolveSafePath(relOrAbsPath: string): string {
   return resolved;
 }
 
-export function buildUnifiedDiff(
-  filePath: string,
-  original: string,
-  newContent: string,
-): string {
+export function buildUnifiedDiff(filePath: string, original: string, newContent: string): string {
   const origLines = original.split("\n");
   const newLines = newContent.split("\n");
   const diffLines: string[] = [`--- a/${filePath}`, `+++ b/${filePath}`];
@@ -181,7 +177,8 @@ export async function searchCode(
   try {
     const args = [
       "--json",
-      "--max-count", "50",
+      "--max-count",
+      "50",
       caseInsensitive ? "-i" : "",
       regex ? "" : "--fixed-strings",
       ...(filePattern ? ["--glob", filePattern] : []),
@@ -382,9 +379,7 @@ export async function applyCreateFile(proposal: EditFileProposal): Promise<void>
 /**
  * Sandbox Layer — Create snapshot of affected files before execution
  */
-export async function createFileSnapshots(
-  filePaths: string[],
-): Promise<Record<string, string>> {
+export async function createFileSnapshots(filePaths: string[]): Promise<Record<string, string>> {
   const snapshots: Record<string, string> = {};
   for (const relPath of filePaths) {
     try {
@@ -400,9 +395,7 @@ export async function createFileSnapshots(
 /**
  * Sandbox Layer — Rollback affected files to original snapshot state
  */
-export async function rollbackFileSnapshots(
-  snapshots: Record<string, string>,
-): Promise<void> {
+export async function rollbackFileSnapshots(snapshots: Record<string, string>): Promise<void> {
   for (const [relPath, originalContent] of Object.entries(snapshots)) {
     try {
       const resolved = resolveSafePath(relPath);

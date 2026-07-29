@@ -5,13 +5,7 @@ import { resolveTenantId } from "@/lib/saas/tenant-context";
 export type TenantRole = "owner" | "manager" | "marketing" | "employee" | "staff" | "viewer";
 
 export type PermissionKey =
-  | "products"
-  | "orders"
-  | "inventory"
-  | "deals"
-  | "cms"
-  | "settings"
-  | "analytics";
+  "products" | "orders" | "inventory" | "deals" | "cms" | "settings" | "analytics";
 
 export const ALL_PERMISSIONS: Array<{ key: PermissionKey; label: string; icon: string }> = [
   { key: "products", label: "إدارة المنتجات والتصنيفات", icon: "Package" },
@@ -81,7 +75,14 @@ export const listTenantMembers = createServerFn({ method: "GET" }).handler(async
 
 /** Server Fn: Update user role and permissions in tenant */
 export const updateMemberRole = createServerFn({ method: "POST" })
-  .validator((data: { memberId: string; targetUserId: string; newRole: TenantRole; permissions?: PermissionKey[] }) => data)
+  .validator(
+    (data: {
+      memberId: string;
+      targetUserId: string;
+      newRole: TenantRole;
+      permissions?: PermissionKey[];
+    }) => data,
+  )
   .handler(async ({ data: { memberId, targetUserId, newRole, permissions } }) => {
     const tenantId = await resolveTenantId(supabase);
     const { data: authUser } = await supabase.auth.getUser();
@@ -143,7 +144,11 @@ export const removeTenantMember = createServerFn({ method: "POST" })
     if (!member) throw new Error("العضو غير موجود");
     if (member.role === "owner") throw new Error("لا يمكن حذف مالك المتجر الأساسي.");
 
-    const { error } = await supabase.from("tenant_members").delete().eq("id", memberId).eq("tenant_id", tenantId);
+    const { error } = await supabase
+      .from("tenant_members")
+      .delete()
+      .eq("id", memberId)
+      .eq("tenant_id", tenantId);
     if (error) throw new Error(error.message);
 
     // Audit log
@@ -159,11 +164,14 @@ export const removeTenantMember = createServerFn({ method: "POST" })
   });
 
 /** Utility: Helper to check if current session user has specific tenant permission */
-export async function checkTenantPermission(permission: PermissionKey, context?: any): Promise<boolean> {
+export async function checkTenantPermission(
+  permission: PermissionKey,
+  context?: any,
+): Promise<boolean> {
   try {
     let email: string | undefined = context?.claims?.email;
     let userId: string | undefined = context?.userId;
-    let client = context?.supabase || supabase;
+    const client = context?.supabase || supabase;
 
     if (!userId) {
       const { data: authUser } = await supabase.auth.getUser();
@@ -178,10 +186,7 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
 
     if (userId) {
       // 2. Platform admin bypass (user_roles table)
-      const { data: roles } = await client
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
+      const { data: roles } = await client.from("user_roles").select("role").eq("user_id", userId);
 
       if (roles?.some((r: any) => r.role === "admin")) return true;
 
@@ -206,7 +211,8 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
 
       if (member) {
         if (member.role === "owner" || member.role === "manager") return true;
-        const perms = (member.permissions as PermissionKey[]) || ROLE_PRESETS[member.role as TenantRole] || [];
+        const perms =
+          (member.permissions as PermissionKey[]) || ROLE_PRESETS[member.role as TenantRole] || [];
         if (perms.includes(permission)) return true;
       }
     }
@@ -217,4 +223,3 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
     return true;
   }
 }
-

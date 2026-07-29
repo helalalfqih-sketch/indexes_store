@@ -109,42 +109,49 @@ export const DEFAULT_CMS_PAGES = [
   {
     slug: "about-us",
     title: "عن المتجر / من نحن",
-    content: "<h2>مرحباً بكم في اندكس ستور</h2><p>نحن المنصة الرائدة للتسوق والتجارة الإلكترونية العصرية في اليمن. نقدم أجود المنتجات بأفضل الأسعار مع توصيل سريع لجميع المحافظات.</p>",
+    content:
+      "<h2>مرحباً بكم في اندكس ستور</h2><p>نحن المنصة الرائدة للتسوق والتجارة الإلكترونية العصرية في اليمن. نقدم أجود المنتجات بأفضل الأسعار مع توصيل سريع لجميع المحافظات.</p>",
     meta_title: "من نحن — اندكس ستور",
-    meta_description: "تعرف على متجر اندكس ستور ورسالتنا في تقديم أفضل تجربة تسوق إلكتروني في اليمن.",
+    meta_description:
+      "تعرف على متجر اندكس ستور ورسالتنا في تقديم أفضل تجربة تسوق إلكتروني في اليمن.",
   },
   {
     slug: "privacy-policy",
     title: "سياسة الخصوصية",
-    content: "<h2>سياسة الخصوصية وحماية البيانات</h2><p>نحن نلتزم بحماية خصوصيتك وبياناتك الشخصية عند استخدام متجرنا. لن نقوم ببيع أو مشاركة بياناتك مع أي طرف ثالث بدون موافقتك.</p>",
+    content:
+      "<h2>سياسة الخصوصية وحماية البيانات</h2><p>نحن نلتزم بحماية خصوصيتك وبياناتك الشخصية عند استخدام متجرنا. لن نقوم ببيع أو مشاركة بياناتك مع أي طرف ثالث بدون موافقتك.</p>",
     meta_title: "سياسة الخصوصية — اندكس ستور",
     meta_description: "سياسة الخصوصية وحماية البيانات الشخصية لعملاء اندكس ستور.",
   },
   {
     slug: "terms",
     title: "الشروط والأحكام",
-    content: "<h2>شروط واستخدام الخدمة</h2><p>باستخدامك لموقع اندكس ستور، فإنك توافق على الالتزام بالشروط والأحكام الموضحة هنا لضمان تجربة تسوق آمنة وعادلة للجميع.</p>",
+    content:
+      "<h2>شروط واستخدام الخدمة</h2><p>باستخدامك لموقع اندكس ستور، فإنك توافق على الالتزام بالشروط والأحكام الموضحة هنا لضمان تجربة تسوق آمنة وعادلة للجميع.</p>",
     meta_title: "الشروط والأحكام — اندكس ستور",
     meta_description: "الشروط والأحكام المنظمة لاستخدام متجر اندكس ستور وإتمام الشراء.",
   },
   {
     slug: "return-policy",
     title: "سياسة الإرجاع والاستبدال",
-    content: "<h2>سياسة الإرجاع والاستبدال</h2><p>يمكنك طلب إرجاع أو استبدال المنتج خلال 7 أيام من تاريخ الاستلام بشرط أن يكون المنتج بحالته الأصلية غير مستخدم في عبوته الأصلية.</p>",
+    content:
+      "<h2>سياسة الإرجاع والاستبدال</h2><p>يمكنك طلب إرجاع أو استبدال المنتج خلال 7 أيام من تاريخ الاستلام بشرط أن يكون المنتج بحالته الأصلية غير مستخدم في عبوته الأصلية.</p>",
     meta_title: "سياسة الإرجاع والاستبدال — اندكس ستور",
     meta_description: "تعرف على شروط وإجراءات إرجاع واستبدال المنتجات في اندكس ستور.",
   },
   {
     slug: "shipping-policy",
     title: "سياسة الشحن والتوصيل",
-    content: "<h2>سياسة الشحن والتوصيل</h2><p>نوفر خدمة التوصيل السريع لجميع المحافظات اليمنية. استغرق التوصيل داخل صنعاء 24-48 ساعة، وللمحافظات الأخرى خلال 2-4 أيام عمل.</p>",
+    content:
+      "<h2>سياسة الشحن والتوصيل</h2><p>نوفر خدمة التوصيل السريع لجميع المحافظات اليمنية. استغرق التوصيل داخل صنعاء 24-48 ساعة، وللمحافظات الأخرى خلال 2-4 أيام عمل.</p>",
     meta_title: "سياسة الشحن والتوصيل — اندكس ستور",
     meta_description: "تفاصيل مدة وأسعار وتغطية خدمات الشحن والتوصيل لجميع المحافظات.",
   },
   {
     slug: "faq",
     title: "الأسئلة الشائعة",
-    content: "<h2>الأسئلة الشائعة</h2><h3>كيف يمكنني الطلب؟</h3><p>يمكنك إضافة المنتجات إلى السلة ثم إتمام الطلب، أو التواصل المباشر مع الدعم عبر الواتساب.</p><h3>ما هي طرق الدفع؟</h3><p>ندعم الدفع عند الاستلام والحوالات المالية المعتمدة.</p>",
+    content:
+      "<h2>الأسئلة الشائعة</h2><h3>كيف يمكنني الطلب؟</h3><p>يمكنك إضافة المنتجات إلى السلة ثم إتمام الطلب، أو التواصل المباشر مع الدعم عبر الواتساب.</p><h3>ما هي طرق الدفع؟</h3><p>ندعم الدفع عند الاستلام والحوالات المالية المعتمدة.</p>",
     meta_title: "الأسئلة الشائعة — اندكس ستور",
     meta_description: "إجابات على أكثر الأسئلة شائعة حول الطلبات الشحن والدفع في اندكس ستور.",
   },
@@ -155,7 +162,10 @@ export const seedDefaultPages = createServerFn({ method: "POST" }).handler(async
   const tenantId = await resolveTenantId(supabase);
 
   // Check existing pages
-  const { data: existing } = await supabase.from("cms_pages").select("slug").eq("tenant_id", tenantId);
+  const { data: existing } = await supabase
+    .from("cms_pages")
+    .select("slug")
+    .eq("tenant_id", tenantId);
   const existingSlugs = new Set(existing?.map((p) => p.slug) || []);
 
   const toInsert = DEFAULT_CMS_PAGES.filter((p) => !existingSlugs.has(p.slug)).map((p) => ({
@@ -176,17 +186,19 @@ export const seedDefaultPages = createServerFn({ method: "POST" }).handler(async
 
 /** Server Fn: Save or update CMS Page with revision version snapshot */
 export const saveCmsPage = createServerFn({ method: "POST" })
-  .validator((data: {
-    id?: string;
-    slug: string;
-    title: string;
-    content: string;
-    is_published: boolean;
-    meta_title?: string;
-    meta_description?: string;
-    og_image?: string;
-    canonical_url?: string;
-  }) => data)
+  .validator(
+    (data: {
+      id?: string;
+      slug: string;
+      title: string;
+      content: string;
+      is_published: boolean;
+      meta_title?: string;
+      meta_description?: string;
+      og_image?: string;
+      canonical_url?: string;
+    }) => data,
+  )
   .handler(async ({ data, context }) => {
     const hasPerm = await checkTenantPermission("cms", context);
     if (!hasPerm) {
@@ -219,11 +231,19 @@ export const saveCmsPage = createServerFn({ method: "POST" })
 
     if (pageId) {
       // Update existing
-      const { error } = await supabase.from("cms_pages").update(payload).eq("id", pageId).eq("tenant_id", tenantId);
+      const { error } = await supabase
+        .from("cms_pages")
+        .update(payload)
+        .eq("id", pageId)
+        .eq("tenant_id", tenantId);
       if (error) throw new Error(error.message);
     } else {
       // Insert new
-      const { data: newPage, error } = await supabase.from("cms_pages").insert(payload).select("id").single();
+      const { data: newPage, error } = await supabase
+        .from("cms_pages")
+        .insert(payload)
+        .select("id")
+        .single();
       if (error) throw new Error(error.message);
       pageId = newPage.id;
     }
@@ -316,7 +336,11 @@ export const deleteCmsPage = createServerFn({ method: "POST" })
     const tenantId = await resolveTenantId(supabase);
     const { data: userData } = await supabase.auth.getUser();
 
-    const { error } = await supabase.from("cms_pages").delete().eq("id", id).eq("tenant_id", tenantId);
+    const { error } = await supabase
+      .from("cms_pages")
+      .delete()
+      .eq("id", id)
+      .eq("tenant_id", tenantId);
     if (error) throw new Error(error.message);
 
     await supabase.from("tenant_audit_logs").insert({

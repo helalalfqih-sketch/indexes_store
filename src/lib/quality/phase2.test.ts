@@ -24,7 +24,9 @@ async function runPhase2Tests() {
   console.log(`⏱ Total Duration: ${summary.totalDurationMs}ms`);
 
   for (const result of summary.results) {
-    console.log(`  - [${result.status}] ${result.name} (Score: ${result.score}/100, Source: ${result.source})`);
+    console.log(
+      `  - [${result.status}] ${result.name} (Score: ${result.score}/100, Source: ${result.source})`,
+    );
   }
 
   const failedAudits = summary.results.filter((r) => r.status === "FAIL");

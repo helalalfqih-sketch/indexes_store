@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  canonicalizePlan,
-  computePlanHash,
-} from "@/services/ai-agent/approval-contract";
+import { canonicalizePlan, computePlanHash } from "@/services/ai-agent/approval-contract";
 
 describe("AI approval plan canonicalization", () => {
   it("produces the same hash for semantically identical object key order", () => {
@@ -21,9 +18,7 @@ describe("AI approval plan canonicalization", () => {
   });
 
   it("rejects unsupported or non-finite plan values", () => {
-    expect(() => canonicalizePlan({ score: Number.POSITIVE_INFINITY })).toThrow(
-      "non-finite",
-    );
+    expect(() => canonicalizePlan({ score: Number.POSITIVE_INFINITY })).toThrow("non-finite");
     expect(() => canonicalizePlan({ callback: () => undefined })).toThrow(
       "Unsupported plan value type",
     );

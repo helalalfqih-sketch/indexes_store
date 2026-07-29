@@ -29,7 +29,9 @@ async function runPhase8Tests() {
   };
 
   const task = convertIncidentToEngineeringTask(mockIncident);
-  console.log(`✅ Engineering Task Created: ${task.taskId} | Priority: ${task.priority} | Status: ${task.status}`);
+  console.log(
+    `✅ Engineering Task Created: ${task.taskId} | Priority: ${task.priority} | Status: ${task.status}`,
+  );
   if (!task.taskId) throw new Error("❌ Task Orchestrator test failed");
 
   // Test 2: Workflow Engine State Machine
@@ -40,32 +42,55 @@ async function runPhase8Tests() {
 
   // Test 3: Approval Manager
   console.log("⚙️ [3/7] Testing Approval Manager...");
-  const approval = requestHumanApproval(transitioned, "quality.executor", true, "Approved for deployment");
-  console.log(`✅ Human Approval Decision: ${approval.approved} | Approved By: ${approval.approvedByRole}`);
+  const approval = requestHumanApproval(
+    transitioned,
+    "quality.executor",
+    true,
+    "Approved for deployment",
+  );
+  console.log(
+    `✅ Human Approval Decision: ${approval.approved} | Approved By: ${approval.approvedByRole}`,
+  );
   if (!approval.approved) throw new Error("❌ Approval Manager test failed");
 
   // Test 4: Execution Tracker
   console.log("⚙️ [4/7] Testing Execution Tracker...");
-  logTaskExecutionStep({ taskId: task.taskId, stepName: "Post-fix verification", status: "PASSED", durationMs: 120 });
+  logTaskExecutionStep({
+    taskId: task.taskId,
+    stepName: "Post-fix verification",
+    status: "PASSED",
+    durationMs: 120,
+  });
   const execLogs = getTaskExecutionLogs(task.taskId);
   console.log(`✅ Task Execution Logs Count: ${execLogs.length}`);
   if (execLogs.length === 0) throw new Error("❌ Execution Tracker test failed");
 
   // Test 5: AI Code Review Agent
   console.log("⚙️ [5/7] Testing AI Code Review Agent...");
-  const review = analyzeCodeChange("src/routes/product.$slug.tsx", "const db = await getAdminDb({});");
-  console.log(`✅ Code Review Result: ${review.reviewSummary} | RLS Check: ${review.securityRLSCheck}`);
+  const review = analyzeCodeChange(
+    "src/routes/product.$slug.tsx",
+    "const db = await getAdminDb({});",
+  );
+  console.log(
+    `✅ Code Review Result: ${review.reviewSummary} | RLS Check: ${review.securityRLSCheck}`,
+  );
 
   // Test 6: Migration Safety Engine
   console.log("⚙️ [6/7] Testing Migration Safety Engine...");
-  const migration = analyzeMigrationSafety("ALTER TABLE public.products ADD COLUMN product_video_url TEXT;");
-  console.log(`✅ Migration Safety: safeToApply=${migration.safeToApply} | Rollback SQL: "${migration.rollbackSql}"`);
+  const migration = analyzeMigrationSafety(
+    "ALTER TABLE public.products ADD COLUMN product_video_url TEXT;",
+  );
+  console.log(
+    `✅ Migration Safety: safeToApply=${migration.safeToApply} | Rollback SQL: "${migration.rollbackSql}"`,
+  );
   if (!migration.rollbackSql) throw new Error("❌ Migration Safety Engine test failed");
 
   // Test 7: AI Release Manager
   console.log("⚙️ [7/7] Testing AI Release Manager...");
   const release = generateReleaseCertificate("v2.4.0");
-  console.log(`✅ Release Certificate Generated: Version ${release.releaseVersion} | Approved: ${release.approvedForRelease} | Risk: ${release.riskLevel}`);
+  console.log(
+    `✅ Release Certificate Generated: Version ${release.releaseVersion} | Approved: ${release.approvedForRelease} | Risk: ${release.riskLevel}`,
+  );
   if (!release.approvedForRelease) throw new Error("❌ AI Release Manager test failed");
 
   console.log("==========================================");

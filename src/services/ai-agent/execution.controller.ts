@@ -40,9 +40,7 @@ function toJsonValue(value: unknown): JsonValue {
  * Approval is owned by approveAgentTask. The controller must never synthesize
  * approvals or move a task directly to executing.
  */
-export async function approvePlan(
-  _options: ExecutionControllerOptions,
-): Promise<never> {
+export async function approvePlan(_options: ExecutionControllerOptions): Promise<never> {
   throw new Error("APPROVAL_ENTRYPOINT_DISABLED: use approveAgentTask with authenticated context");
 }
 
@@ -132,9 +130,7 @@ export async function startExecution(
       success: raw.success === true,
       buildOutput: typeof raw.buildOutput === "string" ? raw.buildOutput : undefined,
       failureDetails:
-        typeof raw.failureDetails === "undefined"
-          ? undefined
-          : toJsonValue(raw.failureDetails),
+        typeof raw.failureDetails === "undefined" ? undefined : toJsonValue(raw.failureDetails),
     };
 
     await savePersistentExecutionEvent({

@@ -6,8 +6,21 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { Layers, Database, Shield, Zap, Cpu, Server, CheckCircle, ArrowRight, RefreshCw } from "lucide-react";
-import { auditProjectArchitecture, type ArchitectureHealthReport } from "@/services/ai-agent/architecture.service";
+import {
+  Layers,
+  Database,
+  Shield,
+  Zap,
+  Cpu,
+  Server,
+  CheckCircle,
+  ArrowRight,
+  RefreshCw,
+} from "lucide-react";
+import {
+  auditProjectArchitecture,
+  type ArchitectureHealthReport,
+} from "@/services/ai-agent/architecture.service";
 
 export function VisualArchitectureMap() {
   const [activeNode, setActiveNode] = useState<string | null>("ui");
@@ -81,9 +94,11 @@ export function VisualArchitectureMap() {
             <h4 className="text-xs font-bold text-zinc-100">Live Project Architecture Map</h4>
             <p className="text-[10px] text-zinc-400">
               Architecture Health Score:{" "}
-              <span className={`font-mono font-bold ${
-                (report?.score ?? 90) >= 80 ? "text-emerald-400" : "text-amber-400"
-              }`}>
+              <span
+                className={`font-mono font-bold ${
+                  (report?.score ?? 90) >= 80 ? "text-emerald-400" : "text-amber-400"
+                }`}
+              >
                 {report?.score ?? 90}/100 ✨
               </span>
             </p>

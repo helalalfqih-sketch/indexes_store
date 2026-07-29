@@ -19,7 +19,7 @@
 export const SITE_NAME = "اندكس ستور";
 export const SITE_NAME_EN = "Indexes Store";
 export const DEFAULT_BASE_URL = process.env.SITE_URL || "";
-export const STORE_COUNTRY = "YE";   // ISO 3166-1 alpha-2 for Yemen
+export const STORE_COUNTRY = "YE"; // ISO 3166-1 alpha-2 for Yemen
 export const STORE_CURRENCY = "YER"; // ISO 4217 for Yemeni Rial
 export const STORE_PHONE = "+967771370740";
 export const STORE_EMAIL = "support@indexes-store.com";
@@ -105,7 +105,12 @@ export function generateMeta(input: SeoMeta) {
     { name: "application-name", content: SITE_NAME },
     { name: "generator", content: "TanStack Start" },
     { name: "format-detection", content: "telephone=no" },
-    { name: "robots", content: input.noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
+    {
+      name: "robots",
+      content: input.noindex
+        ? "noindex, nofollow"
+        : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+    },
     { title: input.title },
     { name: "description", content: input.description },
   ];
@@ -256,8 +261,7 @@ export function generateProductJsonLd(
     hasMerchantReturnPolicy: {
       "@type": "MerchantReturnPolicy",
       applicableCountry: STORE_COUNTRY,
-      returnPolicyCategory:
-        "https://schema.org/MerchantReturnFiniteReturnWindow",
+      returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
       merchantReturnDays: 7,
       returnMethod: "https://schema.org/ReturnByMail",
       returnFees: "https://schema.org/FreeReturn",
@@ -304,11 +308,7 @@ export function generateProductJsonLd(
   }
 
   // Aggregate Rating
-  if (
-    product.rating !== undefined &&
-    product.reviews !== undefined &&
-    product.reviews > 0
-  ) {
+  if (product.rating !== undefined && product.reviews !== undefined && product.reviews > 0) {
     schema["aggregateRating"] = {
       "@type": "AggregateRating",
       ratingValue: product.rating,
@@ -385,7 +385,8 @@ export function generateOrganizationJsonLd(
   const logo = config?.logoUrl || logoUrl || DEFAULT_OG_IMAGE;
   const phone = config?.phone || STORE_PHONE;
   const email = config?.email || STORE_EMAIL;
-  const social = config?.sameAs && config.sameAs.length > 0 ? config.sameAs : Object.values(STORE_SOCIAL);
+  const social =
+    config?.sameAs && config.sameAs.length > 0 ? config.sameAs : Object.values(STORE_SOCIAL);
 
   return {
     "@context": "https://schema.org",
@@ -431,7 +432,8 @@ export function generateLocalBusinessJsonLd(
   const email = config?.email || STORE_EMAIL;
   const streetAddress = config?.streetAddress || STORE_ADDRESS.streetAddress;
   const addressLocality = config?.addressLocality || STORE_ADDRESS.addressLocality;
-  const social = config?.sameAs && config.sameAs.length > 0 ? config.sameAs : Object.values(STORE_SOCIAL);
+  const social =
+    config?.sameAs && config.sameAs.length > 0 ? config.sameAs : Object.values(STORE_SOCIAL);
 
   return {
     "@context": "https://schema.org",
@@ -512,9 +514,7 @@ export function generateWebsiteJsonLd(baseUrl: string): Record<string, unknown> 
 // 11. BreadcrumbList JSON-LD
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function generateBreadcrumbJsonLd(
-  items: BreadcrumbItem[],
-): Record<string, unknown> {
+export function generateBreadcrumbJsonLd(items: BreadcrumbItem[]): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -653,7 +653,8 @@ export function xmlEscape(str: string): string {
 function resolveAvailability(_stock: number, rawAvailability?: string | null): string {
   if (rawAvailability === "preorder") return "https://schema.org/PreOrder";
   if (rawAvailability === "backorder") return "https://schema.org/BackOrder";
-  if (rawAvailability === "out_of_stock" || rawAvailability === "disabled") return "https://schema.org/OutOfStock";
+  if (rawAvailability === "out_of_stock" || rawAvailability === "disabled")
+    return "https://schema.org/OutOfStock";
   return "https://schema.org/InStock";
 }
 
@@ -684,11 +685,7 @@ function priceValidUntil(): string {
 // 16. Convenience – build a full product head() return value
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function buildProductHead(
-  product: ProductSeoInput,
-  baseUrl: string,
-  categoryName?: string,
-) {
+export function buildProductHead(product: ProductSeoInput, baseUrl: string, categoryName?: string) {
   const productUrl = `${baseUrl}/product/${product.slug}`;
   const title = `${product.name} — ${SITE_NAME}`;
   const description = product.description?.slice(0, 160) || title;
@@ -713,10 +710,7 @@ export function buildProductHead(
     ...(product.brand ? [{ property: "product:brand", content: product.brand }] : []),
   ];
 
-  const links = [
-    ...generateCanonical(productUrl),
-    ...generateHreflang(productUrl),
-  ];
+  const links = [...generateCanonical(productUrl), ...generateHreflang(productUrl)];
 
   const productLd = generateProductJsonLd(
     { ...product, categoryName: categoryName || product.categoryId },
@@ -757,10 +751,7 @@ export function buildCategoryHead(
     ...generateTwitter({ title, description }),
   ];
 
-  const links = [
-    ...generateCanonical(categoryUrl),
-    ...generateHreflang(categoryUrl),
-  ];
+  const links = [...generateCanonical(categoryUrl), ...generateHreflang(categoryUrl)];
 
   const collectionLd = generateCollectionJsonLd({
     name: category.name,
@@ -791,7 +782,12 @@ export function buildCategoryHead(
 
 export function buildHomepageHead(
   baseUrl: string,
-  seoConfig?: { metaTitle?: string; metaDescription?: string; ogImage?: string; themeColor?: string },
+  seoConfig?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    ogImage?: string;
+    themeColor?: string;
+  },
 ) {
   const title = seoConfig?.metaTitle || `${SITE_NAME} — الرئيسية | تسوّق أونلاين في اليمن`;
   const description =

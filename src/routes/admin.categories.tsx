@@ -2,7 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2, Save, Eye, EyeOff, FolderTree, GripVertical, Upload, Image as ImageIcon, X } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Loader2,
+  Save,
+  Eye,
+  EyeOff,
+  FolderTree,
+  GripVertical,
+  Upload,
+  Image as ImageIcon,
+  X,
+} from "lucide-react";
 import {
   listAdminCategories,
   createAdminCategory,
@@ -156,7 +168,12 @@ function CategoriesPage() {
         { name: "إلكترونيات", slug: "electronics", icon: "Smartphone", color: "purple" },
         { name: "الجمال والعناية", slug: "beauty-care", icon: "Sparkles", color: "pink" },
         { name: "المطبخ والأواني", slug: "kitchen", icon: "Utensils", color: "orange" },
-        { name: "التنظيم والتخزين", slug: "storage-organization", icon: "Archive", color: "yellow" },
+        {
+          name: "التنظيم والتخزين",
+          slug: "storage-organization",
+          icon: "Archive",
+          color: "yellow",
+        },
         { name: "الصحة والمساج", slug: "health-massage", icon: "Activity", color: "red" },
         { name: "الرياضة واللياقة", slug: "sports-fitness", icon: "Flame", color: "emerald" },
         { name: "السيارات والإكسسوارات", slug: "automotive", icon: "Car", color: "blue" },
@@ -202,7 +219,11 @@ function CategoriesPage() {
             disabled={seedMut.isPending}
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-bold text-foreground shadow-card hover:bg-accent transition disabled:opacity-50"
           >
-            {seedMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderTree className="h-4 w-4 text-primary" />}
+            {seedMut.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FolderTree className="h-4 w-4 text-primary" />
+            )}
             {seedMut.isPending ? "جاري الاستيراد..." : "استيراد تصنيفات افتراضية"}
           </button>
           <button
@@ -260,15 +281,23 @@ function CategoriesPage() {
           </div>
           <div>
             <h3 className="text-base font-black">لا توجد تصنيفات في قاعدة البيانات</h3>
-            <p className="mt-1 text-sm text-muted-foreground">يمكنك إضافة تصنيف جديد يدوياً أو زرع التشكيلة الافتراضية بنقرة واحدة.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              يمكنك إضافة تصنيف جديد يدوياً أو زرع التشكيلة الافتراضية بنقرة واحدة.
+            </p>
           </div>
           <button
             onClick={() => seedMut.mutate()}
             disabled={seedMut.isPending}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand hover:bg-primary/90 transition disabled:opacity-50"
           >
-            {seedMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderTree className="h-4 w-4" />}
-            {seedMut.isPending ? "جاري إنشاء التصنيفات..." : "إضافة التصنيفات الافتراضية تلقائياً 🚀"}
+            {seedMut.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FolderTree className="h-4 w-4" />
+            )}
+            {seedMut.isPending
+              ? "جاري إنشاء التصنيفات..."
+              : "إضافة التصنيفات الافتراضية تلقائياً 🚀"}
           </button>
         </div>
       ) : (
@@ -297,7 +326,9 @@ function CategoriesPage() {
                 const productCount = products.filter((product) => {
                   if (product.category_id === c.id || product.category_id === c.slug) return true;
                   if (!product.category_id) {
-                    return inferCategorySlug(product.name, product.tags, product.description) === c.slug;
+                    return (
+                      inferCategorySlug(product.name, product.tags, product.description) === c.slug
+                    );
                   }
                   return false;
                 }).length;
@@ -530,14 +561,38 @@ function DraftForm({
 
 // Preset Category High-Quality Sample Images
 const PRESET_CATEGORY_IMAGES = [
-  { label: "إلكترونيات", url: "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&w=600&q=80" },
-  { label: "تجميل وعناية", url: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80" },
-  { label: "أواني ومطبخ", url: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=600&q=80" },
-  { label: "تنظيم وتخزين", url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80" },
-  { label: "صحة ومساج", url: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80" },
-  { label: "رياضة ولياقة", url: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80" },
-  { label: "سيارات", url: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=600&q=80" },
-  { label: "أطفال وألعاب", url: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=600&q=80" },
+  {
+    label: "إلكترونيات",
+    url: "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    label: "تجميل وعناية",
+    url: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    label: "أواني ومطبخ",
+    url: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    label: "تنظيم وتخزين",
+    url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    label: "صحة ومساج",
+    url: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    label: "رياضة ولياقة",
+    url: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    label: "سيارات",
+    url: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    label: "أطفال وألعاب",
+    url: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=600&q=80",
+  },
 ];
 
 function CategoryImagePicker({
@@ -612,7 +667,9 @@ function CategoryImagePicker({
               <span className="text-xs font-bold text-success flex items-center gap-1">
                 ✓ تم اختيار الصورة من الهاتف
               </span>
-              <p className="text-[11px] text-muted-foreground mt-0.5">جاهزة للحفظ مع بيانات التصنيف</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                جاهزة للحفظ مع بيانات التصنيف
+              </p>
               <label className="inline-flex items-center gap-1.5 mt-2 text-xs font-bold text-primary hover:underline cursor-pointer">
                 <Upload className="h-3.5 w-3.5" />
                 تغيير الصورة من الهاتف
@@ -650,12 +707,7 @@ function CategoryImagePicker({
                 يمكنك اختيار صورة من المعرض أو التقاط صورة مباشرة من الكاميرا
               </span>
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
+            <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
           </label>
         )}
       </div>

@@ -48,19 +48,28 @@ export function reviewCodeContent(filePath: string, codeContent: string): CodeRe
   }
 
   // Rule 2: SQL Injection Risk
-  if (/query\s*\(\s*`[^`]*\$\{.*?}[^`]*`/i.test(codeContent) || /exec\s*\(\s*`[^`]*\$\{.*?}[^`]*`/i.test(codeContent)) {
+  if (
+    /query\s*\(\s*`[^`]*\$\{.*?}[^`]*`/i.test(codeContent) ||
+    /exec\s*\(\s*`[^`]*\$\{.*?}[^`]*`/i.test(codeContent)
+  ) {
     findings.push({
       id: "sec-02",
       category: "security",
       severity: "critical",
       title: "مخاطرة SQL Injection عبر سلسلة مدمجة",
-      description: "تم دمج متغيرة مباشرة داخل استعلام SQL بدلاً من الاستعلامات المعلمية (Parameterized Queries).",
+      description:
+        "تم دمج متغيرة مباشرة داخل استعلام SQL بدلاً من الاستعلامات المعلمية (Parameterized Queries).",
       recommendation: "استخدم المعاملات p_table أو Supabase Query Builder بدلاً من دمج النصوص.",
     });
   }
 
   // Rule 3: Missing Tenant ID filter in Supabase queries
-  if (codeContent.includes(".from(") && !codeContent.includes("tenant_id") && !filePath.includes("migrations") && !filePath.includes("auth")) {
+  if (
+    codeContent.includes(".from(") &&
+    !codeContent.includes("tenant_id") &&
+    !filePath.includes("migrations") &&
+    !filePath.includes("auth")
+  ) {
     findings.push({
       id: "rls-01",
       category: "rls",
@@ -72,7 +81,10 @@ export function reviewCodeContent(filePath: string, codeContent: string): CodeRe
   }
 
   // Rule 4: Direct DB query in UI Component
-  if ((filePath.includes("src/components/") || filePath.includes("src/routes/")) && /\.from\s*\(\s*['"][a-z_]+['"]\s*\)/i.test(codeContent)) {
+  if (
+    (filePath.includes("src/components/") || filePath.includes("src/routes/")) &&
+    /\.from\s*\(\s*['"][a-z_]+['"]\s*\)/i.test(codeContent)
+  ) {
     findings.push({
       id: "rls-02",
       category: "rls",
@@ -84,21 +96,29 @@ export function reviewCodeContent(filePath: string, codeContent: string): CodeRe
   }
 
   // Rule 5: Memory Leak - Uncleaned Event Listener or Interval in useEffect
-  if (codeContent.includes("useEffect") && (codeContent.includes("addEventListener") || codeContent.includes("setInterval"))) {
+  if (
+    codeContent.includes("useEffect") &&
+    (codeContent.includes("addEventListener") || codeContent.includes("setInterval"))
+  ) {
     if (!codeContent.includes("removeEventListener") && !codeContent.includes("clearInterval")) {
       findings.push({
         id: "mem-01",
         category: "memory_leak",
         severity: "medium",
         title: "مستمع أحداث (Event Listener) قد يسبب تسريب ذاكرة",
-        description: "تم إضافة addEventListener أو setInterval بدون تنظيفه في دالة العودة الخاصة بـ useEffect.",
-        recommendation: "أضف دالة التنظيف `return () => window.removeEventListener(...)` داخل useEffect.",
+        description:
+          "تم إضافة addEventListener أو setInterval بدون تنظيفه في دالة العودة الخاصة بـ useEffect.",
+        recommendation:
+          "أضف دالة التنظيف `return () => window.removeEventListener(...)` داخل useEffect.",
       });
     }
   }
 
   // Rule 6: Accessibility — Image missing alt attribute
-  if (/<img\s+[^>]*>/i.test(codeContent) && !/<img\s+[^>]*alt\s*=\s*['"][^'"]*['"]/i.test(codeContent)) {
+  if (
+    /<img\s+[^>]*>/i.test(codeContent) &&
+    !/<img\s+[^>]*alt\s*=\s*['"][^'"]*['"]/i.test(codeContent)
+  ) {
     findings.push({
       id: "a11y-01",
       category: "accessibility",

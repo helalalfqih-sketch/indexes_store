@@ -48,7 +48,12 @@ export function analyzeQualityTrends(limit = 30): TrendAnalysis {
   }
 
   try {
-    const files = fs.readdirSync(historyDir).filter((f) => f.endsWith(".json")).sort().reverse().slice(0, limit);
+    const files = fs
+      .readdirSync(historyDir)
+      .filter((f) => f.endsWith(".json"))
+      .sort()
+      .reverse()
+      .slice(0, limit);
     const points: QualityTrendPoint[] = [];
 
     for (const file of files) {

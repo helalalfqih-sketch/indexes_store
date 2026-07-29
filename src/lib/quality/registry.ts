@@ -39,7 +39,10 @@ export class AuditRegistry {
     return Array.from(this.auditors.values());
   }
 
-  public getAuditorsFilter(category?: AuditCategory, env: AuditEnvironment = "local"): QualityAudit[] {
+  public getAuditorsFilter(
+    category?: AuditCategory,
+    env: AuditEnvironment = "local",
+  ): QualityAudit[] {
     return Array.from(this.auditors.values()).filter((auditor) => {
       const matchCategory = !category || auditor.category === category;
       const matchEnv = auditor.environments.includes(env);

@@ -31,7 +31,7 @@ export async function analyzeEngineeringRequest(
   ]);
 
   const problem = `طلب تطوير/إصلاح هندسي: "${userQuery.slice(0, 150)}"`;
-  
+
   let rootCause = "تحديث هندسي وتعديل مكونات مرتبطة بالنظام.";
   if (targetFiles.some((f) => f.includes("routes"))) {
     rootCause = "تعديلات مخصصة لصفحات اللوحة والمراحل التشغيلية.";

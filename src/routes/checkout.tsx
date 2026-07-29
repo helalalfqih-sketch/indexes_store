@@ -49,10 +49,7 @@ export const Route = createFileRoute("/checkout")({
   }),
 
   head: () => ({
-    meta: [
-      { title: "تأكيد الطلب — اندكس ستور" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ title: "تأكيد الطلب — اندكس ستور" }, { name: "robots", content: "noindex, nofollow" }],
   }),
 
   /**

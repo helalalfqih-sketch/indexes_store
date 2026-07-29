@@ -53,7 +53,9 @@ export const ThemeConfigSchema = z.object({
   fontFamily: z.enum(["Tajawal", "Cairo", "Inter"]).catch("Tajawal"),
   defaultMode: z.enum(["dark", "light", "system"]).catch("dark"),
   showcaseModeEnabled: z.boolean().catch(true),
-  borderRadius: z.enum(["sharp", "rounded", "large", "sm", "md", "lg", "xl", "2xl", "full"]).catch("large"),
+  borderRadius: z
+    .enum(["sharp", "rounded", "large", "sm", "md", "lg", "xl", "2xl", "full"])
+    .catch("large"),
   cardStyle: z.enum(["glass", "solid", "bordered"]).catch("glass"),
   buttonStyle: z.enum(["pill", "rounded", "square"]).catch("pill"),
   animationSpeed: z.enum(["none", "slow", "normal", "fast"]).catch("normal"),
@@ -104,9 +106,7 @@ export const CartConfigSchema = z.object({
   whatsappPhone: z.string().catch("967771370740"),
   whatsappOrderTemplate: z
     .string()
-    .catch(
-      "مرحباً، أريد طلب:\n{products}\nالإجمالي: {total}\nالاسم: {name}\nالعنوان: {address}"
-    ),
+    .catch("مرحباً، أريد طلب:\n{products}\nالإجمالي: {total}\nالاسم: {name}\nالعنوان: {address}"),
   floatingBarEnabled: z.boolean().catch(true),
   floatingBarPosition: z.enum(["top", "bottom"]).catch("bottom"),
   quickWhatsAppOrder: z.boolean().catch(true),
@@ -174,14 +174,44 @@ export const NavigationConfigSchema = z.object({
       tiktok: "https://tiktok.com",
       twitter: "https://x.com",
     }),
-  headerLinks: z
-    .array(HeaderLinkSchema)
-    .catch([
-      { label: "الرئيسية", to: "/", icon: "Home", visible: true, order: 1, external: false, target: "_self" },
-      { label: "العروض", to: "/offers", icon: "Tag", visible: true, order: 2, external: false, target: "_self" },
-      { label: "السلة", to: "/cart", icon: "ShoppingCart", visible: true, order: 3, external: false, target: "_self" },
-      { label: "حسابي", to: "/account", icon: "User", visible: true, order: 4, external: false, target: "_self" },
-    ]),
+  headerLinks: z.array(HeaderLinkSchema).catch([
+    {
+      label: "الرئيسية",
+      to: "/",
+      icon: "Home",
+      visible: true,
+      order: 1,
+      external: false,
+      target: "_self",
+    },
+    {
+      label: "العروض",
+      to: "/offers",
+      icon: "Tag",
+      visible: true,
+      order: 2,
+      external: false,
+      target: "_self",
+    },
+    {
+      label: "السلة",
+      to: "/cart",
+      icon: "ShoppingCart",
+      visible: true,
+      order: 3,
+      external: false,
+      target: "_self",
+    },
+    {
+      label: "حسابي",
+      to: "/account",
+      icon: "User",
+      visible: true,
+      order: 4,
+      external: false,
+      target: "_self",
+    },
+  ]),
 });
 export type NavigationConfig = z.infer<typeof NavigationConfigSchema>;
 
@@ -260,12 +290,27 @@ const TestimonialsSectionSchema = z.object({
         city: z.string().catch(""),
         comment: z.string().catch(""),
         rating: z.number().catch(5),
-      })
+      }),
     )
     .catch([
-      { name: "أحمد باحارث", city: "صنعاء", comment: "متجر رائع جداً والتوصيل سريع جداً إلى باب البيت!", rating: 5 },
-      { name: "محمد العولقي", city: "عدن", comment: "تجربة التسوق ثلاثية الأبعاد خيالية وممتازة.", rating: 5 },
-      { name: "سارة الحيمي", city: "تعز", comment: "منتجات ذات جودة عالية وتغليف ممتاز.", rating: 5 },
+      {
+        name: "أحمد باحارث",
+        city: "صنعاء",
+        comment: "متجر رائع جداً والتوصيل سريع جداً إلى باب البيت!",
+        rating: 5,
+      },
+      {
+        name: "محمد العولقي",
+        city: "عدن",
+        comment: "تجربة التسوق ثلاثية الأبعاد خيالية وممتازة.",
+        rating: 5,
+      },
+      {
+        name: "سارة الحيمي",
+        city: "تعز",
+        comment: "منتجات ذات جودة عالية وتغليف ممتاز.",
+        rating: 5,
+      },
     ]),
 });
 
@@ -303,14 +348,77 @@ const TrustBadgesSectionSchema = z.object({
 export const SectionsConfigSchema = z.object({
   sectionOrder: z
     .array(z.string())
-    .catch(["hero", "featured_product", "categories", "latest", "showroom", "deals", "recommended", "testimonials", "whatsapp_cta", "cinematic"]),
-  latest: SectionItemSchema.catch({ enabled: true, title: "أحدث المنتجات", subtitle: "", limit: 12, sort_order: 3, data_source: "all", customProductIds: [] }),
-  categories: SectionItemSchema.catch({ enabled: true, title: "التصنيفات", subtitle: "", limit: 8, sort_order: 2, data_source: "all", customProductIds: [] }),
-  deals: DealsSectionSchema.catch({ enabled: true, title: "عروض اليوم 🔥", subtitle: "خصومات لفترة محدودة", limit: 6, sort_order: 5, data_source: "offers", customProductIds: [], deal_start: "", deal_end: "", discount_percent: 0 }),
-  recommended: SectionItemSchema.catch({ enabled: true, title: "الأكثر مبيعاً", subtitle: "", limit: 6, sort_order: 6, data_source: "bestsellers", customProductIds: [] }),
-  featuredProduct: FeaturedProductSectionSchema.catch({ enabled: true, productId: "", title: "المنتج المميز ⭐", subtitle: "اختيارنا الخاص لهذا اليوم", badge: "أفضل قيمة" }),
-  testimonials: TestimonialsSectionSchema.catch({ enabled: true, title: "آراء العملاء", subtitle: "ماذا يقول عملاؤنا عن اندكس ستور", items: [] }),
-  whatsappCta: WhatsappCtaSectionSchema.catch({ enabled: true, title: "هل تحتاج مساعدة في الطلب؟", subtitle: "تواصل معنا عبر واتساب", buttonText: "تواصل معنا عبر واتساب 💬", phone: "967771370740" }),
+    .catch([
+      "hero",
+      "featured_product",
+      "categories",
+      "latest",
+      "showroom",
+      "deals",
+      "recommended",
+      "testimonials",
+      "whatsapp_cta",
+      "cinematic",
+    ]),
+  latest: SectionItemSchema.catch({
+    enabled: true,
+    title: "أحدث المنتجات",
+    subtitle: "",
+    limit: 12,
+    sort_order: 3,
+    data_source: "all",
+    customProductIds: [],
+  }),
+  categories: SectionItemSchema.catch({
+    enabled: true,
+    title: "التصنيفات",
+    subtitle: "",
+    limit: 8,
+    sort_order: 2,
+    data_source: "all",
+    customProductIds: [],
+  }),
+  deals: DealsSectionSchema.catch({
+    enabled: true,
+    title: "عروض اليوم 🔥",
+    subtitle: "خصومات لفترة محدودة",
+    limit: 6,
+    sort_order: 5,
+    data_source: "offers",
+    customProductIds: [],
+    deal_start: "",
+    deal_end: "",
+    discount_percent: 0,
+  }),
+  recommended: SectionItemSchema.catch({
+    enabled: true,
+    title: "الأكثر مبيعاً",
+    subtitle: "",
+    limit: 6,
+    sort_order: 6,
+    data_source: "bestsellers",
+    customProductIds: [],
+  }),
+  featuredProduct: FeaturedProductSectionSchema.catch({
+    enabled: true,
+    productId: "",
+    title: "المنتج المميز ⭐",
+    subtitle: "اختيارنا الخاص لهذا اليوم",
+    badge: "أفضل قيمة",
+  }),
+  testimonials: TestimonialsSectionSchema.catch({
+    enabled: true,
+    title: "آراء العملاء",
+    subtitle: "ماذا يقول عملاؤنا عن اندكس ستور",
+    items: [],
+  }),
+  whatsappCta: WhatsappCtaSectionSchema.catch({
+    enabled: true,
+    title: "هل تحتاج مساعدة في الطلب؟",
+    subtitle: "تواصل معنا عبر واتساب",
+    buttonText: "تواصل معنا عبر واتساب 💬",
+    phone: "967771370740",
+  }),
   showroom: ShowroomSectionSchema.catch({
     enabled: true,
     title: "المعرض الافتراضي",
@@ -349,7 +457,9 @@ export type StoreIdentity = z.infer<typeof StoreIdentitySchema>;
 export const BrandSettingsSchema = z.object({
   storeName: z.string().catch("اندكس ستور"),
   shortName: z.string().catch("NOQTA"),
-  description: z.string().catch("المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد."),
+  description: z
+    .string()
+    .catch("المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد."),
   tagline: z.string().catch("اختيارك الأفضل"),
   primaryColor: z.string().catch("#4f8cff"),
   secondaryColor: z.string().catch("#a259ff"),
@@ -364,8 +474,14 @@ const SocialLinkItemSchema = z.object({
 });
 
 export const SocialLinksSettingsSchema = z.object({
-  facebook: SocialLinkItemSchema.catch({ url: "https://facebook.com/indexes.store", enabled: true }),
-  instagram: SocialLinkItemSchema.catch({ url: "https://instagram.com/indexes.store", enabled: true }),
+  facebook: SocialLinkItemSchema.catch({
+    url: "https://facebook.com/indexes.store",
+    enabled: true,
+  }),
+  instagram: SocialLinkItemSchema.catch({
+    url: "https://instagram.com/indexes.store",
+    enabled: true,
+  }),
   tiktok: SocialLinkItemSchema.catch({ url: "", enabled: false }),
   youtube: SocialLinkItemSchema.catch({ url: "", enabled: false }),
   whatsapp: SocialLinkItemSchema.catch({ url: "https://wa.me/967771370740", enabled: true }),
@@ -393,7 +509,9 @@ export const SeoConfigSchema = z
     metaTitle: z.string().catch("اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن"),
     metaDescription: z
       .string()
-      .catch("اكتشف أحدث المنتجات والعروض في اندكس ستور — تجربة تسوق ثلاثية الأبعاد فريدة في اليمن."),
+      .catch(
+        "اكتشف أحدث المنتجات والعروض في اندكس ستور — تجربة تسوق ثلاثية الأبعاد فريدة في اليمن.",
+      ),
     ogImage: z.string().catch(""),
     ogImageWidth: z.number().catch(1200),
     ogImageHeight: z.number().catch(630),
@@ -414,7 +532,7 @@ export const SeoConfigSchema = z
     robotsCustomDirectives: z
       .string()
       .catch(
-        "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /checkout/\nDisallow: /account/\nSitemap: /sitemap.xml"
+        "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /checkout/\nDisallow: /account/\nSitemap: /sitemap.xml",
       ),
     schemaOrgName: z.string().catch("اندكس ستور"),
     schemaOrgLogo: z.string().catch(""),
@@ -470,14 +588,17 @@ export interface StorefrontSettingsShape {
 // ── 19. Safe Default Fallback Constants ────────────────────────────────────────
 export const DEFAULT_HERO_CONFIG: HeroConfig = HeroConfigSchema.parse({});
 export const DEFAULT_THEME_CONFIG: ThemeConfig = ThemeConfigSchema.parse({});
-export const DEFAULT_PRODUCTS_LAYOUT_CONFIG: ProductsLayoutConfig = ProductsLayoutConfigSchema.parse({});
+export const DEFAULT_PRODUCTS_LAYOUT_CONFIG: ProductsLayoutConfig =
+  ProductsLayoutConfigSchema.parse({});
 export const DEFAULT_PRODUCT_PAGE_CONFIG: ProductPageConfig = ProductPageConfigSchema.parse({});
 export const DEFAULT_CART_CONFIG: CartConfig = CartConfigSchema.parse({});
 export const DEFAULT_CHECKOUT_CONFIG: CheckoutConfig = CheckoutConfigSchema.parse({});
 export const DEFAULT_NAVIGATION_CONFIG: NavigationConfig = NavigationConfigSchema.parse({});
 export const DEFAULT_PAGES_CONFIG: PagesConfig = PagesConfigSchema.parse({});
 export const DEFAULT_TRANSLATION_CONFIG: TranslationConfig = TranslationConfigSchema.parse({});
-export const DEFAULT_NOTIFICATIONS_CONFIG: NotificationsConfig = NotificationsConfigSchema.parse({});
+export const DEFAULT_NOTIFICATIONS_CONFIG: NotificationsConfig = NotificationsConfigSchema.parse(
+  {},
+);
 export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = SectionsConfigSchema.parse({});
 export const DEFAULT_SEO_CONFIG: SeoConfig = SeoConfigSchema.parse({});
 export const DEFAULT_ADVANCED_CONFIG: AdvancedConfig = AdvancedConfigSchema.parse({});

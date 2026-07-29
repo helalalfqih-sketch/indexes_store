@@ -30,14 +30,78 @@ type ShippingZone = {
 };
 
 const DEFAULT_ZONES: ShippingZone[] = [
-  { id: "1", name: "أمانة العاصمة صنعاء", price: 500, free_threshold: 10000, min_days: 1, max_days: 2, is_active: true },
-  { id: "2", name: "تعز", price: 1000, free_threshold: 15000, min_days: 2, max_days: 4, is_active: true },
-  { id: "3", name: "عدن", price: 1000, free_threshold: 15000, min_days: 2, max_days: 4, is_active: true },
-  { id: "4", name: "الحديدة", price: 1500, free_threshold: 20000, min_days: 3, max_days: 5, is_active: true },
-  { id: "5", name: "حضرموت والمهرة", price: 2000, free_threshold: 25000, min_days: 4, max_days: 7, is_active: true },
-  { id: "6", name: "مأرب وشبوة", price: 1500, free_threshold: 20000, min_days: 3, max_days: 6, is_active: false },
-  { id: "7", name: "صعدة وحجة", price: 2000, free_threshold: 25000, min_days: 4, max_days: 7, is_active: false },
-  { id: "8", name: "الجوف والمهرة والضالع وذمار والبيضاء وإب وريمة والمحويت والمدية", price: 1500, free_threshold: 20000, min_days: 3, max_days: 6, is_active: true },
+  {
+    id: "1",
+    name: "أمانة العاصمة صنعاء",
+    price: 500,
+    free_threshold: 10000,
+    min_days: 1,
+    max_days: 2,
+    is_active: true,
+  },
+  {
+    id: "2",
+    name: "تعز",
+    price: 1000,
+    free_threshold: 15000,
+    min_days: 2,
+    max_days: 4,
+    is_active: true,
+  },
+  {
+    id: "3",
+    name: "عدن",
+    price: 1000,
+    free_threshold: 15000,
+    min_days: 2,
+    max_days: 4,
+    is_active: true,
+  },
+  {
+    id: "4",
+    name: "الحديدة",
+    price: 1500,
+    free_threshold: 20000,
+    min_days: 3,
+    max_days: 5,
+    is_active: true,
+  },
+  {
+    id: "5",
+    name: "حضرموت والمهرة",
+    price: 2000,
+    free_threshold: 25000,
+    min_days: 4,
+    max_days: 7,
+    is_active: true,
+  },
+  {
+    id: "6",
+    name: "مأرب وشبوة",
+    price: 1500,
+    free_threshold: 20000,
+    min_days: 3,
+    max_days: 6,
+    is_active: false,
+  },
+  {
+    id: "7",
+    name: "صعدة وحجة",
+    price: 2000,
+    free_threshold: 25000,
+    min_days: 4,
+    max_days: 7,
+    is_active: false,
+  },
+  {
+    id: "8",
+    name: "الجوف والمهرة والضالع وذمار والبيضاء وإب وريمة والمحويت والمدية",
+    price: 1500,
+    free_threshold: 20000,
+    min_days: 3,
+    max_days: 6,
+    is_active: true,
+  },
 ];
 
 type EditState = ShippingZone | null;
@@ -113,8 +177,8 @@ function ShippingPage() {
 
       {/* Info Banner */}
       <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
-        🚚 يتوفر التوصيل لجميع محافظات اليمن. السعر الأساسي هو رسوم التوصيل القياسية.
-        الشحن المجاني يُفعَّل تلقائياً عند تجاوز الحد الأدنى للطلب.
+        🚚 يتوفر التوصيل لجميع محافظات اليمن. السعر الأساسي هو رسوم التوصيل القياسية. الشحن المجاني
+        يُفعَّل تلقائياً عند تجاوز الحد الأدنى للطلب.
       </div>
 
       {/* Zones Table */}
@@ -199,7 +263,7 @@ function ShippingPage() {
               </label>
               <input
                 value={editing.name}
-                onChange={(e) => setEditing((s) => s ? { ...s, name: e.target.value } : s)}
+                onChange={(e) => setEditing((s) => (s ? { ...s, name: e.target.value } : s))}
                 placeholder="مثال: صنعاء"
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
@@ -213,7 +277,9 @@ function ShippingPage() {
                 <input
                   type="number"
                   value={editing.price}
-                  onChange={(e) => setEditing((s) => s ? { ...s, price: Number(e.target.value) } : s)}
+                  onChange={(e) =>
+                    setEditing((s) => (s ? { ...s, price: Number(e.target.value) } : s))
+                  }
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
@@ -224,7 +290,9 @@ function ShippingPage() {
                 <input
                   type="number"
                   value={editing.free_threshold}
-                  onChange={(e) => setEditing((s) => s ? { ...s, free_threshold: Number(e.target.value) } : s)}
+                  onChange={(e) =>
+                    setEditing((s) => (s ? { ...s, free_threshold: Number(e.target.value) } : s))
+                  }
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
@@ -238,7 +306,9 @@ function ShippingPage() {
                 <input
                   type="number"
                   value={editing.min_days}
-                  onChange={(e) => setEditing((s) => s ? { ...s, min_days: Number(e.target.value) } : s)}
+                  onChange={(e) =>
+                    setEditing((s) => (s ? { ...s, min_days: Number(e.target.value) } : s))
+                  }
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
@@ -249,7 +319,9 @@ function ShippingPage() {
                 <input
                   type="number"
                   value={editing.max_days}
-                  onChange={(e) => setEditing((s) => s ? { ...s, max_days: Number(e.target.value) } : s)}
+                  onChange={(e) =>
+                    setEditing((s) => (s ? { ...s, max_days: Number(e.target.value) } : s))
+                  }
                   className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
               </div>
@@ -263,7 +335,10 @@ function ShippingPage() {
                 <Save className="h-4 w-4" /> حفظ
               </button>
               <button
-                onClick={() => { setEditing(null); setEditId(null); }}
+                onClick={() => {
+                  setEditing(null);
+                  setEditId(null);
+                }}
                 className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-accent transition"
               >
                 إلغاء

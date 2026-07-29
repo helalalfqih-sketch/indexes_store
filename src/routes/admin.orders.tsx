@@ -171,7 +171,9 @@ function AdminOrdersPage() {
                   <span className="font-mono text-xs font-bold text-primary">
                     {formatOrderNumber(ord.id)}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusTone(ord.status)}`}>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${orderStatusTone(ord.status)}`}
+                  >
                     {orderStatusLabel(ord.status)}
                   </span>
                   {ord.notes?.includes("طلب توفير كمية") && (
@@ -180,7 +182,8 @@ function AdminOrdersPage() {
                     </span>
                   )}
                   <span className="text-xs text-muted-foreground">
-                    {ord.customer_name || "ضيف"} {ord.customer_phone ? `· ${ord.customer_phone}` : ""}
+                    {ord.customer_name || "ضيف"}{" "}
+                    {ord.customer_phone ? `· ${ord.customer_phone}` : ""}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {new Date(ord.created_at).toLocaleString("ar-EG")}
@@ -225,13 +228,22 @@ function AdminOrdersPage() {
                             </div>
                           )}
                           <div className="text-muted-foreground">
-                            الدفع: <span className="font-bold text-foreground">{paymentStatusLabel(d.payment_status)}</span>
+                            الدفع:{" "}
+                            <span className="font-bold text-foreground">
+                              {paymentStatusLabel(d.payment_status)}
+                            </span>
                           </div>
                           <div className="text-muted-foreground">
-                            طريقة الدفع: <span className="font-bold text-foreground">{paymentProviderLabel(d.payment_provider)}</span>
+                            طريقة الدفع:{" "}
+                            <span className="font-bold text-foreground">
+                              {paymentProviderLabel(d.payment_provider)}
+                            </span>
                           </div>
                           <div className="text-muted-foreground">
-                            النوع: <span className="font-bold text-foreground">{d.user_id ? "عميل مسجَّل" : "ضيف"}</span>
+                            النوع:{" "}
+                            <span className="font-bold text-foreground">
+                              {d.user_id ? "عميل مسجَّل" : "ضيف"}
+                            </span>
                           </div>
                         </div>
 
@@ -240,7 +252,11 @@ function AdminOrdersPage() {
                           {d.items.map((it) => (
                             <li key={it.id} className="flex items-center gap-3 text-xs">
                               {it.image ? (
-                                <img src={it.image} alt={it.name} className="h-10 w-10 rounded-lg object-cover border border-border/50" />
+                                <img
+                                  src={it.image}
+                                  alt={it.name}
+                                  className="h-10 w-10 rounded-lg object-cover border border-border/50"
+                                />
                               ) : (
                                 <div className="grid h-10 w-10 place-items-center rounded-lg bg-muted text-muted-foreground">
                                   <Package className="h-4 w-4" />
@@ -265,7 +281,9 @@ function AdminOrdersPage() {
                               <p key={h.id} className="text-[11px] text-muted-foreground">
                                 {new Date(h.created_at).toLocaleString("ar-EG")} —{" "}
                                 {h.from_status ? `${orderStatusLabel(h.from_status)} ← ` : ""}
-                                <span className="font-bold text-foreground">{orderStatusLabel(h.to_status)}</span>
+                                <span className="font-bold text-foreground">
+                                  {orderStatusLabel(h.to_status)}
+                                </span>
                                 {h.note ? ` · ${h.note}` : ""}
                               </p>
                             ))}
@@ -307,7 +325,9 @@ function AdminOrdersPage() {
                               <button
                                 disabled={statusMut.isPending}
                                 onClick={() => {
-                                  const sel = document.getElementById(`status-${d.id}`) as HTMLSelectElement | null;
+                                  const sel = document.getElementById(
+                                    `status-${d.id}`,
+                                  ) as HTMLSelectElement | null;
                                   const toStatus = (sel?.value ?? allowed[0]) as OrderStatus;
                                   statusMut.mutate({ orderId: d.id, toStatus });
                                 }}

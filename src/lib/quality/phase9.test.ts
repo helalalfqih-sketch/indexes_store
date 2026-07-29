@@ -16,27 +16,42 @@ async function runPhase9Tests() {
   // Test 1: Production Database Connector
   console.log("⚙️ [1/6] Testing Production Supabase Connector...");
   const dbStatus = await inspectProductionDatabase();
-  console.log(`✅ DB Inspection: Connected=${dbStatus.connected} | RLS Enforcement=${dbStatus.rlsEnforcementRatePercentage}% | Tables=${dbStatus.totalTablesCount}`);
+  console.log(
+    `✅ DB Inspection: Connected=${dbStatus.connected} | RLS Enforcement=${dbStatus.rlsEnforcementRatePercentage}% | Tables=${dbStatus.totalTablesCount}`,
+  );
 
   // Test 2: Deployment Intelligence Connector
   console.log("⚙️ [2/6] Testing Deployment Intelligence Connector...");
   const deployStatus = inspectProductionDeployment();
-  console.log(`✅ Deployment Inspection: Status=${deployStatus.deploymentStatus} | Environment=${deployStatus.environment} | Provider=${deployStatus.provider}`);
+  console.log(
+    `✅ Deployment Inspection: Status=${deployStatus.deploymentStatus} | Environment=${deployStatus.environment} | Provider=${deployStatus.provider}`,
+  );
 
   // Test 3: Real User Monitoring Telemetry
   console.log("⚙️ [3/6] Testing Real User Monitoring Telemetry...");
   const telemetry = fetchRealUserTelemetry();
-  console.log(`✅ Telemetry Metrics: ActiveUsers=${telemetry.activeUsersNow} | AvgLoadMs=${telemetry.averagePageLoadTimeMs}ms | CheckoutRate=${telemetry.checkoutConversionRate}%`);
+  console.log(
+    `✅ Telemetry Metrics: ActiveUsers=${telemetry.activeUsersNow} | AvgLoadMs=${telemetry.averagePageLoadTimeMs}ms | CheckoutRate=${telemetry.checkoutConversionRate}%`,
+  );
 
   // Test 4: Evidence Source Adapters
   console.log("⚙️ [4/6] Testing Evidence Source Adapters...");
-  const adapted = adaptEvidenceToProductionSource({ type: "command", value: "tsc --noEmit" }, "SUPABASE");
-  console.log(`✅ Adapted Evidence: Origin=${adapted.origin} | Confidence=${adapted.confidenceScore}%`);
+  const adapted = adaptEvidenceToProductionSource(
+    { type: "command", value: "tsc --noEmit" },
+    "SUPABASE",
+  );
+  console.log(
+    `✅ Adapted Evidence: Origin=${adapted.origin} | Confidence=${adapted.confidenceScore}%`,
+  );
   if (adapted.origin !== "SUPABASE") throw new Error("❌ Evidence Adapter test failed");
 
   // Test 5: Backup Snapshot Manager
   console.log("⚙️ [5/6] Testing Backup Snapshot Manager...");
-  const snapshot = createBackupSnapshot("PROP-100", "src/routes/product.$slug.tsx", "const original = true;");
+  const snapshot = createBackupSnapshot(
+    "PROP-100",
+    "src/routes/product.$slug.tsx",
+    "const original = true;",
+  );
   const restored = restoreBackupSnapshot(snapshot.snapshotId);
   console.log(`✅ Snapshot Created & Restored: ${restored?.snapshotId}`);
   if (!restored) throw new Error("❌ Snapshot Manager test failed");
@@ -59,7 +74,9 @@ async function runPhase9Tests() {
   };
 
   const pipelineResult = await runProductionSafetyPipeline(mockProposal, "quality.executor");
-  console.log(`✅ Safety Pipeline Status: ${pipelineResult.pipelineStep} | Verification: ${pipelineResult.patchResult.verificationStatus} | Score: ${pipelineResult.qualityScoreAfter}/100`);
+  console.log(
+    `✅ Safety Pipeline Status: ${pipelineResult.pipelineStep} | Verification: ${pipelineResult.patchResult.verificationStatus} | Score: ${pipelineResult.qualityScoreAfter}/100`,
+  );
   if (!pipelineResult.patchResult.success) throw new Error("❌ Safety Pipeline test failed");
 
   console.log("==========================================");

@@ -16,11 +16,14 @@ export interface ComponentImpactReport {
 
 export function generateComponentImpactReport(
   taskId: string,
-  targetFeature: string
+  targetFeature: string,
 ): ComponentImpactReport {
   return {
     taskId,
-    modifiedComponents: ["src/routes/admin.notifications.tsx", "src/services/notification.service.ts"],
+    modifiedComponents: [
+      "src/routes/admin.notifications.tsx",
+      "src/services/notification.service.ts",
+    ],
     mergedComponents: [],
     deletedComponents: [],
     affectedRoutes: ["/admin/notifications", "/admin/orders"],

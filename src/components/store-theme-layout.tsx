@@ -118,7 +118,8 @@ function StoreTopBar() {
   ];
 
   const storeLogo = settings.store_identity?.logoUrl || settings.navigation?.logoUrl || noqtaLogo;
-  const storeName = settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور";
+  const storeName =
+    settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور";
   const searchPlaceholder = settings.navigation?.searchPlaceholder || "ابحث عن منتج...";
 
   return (

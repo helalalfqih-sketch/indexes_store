@@ -14,17 +14,21 @@ export interface DeploymentGateCheck {
 
 export function evaluateDeploymentGate(
   qualityScore: number,
-  criticalIssuesCount: number
+  criticalIssuesCount: number,
 ): DeploymentGateCheck {
   const minScoreThreshold = 90;
   const blockingReasons: string[] = [];
 
   if (qualityScore < minScoreThreshold) {
-    blockingReasons.push(`Quality Score (${qualityScore}/100) is below minimum threshold (${minScoreThreshold}/100).`);
+    blockingReasons.push(
+      `Quality Score (${qualityScore}/100) is below minimum threshold (${minScoreThreshold}/100).`,
+    );
   }
 
   if (criticalIssuesCount > 0) {
-    blockingReasons.push(`Found ${criticalIssuesCount} unresolved P0 CRITICAL incidents blocking release.`);
+    blockingReasons.push(
+      `Found ${criticalIssuesCount} unresolved P0 CRITICAL incidents blocking release.`,
+    );
   }
 
   const allowedToDeploy = blockingReasons.length === 0;

@@ -12,7 +12,11 @@ export const Route = createFileRoute("/offers")({
   head: () => ({
     meta: [
       { title: "العروض والخصومات — اندكس ستور" },
-      { name: "description", content: "تصفح أقوى عروض وخصومات اندكس ستور. خصومات تصل إلى 40% لفترة محدودة على إلكترونيات، أدوات منزلية، والمزيد." },
+      {
+        name: "description",
+        content:
+          "تصفح أقوى عروض وخصومات اندكس ستور. خصومات تصل إلى 40% لفترة محدودة على إلكترونيات، أدوات منزلية، والمزيد.",
+      },
       { name: "robots", content: "index, follow" },
       { property: "og:title", content: "العروض والخصومات — اندكس ستور" },
       { property: "og:description", content: "خصومات تصل إلى 40% لفترة محدودة" },
@@ -90,7 +94,9 @@ function OfferRow({ product }: { product: Product }) {
 
       <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5 text-showcase-foreground">
         <div className="space-y-1">
-          <h3 className="line-clamp-2 text-xs font-bold leading-tight group-hover:text-primary transition">{product.name}</h3>
+          <h3 className="line-clamp-2 text-xs font-bold leading-tight group-hover:text-primary transition">
+            {product.name}
+          </h3>
           <div className="flex items-center gap-1 text-[10px] text-showcase-foreground/55">
             <Star className="h-3 w-3 fill-warning stroke-warning" />
             <span className="font-semibold text-showcase-foreground">{product.rating}</span>
@@ -105,7 +111,9 @@ function OfferRow({ product }: { product: Product }) {
                 {formatPrice(product.oldPrice)}
               </span>
             )}
-            <span className="text-sm font-black text-primary font-mono">{formatPrice(product.price)}</span>
+            <span className="text-sm font-black text-primary font-mono">
+              {formatPrice(product.price)}
+            </span>
           </div>
           <button
             type="button"
@@ -159,7 +167,9 @@ function OffersPage() {
       {/* Enterprise Glass Banner with Live Offer Flame */}
       <section
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-[32px] glass-dark p-5 text-showcase-foreground"
-        style={{ boxShadow: "inset 0 1px 0 rgba(184,126,82,0.45), 0 14px 40px -18px rgba(0,0,0,0.7)" }}
+        style={{
+          boxShadow: "inset 0 1px 0 rgba(184,126,82,0.45), 0 14px 40px -18px rgba(0,0,0,0.7)",
+        }}
       >
         <div className="flex items-center gap-3">
           <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/10 bg-primary/20 shadow-[0_0_28px_-4px_hsl(var(--primary)/0.65)]">
@@ -172,7 +182,9 @@ function OffersPage() {
                 مباشر 🔴
               </span>
             </h1>
-            <p className="text-xs text-showcase-foreground/70">خصومات مميزة تصل إلى 40% لفترة محدودة على أفضل المنتجات</p>
+            <p className="text-xs text-showcase-foreground/70">
+              خصومات مميزة تصل إلى 40% لفترة محدودة على أفضل المنتجات
+            </p>
           </div>
         </div>
 
@@ -242,4 +254,3 @@ function OffersPage() {
     </div>
   );
 }
-

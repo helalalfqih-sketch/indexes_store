@@ -41,8 +41,10 @@ export interface GlobalSeoConfig {
 
 export const DEFAULT_SEO_CONFIG: GlobalSeoConfig = {
   metaTitle: "اندكس للتجارة  — المتجر الرقمي | صنعاء",
-  metaDescription: "اكتشف أحدث المنتجات والعروض في اندكس ستور — إلكترونيات، أزياء، وأدوات منزلية بتجربة تسوق ثلاثية الأبعاد فريدة في اليمن.",
-  ogImage: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png",
+  metaDescription:
+    "اكتشف أحدث المنتجات والعروض في اندكس ستور — إلكترونيات، أزياء، وأدوات منزلية بتجربة تسوق ثلاثية الأبعاد فريدة في اليمن.",
+  ogImage:
+    "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/da426993-5f26-4733-b40c-c0f1f8e814c7/id-preview-7d22af97--80f7d5cf-5026-49dd-8137-91bdaa674a1a.lovable.app-1783204904911.png",
   ogImageWidth: 1200,
   ogImageHeight: 630,
   ogTitle: "",
@@ -52,7 +54,8 @@ export const DEFAULT_SEO_CONFIG: GlobalSeoConfig = {
   canonicalBaseUrl: "",
   sitemapEnabled: true,
   robotsEnabled: true,
-  robotsCustomDirectives: "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /checkout/\nDisallow: /account/\nSitemap: /sitemap.xml",
+  robotsCustomDirectives:
+    "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /checkout/\nDisallow: /account/\nSitemap: /sitemap.xml",
   googleVerificationCode: "",
   bingVerificationCode: "",
   siteName: "اندكس ستور",
@@ -198,9 +201,15 @@ export function evaluateSeoHealth(cfg: GlobalSeoConfig): SeoAuditReport {
     warnings.push({ type: "danger", message: "العنوان الرئيسي (Meta Title) مفقود!" });
   } else if (titleLen < 30 || titleLen > 60) {
     score -= 8;
-    warnings.push({ type: "warning", message: `طول العنوان (${titleLen} حرف) يفضل أن يكون بين 30 و 60 حرفاً.` });
+    warnings.push({
+      type: "warning",
+      message: `طول العنوان (${titleLen} حرف) يفضل أن يكون بين 30 و 60 حرفاً.`,
+    });
   } else {
-    warnings.push({ type: "success", message: "طول العنوان الرئيسي مثالي للظهور في محركات البحث." });
+    warnings.push({
+      type: "success",
+      message: "طول العنوان الرئيسي مثالي للظهور في محركات البحث.",
+    });
   }
 
   // Description length
@@ -210,7 +219,10 @@ export function evaluateSeoHealth(cfg: GlobalSeoConfig): SeoAuditReport {
     warnings.push({ type: "danger", message: "الوصف (Meta Description) مفقود!" });
   } else if (descLen < 70 || descLen > 160) {
     score -= 8;
-    warnings.push({ type: "warning", message: `طول الوصف (${descLen} حرف) يفضل أن يكون بين 70 و 160 حرفاً.` });
+    warnings.push({
+      type: "warning",
+      message: `طول الوصف (${descLen} حرف) يفضل أن يكون بين 70 و 160 حرفاً.`,
+    });
   } else {
     warnings.push({ type: "success", message: "طول الوصف مثالي لنتائج البحث." });
   }
@@ -249,7 +261,10 @@ export function evaluateSeoHealth(cfg: GlobalSeoConfig): SeoAuditReport {
   // Google Verification
   if (!cfg.googleVerificationCode) {
     score -= 5;
-    warnings.push({ type: "warning", message: "رمز إثبات ملكية Google غير محدد — يُنصح بربط Search Console." });
+    warnings.push({
+      type: "warning",
+      message: "رمز إثبات ملكية Google غير محدد — يُنصح بربط Search Console.",
+    });
   } else {
     warnings.push({ type: "success", message: "رمز إثبات ملكية Google محدد." });
   }

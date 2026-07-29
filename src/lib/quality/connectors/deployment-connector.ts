@@ -14,9 +14,11 @@ export interface ProductionDeploymentStatus {
 }
 
 export function inspectProductionDeployment(): ProductionDeploymentStatus {
-  const isVercel = typeof process !== "undefined" && Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
-  const environment = isVercel ? ((process.env.VERCEL_ENV as any) || "production") : "local";
-  const activeCommitHash = (typeof process !== "undefined" && process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7)) || "HEAD";
+  const isVercel =
+    typeof process !== "undefined" && Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+  const environment = isVercel ? (process.env.VERCEL_ENV as any) || "production" : "local";
+  const activeCommitHash =
+    (typeof process !== "undefined" && process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7)) || "HEAD";
   const deploymentUrl = (typeof process !== "undefined" && process.env.VERCEL_URL) || undefined;
 
   return {

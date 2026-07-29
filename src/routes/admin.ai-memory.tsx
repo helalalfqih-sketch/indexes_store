@@ -27,7 +27,7 @@ function AdminAIMemoryPage() {
   const filteredEntries = memoryEntries.filter(
     (m: any) =>
       m.key?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      JSON.stringify(m.value)?.toLowerCase().includes(searchTerm.toLowerCase())
+      JSON.stringify(m.value)?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -38,7 +38,8 @@ function AdminAIMemoryPage() {
           إدارة ذاكرة وقواعد الذكاء الاصطناعي (AI Project Memory UI)
         </h1>
         <p className="text-xs text-muted-foreground mt-1">
-          عرض، بحث، وإدارة القواعد والذكريات طويلة المدى المحفوظة في قاعدة البيانات لاستخدام الـ AI Agent.
+          عرض، بحث، وإدارة القواعد والذكريات طويلة المدى المحفوظة في قاعدة البيانات لاستخدام الـ AI
+          Agent.
         </p>
       </div>
 
@@ -62,7 +63,10 @@ function AdminAIMemoryPage() {
           </div>
         ) : (
           filteredEntries.map((entry: any, idx: number) => (
-            <div key={idx} className="p-4 rounded-2xl border border-border bg-surface shadow-xs space-y-2">
+            <div
+              key={idx}
+              className="p-4 rounded-2xl border border-border bg-surface shadow-xs space-y-2"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-violet-400" />
@@ -73,7 +77,9 @@ function AdminAIMemoryPage() {
                 </span>
               </div>
               <pre className="p-3 rounded-xl bg-background border border-border/60 text-[11px] font-mono text-zinc-300 overflow-x-auto dir-ltr">
-                {typeof entry.value === "object" ? JSON.stringify(entry.value, null, 2) : String(entry.value)}
+                {typeof entry.value === "object"
+                  ? JSON.stringify(entry.value, null, 2)
+                  : String(entry.value)}
               </pre>
             </div>
           ))
