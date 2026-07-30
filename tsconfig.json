@@ -23,6 +23,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
+      "@/lib/media-upload.client": ["./src/lib/media-upload.browser.ts"],
       "@/*": ["./src/*"]
     }
   }
