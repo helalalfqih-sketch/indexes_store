@@ -42,7 +42,6 @@ import {
   finalizeMediaUploadFn,
   prepareMediaUploadFn,
 } from "@/lib/media-upload.functions";
-import { uploadMediaDirect } from "@/lib/media-upload.client";
 
 export const Route = createFileRoute("/admin/media")({
   head: () => ({
@@ -247,6 +246,7 @@ function AdminMediaComponent() {
       });
 
       updateUploadItem(item.id, { status: "uploading", progress: 0 });
+      const { uploadMediaDirect } = await import("@/lib/media-upload.client");
       await uploadMediaDirect({
         bucket: prepared.bucket,
         path: prepared.path,
