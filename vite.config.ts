@@ -10,19 +10,13 @@ export default defineConfig({
   },
   vite: {
     base: process.env.VERCEL ? "/" : "/app/",
+    // Some server-only provider modules are currently referenced from client routes.
+    // Replace process.env at build time so no Node `process` global is required in browsers.
+    // This exposes no server environment values; the client receives an empty object only.
+    define: {
+      "process.env": "{}",
+    },
     plugins: [
-      {
-        name: "browser-process-env-shim",
-        transformIndexHtml() {
-          return [
-            {
-              tag: "script",
-              children: "globalThis.process ??= { env: {} };",
-              injectTo: "head-prepend",
-            },
-          ];
-        },
-      },
       VitePWA({
         registerType: "autoUpdate",
         manifest: false,
