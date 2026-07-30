@@ -1,0 +1,57 @@
+name: Hotfix media client import
+
+on:
+  push:
+    branches:
+      - audit/full-platform-functional-responsive-review
+    paths:
+      - .github/workflows/hotfix-media-import.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/full-platform-functional-responsive-review
+          fetch-depth: 0
+
+      - name: Patch admin media client boundary
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/routes/admin.media.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          static_import = 'import { uploadMediaDirect } from "@/lib/media-upload.client";\n'
+          if static_import not in text:
+              raise SystemExit('Expected static media upload import was not found')
+          text = text.replace(static_import, '', 1)
+
+          static_call = '      await uploadMediaDirect({\n'
+          dynamic_call = (
+              '      const { uploadMediaDirect } = await import("@/lib/media-upload.client");\n'
+              '      await uploadMediaDirect({\n'
+          )
+          if static_call not in text:
+              raise SystemExit('Expected uploadMediaDirect call was not found')
+          text = text.replace(static_call, dynamic_call, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Remove one-time workflow and commit hotfix
+        shell: bash
+        run: |
+          git rm .github/workflows/hotfix-media-import.yml
+          git add src/routes/admin.media.tsx
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(media): resolve client import-protection error in admin media route"
+          git push origin HEAD:audit/full-platform-functional-responsive-review
