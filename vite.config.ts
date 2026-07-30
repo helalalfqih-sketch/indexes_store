@@ -11,6 +11,18 @@ export default defineConfig({
   vite: {
     base: process.env.VERCEL ? "/" : "/app/",
     plugins: [
+      {
+        name: "browser-process-env-shim",
+        transformIndexHtml() {
+          return [
+            {
+              tag: "script",
+              children: "globalThis.process ??= { env: {} };",
+              injectTo: "head-prepend",
+            },
+          ];
+        },
+      },
       VitePWA({
         registerType: "autoUpdate",
         manifest: false,
@@ -18,7 +30,7 @@ export default defineConfig({
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           runtimeCaching: [
             {
-              urlPattern: /^https:\/\/.*supabase\.co\/.*/i,
+              urlPattern: /^https:\/\/.*supabase\.co\/.*$/i,
               handler: "NetworkFirst",
               options: {
                 cacheName: "supabase-api-cache",
