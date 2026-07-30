@@ -155,7 +155,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const twitterUsername = seo?.twitterUsername || "@indexes_store";
 
     const baseUrl =
-      process.env.SITE_URL ||
+      (typeof process !== "undefined" ? process.env.SITE_URL : null) ||
       (typeof window !== "undefined" ? window.location.origin : null) ||
       import.meta.env.VITE_PUBLIC_URL ||
       "";
@@ -324,7 +324,22 @@ function RootComponent() {
   }, [queryClient]);
 
   return (
-    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: idbPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}>
+    <PersistQueryClientProvider 
+      client={queryClient} 
+      persistOptions={{ 
+        persister: idbPersister, 
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            const excludedKeys = ["user", "my-orders", "admin", "tenant", "profile"];
+            return !excludedKeys.some((key) => 
+              query.queryKey[0] === key || 
+              (typeof query.queryKey[0] === "string" && query.queryKey[0].includes(key))
+            );
+          }
+        }
+      }}
+    >
       <AppearanceProvider initialSettings={settings}>
         <TenantProvider>
           {isAdmin || isBare ? (

@@ -181,8 +181,6 @@ function ProductsPage() {
       await updateAdminProduct({ id, meta_sync_status: "syncing" });
       invalidate();
 
-      // 3. Mock sync delay (1.5 seconds)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // 4. Update status to synced
       return updateAdminProduct({ id, meta_sync_status: "synced" });
@@ -209,8 +207,6 @@ function ProductsPage() {
       }
       invalidate();
 
-      // Mock delay (2 seconds)
-      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Update all based on completeness
       for (const p of list) {

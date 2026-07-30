@@ -92,7 +92,7 @@ function SystemHealthDashboardPage() {
       <div className="rounded-3xl border border-zinc-800 bg-[#121215] p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           <div className="relative flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-violet-500/20 to-emerald-500/20 border border-violet-500/40 text-center">
-            <span className="text-3xl font-black text-foreground">{report?.overallScore ?? 100}</span>
+            <span className="text-3xl font-black text-foreground">{report?.overallScore ?? "—"}</span>
             <span className="text-[10px] text-muted-foreground absolute -bottom-1 font-mono">/ 100</span>
           </div>
 
@@ -100,7 +100,7 @@ function SystemHealthDashboardPage() {
             <div className="flex items-center gap-2">
               <span className="text-xl font-black text-foreground">درجة جودة المنصة الإجمالية</span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                Grade: {report?.grade ?? "A+"}
+                Grade: {report?.grade ?? "—"}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1 max-w-md">

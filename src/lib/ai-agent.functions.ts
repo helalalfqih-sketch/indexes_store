@@ -1883,5 +1883,37 @@ export const applyCodePatchRecordFn = createServerFn({ method: "POST" })
     });
   });
 
+/** Audit the full workspace */
+export const auditFullWorkspaceFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { auditFullWorkspace } = await import("@/services/ai-agent/workspace-auditor.service");
+    return auditFullWorkspace();
+  });
 
 
+/** Audit the architecture graph and RLS coverage */
+export const getArchitectureAuditFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ctx = context as any;
+    const db = await getAdminDb(ctx);
+    
+    // 1. Verify tenant membership
+    await resolveTenantId(db, { userId: ctx.userId });
+    
+    // 2. Enforce admin/staff role
+    const { enforceAgentRole } = await import("@/services/ai-agent/agent.rbac");
+    await enforceAgentRole(ctx, "developer");
+    
+    // 3. Import backend service dynamically
+    const { auditProjectArchitecture } = await import("@/services/ai-agent/architecture.service");
+    
+    // 4. Return the report
+    try {
+      return await auditProjectArchitecture();
+    } catch (error: any) {
+      console.error("[Architecture Audit Failed]", error);
+      throw new Error("فشل توليد التقرير المعماري. يرجى مراجعة سجلات الخادم.");
+    }
+  });

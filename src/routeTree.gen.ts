@@ -23,6 +23,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
+import { Route as AiWorkspaceRouteImport } from './routes/_ai-workspace'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreIndexRouteImport } from './routes/store.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -37,13 +38,13 @@ import { Route as StoreEarningsRouteImport } from './routes/store.earnings'
 import { Route as StoreDashboardRouteImport } from './routes/store.dashboard'
 import { Route as StoreCustomersRouteImport } from './routes/store.customers'
 import { Route as StoreAnalyticsRouteImport } from './routes/store.analytics'
-import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
-import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
-import { Route as GoogleShoppingXmlRouteImport } from './routes/google-shopping.xml'
 import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
+import { Route as ApiSitemapRouteImport } from './routes/api/sitemap'
+import { Route as ApiRobotsRouteImport } from './routes/api/robots'
+import { Route as ApiGoogleShoppingRouteImport } from './routes/api/google-shopping'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSystemHealthRouteImport } from './routes/admin.system-health'
 import { Route as AdminStudioRouteImport } from './routes/admin.studio'
@@ -74,7 +75,6 @@ import { Route as AdminAuditLogsRouteImport } from './routes/admin.audit-logs'
 import { Route as AdminAppearanceRouteImport } from './routes/admin.appearance'
 import { Route as AdminAiSettingsRouteImport } from './routes/admin.ai-settings'
 import { Route as AdminAiMemoryRouteImport } from './routes/admin.ai-memory'
-import { Route as AdminAiDeveloperRouteImport } from './routes/admin.ai-developer'
 import { Route as AdminAiAgentRouteImport } from './routes/admin.ai-agent'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks.whatsapp'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
@@ -85,6 +85,7 @@ import { Route as AdminStoresTenantIdRouteImport } from './routes/admin.stores.$
 import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
 import { Route as AdminIntegrationsWhatsappRouteImport } from './routes/admin.integrations.whatsapp'
 import { Route as AdminDiagnosticsWhatsappRouteImport } from './routes/admin.diagnostics.whatsapp'
+import { Route as AiWorkspaceAdminAiDeveloperRouteImport } from './routes/_ai-workspace.admin.ai-developer'
 
 const TrackRoute = TrackRouteImport.update({
   id: '/track',
@@ -154,6 +155,10 @@ const AdminRoute = AdminRouteImport.update({
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiWorkspaceRoute = AiWorkspaceRouteImport.update({
+  id: '/_ai-workspace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -226,16 +231,6 @@ const StoreAnalyticsRoute = StoreAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => StoreRoute,
 } as any)
-const SitemapXmlRoute = SitemapXmlRouteImport.update({
-  id: '/sitemap/xml',
-  path: '/sitemap/xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RobotsTxtRoute = RobotsTxtRouteImport.update({
-  id: '/robots/txt',
-  path: '/robots/txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProductSlugRoute = ProductSlugRouteImport.update({
   id: '/product/$slug',
   path: '/product/$slug',
@@ -246,11 +241,6 @@ const PagesSlugRoute = PagesSlugRouteImport.update({
   path: '/pages/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GoogleShoppingXmlRoute = GoogleShoppingXmlRouteImport.update({
-  id: '/google-shopping/xml',
-  path: '/google-shopping/xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const Demo3dViewerRoute = Demo3dViewerRouteImport.update({
   id: '/demo/3d-viewer',
   path: '/demo/3d-viewer',
@@ -259,6 +249,21 @@ const Demo3dViewerRoute = Demo3dViewerRouteImport.update({
 const CategoryIdRoute = CategoryIdRouteImport.update({
   id: '/category/$id',
   path: '/category/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSitemapRoute = ApiSitemapRouteImport.update({
+  id: '/api/sitemap',
+  path: '/api/sitemap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRobotsRoute = ApiRobotsRouteImport.update({
+  id: '/api/robots',
+  path: '/api/robots',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGoogleShoppingRoute = ApiGoogleShoppingRouteImport.update({
+  id: '/api/google-shopping',
+  path: '/api/google-shopping',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -411,11 +416,6 @@ const AdminAiMemoryRoute = AdminAiMemoryRouteImport.update({
   path: '/ai-memory',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminAiDeveloperRoute = AdminAiDeveloperRouteImport.update({
-  id: '/ai-developer',
-  path: '/ai-developer',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminAiAgentRoute = AdminAiAgentRouteImport.update({
   id: '/ai-agent',
   path: '/ai-agent',
@@ -468,6 +468,12 @@ const AdminDiagnosticsWhatsappRoute =
     path: '/diagnostics/whatsapp',
     getParentRoute: () => AdminRoute,
   } as any)
+const AiWorkspaceAdminAiDeveloperRoute =
+  AiWorkspaceAdminAiDeveloperRouteImport.update({
+    id: '/admin/ai-developer',
+    path: '/admin/ai-developer',
+    getParentRoute: () => AiWorkspaceRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -486,7 +492,6 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/admin/ai-agent': typeof AdminAiAgentRoute
-  '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
   '/admin/ai-settings': typeof AdminAiSettingsRoute
   '/admin/appearance': typeof AdminAppearanceRoute
@@ -517,13 +522,13 @@ export interface FileRoutesByFullPath {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/google-shopping': typeof ApiGoogleShoppingRoute
+  '/api/robots': typeof ApiRobotsRoute
+  '/api/sitemap': typeof ApiSitemapRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
-  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
-  '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
@@ -537,6 +542,7 @@ export interface FileRoutesByFullPath {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/store/': typeof StoreIndexRoute
+  '/admin/ai-developer': typeof AiWorkspaceAdminAiDeveloperRoute
   '/admin/diagnostics/whatsapp': typeof AdminDiagnosticsWhatsappRoute
   '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
@@ -562,7 +568,6 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/admin/ai-agent': typeof AdminAiAgentRoute
-  '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
   '/admin/ai-settings': typeof AdminAiSettingsRoute
   '/admin/appearance': typeof AdminAppearanceRoute
@@ -593,13 +598,13 @@ export interface FileRoutesByTo {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/google-shopping': typeof ApiGoogleShoppingRoute
+  '/api/robots': typeof ApiRobotsRoute
+  '/api/sitemap': typeof ApiSitemapRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
-  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
-  '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
@@ -613,6 +618,7 @@ export interface FileRoutesByTo {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin': typeof AdminIndexRoute
   '/store': typeof StoreIndexRoute
+  '/admin/ai-developer': typeof AiWorkspaceAdminAiDeveloperRoute
   '/admin/diagnostics/whatsapp': typeof AdminDiagnosticsWhatsappRoute
   '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
@@ -626,6 +632,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_ai-workspace': typeof AiWorkspaceRouteWithChildren
   '/account': typeof AccountRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
@@ -641,7 +648,6 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/admin/ai-agent': typeof AdminAiAgentRoute
-  '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
   '/admin/ai-settings': typeof AdminAiSettingsRoute
   '/admin/appearance': typeof AdminAppearanceRoute
@@ -672,13 +678,13 @@ export interface FileRoutesById {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/google-shopping': typeof ApiGoogleShoppingRoute
+  '/api/robots': typeof ApiRobotsRoute
+  '/api/sitemap': typeof ApiSitemapRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
-  '/google-shopping/xml': typeof GoogleShoppingXmlRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/product/$slug': typeof ProductSlugRoute
-  '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/store/analytics': typeof StoreAnalyticsRoute
   '/store/customers': typeof StoreCustomersRoute
   '/store/dashboard': typeof StoreDashboardRoute
@@ -692,6 +698,7 @@ export interface FileRoutesById {
   '/vendor/dashboard': typeof VendorDashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/store/': typeof StoreIndexRoute
+  '/_ai-workspace/admin/ai-developer': typeof AiWorkspaceAdminAiDeveloperRoute
   '/admin/diagnostics/whatsapp': typeof AdminDiagnosticsWhatsappRoute
   '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
@@ -721,7 +728,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/admin/ai-agent'
-    | '/admin/ai-developer'
     | '/admin/ai-memory'
     | '/admin/ai-settings'
     | '/admin/appearance'
@@ -752,13 +758,13 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/google-shopping'
+    | '/api/robots'
+    | '/api/sitemap'
     | '/category/$id'
     | '/demo/3d-viewer'
-    | '/google-shopping/xml'
     | '/pages/$slug'
     | '/product/$slug'
-    | '/robots/txt'
-    | '/sitemap/xml'
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
@@ -772,6 +778,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/admin/'
     | '/store/'
+    | '/admin/ai-developer'
     | '/admin/diagnostics/whatsapp'
     | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
@@ -797,7 +804,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/admin/ai-agent'
-    | '/admin/ai-developer'
     | '/admin/ai-memory'
     | '/admin/ai-settings'
     | '/admin/appearance'
@@ -828,13 +834,13 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/google-shopping'
+    | '/api/robots'
+    | '/api/sitemap'
     | '/category/$id'
     | '/demo/3d-viewer'
-    | '/google-shopping/xml'
     | '/pages/$slug'
     | '/product/$slug'
-    | '/robots/txt'
-    | '/sitemap/xml'
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
@@ -848,6 +854,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/admin'
     | '/store'
+    | '/admin/ai-developer'
     | '/admin/diagnostics/whatsapp'
     | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
@@ -860,6 +867,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_ai-workspace'
     | '/account'
     | '/admin'
     | '/auth'
@@ -875,7 +883,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/admin/ai-agent'
-    | '/admin/ai-developer'
     | '/admin/ai-memory'
     | '/admin/ai-settings'
     | '/admin/appearance'
@@ -906,13 +913,13 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/google-shopping'
+    | '/api/robots'
+    | '/api/sitemap'
     | '/category/$id'
     | '/demo/3d-viewer'
-    | '/google-shopping/xml'
     | '/pages/$slug'
     | '/product/$slug'
-    | '/robots/txt'
-    | '/sitemap/xml'
     | '/store/analytics'
     | '/store/customers'
     | '/store/dashboard'
@@ -926,6 +933,7 @@ export interface FileRouteTypes {
     | '/vendor/dashboard'
     | '/admin/'
     | '/store/'
+    | '/_ai-workspace/admin/ai-developer'
     | '/admin/diagnostics/whatsapp'
     | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
@@ -939,6 +947,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiWorkspaceRoute: typeof AiWorkspaceRouteWithChildren
   AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
@@ -953,13 +962,13 @@ export interface RootRouteChildren {
   StoreRoute: typeof StoreRouteWithChildren
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
+  ApiGoogleShoppingRoute: typeof ApiGoogleShoppingRoute
+  ApiRobotsRoute: typeof ApiRobotsRoute
+  ApiSitemapRoute: typeof ApiSitemapRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
-  GoogleShoppingXmlRoute: typeof GoogleShoppingXmlRoute
   PagesSlugRoute: typeof PagesSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
-  RobotsTxtRoute: typeof RobotsTxtRoute
-  SitemapXmlRoute: typeof SitemapXmlRoute
   VendorSlugRoute: typeof VendorSlugRoute
   VendorDashboardRoute: typeof VendorDashboardRoute
   ApiAiAgentRoute: typeof ApiAiAgentRoute
@@ -1069,6 +1078,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_ai-workspace': {
+      id: '/_ai-workspace'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AiWorkspaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -1167,20 +1183,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreAnalyticsRouteImport
       parentRoute: typeof StoreRoute
     }
-    '/sitemap/xml': {
-      id: '/sitemap/xml'
-      path: '/sitemap/xml'
-      fullPath: '/sitemap/xml'
-      preLoaderRoute: typeof SitemapXmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/robots/txt': {
-      id: '/robots/txt'
-      path: '/robots/txt'
-      fullPath: '/robots/txt'
-      preLoaderRoute: typeof RobotsTxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/product/$slug': {
       id: '/product/$slug'
       path: '/product/$slug'
@@ -1195,13 +1197,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PagesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/google-shopping/xml': {
-      id: '/google-shopping/xml'
-      path: '/google-shopping/xml'
-      fullPath: '/google-shopping/xml'
-      preLoaderRoute: typeof GoogleShoppingXmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/demo/3d-viewer': {
       id: '/demo/3d-viewer'
       path: '/demo/3d-viewer'
@@ -1214,6 +1209,27 @@ declare module '@tanstack/react-router' {
       path: '/category/$id'
       fullPath: '/category/$id'
       preLoaderRoute: typeof CategoryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sitemap': {
+      id: '/api/sitemap'
+      path: '/api/sitemap'
+      fullPath: '/api/sitemap'
+      preLoaderRoute: typeof ApiSitemapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/robots': {
+      id: '/api/robots'
+      path: '/api/robots'
+      fullPath: '/api/robots'
+      preLoaderRoute: typeof ApiRobotsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/google-shopping': {
+      id: '/api/google-shopping'
+      path: '/api/google-shopping'
+      fullPath: '/api/google-shopping'
+      preLoaderRoute: typeof ApiGoogleShoppingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -1426,13 +1442,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAiMemoryRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/ai-developer': {
-      id: '/admin/ai-developer'
-      path: '/ai-developer'
-      fullPath: '/admin/ai-developer'
-      preLoaderRoute: typeof AdminAiDeveloperRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/ai-agent': {
       id: '/admin/ai-agent'
       path: '/ai-agent'
@@ -1503,8 +1512,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDiagnosticsWhatsappRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_ai-workspace/admin/ai-developer': {
+      id: '/_ai-workspace/admin/ai-developer'
+      path: '/admin/ai-developer'
+      fullPath: '/admin/ai-developer'
+      preLoaderRoute: typeof AiWorkspaceAdminAiDeveloperRouteImport
+      parentRoute: typeof AiWorkspaceRoute
+    }
   }
 }
+
+interface AiWorkspaceRouteChildren {
+  AiWorkspaceAdminAiDeveloperRoute: typeof AiWorkspaceAdminAiDeveloperRoute
+}
+
+const AiWorkspaceRouteChildren: AiWorkspaceRouteChildren = {
+  AiWorkspaceAdminAiDeveloperRoute: AiWorkspaceAdminAiDeveloperRoute,
+}
+
+const AiWorkspaceRouteWithChildren = AiWorkspaceRoute._addFileChildren(
+  AiWorkspaceRouteChildren,
+)
 
 interface AdminStoresRouteChildren {
   AdminStoresTenantIdRoute: typeof AdminStoresTenantIdRoute
@@ -1520,7 +1548,6 @@ const AdminStoresRouteWithChildren = AdminStoresRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminAiAgentRoute: typeof AdminAiAgentRoute
-  AdminAiDeveloperRoute: typeof AdminAiDeveloperRoute
   AdminAiMemoryRoute: typeof AdminAiMemoryRoute
   AdminAiSettingsRoute: typeof AdminAiSettingsRoute
   AdminAppearanceRoute: typeof AdminAppearanceRoute
@@ -1559,7 +1586,6 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAiAgentRoute: AdminAiAgentRoute,
-  AdminAiDeveloperRoute: AdminAiDeveloperRoute,
   AdminAiMemoryRoute: AdminAiMemoryRoute,
   AdminAiSettingsRoute: AdminAiSettingsRoute,
   AdminAppearanceRoute: AdminAppearanceRoute,
@@ -1628,6 +1654,7 @@ const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiWorkspaceRoute: AiWorkspaceRouteWithChildren,
   AccountRoute: AccountRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
@@ -1642,13 +1669,13 @@ const rootRouteChildren: RootRouteChildren = {
   StoreRoute: StoreRouteWithChildren,
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
+  ApiGoogleShoppingRoute: ApiGoogleShoppingRoute,
+  ApiRobotsRoute: ApiRobotsRoute,
+  ApiSitemapRoute: ApiSitemapRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
-  GoogleShoppingXmlRoute: GoogleShoppingXmlRoute,
   PagesSlugRoute: PagesSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
-  RobotsTxtRoute: RobotsTxtRoute,
-  SitemapXmlRoute: SitemapXmlRoute,
   VendorSlugRoute: VendorSlugRoute,
   VendorDashboardRoute: VendorDashboardRoute,
   ApiAiAgentRoute: ApiAiAgentRoute,

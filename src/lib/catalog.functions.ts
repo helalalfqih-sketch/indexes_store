@@ -51,7 +51,6 @@ const assertAdmin = async (ctx: {
   supabase: SupabaseClient<Database>;
   userId: string;
 }) => {
-  if (process.env.NODE_ENV === "development") return;
   const { data, error } = await ctx.supabase.rpc("has_role", {
     _user_id: ctx.userId,
     _role: "admin",
@@ -64,14 +63,6 @@ const resolveAdminTenant = async (
   ctx: { supabase: SupabaseClient<Database>; userId: string },
   override?: string | null,
 ): Promise<string> => {
-  if (process.env.NODE_ENV === "development") {
-    try {
-      const { data } = await ctx.supabase.from("tenants").select("id").limit(1).maybeSingle();
-      if (data?.id) return data.id;
-    } catch (e) {
-      console.warn("Dev mode tenant resolution error:", e);
-    }
-  }
   return resolveTenantId(ctx.supabase, {
     override,
     headers: await readHeaders(),

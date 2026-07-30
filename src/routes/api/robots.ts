@@ -9,7 +9,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 // @ts-ignore — Route registered after vite build generates routeTree.gen.ts
-export const Route = createFileRoute("/robots/txt")({
+export const Route = createFileRoute("/api/robots")({
 
   server: {
     handlers: {

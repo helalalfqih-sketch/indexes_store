@@ -173,8 +173,6 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
       }
     }
 
-    // 1. Primary owner email bypass (always true)
-    if (email?.toLowerCase() === "helalalfqih@gmail.com") return true;
 
     if (userId) {
       // 2. Platform admin bypass (user_roles table)
@@ -210,11 +208,11 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
         if (perms.includes(permission)) return true;
       }
     }
-
-    // Fail-safe for platform admin / single-tenant operations
-    return true;
-  } catch {
-    return true;
+    // Fail-closed for any unhandled case
+    return false;
+  } catch (err) {
+    console.error("[checkTenantPermission] Error checking permission:", err);
+    return false;
   }
 }
 

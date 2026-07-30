@@ -62,7 +62,7 @@ export const Route = createFileRoute("/product/$slug")({
     const p = data.product;
     // Resolve base URL from environment dynamically
     const baseUrl =
-      process.env.SITE_URL ||
+      (typeof process !== "undefined" ? process.env.SITE_URL : null) ||
       (typeof window !== "undefined" ? window.location.origin : null) ||
       import.meta.env.VITE_PUBLIC_URL ||
       "";

@@ -7,6 +7,13 @@ export default defineConfig({
   tanstackStart: {
     ssr: false,
     server: { entry: "server" },
+    nitro: {
+      routeRules: {
+        "/robots.txt": { proxy: "/api/robots" },
+        "/sitemap.xml": { proxy: "/api/sitemap" },
+        "/google-shopping.xml": { proxy: "/api/google-shopping" },
+      },
+    },
   },
   vite: {
     base: process.env.VERCEL ? "/" : "/app/",

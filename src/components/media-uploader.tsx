@@ -21,6 +21,8 @@ import {
   validateMediaFile,
   type MediaFileRecord,
 } from "@/lib/media.functions";
+import { useCurrentTenant } from "@/components/tenant-provider";
+import { supabase } from "@/integrations/supabase/client";
 
 function SmartVideoPreview({ url }: { url: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -88,6 +90,8 @@ export function MediaUploader({
   const queryClient = useQueryClient();
   const listMediaFn = useServerFn(listMediaFiles);
   const recordMediaFn = useServerFn(recordMediaFile);
+  const { tenant } = useCurrentTenant();
+  const tenantId = tenant?.id || "default";
 
   const [isUploading, setIsUploading] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
@@ -144,21 +148,34 @@ export function MediaUploader({
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const fileUrl = reader.result as string;
-        const detectedType = file.type.startsWith("video/") ? "video" : "image";
+      const detectedType = file.type.startsWith("video/") ? "video" : "image";
+      const safeName = file.name.replace(/[^a-zA-Z0-9._\-\u0600-\u06FF]/g, "-");
+      const storagePath = `uploads/${tenantId}/${Date.now()}_${safeName}`;
+
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from("product-images")
+          .upload(storagePath, file, { upsert: false });
+
+        if (uploadError) throw new Error(uploadError.message);
+
+        const { data: publicUrlData } = supabase.storage
+          .from("product-images")
+          .getPublicUrl(storagePath);
+        const fileUrl = publicUrlData.publicUrl;
 
         uploadRecordMut.mutate({
           file_name: file.name,
-          file_path: `media/${Date.now()}_${file.name}`,
+          file_path: storagePath,
           file_url: fileUrl,
           file_type: detectedType,
           mime_type: file.type || "image/png",
           size_bytes: file.size,
         });
-      };
-      reader.readAsDataURL(file);
+      } catch (err: any) {
+        toast.error(`فشل الرفع: ${err.message}`);
+        setIsUploading(false);
+      }
     }
   };
 
