@@ -34,13 +34,13 @@ function CinematicBackground() {
           }}
         />
       </div>
-      {/* Neon-blue orbital glow */}
+      {/* Violet orbital glow */}
       <div className="absolute -start-24 top-[18vh] h-[60vh] w-[60vh] rounded-full opacity-30 blur-3xl">
         <div
           className="h-full w-full"
           style={{
             background:
-              "radial-gradient(circle, color-mix(in oklab, var(--neon-blue) 45%, transparent) 0%, transparent 65%)",
+              "radial-gradient(circle, color-mix(in oklab, #7c3aed 45%, transparent) 0%, transparent 65%)",
           }}
         />
       </div>
@@ -50,7 +50,7 @@ function CinematicBackground() {
           className="h-full w-full"
           style={{
             background:
-              "radial-gradient(circle, color-mix(in oklab, var(--teal-glow) 40%, transparent) 0%, transparent 65%)",
+              "radial-gradient(circle, color-mix(in oklab, #d946ef 40%, transparent) 0%, transparent 65%)",
           }}
         />
       </div>
@@ -79,7 +79,7 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
         </div>
       ) : (
         <div className="relative z-50 bg-primary/90 text-white text-xs font-bold py-1.5 px-4 text-center shrink-0">
-          شحن مجاني للطلبات فوق 50,000 ريال يمني 🚚
+          شحن مجاني للطلبات فوق 30,000 ريال يمني 🚚
         </div>
       )}
 
@@ -121,7 +121,7 @@ function StoreTopBar() {
 
   return (
     <header className="sticky top-0 z-40 w-full px-3 pt-3">
-      <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 rounded-full glass-dark glass-shimmer px-4 py-2.5 shadow-xl md:max-w-6xl md:px-5 lg:max-w-7xl">
+      <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 rounded-[24px] border border-violet-400/20 bg-[#080d1a]/95 px-4 py-2.5 shadow-[0_16px_50px_rgba(0,0,0,0.35)] md:max-w-6xl md:px-5 lg:max-w-7xl">
         {/* Brand Logo & Name */}
         <Link to="/" className="flex items-center gap-2 group">
           <div className="relative h-9 w-9 overflow-hidden rounded-full glow-neon transition-transform group-hover:scale-105">
@@ -166,9 +166,9 @@ function StoreTopBar() {
           to="/search"
           preload="intent"
           onClick={() => trackEvent("click_search", { source: "header_desktop" })}
-          className="hidden md:flex flex-1 max-w-xs items-center gap-2 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-xs font-semibold text-showcase-muted backdrop-blur-sm transition-all hover:border-neon/40 hover:bg-black/50 hover:text-white"
+          className="hidden md:flex flex-1 max-w-xs items-center gap-2 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-xs font-semibold text-showcase-muted backdrop-blur-sm transition-all hover:border-violet-400/50 hover:bg-black/50 hover:text-white"
         >
-          <Search className="h-3.5 w-3.5 text-neon" />
+          <Search className="h-3.5 w-3.5 text-violet-300" />
           <span className="truncate">{searchPlaceholder}</span>
         </Link>
 
@@ -180,7 +180,7 @@ function StoreTopBar() {
             className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-showcase-muted hover:text-white"
             title="بحث"
           >
-            <Search className="h-4 w-4 text-neon" />
+            <Search className="h-4 w-4 text-violet-300" />
           </Link>
           <Link
             to="/cart"
