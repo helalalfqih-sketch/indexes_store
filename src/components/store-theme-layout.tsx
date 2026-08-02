@@ -98,7 +98,6 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
       {/* 5. Desktop Floating WhatsApp & Mobile Commerce Bar */}
       <StorefrontWhatsAppFloating />
       <MobileCommerceBottomBar />
-
     </div>
   );
 }
@@ -115,7 +114,8 @@ function StoreTopBar() {
     { to: "/account", label: "حسابي", icon: User },
   ];
 
-  const storeLogo = settings.store_identity?.logoUrl || settings.navigation?.logoUrl || noqtaLogo;
+  const storeLogo =
+    settings.store_identity?.logoUrl || settings.navigation?.logoUrl || noqtaLogo;
   const storeName = settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور";
   const searchPlaceholder = settings.navigation?.searchPlaceholder || "ابحث عن منتج...";
 
