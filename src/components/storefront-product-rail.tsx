@@ -186,7 +186,7 @@ export function StorefrontProductRail({
   title: string;
   eyebrow?: string;
   products: LegacyProductShape[];
-  href?: string;
+  href?: "/search" | "/offers";
   eager?: boolean;
 }) {
   if (products.length === 0) return null;
