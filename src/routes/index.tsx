@@ -3,10 +3,7 @@ import * as Icons from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { formatPrice, type Product } from "@/lib/store-data";
-import type {
-  LegacyProductShape,
-  LegacyCategoryShape,
-} from "@/lib/data-adapter";
+import type { LegacyProductShape, LegacyCategoryShape } from "@/lib/data-adapter";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   categoriesQueryOptions,
@@ -48,11 +45,9 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 }
 
 const ImmersiveProductExperience = lazyWithRetry(() =>
-  import("@/components/immersive/ImmersiveProductExperience").then(
-    (module) => ({
-      default: module.ImmersiveProductExperience,
-    }),
-  ),
+  import("@/components/immersive/ImmersiveProductExperience").then((module) => ({
+    default: module.ImmersiveProductExperience,
+  })),
 );
 import { quickOrderLink } from "@/lib/whatsapp";
 import { useAppearance } from "@/components/appearance-provider";
@@ -93,10 +88,7 @@ function BannerHero({ hero }: { hero: HeroConfig }) {
 function HeroContent({
   hero,
 }: {
-  hero: Pick<
-    HeroConfig,
-    "badgeText" | "title" | "subtitle" | "ctaText" | "ctaLink"
-  >;
+  hero: Pick<HeroConfig, "badgeText" | "title" | "subtitle" | "ctaText" | "ctaLink">;
 }) {
   return (
     <div className="absolute inset-0 flex flex-col justify-end space-y-3 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-6 text-start sm:p-10">
@@ -105,12 +97,8 @@ function HeroContent({
           {hero.badgeText}
         </span>
       )}
-      <h1 className="text-2xl font-black leading-tight text-white sm:text-4xl">
-        {hero.title}
-      </h1>
-      <p className="max-w-xl text-xs text-gray-200 sm:text-sm">
-        {hero.subtitle}
-      </p>
+      <h1 className="text-2xl font-black leading-tight text-white sm:text-4xl">{hero.title}</h1>
+      <p className="max-w-xl text-xs text-gray-200 sm:text-sm">{hero.subtitle}</p>
       {hero.ctaText && (
         <a
           href={hero.ctaLink || "/offers"}
@@ -147,12 +135,8 @@ function VideoHero({ hero }: { hero: HeroConfig }) {
             {hero.badgeText}
           </span>
         )}
-        <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl">
-          {hero.title}
-        </h1>
-        <p className="max-w-lg text-sm text-gray-300 sm:text-base">
-          {hero.subtitle}
-        </p>
+        <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl">{hero.title}</h1>
+        <p className="max-w-lg text-sm text-gray-300 sm:text-base">{hero.subtitle}</p>
         {hero.ctaText && (
           <a
             href={hero.ctaLink || "/offers"}
@@ -168,10 +152,7 @@ function VideoHero({ hero }: { hero: HeroConfig }) {
 
 function SlideshowHero({ hero }: { hero: HeroConfig }) {
   const slides = useMemo(
-    () =>
-      [...hero.slides]
-        .filter((slide) => slide.mediaUrl)
-        .sort((a, b) => a.order - b.order),
+    () => [...hero.slides].filter((slide) => slide.mediaUrl).sort((a, b) => a.order - b.order),
     [hero.slides],
   );
   const [activeIndex, setActiveIndex] = useState(0);
@@ -306,8 +287,7 @@ export const Route = createFileRoute("/")({
       (typeof window !== "undefined" ? window.location.origin : null) ||
       import.meta.env.VITE_PUBLIC_URL ||
       "";
-    const title =
-      seo?.metaTitle || "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن";
+    const title = seo?.metaTitle || "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن";
     const description =
       seo?.metaDescription ||
       "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.";
@@ -320,8 +300,7 @@ export const Route = createFileRoute("/")({
         { name: "description", content: description },
         {
           name: "robots",
-          content:
-            "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
         },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
@@ -359,9 +338,7 @@ export const Route = createFileRoute("/")({
     </div>
   ),
   errorComponent: ({ error }) => (
-    <div className="p-8 text-center text-destructive">
-      حدث خطأ: {error.message}
-    </div>
+    <div className="p-8 text-center text-destructive">حدث خطأ: {error.message}</div>
   ),
   component: HomePage,
 });
@@ -384,8 +361,7 @@ const STOREFRONT_ROTATION_MS = 5 * 60 * 1000;
 
 function rotateProducts(products: LegacyProductShape[], offset: number) {
   if (products.length < 2) return products;
-  const start =
-    ((offset % products.length) + products.length) % products.length;
+  const start = ((offset % products.length) + products.length) % products.length;
   return [...products.slice(start), ...products.slice(0, start)];
 }
 
@@ -423,8 +399,7 @@ function HomePage() {
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const state = diagQueryClient.getQueryState(["allProducts"]);
-    const isStale =
-      !state?.dataUpdatedAt || Date.now() - state.dataUpdatedAt > 5 * 60 * 1000;
+    const isStale = !state?.dataUpdatedAt || Date.now() - state.dataUpdatedAt > 5 * 60 * 1000;
     console.info("[PERF] PRODUCT_QUERY_MOUNT", {
       status: state?.status,
       fetchStatus: state?.fetchStatus,
@@ -432,9 +407,7 @@ function HomePage() {
       isStale,
     });
     if (state?.data && state.fetchStatus === "idle") {
-      console.info(
-        "[PERF] PRODUCT_QUERY_CACHE_HIT — rendered from memory, no fetch",
-      );
+      console.info("[PERF] PRODUCT_QUERY_CACHE_HIT — rendered from memory, no fetch");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -456,9 +429,7 @@ function HomePage() {
   // Sticky WA — observe visibility without forcing layout reads on every scroll frame.
   const [focusedProduct, setFocusedProduct] = useState<Product | null>(null);
   useEffect(() => {
-    const cards = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-product-id]"),
-    );
+    const cards = Array.from(document.querySelectorAll<HTMLElement>("[data-product-id]"));
     if (!cards.length || typeof IntersectionObserver === "undefined") return;
 
     const visible = new Map<string, number>();
@@ -482,13 +453,9 @@ function HomePage() {
 
         const found =
           (bestId
-            ? (allProducts.find((product) => product.id === bestId) as
-                | Product
-                | undefined)
+            ? (allProducts.find((product) => product.id === bestId) as Product | undefined)
             : undefined) ?? null;
-        setFocusedProduct((previous) =>
-          previous?.id === found?.id ? previous : found,
-        );
+        setFocusedProduct((previous) => (previous?.id === found?.id ? previous : found));
       },
       { rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
     );
@@ -506,13 +473,8 @@ function HomePage() {
       list = [...bestSellers];
     } else if (source === "offers") {
       list = [...dailyDeals];
-    } else if (
-      source === "custom" &&
-      settings.hero.sphereCustomProductIds?.length
-    ) {
-      const idMap = new Map(
-        settings.hero.sphereCustomProductIds.map((id, idx) => [id, idx]),
-      );
+    } else if (source === "custom" && settings.hero.sphereCustomProductIds?.length) {
+      const idMap = new Map(settings.hero.sphereCustomProductIds.map((id, idx) => [id, idx]));
       list = allProducts
         .filter((p) => idMap.has(p.id))
         .sort((a, b) => idMap.get(a.id)! - idMap.get(b.id)!);
@@ -537,18 +499,9 @@ function HomePage() {
 
   const storefrontCollections = useMemo(() => {
     const used = new Set<string>();
-    const latestLimit = Math.min(
-      settings.products_layout.latestProductsLimit ?? 8,
-      10,
-    );
-    const recommendedLimit = Math.min(
-      settings.products_layout.bestSellersLimit ?? 6,
-      8,
-    );
-    const dealsLimit = Math.min(
-      settings.products_layout.dailyDealsLimit ?? 6,
-      8,
-    );
+    const latestLimit = Math.min(settings.products_layout.latestProductsLimit ?? 8, 10);
+    const recommendedLimit = Math.min(settings.products_layout.bestSellersLimit ?? 6, 8);
+    const dealsLimit = Math.min(settings.products_layout.dailyDealsLimit ?? 6, 8);
 
     const latest = takeUnusedProducts(
       allProducts,
@@ -577,8 +530,7 @@ function HomePage() {
       .map((category, categoryIndex) => {
         const matching = allProducts.filter(
           (product) =>
-            product.categoryId === category.sourceId ||
-            product.categoryId === category.id,
+            product.categoryId === category.sourceId || product.categoryId === category.id,
         );
         return {
           category,
@@ -614,9 +566,7 @@ function HomePage() {
         continue;
       }
       const product = allProducts.find(
-        (item) =>
-          item.categoryId === category.sourceId ||
-          item.categoryId === category.id,
+        (item) => item.categoryId === category.sourceId || item.categoryId === category.id,
       );
       if (product?.image) previews.set(category.id, product.image);
     }
@@ -635,18 +585,14 @@ function HomePage() {
       }}
     >
       <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
-        <motion.div
-          style={{ y: bgYSlow }}
-          className="absolute inset-0 opacity-[0.12]"
-        >
+        <motion.div style={{ y: bgYSlow }} className="absolute inset-0 opacity-[0.12]">
           <div
             className="absolute inset-0"
             style={{
               backgroundImage:
                 "linear-gradient(color-mix(in oklab, var(--showcase-foreground) 40%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklab, var(--showcase-foreground) 40%, transparent) 1px, transparent 1px)",
               backgroundSize: "42px 42px",
-              maskImage:
-                "radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)",
+              maskImage: "radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)",
             }}
           />
         </motion.div>
@@ -694,9 +640,8 @@ function HomePage() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              const input = (
-                e.currentTarget.elements.namedItem("search") as HTMLInputElement
-              ).value;
+              const input = (e.currentTarget.elements.namedItem("search") as HTMLInputElement)
+                .value;
               if (input.trim()) {
                 window.location.href = `/search?q=${encodeURIComponent(input)}`;
               }
@@ -708,8 +653,7 @@ function HomePage() {
                 name="search"
                 type="text"
                 placeholder={
-                  settings.navigation.searchPlaceholder ||
-                  "ابحث بالاسم، اللون، المواصفات..."
+                  settings.navigation.searchPlaceholder || "ابحث بالاسم، اللون، المواصفات..."
                 }
                 className="w-full rounded-full border border-white/10 bg-black/40 py-2.5 pr-9 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-violet-400/60 focus:outline-none transition-all"
               />
@@ -723,9 +667,7 @@ function HomePage() {
             </button>
           </form>
           <div className="flex flex-wrap items-center justify-center gap-1 pt-0.5">
-            <span className="text-[9px] text-showcase-foreground/50">
-              شائع:
-            </span>
+            <span className="text-[9px] text-showcase-foreground/50">شائع:</span>
             {["إلكترونيات", "أحدث الهواتف", "عروض اليوم"].map((tag) => (
               <Link
                 key={tag}
@@ -744,11 +686,7 @@ function HomePage() {
 
       {/* 4. SMART CATEGORIES */}
       {settings.sections.categories.enabled && (
-        <motion.section
-          key="categories"
-          {...revealProps}
-          className="relative z-10 px-4"
-        >
+        <motion.section key="categories" {...revealProps} className="relative z-10 px-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <span className="mb-0.5 inline-block text-[10px] font-bold tracking-[0.3em] text-violet-400">
@@ -758,10 +696,7 @@ function HomePage() {
                 {settings.sections.categories.title || "التصنيفات"}
               </h3>
             </div>
-            <Link
-              to="/search"
-              className="text-xs font-bold text-violet-400 hover:underline"
-            >
+            <Link to="/search" className="text-xs font-bold text-violet-400 hover:underline">
               استكشف الكل ➔
             </Link>
           </div>
@@ -775,28 +710,26 @@ function HomePage() {
             }}
             className="grid grid-cols-1 gap-5 lg:grid-cols-2"
           >
-            {categories
-              .slice(0, settings.sections.categories.limit ?? 8)
-              .map((c) => (
-                <motion.div
-                  key={c.id}
-                  variants={{
-                    hidden: { opacity: 0, y: 30 },
-                    show: {
-                      opacity: 1,
-                      y: 0,
-                      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-                    },
+            {categories.slice(0, settings.sections.categories.limit ?? 8).map((c) => (
+              <motion.div
+                key={c.id}
+                variants={{
+                  hidden: { opacity: 0, y: 30 },
+                  show: {
+                    opacity: 1,
+                    y: 0,
+                    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+                  },
+                }}
+              >
+                <CategoryCard
+                  category={{
+                    ...c,
+                    imageUrl: categoryPreviewImages.get(c.id) || c.imageUrl,
                   }}
-                >
-                  <CategoryCard
-                    category={{
-                      ...c,
-                      imageUrl: categoryPreviewImages.get(c.id) || c.imageUrl,
-                    }}
-                  />
-                </motion.div>
-              ))}
+                />
+              </motion.div>
+            ))}
           </motion.div>
         </motion.section>
       )}
@@ -844,11 +777,7 @@ function HomePage() {
 
       {/* 8b. VIRTUAL SHOWROOM */}
       {settings.sections.showroom.enabled && (
-        <motion.section
-          key="showroom"
-          {...revealProps}
-          className="relative z-10 px-4"
-        >
+        <motion.section key="showroom" {...revealProps} className="relative z-10 px-4">
           <Link
             to="/immersive-store"
             className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-3xl border p-4 shadow-2xl"
@@ -868,15 +797,13 @@ function HomePage() {
             />
             <div className="relative">
               <span className="inline-block rounded-full bg-showcase-foreground/20 px-2.5 py-0.5 text-[10px] font-bold">
-                {settings.sections.showroom.badge ||
-                  "جديد · تجربة ثلاثية الأبعاد"}
+                {settings.sections.showroom.badge || "جديد · تجربة ثلاثية الأبعاد"}
               </span>
               <h3 className="mt-1.5 text-lg font-black leading-tight">
                 {settings.sections.showroom.title || "المعرض الافتراضي"}
               </h3>
               <p className="text-[11px] text-showcase-foreground/85">
-                {settings.sections.showroom.subtitle ||
-                  "تجوّل داخل اندكس ستور الفاخر"}
+                {settings.sections.showroom.subtitle || "تجوّل داخل اندكس ستور الفاخر"}
               </p>
             </div>
             <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-showcase-foreground/15 ring-1 ring-showcase-foreground/30 backdrop-blur-md transition group-hover:scale-110">
@@ -940,12 +867,8 @@ function HomePage() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="text-xs font-black text-showcase-foreground">
-                      {item.name}
-                    </h4>
-                    <p className="text-[9px] text-showcase-foreground/50">
-                      {item.city}
-                    </p>
+                    <h4 className="text-xs font-black text-showcase-foreground">{item.name}</h4>
+                    <p className="text-[9px] text-showcase-foreground/50">{item.city}</p>
                   </div>
                   <div className="flex gap-0.5 text-amber-400">
                     {Array.from({ length: item.rating || 5 }).map((_, i) => (
@@ -970,8 +893,7 @@ function HomePage() {
               <Icons.MessageCircle className="h-6 w-6" />
             </div>
             <h3 className="text-base font-black text-showcase-foreground">
-              {settings.sections.whatsappCta?.title ||
-                "هل تحتاج مساعدة في الطلب؟"}
+              {settings.sections.whatsappCta?.title || "هل تحتاج مساعدة في الطلب؟"}
             </h3>
             <p className="text-xs text-showcase-foreground/70 max-w-md mx-auto">
               {settings.sections.whatsappCta?.subtitle ||
@@ -984,8 +906,7 @@ function HomePage() {
               className="inline-flex items-center justify-center gap-2 rounded-full bg-success px-6 py-2.5 text-xs font-black text-success-foreground hover:bg-success/90 transition shadow-lg"
             >
               <Icons.MessageCircle className="h-4 w-4" />
-              {settings.sections.whatsappCta?.buttonText ||
-                "تواصل معنا عبر واتساب 💬"}
+              {settings.sections.whatsappCta?.buttonText || "تواصل معنا عبر واتساب 💬"}
             </a>
           </div>
         </motion.section>
@@ -1014,21 +935,17 @@ function HomePage() {
               className="pointer-events-auto flex items-center justify-between gap-3 rounded-full border p-2 ps-4 shadow-2xl"
               style={{
                 borderColor: LIGHT_BORDER,
-                background:
-                  "color-mix(in oklab, var(--showcase) 72%, transparent)",
+                background: "color-mix(in oklab, var(--showcase) 72%, transparent)",
                 backdropFilter: "blur(24px) saturate(160%)",
                 color: LIGHT,
               }}
             >
               <div className="min-w-0 flex-1 ps-2 text-start">
-                <p className="truncate text-xs font-bold">
-                  {focusedProduct.name}
-                </p>
+                <p className="truncate text-xs font-bold">{focusedProduct.name}</p>
                 <p
                   className="text-[11px] font-black"
                   style={{
-                    color:
-                      "color-mix(in oklab, var(--showcase-foreground) 70%, transparent)",
+                    color: "color-mix(in oklab, var(--showcase-foreground) 70%, transparent)",
                   }}
                 >
                   {formatPrice(focusedProduct.price)}
