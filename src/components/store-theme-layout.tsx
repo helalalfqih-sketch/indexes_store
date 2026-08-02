@@ -30,8 +30,7 @@ function CinematicBackground() {
             backgroundImage:
               "linear-gradient(color-mix(in oklab, var(--showcase-foreground) 40%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklab, var(--showcase-foreground) 40%, transparent) 1px, transparent 1px)",
             backgroundSize: "42px 42px",
-            maskImage:
-              "radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)",
+            maskImage: "radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)",
           }}
         />
       </div>
@@ -115,16 +114,10 @@ function StoreTopBar() {
     { to: "/account", label: "حسابي", icon: User },
   ];
 
-  const storeLogo =
-    settings.store_identity?.logoUrl ||
-    settings.navigation?.logoUrl ||
-    noqtaLogo;
+  const storeLogo = settings.store_identity?.logoUrl || settings.navigation?.logoUrl || noqtaLogo;
   const storeName =
-    settings.brand_settings?.storeName ||
-    settings.navigation?.storeName ||
-    "اندكس ستور";
-  const searchPlaceholder =
-    settings.navigation?.searchPlaceholder || "ابحث عن منتج...";
+    settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور";
+  const searchPlaceholder = settings.navigation?.searchPlaceholder || "ابحث عن منتج...";
 
   return (
     <header className="sticky top-0 z-40 w-full px-3 pt-3">
@@ -132,11 +125,7 @@ function StoreTopBar() {
         {/* Brand Logo & Name */}
         <Link to="/" className="flex items-center gap-2 group">
           <div className="relative h-9 w-9 overflow-hidden rounded-full glow-neon transition-transform group-hover:scale-105">
-            <img
-              src={storeLogo}
-              alt={storeName}
-              className="h-full w-full object-cover"
-            />
+            <img src={storeLogo} alt={storeName} className="h-full w-full object-cover" />
           </div>
           <div className="leading-none">
             <span className="text-sm font-black tracking-tight text-white drop-shadow-sm">
@@ -176,9 +165,7 @@ function StoreTopBar() {
         <Link
           to="/search"
           preload="intent"
-          onClick={() =>
-            trackEvent("click_search", { source: "header_desktop" })
-          }
+          onClick={() => trackEvent("click_search", { source: "header_desktop" })}
           className="hidden md:flex flex-1 max-w-xs items-center gap-2 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-xs font-semibold text-showcase-muted backdrop-blur-sm transition-all hover:border-violet-400/50 hover:bg-black/50 hover:text-white"
         >
           <Search className="h-3.5 w-3.5 text-violet-300" />
@@ -189,9 +176,7 @@ function StoreTopBar() {
         <div className="flex items-center gap-2 md:hidden">
           <Link
             to="/search"
-            onClick={() =>
-              trackEvent("click_search", { source: "header_mobile" })
-            }
+            onClick={() => trackEvent("click_search", { source: "header_mobile" })}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-showcase-muted hover:text-white"
             title="بحث"
           >
