@@ -368,3 +368,22 @@
     animation: none;
   }
 }
+
+
+/* Mobile-web performance mode: avoid continuous backdrop recomposition while
+   scrolling and pause decorative animations on coarse-pointer devices. */
+@media (max-width: 767px), (pointer: coarse) {
+  .glass,
+  .glass-dark,
+  .glass-float,
+  .glass-strong {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .animate-particle,
+  .glass-shimmer {
+    animation: none !important;
+    will-change: auto;
+  }
+}
