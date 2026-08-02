@@ -57,11 +57,11 @@ export function MobileCommerceBottomBar() {
       style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
     >
       <ul
-        className="grid grid-cols-5 items-center rounded-[28px] px-1 py-1.5 shadow-2xl backdrop-blur-[20px]"
+        className="grid grid-cols-5 items-center rounded-[30px] px-1 py-1.5 shadow-2xl"
         style={{
-          background: "rgba(6, 18, 30, 0.92)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "inset 0 1px 0 rgba(31,94,255,0.4), 0 18px 44px -16px rgba(0,0,0,0.85)",
+          background: "rgba(5, 8, 20, 0.98)",
+          border: "1px solid rgba(139,92,246,0.28)",
+          boxShadow: "inset 0 1px 0 rgba(168,85,247,0.22), 0 18px 50px -14px rgba(0,0,0,0.9)",
         }}
       >
         {items.map((it, idx) => {
@@ -96,7 +96,7 @@ export function MobileCommerceBottomBar() {
                 }}
                 className={`mx-auto flex w-fit flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5 text-[10px] font-bold transition-all ${
                   active
-                    ? "bg-primary/20 text-neon glow-neon"
+                    ? "-mt-5 min-h-16 min-w-16 justify-center rounded-full border border-violet-300/35 bg-gradient-to-b from-violet-600 to-fuchsia-700 text-white shadow-[0_0_34px_rgba(124,58,237,0.65)]"
                     : "text-showcase-muted hover:text-white"
                 }`}
               >
