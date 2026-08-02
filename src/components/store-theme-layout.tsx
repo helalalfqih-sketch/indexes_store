@@ -4,7 +4,6 @@ import { useCart } from "@/lib/cart-store";
 import noqtaLogo from "@/assets/noqta-logo.png";
 import { SiteFooter } from "@/components/site-footer";
 import { useAppearance } from "@/components/appearance-provider";
-import { NetworkManager } from "@/components/network-manager";
 import { ParticleField } from "@/components/design-system/glass";
 import { AppInstallBanner } from "@/components/app-install-banner";
 import {
@@ -99,8 +98,6 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
       {/* 5. Desktop Floating WhatsApp & Mobile Commerce Bar */}
       <StorefrontWhatsAppFloating />
       <MobileCommerceBottomBar />
-
-      <NetworkManager />
     </div>
   );
 }
@@ -118,7 +115,8 @@ function StoreTopBar() {
   ];
 
   const storeLogo = settings.store_identity?.logoUrl || settings.navigation?.logoUrl || noqtaLogo;
-  const storeName = settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور";
+  const storeName =
+    settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور";
   const searchPlaceholder = settings.navigation?.searchPlaceholder || "ابحث عن منتج...";
 
   return (
