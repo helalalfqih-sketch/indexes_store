@@ -23,10 +23,7 @@ export interface CategoryCardProps {
 
 export function CategoryCard({ category }: CategoryCardProps) {
   const reducedMotion = useReducedMotion();
-  const imageUrl =
-    category.imageUrl ||
-    ("image_url" in category ? category.image_url : null) ||
-    "";
+  const imageUrl = category.imageUrl || ("image_url" in category ? category.image_url : null) || "";
   const count =
     ("products_count" in category ? category.products_count : undefined) ??
     ("count" in category ? category.count : undefined) ??
@@ -47,11 +44,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className="group relative h-full w-full overflow-hidden rounded-[30px] border border-violet-400/20 bg-[#080d1a] p-2 shadow-[0_22px_70px_rgba(0,0,0,0.34)] transition-colors hover:border-violet-400/55"
     >
-      <Link
-        to="/category/$id"
-        params={{ id: category.id }}
-        className="flex h-full flex-col"
-      >
+      <Link to="/category/$id" params={{ id: category.id }} className="flex h-full flex-col">
         <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[24px] bg-[#040713]">
           {imageUrl ? (
             <OptimizedImage
