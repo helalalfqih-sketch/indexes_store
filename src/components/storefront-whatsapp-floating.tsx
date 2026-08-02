@@ -9,7 +9,10 @@ export function StorefrontWhatsAppFloating() {
   const { settings } = useAppearance();
   const phone = settings.navigation?.whatsappPhone || "967771370740";
   const storeName = settings.navigation?.storeName || "اندكس ستور";
-  const waHref = whatsappLink(`مرحباً، أود الاستفسار والتسوق من ${storeName}`, phone);
+  const waHref = whatsappLink(
+    `مرحباً، أود الاستفسار والتسوق من ${storeName}`,
+    phone,
+  );
 
   const handleWhatsAppClick = () => {
     trackEvent("click_whatsapp", { source: "floating_button" });
@@ -41,13 +44,22 @@ export function MobileCommerceBottomBar() {
   const { settings } = useAppearance();
   const phone = settings.navigation?.whatsappPhone || "967771370740";
   const storeName = settings.navigation?.storeName || "اندكس ستور";
-  const waHref = whatsappLink(`مرحباً، أود الاستفسار والتسوق من ${storeName}`, phone);
+  const waHref = whatsappLink(
+    `مرحباً، أود الاستفسار والتسوق من ${storeName}`,
+    phone,
+  );
 
   const items = [
     { to: "/", label: "الرئيسية", icon: Home },
     { to: "/search", label: "البحث", icon: Search, event: "click_search" },
     { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count },
-    { isWhatsApp: true, href: waHref, label: "واتساب", icon: MessageCircle, event: "click_whatsapp" },
+    {
+      isWhatsApp: true,
+      href: waHref,
+      label: "واتساب",
+      icon: MessageCircle,
+      event: "click_whatsapp",
+    },
     { to: "/account", label: "حسابي", icon: User },
   ];
 
@@ -61,7 +73,8 @@ export function MobileCommerceBottomBar() {
         style={{
           background: "rgba(5, 8, 20, 0.98)",
           border: "1px solid rgba(139,92,246,0.28)",
-          boxShadow: "inset 0 1px 0 rgba(168,85,247,0.22), 0 18px 50px -14px rgba(0,0,0,0.9)",
+          boxShadow:
+            "inset 0 1px 0 rgba(168,85,247,0.22), 0 18px 50px -14px rgba(0,0,0,0.9)",
         }}
       >
         {items.map((it, idx) => {
@@ -73,7 +86,9 @@ export function MobileCommerceBottomBar() {
                   href={it.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => trackEvent("click_whatsapp", { source: "bottom_nav" })}
+                  onClick={() =>
+                    trackEvent("click_whatsapp", { source: "bottom_nav" })
+                  }
                   className="mx-auto flex w-fit flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5 text-[10px] font-bold text-emerald-400 hover:text-white transition-all"
                 >
                   <Icon className="h-5 w-5 stroke-[2.5]" />
