@@ -11,7 +11,7 @@ import {
   offersQueryOptions,
   allProductsQueryOptions,
 } from "@/lib/store.queries";
-import { ProductCard } from "@/components/product-card";
+import { StorefrontProductRail } from "@/components/storefront-product-rail";
 import { CategoryCard } from "@/components/category-card";
 import { lazy, Suspense } from "react";
 import { ProductCardSkeleton, Skeleton } from "@/components/ui/skeleton";
@@ -46,7 +46,6 @@ const ImmersiveProductExperience = lazyWithRetry(() =>
 );
 import { quickOrderLink } from "@/lib/whatsapp";
 import { useAppearance } from "@/components/appearance-provider";
-import { type ProductsLayoutConfig } from "@/lib/domain/appearance";
 import type { HeroConfig, HeroSlide } from "@/lib/domain/appearance";
 
 const ProductSphereHero = lazyWithRetry(() =>
@@ -349,6 +348,32 @@ const revealProps = {
   transition: { duration: 0.5, ease: "easeOut" as const },
 };
 
+const STOREFRONT_ROTATION_MS = 5 * 60 * 1000;
+
+function rotateProducts(products: LegacyProductShape[], offset: number) {
+  if (products.length < 2) return products;
+  const start = ((offset % products.length) + products.length) % products.length;
+  return [...products.slice(start), ...products.slice(0, start)];
+}
+
+function takeUnusedProducts(
+  preferred: LegacyProductShape[],
+  fallback: LegacyProductShape[],
+  limit: number,
+  offset: number,
+  used: Set<string>,
+) {
+  const result: LegacyProductShape[] = [];
+  const candidates = [...rotateProducts(preferred, offset), ...rotateProducts(fallback, offset * 3 + 1)];
+  for (const product of candidates) {
+    if (used.has(product.id)) continue;
+    used.add(product.id);
+    result.push(product);
+    if (result.length === limit) break;
+  }
+  return result;
+}
+
 function HomePage() {
   const { data: categoriesRaw } = useSuspenseQuery(categoriesQueryOptions());
   const { data: bestSellersRaw } = useSuspenseQuery(bestSellersQueryOptions(4));
@@ -377,7 +402,7 @@ function HomePage() {
 
   const categories = categoriesRaw as LegacyCategoryShape[];
   const bestSellers = bestSellersRaw as LegacyProductShape[];
-  const dailyDeals = (dailyDealsRaw as LegacyProductShape[]).slice(0, 4);
+  const dailyDeals = dailyDealsRaw as LegacyProductShape[];
   const allProducts = allProductsRaw as LegacyProductShape[];
 
   const pageRef = useRef<HTMLDivElement>(null);
@@ -451,28 +476,72 @@ function HomePage() {
     settings.hero.sphereCustomProductIds,
   ]);
 
-  const getGridClass = (layout: ProductsLayoutConfig) => {
-    const m = layout.columnsMobile === 1 ? "grid-cols-1" : "grid-cols-2";
-    const t =
-      layout.columnsTablet === 1
-        ? "sm:grid-cols-1"
-        : layout.columnsTablet === 2
-          ? "sm:grid-cols-2"
-          : layout.columnsTablet === 4
-            ? "sm:grid-cols-4"
-            : "sm:grid-cols-3";
-    const d =
-      layout.columnsDesktop === 2
-        ? "md:grid-cols-2"
-        : layout.columnsDesktop === 3
-          ? "md:grid-cols-3"
-          : layout.columnsDesktop === 5
-            ? "md:grid-cols-5"
-            : layout.columnsDesktop === 6
-              ? "md:grid-cols-6"
-              : "md:grid-cols-4";
-    return `grid ${m} ${t} ${d} gap-4`;
-  };
+  const [rotationCycle, setRotationCycle] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setRotationCycle((cycle) => cycle + 1),
+      STOREFRONT_ROTATION_MS,
+    );
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const storefrontCollections = useMemo(() => {
+    const used = new Set<string>();
+    const latestLimit = Math.min(settings.products_layout.latestProductsLimit ?? 8, 10);
+    const recommendedLimit = Math.min(settings.products_layout.bestSellersLimit ?? 6, 8);
+    const dealsLimit = Math.min(settings.products_layout.dailyDealsLimit ?? 6, 8);
+
+    const latest = takeUnusedProducts(
+      allProducts,
+      [],
+      latestLimit,
+      rotationCycle * latestLimit,
+      used,
+    );
+    const recommended = takeUnusedProducts(
+      bestSellers,
+      allProducts,
+      recommendedLimit,
+      rotationCycle * recommendedLimit + 2,
+      used,
+    );
+    const deals = takeUnusedProducts(
+      dailyDeals,
+      allProducts,
+      dealsLimit,
+      rotationCycle * dealsLimit + 4,
+      used,
+    );
+
+    const categoryRails = categories
+      .slice(0, settings.sections.categories.limit ?? 8)
+      .map((category, categoryIndex) => {
+        const matching = allProducts.filter((product) => product.categoryId === category.id);
+        return {
+          category,
+          products: takeUnusedProducts(
+            matching,
+            [],
+            8,
+            rotationCycle * 8 + categoryIndex * 3,
+            used,
+          ),
+        };
+      })
+      .filter((rail) => rail.products.length > 0);
+
+    return { latest, recommended, deals, categoryRails };
+  }, [
+    allProducts,
+    bestSellers,
+    categories,
+    dailyDeals,
+    rotationCycle,
+    settings.products_layout.bestSellersLimit,
+    settings.products_layout.dailyDealsLimit,
+    settings.products_layout.latestProductsLimit,
+    settings.sections.categories.limit,
+  ]);
 
   return (
     <div
@@ -621,96 +690,44 @@ function HomePage() {
         </motion.section>
       )}
 
-      {/* 5. TRENDING NOW */}
+      {/* 5. ROTATING, NON-DUPLICATING PRODUCT RAILS */}
       {settings.sections.latest.enabled && (
-        <motion.section key="latest" {...revealProps} className="relative z-10 px-4 pt-4 sm:pt-6">
-          <div className="mb-5 flex items-end justify-between">
-            <div>
-              <span
-                className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em]"
-                style={{
-                  color: "color-mix(in oklab, var(--showcase-foreground) 55%, transparent)",
-                }}
-              >
-                وصل حديثاً
-              </span>
-              <h2 className="text-xl font-black leading-tight sm:text-2xl" style={{ color: LIGHT }}>
-                {settings.sections.latest.title || "المنتجات الأكثر رواجاً"}
-              </h2>
-            </div>
-            <Link
-              to="/search"
-              className="text-xs font-bold"
-              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
-            >
-              استكشف الكل
-            </Link>
-          </div>
-          <div className={getGridClass(settings.products_layout)}>
-            {allProducts
-              .slice(
-                0,
-                settings.products_layout.latestProductsLimit ?? settings.sections.latest.limit,
-              )
-              .map((p, i) => (
-                <ProductCard key={p.id} product={p} eager={i < 2} />
-              ))}
-          </div>
-        </motion.section>
+        <StorefrontProductRail
+          title={settings.sections.latest.title || "المنتجات الأكثر رواجاً"}
+          eyebrow="وصل حديثاً · يتجدد كل 5 دقائق"
+          products={storefrontCollections.latest}
+          eager
+        />
       )}
 
-      {/* 6. AI RECOMMENDED */}
       {settings.sections.recommended.enabled && (
-        <motion.section key="recommended" {...revealProps} className="relative z-10 px-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-black" style={{ color: LIGHT }}>
-              {settings.sections.recommended.title || "مقترحات الذكاء الاصطناعي"}
-            </h3>
-            <Link
-              to="/search"
-              className="text-xs font-bold"
-              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
-            >
-              الكل
-            </Link>
-          </div>
-          <div className={getGridClass(settings.products_layout)}>
-            {bestSellers
-              .slice(
-                0,
-                settings.products_layout.bestSellersLimit ?? settings.sections.recommended.limit,
-              )
-              .map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-          </div>
-        </motion.section>
+        <StorefrontProductRail
+          title={settings.sections.recommended.title || "مقترحات الذكاء الاصطناعي"}
+          eyebrow="اختيارات لك"
+          products={storefrontCollections.recommended}
+        />
       )}
 
-      {/* 7. OFFERS */}
       {settings.sections.deals.enabled && (
-        <motion.section key="deals" {...revealProps} className="relative z-10 px-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-black" style={{ color: LIGHT }}>
-              {settings.sections.deals.title || "أقوى العروض والخصومات 🔥"}
-            </h3>
-            <Link
-              to="/offers"
-              className="text-xs font-bold"
-              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
-            >
-              الكل
-            </Link>
-          </div>
-          <div className={getGridClass(settings.products_layout)}>
-            {dailyDeals
-              .slice(0, settings.products_layout.dailyDealsLimit ?? settings.sections.deals.limit)
-              .map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-          </div>
-        </motion.section>
+        <StorefrontProductRail
+          title={settings.sections.deals.title || "أقوى العروض والخصومات 🔥"}
+          eyebrow="لفترة محدودة"
+          products={storefrontCollections.deals}
+          href="/offers"
+        />
       )}
+
+      {/* 6. CATEGORY SHOWROOMS — vertical sections, horizontal snap inside each one */}
+      {settings.sections.categories.enabled &&
+        storefrontCollections.categoryRails.map(({ category, products }) => (
+          <StorefrontProductRail
+            key={category.id}
+            title={category.name}
+            eyebrow="معرض الفئة"
+            products={products}
+            href="/search"
+          />
+        ))}
 
       {/* 8b. VIRTUAL SHOWROOM */}
       {settings.sections.showroom.enabled && (
