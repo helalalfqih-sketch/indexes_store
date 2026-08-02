@@ -19,11 +19,7 @@ import type { LegacyCategoryShape } from "@/lib/data-adapter";
 
 const shortcutIcons = [Home, Smartphone, HeartPulse, SprayCan, Shirt, Grid2X2];
 
-export function StorefrontCategoryShortcuts({
-  categories,
-}: {
-  categories: LegacyCategoryShape[];
-}) {
+export function StorefrontCategoryShortcuts({ categories }: { categories: LegacyCategoryShape[] }) {
   const visible = categories.slice(0, 6);
   if (visible.length === 0) return null;
 
@@ -94,9 +90,7 @@ export function StorefrontBenefits() {
           <Icon className="h-7 w-7 shrink-0 text-violet-300" />
           <div className="text-start">
             <h3 className="text-xs font-black text-white">{title}</h3>
-            <p className="mt-1 text-[10px] leading-4 text-slate-400">
-              {subtitle}
-            </p>
+            <p className="mt-1 text-[10px] leading-4 text-slate-400">{subtitle}</p>
           </div>
         </div>
       ))}
@@ -124,15 +118,12 @@ export function StorefrontRewards() {
         </div>
 
         <div className="text-center sm:text-start">
-          <p className="text-[10px] font-bold tracking-[0.24em] text-fuchsia-300">
-            مكافآت حصرية
-          </p>
+          <p className="text-[10px] font-bold tracking-[0.24em] text-fuchsia-300">مكافآت حصرية</p>
           <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">
             برنامج <span className="text-violet-300">INDEXES</span> المميز
           </h2>
           <p className="mt-2 max-w-xl text-xs leading-6 text-slate-300">
-            اكسب نقاطاً مع الطلبات المؤهلة واستبدلها بمزايا وعروض خاصة عند
-            تفعيلها لحسابك.
+            اكسب نقاطاً مع الطلبات المؤهلة واستبدلها بمزايا وعروض خاصة عند تفعيلها لحسابك.
           </p>
         </div>
 
