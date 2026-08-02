@@ -130,7 +130,6 @@ const fallbackTilePositions = [
   { insetInlineStart: "60%", top: "75%" },
   { insetInlineStart: "30%", top: "78%" },
   { insetInlineStart: "5%", top: "54%" },
-  { insetInlineStart: "40%", top: "45%" },
 ];
 
 function ProductSphereFallback({
@@ -142,7 +141,7 @@ function ProductSphereFallback({
   title?: string;
   subtitle?: string;
 }) {
-  const visible = products.filter((product) => Boolean(product.image)).slice(0, 8);
+  const visible = products.filter((product) => Boolean(product.image)).slice(0, 7);
 
   return (
     <section
