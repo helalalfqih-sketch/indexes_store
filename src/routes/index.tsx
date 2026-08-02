@@ -389,36 +389,41 @@ function HomePage() {
   const bgYMid = useTransform(smoothY, (v) => v * 0.35);
   const bgRotate = useTransform(smoothY, (v) => v * 0.02);
 
-  // Sticky WA — track most-centered product card
+  // Sticky WA — observe visibility without forcing layout reads on every scroll frame.
   const [focusedProduct, setFocusedProduct] = useState<Product | null>(null);
   useEffect(() => {
-    const cards = document.querySelectorAll<HTMLElement>("[data-product-id]");
-    if (!cards.length) return;
-    const viewportCenter = () => window.innerHeight / 2;
-    const pick = () => {
-      let best: { el: HTMLElement; dist: number } | null = null;
-      const c = viewportCenter();
-      cards.forEach((el) => {
-        const r = el.getBoundingClientRect();
-        if (r.bottom < 0 || r.top > window.innerHeight) return;
-        const mid = r.top + r.height / 2;
-        const dist = Math.abs(mid - c);
-        if (!best || dist < best.dist) best = { el, dist };
-      });
-      if (best) {
-        const id = (best as { el: HTMLElement }).el.dataset.productId;
-        const found = (allProducts.find((p) => p.id === id) as Product | undefined) ?? null;
-        setFocusedProduct((prev) => (prev?.id === found?.id ? prev : found));
-      }
-    };
-    pick();
-    const onScroll = () => requestAnimationFrame(pick);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
+    const cards = Array.from(document.querySelectorAll<HTMLElement>("[data-product-id]"));
+    if (!cards.length || typeof IntersectionObserver === "undefined") return;
+
+    const visible = new Map<string, number>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = (entry.target as HTMLElement).dataset.productId;
+          if (!id) continue;
+          if (entry.isIntersecting) visible.set(id, entry.intersectionRatio);
+          else visible.delete(id);
+        }
+
+        let bestId: string | null = null;
+        let bestRatio = -1;
+        for (const [id, ratio] of visible) {
+          if (ratio > bestRatio) {
+            bestId = id;
+            bestRatio = ratio;
+          }
+        }
+
+        const found =
+          (bestId ? (allProducts.find((product) => product.id === bestId) as Product | undefined) : undefined) ??
+          null;
+        setFocusedProduct((previous) => (previous?.id === found?.id ? previous : found));
+      },
+      { rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
+    );
+
+    cards.forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
   }, [allProducts]);
 
   const { settings } = useAppearance();
