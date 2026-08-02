@@ -516,7 +516,10 @@ function HomePage() {
     const categoryRails = categories
       .slice(0, settings.sections.categories.limit ?? 8)
       .map((category, categoryIndex) => {
-        const matching = allProducts.filter((product) => product.categoryId === category.id);
+        const matching = allProducts.filter(
+          (product) =>
+            product.categoryId === category.sourceId || product.categoryId === category.id,
+        );
         return {
           category,
           products: takeUnusedProducts(
