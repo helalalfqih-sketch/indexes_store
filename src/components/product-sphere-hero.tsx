@@ -37,6 +37,13 @@ function supportsWebGL(): boolean {
   }
 }
 
+function prefersMobilePerformanceMode(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+}
+
+let sphereHasMountedOnce = false;
+
 function deterministicUnit(index: number, salt = 0): number {
   const value = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
   return value - Math.floor(value);
@@ -714,6 +721,7 @@ export function ProductSphereHero({
 }) {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
+  const [mobilePerformanceMode, setMobilePerformanceMode] = useState(false);
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   const [renderFailed, setRenderFailed] = useState(false);
   const [hovered, setHovered] = useState<LegacyProductShape | null>(null);
@@ -723,12 +731,20 @@ export function ProductSphereHero({
 
   useEffect(() => {
     setWebglSupported(supportsWebGL());
-    // Defer WebGL Canvas mount slightly to allow main thread DOM paint first
-    const timer = setTimeout(() => setMounted(true), 60);
-    const t = setTimeout(() => setShowHint(false), 4000);
+    setMobilePerformanceMode(prefersMobilePerformanceMode());
+
+    // Keep the first paint defer, but never impose it again after route remounts.
+    const mountCanvas = () => {
+      sphereHasMountedOnce = true;
+      setMounted(true);
+    };
+    const timer = sphereHasMountedOnce ? null : window.setTimeout(mountCanvas, 60);
+    if (sphereHasMountedOnce) mountCanvas();
+
+    const t = window.setTimeout(() => setShowHint(false), 4000);
     return () => {
-      clearTimeout(timer);
-      clearTimeout(t);
+      if (timer !== null) window.clearTimeout(timer);
+      window.clearTimeout(t);
     };
   }, []);
 
@@ -783,12 +799,12 @@ export function ProductSphereHero({
           <Suspense fallback={<Fallback />}>
             {mounted && webglSupported === true && pool.length > 0 ? (
               <Canvas
-                dpr={[1, 1.5]}
+                dpr={mobilePerformanceMode ? 1 : [1, 1.5]}
                 camera={{ position: [0, 0.3, 5.8], fov: 44 }}
                 gl={{
-                  antialias: true,
+                  antialias: !mobilePerformanceMode,
                   alpha: false,
-                  powerPreference: "high-performance",
+                  powerPreference: mobilePerformanceMode ? "low-power" : "high-performance",
                   stencil: false,
                   depth: true,
                 }}
@@ -802,7 +818,7 @@ export function ProductSphereHero({
                     radius={radius}
                     tileScale={tileScale}
                     cardShape={cardShape}
-                    showParticles={showParticles}
+                    showParticles={showParticles && !mobilePerformanceMode}
                   />
                 </Suspense>
               </Canvas>
