@@ -1217,6 +1217,8 @@ export function ProductSphereHero({
                           try {
                             const { supabase } = await import("@/integrations/supabase/client");
                             if (supabase) {
+                              // Generated DB types do not include this optional table yet.
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
                               await (supabase as any).from("product_video_requests").insert({
                                 product_id: activeSpecsProduct.id,
                                 product_name: activeSpecsProduct.name,
