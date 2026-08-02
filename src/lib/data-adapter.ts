@@ -14,7 +14,11 @@
  * When Phase C completes, the fallback branch is removed and this file
  * becomes a pure DTO mapper.
  */
-import type { ProductDTO, CategoryDTO, ProductMediaItem } from "@/lib/domain/product";
+import type {
+  ProductDTO,
+  CategoryDTO,
+  ProductMediaItem,
+} from "@/lib/domain/product";
 export type { ProductMediaItem };
 
 import type { CategoryWithMetaDTO } from "@/lib/repositories/categories.repo";
@@ -41,7 +45,13 @@ const seedToProductDTO = (p: SeedProduct): ProductDTO => ({
   media: [
     { type: "image", url: p.image },
     ...(p.videoPlaybackId
-      ? [{ type: "video" as const, url: p.videoPlaybackId, playbackId: p.videoPlaybackId }]
+      ? [
+          {
+            type: "video" as const,
+            url: p.videoPlaybackId,
+            playbackId: p.videoPlaybackId,
+          },
+        ]
       : []),
   ],
   model_url: null,
@@ -69,8 +79,10 @@ const seedToCategoryDTO = (c: SeedCategory): CategoryWithMetaDTO => ({
   is_active: true,
 });
 
-export const fallbackProducts = (): ProductDTO[] => seedProducts.map(seedToProductDTO);
-export const fallbackCategories = (): CategoryWithMetaDTO[] => seedCategories.map(seedToCategoryDTO);
+export const fallbackProducts = (): ProductDTO[] =>
+  seedProducts.map(seedToProductDTO);
+export const fallbackCategories = (): CategoryWithMetaDTO[] =>
+  seedCategories.map(seedToCategoryDTO);
 
 // ---------- Adapter ----------
 
@@ -88,7 +100,8 @@ export async function withFallback<T>(
     if (isEmpty(data)) return { data: fallback(), source: "fallback" };
     return { data, source: "db" };
   } catch (err) {
-    if (import.meta.env.DEV) console.warn("[data-adapter] falling back to seed:", err);
+    if (import.meta.env.DEV)
+      console.warn("[data-adapter] falling back to seed:", err);
     return { data: fallback(), source: "fallback" };
   }
 }
@@ -155,7 +168,12 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   name: p.name,
   description: p.description,
   price: p.price,
-  oldPrice: p.old_price != null ? p.old_price : (p.compare_at_price != null && p.compare_at_price > p.price ? p.compare_at_price : undefined),
+  oldPrice:
+    p.old_price != null
+      ? p.old_price
+      : p.compare_at_price != null && p.compare_at_price > p.price
+        ? p.compare_at_price
+        : undefined,
   stock: p.stock,
   image: p.images[0] ?? "",
   images: p.images,
@@ -192,7 +210,9 @@ export type LegacyCategoryShape = {
   imageUrl?: string | null;
 };
 
-export const toLegacyCategory = (c: CategoryWithMetaDTO): LegacyCategoryShape => ({
+export const toLegacyCategory = (
+  c: CategoryWithMetaDTO,
+): LegacyCategoryShape => ({
   id: c.slug, // legacy code uses slug as id
   sourceId: c.id,
   name: c.name,
