@@ -1,96 +1,105 @@
 import { Link } from "@tanstack/react-router";
 import { Eye, Package, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { OptimizedImage } from "@/components/optimized-image";
 import type { LegacyCategoryShape } from "@/lib/data-adapter";
 
+type ExtendedCategory = {
+  id: string;
+  slug?: string;
+  name: string;
+  description?: string;
+  imageUrl?: string | null;
+  image_url?: string | null;
+  products_count?: number;
+  count?: number;
+  badge?: string;
+  is_new?: boolean;
+};
+
 export interface CategoryCardProps {
-  category: LegacyCategoryShape | {
-    id: string;
-    slug?: string;
-    name: string;
-    description?: string;
-    imageUrl?: string;
-    image_url?: string;
-    products_count?: number;
-    count?: number;
-    badge?: string;
-    is_new?: boolean;
-  };
+  category: LegacyCategoryShape | ExtendedCategory;
 }
 
 export function CategoryCard({ category }: CategoryCardProps) {
-  const imageUrl = (category as any).imageUrl || (category as any).image_url || "";
-  const count = (category as any).products_count ?? (category as any).count ?? null;
-  const description = (category as any).description || "تشكيلة واسعة بأفضل الأسعار والعروض";
-  const badge = (category as any).badge || ((category as any).is_new ? "جديد" : null);
+  const reducedMotion = useReducedMotion();
+  const imageUrl =
+    category.imageUrl || ("image_url" in category ? category.image_url : null) || "";
+  const count =
+    ("products_count" in category ? category.products_count : undefined) ??
+    ("count" in category ? category.count : undefined) ??
+    null;
+  const description =
+    ("description" in category ? category.description : undefined) ||
+    "تشكيلة واسعة بأفضل الأسعار والعروض";
+  const badge =
+    ("badge" in category ? category.badge : undefined) ||
+    ("is_new" in category && category.is_new ? "جديد" : null);
 
   return (
-    <motion.div
-      whileHover={{ y: -4, scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      className="group relative h-full w-full overflow-hidden rounded-3xl border border-white/10 bg-[#091522]/80 backdrop-blur-xl p-3.5 shadow-2xl transition-all duration-300 hover:border-cyan-400/60 hover:shadow-[0_0_25px_rgba(56,189,248,0.25)]"
+    <motion.article
+      initial={reducedMotion ? false : { opacity: 0, y: 18 }}
+      whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      whileHover={reducedMotion ? undefined : { y: -3 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className="group relative h-full w-full overflow-hidden rounded-[30px] border border-violet-400/20 bg-[#080d1a] p-2 shadow-[0_22px_70px_rgba(0,0,0,0.34)] transition-colors hover:border-violet-400/55"
     >
       <Link
         to="/category/$id"
         params={{ id: category.id }}
-        className="flex flex-col h-full justify-between gap-3"
+        className="flex h-full flex-col"
       >
-        {/* Top Image Cover Area */}
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-black/40">
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[24px] bg-[#040713]">
           {imageUrl ? (
             <OptimizedImage
               src={imageUrl}
               alt={category.name}
-              size="card"
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              size="large"
+              className="h-full w-full transition-transform duration-500 group-hover:scale-[1.025]"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-950/40 to-slate-900 text-cyan-400/60">
-              <Package className="h-10 w-10 animate-pulse" />
+            <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_50%_30%,rgba(168,85,247,0.28),transparent_56%),linear-gradient(135deg,#11102a,#050815)] text-violet-300">
+              <Package className="h-14 w-14" />
             </div>
           )}
 
-          {/* Top Badge (e.g. جديد) */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#080d1a] via-transparent to-transparent" />
+          <span className="absolute start-4 top-4 grid h-12 w-12 place-items-center rounded-full border border-violet-300/25 bg-black/50 text-violet-200">
+            <Package className="h-5 w-5" />
+          </span>
           {badge && (
-            <span className="absolute end-2 top-2 z-10 flex items-center gap-1 rounded-full bg-cyan-500/90 px-2.5 py-0.5 text-[10px] font-black text-cyan-950 shadow-md backdrop-blur-md">
-              <Sparkles className="h-3 w-3 fill-cyan-950" />
+            <span className="absolute end-4 top-4 inline-flex items-center gap-1 rounded-full bg-violet-600/90 px-3 py-1 text-[10px] font-black text-white">
+              <Sparkles className="h-3 w-3" />
               {badge}
             </span>
           )}
-
-          {/* Bottom gradient overlay inside image */}
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/80 to-transparent" />
         </div>
 
-        {/* Category Information */}
-        <div className="flex flex-col gap-1 text-start px-1">
-          <h3 className="text-sm font-black text-white group-hover:text-cyan-300 transition-colors">
-            {category.name}
-          </h3>
-          <p className="text-[11px] font-medium text-slate-400 line-clamp-1">
-            {count != null ? `+${count} منتج | ` : ""}{description}
+        <div className="flex flex-1 flex-col gap-3 px-4 pb-4 pt-5 text-start">
+          <div>
+            <h3 className="text-xl font-black text-white transition-colors group-hover:text-violet-200 sm:text-2xl">
+              {category.name}
+            </h3>
+            <span className="mt-2 block h-1 w-10 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400" />
+          </div>
+          <p className="line-clamp-2 text-xs leading-6 text-slate-400">
+            {count != null ? `+${count} منتج · ` : ""}
+            {description}
           </p>
-        </div>
 
-        {/* Small Bottom Action Bar */}
-        <div className="flex items-center justify-between border-t border-white/10 pt-2 text-[10px] text-slate-400">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 rounded-lg bg-white/5 px-2 py-1 transition group-hover:bg-cyan-500/10 group-hover:text-cyan-300">
-              <Eye className="h-3 w-3" />
+          <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+            <span className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-4 text-[11px] font-bold text-slate-200">
+              <Eye className="h-4 w-4" />
               مشاهدة
             </span>
-            <span className="flex items-center gap-1 rounded-lg bg-white/5 px-2 py-1 transition group-hover:bg-white/10">
-              <Package className="h-3 w-3" />
-              منتجات
+            <span className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-500/10 px-4 text-[11px] font-bold text-violet-300">
+              <Package className="h-4 w-4" />
+              المنتجات
             </span>
           </div>
-
-          <span className="text-[11px] font-bold text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
-            استكشف ➔
-          </span>
         </div>
       </Link>
-    </motion.div>
+    </motion.article>
   );
 }
