@@ -61,7 +61,7 @@ const ProductSphereHero = lazyWithRetry(() =>
 
 function HeroSkeleton() {
   return (
-    <Skeleton className="mx-2 h-[52vh] min-h-[380px] rounded-[28px] sm:mx-4 sm:h-[88vh] sm:min-h-[580px]" />
+    <Skeleton className="mx-2 h-[68vh] min-h-[520px] rounded-[32px] sm:mx-4 sm:h-[74vh] sm:min-h-[620px]" />
   );
 }
 
@@ -551,12 +551,27 @@ function HomePage() {
     settings.sections.categories.limit,
   ]);
 
+  const categoryPreviewImages = useMemo(() => {
+    const previews = new Map<string, string>();
+    for (const category of categories) {
+      if (category.imageUrl) {
+        previews.set(category.id, category.imageUrl);
+        continue;
+      }
+      const product = allProducts.find(
+        (item) => item.categoryId === category.sourceId || item.categoryId === category.id,
+      );
+      if (product?.image) previews.set(category.id, product.image);
+    }
+    return previews;
+  }, [allProducts, categories]);
+
   return (
     <div
       ref={pageRef}
       data-home-root="true"
       className="relative flex flex-col gap-6 overflow-hidden bg-[#030611] pb-8 pt-2 md:gap-9"
-      style={{ background: DARK, color: LIGHT, fontFamily: "Tajawal, system-ui, sans-serif" }}
+      style={{ background: "#030611", color: LIGHT, fontFamily: "Tajawal, system-ui, sans-serif" }}
     >
       <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
         <motion.div style={{ y: bgYSlow }} className="absolute inset-0 opacity-[0.12]">
@@ -693,7 +708,7 @@ function HomePage() {
                   },
                 }}
               >
-                <CategoryCard category={c} />
+                <CategoryCard category={{ ...c, imageUrl: categoryPreviewImages.get(c.id) || c.imageUrl }} />
               </motion.div>
             ))}
           </motion.div>
