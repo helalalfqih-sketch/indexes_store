@@ -182,7 +182,10 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
 });
 
 export type LegacyCategoryShape = {
+  /** Public slug used by legacy routes. */
   id: string;
+  /** Original database identifier used by Product.categoryId. */
+  sourceId?: string;
   name: string;
   icon: string;
   color: string;
@@ -191,6 +194,7 @@ export type LegacyCategoryShape = {
 
 export const toLegacyCategory = (c: CategoryWithMetaDTO): LegacyCategoryShape => ({
   id: c.slug, // legacy code uses slug as id
+  sourceId: c.id,
   name: c.name,
   icon: c.icon ?? "Package",
   color: c.color ?? "from-slate-500 to-slate-700",
