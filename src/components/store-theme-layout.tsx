@@ -4,7 +4,6 @@ import { useCart } from "@/lib/cart-store";
 import noqtaLogo from "@/assets/noqta-logo.png";
 import { SiteFooter } from "@/components/site-footer";
 import { useAppearance } from "@/components/appearance-provider";
-import { NetworkManager } from "@/components/network-manager";
 import { ParticleField } from "@/components/design-system/glass";
 import { AppInstallBanner } from "@/components/app-install-banner";
 import {
@@ -100,7 +99,6 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
       <StorefrontWhatsAppFloating />
       <MobileCommerceBottomBar />
 
-      <NetworkManager />
     </div>
   );
 }
