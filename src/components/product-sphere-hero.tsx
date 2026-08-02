@@ -13,7 +13,7 @@ import {
 import { createPortal } from "react-dom";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { Environment, Float } from "@react-three/drei";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { useNavigate, Link } from "@tanstack/react-router";
 import type { LegacyProductShape } from "@/lib/data-adapter";
@@ -68,10 +68,10 @@ function getValidMuxId(id?: string | null): string | null {
 const BG_TOP = "#040818"; // deep navy top
 const BG_MID = "#06091f"; // midnight center
 const BG_BOT = "#000209"; // pure dark bottom
-const ACCENT = "#4f8cff"; // electric blue
-const ACCENT2 = "#a259ff"; // violet
-const LIGHT = "#eeeeff";
-const RING_CLR = "#3a6bdb";
+const ACCENT = "#8b5cf6"; // electric violet
+const ACCENT2 = "#d946ef"; // neon fuchsia
+const LIGHT = "#f7f2ff";
+const RING_CLR = "#7c3aed";
 const RADIUS = 2.2; // sphere radius
 const TILE = 0.7; // card size
 
@@ -442,6 +442,7 @@ function ProductSphere({
   tileScale = 0.8,
   cardShape = "rectangle",
   showParticles = true,
+  reducedMotion = false,
 }: {
   products: LegacyProductShape[];
   onHoverAny: (p: LegacyProductShape | null) => void;
@@ -451,6 +452,7 @@ function ProductSphere({
   tileScale?: number;
   cardShape?: "rectangle" | "circle";
   showParticles?: boolean;
+  reducedMotion?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const { isDragging, autoRotate, velocity } = useDragRotation(
@@ -477,7 +479,7 @@ function ProductSphere({
   }, [products, radius]);
 
   useFrame((_, delta) => {
-    if (!groupRef.current) return;
+    if (!groupRef.current || reducedMotion) return;
     const isPaused = Date.now() < rotationPausedUntil.current;
     if (!isDragging.current && autoRotate.current && !isPaused) {
       // Gentle, slow auto-rotation — never dizzying
@@ -562,6 +564,7 @@ function Scene({
   tileScale = 0.8,
   cardShape = "rectangle",
   showParticles = true,
+  reducedMotion = false,
 }: {
   products: LegacyProductShape[];
   onHoverAny: (p: LegacyProductShape | null) => void;
@@ -571,6 +574,7 @@ function Scene({
   tileScale?: number;
   cardShape?: "rectangle" | "circle";
   showParticles?: boolean;
+  reducedMotion?: boolean;
 }) {
   const { size, camera } = useThree();
 
@@ -613,7 +617,11 @@ function Scene({
 
       {createElement(
         Float,
-        { speed: 0.6, rotationIntensity: 0.08, floatIntensity: 0.18 },
+        {
+          speed: reducedMotion ? 0 : 0.6,
+          rotationIntensity: reducedMotion ? 0 : 0.08,
+          floatIntensity: reducedMotion ? 0 : 0.18,
+        },
         <ProductSphere
           products={products}
           onHoverAny={onHoverAny}
@@ -623,6 +631,7 @@ function Scene({
           tileScale={tileScale}
           cardShape={cardShape}
           showParticles={showParticles}
+          reducedMotion={reducedMotion}
         />,
       )}
     </>
@@ -720,6 +729,7 @@ export function ProductSphereHero({
   showParticles?: boolean;
 }) {
   const navigate = useNavigate();
+  const reducedMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   const [mobilePerformanceMode, setMobilePerformanceMode] = useState(false);
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
@@ -750,10 +760,10 @@ export function ProductSphereHero({
 
   const dismissHint = useCallback(() => setShowHint(false), []);
 
-  const pool = useMemo(
-    () => products.filter((p) => !!p.image).slice(0, maxProducts),
-    [products, maxProducts],
-  );
+  const pool = useMemo(() => {
+    const renderLimit = mobilePerformanceMode ? Math.min(maxProducts, 24) : maxProducts;
+    return products.filter((product) => Boolean(product.image)).slice(0, renderLimit);
+  }, [mobilePerformanceMode, products, maxProducts]);
 
   const hoveredId = hovered?.id ?? null;
 
@@ -769,9 +779,9 @@ export function ProductSphereHero({
   return (
     <section
       dir="rtl"
-      className="relative -mx-4 overflow-hidden rounded-3xl h-[52vh] min-h-[380px] sm:h-[88vh] sm:min-h-[580px]"
+      className="relative mx-2 h-[68vh] min-h-[520px] max-h-[760px] overflow-hidden rounded-[32px] border border-violet-400/25 shadow-[0_30px_100px_rgba(76,29,149,0.32)] sm:mx-4 sm:h-[74vh] sm:min-h-[620px] sm:max-h-[820px]"
       style={{
-        background: `radial-gradient(ellipse at 50% 30%, #0d1435 0%, #06091f 55%, ${BG_BOT} 100%)`,
+        background: `radial-gradient(ellipse at 50% 38%, #1b0c3d 0%, #08081d 48%, ${BG_BOT} 100%)`,
       }}
       onPointerDown={dismissHint}
       onTouchStart={dismissHint}
@@ -818,7 +828,8 @@ export function ProductSphereHero({
                     radius={radius}
                     tileScale={tileScale}
                     cardShape={cardShape}
-                    showParticles={showParticles && !mobilePerformanceMode}
+                    showParticles={showParticles && !mobilePerformanceMode && !reducedMotion}
+                    reducedMotion={Boolean(reducedMotion)}
                   />
                 </Suspense>
               </Canvas>
@@ -847,7 +858,7 @@ export function ProductSphereHero({
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col items-center px-6 pt-7 text-center"
+        className="pointer-events-none absolute inset-x-0 top-[45%] z-10 flex -translate-y-1/2 flex-col items-center px-6 text-center"
         style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}
       >
         {/* Badge */}
@@ -895,6 +906,20 @@ export function ProductSphereHero({
         >
           {subtitle}
         </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.85, duration: 0.55 }}
+          className="pointer-events-auto mt-5"
+        >
+          <Link
+            to="/search"
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-violet-200/25 bg-gradient-to-r from-violet-700 to-fuchsia-600 px-7 text-sm font-black text-white shadow-[0_12px_38px_rgba(124,58,237,0.46)] transition hover:brightness-110"
+          >
+            استكشف المنتجات
+          </Link>
+        </motion.div>
       </div>
 
       {/* ── Drag hint ────────────────────────────────────────────────────── */}
@@ -905,7 +930,7 @@ export function ProductSphereHero({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.85 }}
             transition={{ delay: 1.2, duration: 0.5 }}
-            className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+            className="pointer-events-none absolute bottom-7 left-1/2 z-10 -translate-x-1/2"
           >
             <motion.div
               animate={{ scale: [1, 1.15, 1], opacity: [0.6, 0.9, 0.6] }}
