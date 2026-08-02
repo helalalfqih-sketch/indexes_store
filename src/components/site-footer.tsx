@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Facebook, Instagram, MapPin, MessageCircle, Music2, PackageSearch, Truck, Twitter } from "lucide-react";
+import { MapPin, MessageCircle, PackageSearch, Truck } from "lucide-react";
 import { useAppearance } from "@/components/appearance-provider";
 import { StoreBrand } from "@/components/brand/store-brand";
 import { whatsappLink } from "@/lib/whatsapp";
@@ -103,7 +103,7 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
               title="فيسبوك"
               className="grid h-11 w-11 place-items-center rounded-full border border-border/40 text-showcase-muted transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
             >
-              <Facebook className="h-5 w-5" />
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-current"><path d="M14 8h3V4h-3c-3.3 0-5 2-5 5v2H6v4h3v7h4v-7h3.5l.5-4h-4V9c0-.7.3-1 1-1Z" /></svg>
             </a>
           )}
           {settings.navigation.socialLinks?.instagram && (
@@ -115,7 +115,7 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
               title="إنستغرام"
               className="grid h-11 w-11 place-items-center rounded-full border border-border/40 text-showcase-muted transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
             >
-              <Instagram className="h-5 w-5" />
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-none stroke-current stroke-2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" className="fill-current stroke-none" /></svg>
             </a>
           )}
           {settings.navigation.socialLinks?.tiktok && (
@@ -127,7 +127,7 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
               title="تيك توك"
               className="grid h-11 w-11 place-items-center rounded-full border border-border/40 text-showcase-muted transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
             >
-              <Music2 className="h-5 w-5" />
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-current"><path d="M15 3c.4 2.6 1.9 4.1 4.5 4.4v3.2a9 9 0 0 1-4.5-1.3v6.1A5.6 5.6 0 1 1 10.2 10v3.3a2.4 2.4 0 1 0 1.6 2.2V3H15Z" /></svg>
             </a>
           )}
           {settings.navigation.socialLinks?.twitter && (
@@ -139,7 +139,7 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
               title="إكس"
               className="grid h-11 w-11 place-items-center rounded-full border border-border/40 text-showcase-muted transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
             >
-              <Twitter className="h-5 w-5" />
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4.5 w-4.5 fill-current"><path d="M5.2 3h4.2l3.5 5.1L17.3 3h1.5l-5.2 6.2L20 21h-4.2l-4.1-6-5 6H5.2l5.8-7.1L5.2 3Zm3.5 1.4H7.8l8.7 15.2h.9L8.7 4.4Z" /></svg>
             </a>
           )}
         </div>
