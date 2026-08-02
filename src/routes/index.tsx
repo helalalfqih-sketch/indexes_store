@@ -415,8 +415,9 @@ function HomePage() {
         }
 
         const found =
-          (bestId ? (allProducts.find((product) => product.id === bestId) as Product | undefined) : undefined) ??
-          null;
+          (bestId
+            ? (allProducts.find((product) => product.id === bestId) as Product | undefined)
+            : undefined) ?? null;
         setFocusedProduct((previous) => (previous?.id === found?.id ? previous : found));
       },
       { rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
