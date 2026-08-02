@@ -24,7 +24,9 @@ export interface CategoryCardProps {
 export function CategoryCard({ category }: CategoryCardProps) {
   const reducedMotion = useReducedMotion();
   const imageUrl =
-    category.imageUrl || ("image_url" in category ? category.image_url : null) || "";
+    category.imageUrl ||
+    ("image_url" in category ? category.image_url : null) ||
+    "";
   const count =
     ("products_count" in category ? category.products_count : undefined) ??
     ("count" in category ? category.count : undefined) ??
