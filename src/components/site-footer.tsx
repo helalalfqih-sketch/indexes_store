@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, MessageCircle, PackageSearch, Truck } from "lucide-react";
+import { Facebook, Instagram, MapPin, MessageCircle, Music2, PackageSearch, Truck, Twitter } from "lucide-react";
 import { useAppearance } from "@/components/appearance-provider";
 import { StoreBrand } from "@/components/brand/store-brand";
 import { whatsappLink } from "@/lib/whatsapp";
@@ -82,31 +82,67 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
           تواصل معنا الآن
         </a>
 
-        {/* Social Links */}
-        {settings.navigation.socialLinks && (
-          <div className="flex items-center justify-center gap-4 pt-2 border-t border-border/20 text-xs">
-            {settings.navigation.socialLinks.facebook && (
-              <a href={settings.navigation.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
-                فيسبوك
-              </a>
-            )}
-            {settings.navigation.socialLinks.instagram && (
-              <a href={settings.navigation.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
-                إنستغرام
-              </a>
-            )}
-            {settings.navigation.socialLinks.tiktok && (
-              <a href={settings.navigation.socialLinks.tiktok} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
-                تيك توك
-              </a>
-            )}
-            {settings.navigation.socialLinks.twitter && (
-              <a href={settings.navigation.socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-showcase-muted hover:text-primary transition font-bold">
-                إكس (تويتر)
-              </a>
-            )}
-          </div>
-        )}
+        {/* Accessible, icon-first social links — no fixed platform labels in the layout. */}
+        <div className="flex items-center justify-center gap-2 border-t border-border/20 pt-3">
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="واتساب"
+            title="واتساب"
+            className="grid h-11 w-11 place-items-center rounded-full border border-success/30 bg-success/10 text-success transition hover:bg-success hover:text-success-foreground"
+          >
+            <MessageCircle className="h-5 w-5" />
+          </a>
+          {settings.navigation.socialLinks?.facebook && (
+            <a
+              href={settings.navigation.socialLinks.facebook}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="فيسبوك"
+              title="فيسبوك"
+              className="grid h-11 w-11 place-items-center rounded-full border border-border/40 text-showcase-muted transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
+            >
+              <Facebook className="h-5 w-5" />
+            </a>
+          )}
+          {settings.navigation.socialLinks?.instagram && (
+            <a
+              href={settings.navigation.socialLinks.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="إنستغرام"
+              title="إنستغرام"
+              className="grid h-11 w-11 place-items-center rounded-full border border-border/40 text-showcase-muted transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
+            >
+              <Instagram className="h-5 w-5" />
+            </a>
+          )}
+          {settings.navigation.socialLinks?.tiktok && (
+            <a
+              href={settings.navigation.socialLinks.tiktok}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="تيك توك"
+              title="تيك توك"
+              className="grid h-11 w-11 place-items-center rounded-full border border-border/40 text-showcase-muted transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
+            >
+              <Music2 className="h-5 w-5" />
+            </a>
+          )}
+          {settings.navigation.socialLinks?.twitter && (
+            <a
+              href={settings.navigation.socialLinks.twitter}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="إكس"
+              title="إكس"
+              className="grid h-11 w-11 place-items-center rounded-full border border-border/40 text-showcase-muted transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
+            >
+              <Twitter className="h-5 w-5" />
+            </a>
+          )}
+        </div>
 
         {/* CMS Pages Footer Links */}
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border/20 pt-3 text-[11px] font-semibold text-muted-foreground">
