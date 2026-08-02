@@ -12,6 +12,11 @@ import {
   allProductsQueryOptions,
 } from "@/lib/store.queries";
 import { StorefrontProductRail } from "@/components/storefront-product-rail";
+import {
+  StorefrontBenefits,
+  StorefrontCategoryShortcuts,
+  StorefrontRewards,
+} from "@/components/storefront-premium-sections";
 import { CategoryCard } from "@/components/category-card";
 import { lazy, Suspense } from "react";
 import { ProductCardSkeleton, Skeleton } from "@/components/ui/skeleton";
@@ -126,7 +131,7 @@ function VideoHero({ hero }: { hero: HeroConfig }) {
       )}
       <div className="relative z-10 flex min-h-[400px] flex-col items-center justify-center space-y-4 p-8 text-center sm:p-14">
         {hero.badgeText && (
-          <span className="rounded-full border border-cyan-500/30 bg-cyan-500/20 px-4 py-1 text-xs font-bold text-cyan-400">
+          <span className="rounded-full border border-cyan-500/30 bg-cyan-500/20 px-4 py-1 text-xs font-bold text-violet-400">
             {hero.badgeText}
           </span>
         )}
@@ -550,7 +555,7 @@ function HomePage() {
     <div
       ref={pageRef}
       data-home-root="true"
-      className="relative flex flex-col gap-6 md:gap-10 overflow-hidden pt-2 pb-6"
+      className="relative flex flex-col gap-6 overflow-hidden bg-[#030611] pb-8 pt-2 md:gap-9"
       style={{ background: DARK, color: LIGHT, fontFamily: "Tajawal, system-ui, sans-serif" }}
     >
       <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
@@ -596,7 +601,7 @@ function HomePage() {
 
       {/* 2. AI SEARCH */}
       <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-        <div className="rounded-[32px] glass-dark glass-shimmer p-5 shadow-lg text-center space-y-3">
+        <div className="space-y-3 rounded-[28px] border border-violet-400/25 bg-[#080d1a] p-5 text-center shadow-[0_20px_70px_rgba(76,29,149,0.18)]">
           <div className="text-center">
             <h3 className="text-xs font-black text-showcase-foreground flex items-center justify-center gap-1.5">
               <Icons.Sparkles className="h-3.5 w-3.5 text-neon animate-pulse" />
@@ -624,13 +629,13 @@ function HomePage() {
                 placeholder={
                   settings.navigation.searchPlaceholder || "ابحث بالاسم، اللون، المواصفات..."
                 }
-                className="w-full rounded-full border border-white/10 bg-black/40 py-2.5 pr-9 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-neon/50 focus:outline-none transition-all"
+                className="w-full rounded-full border border-white/10 bg-black/40 py-2.5 pr-9 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-violet-400/60 focus:outline-none transition-all"
               />
               <Icons.Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-showcase-muted" />
             </div>
             <button
               type="submit"
-              className="rounded-full bg-neon px-5 py-2.5 text-xs font-black text-[#04121d] glow-neon hover:brightness-110 transition"
+              className="rounded-full bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-2.5 text-xs font-black text-white shadow-[0_8px_28px_rgba(124,58,237,0.35)] transition hover:brightness-110"
             >
               ابحث
             </button>
@@ -651,19 +656,21 @@ function HomePage() {
         </div>
       </motion.section>
 
+      <StorefrontCategoryShortcuts categories={categories} />
+
       {/* 4. SMART CATEGORIES */}
       {settings.sections.categories.enabled && (
         <motion.section key="categories" {...revealProps} className="relative z-10 px-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <span className="mb-0.5 inline-block text-[10px] font-bold tracking-[0.3em] text-cyan-400">
+              <span className="mb-0.5 inline-block text-[10px] font-bold tracking-[0.3em] text-violet-400">
                 تصنيفات التصفح
               </span>
               <h3 className="text-xl font-black" style={{ color: LIGHT }}>
                 {settings.sections.categories.title || "التصنيفات"}
               </h3>
             </div>
-            <Link to="/search" className="text-xs font-bold text-cyan-400 hover:underline">
+            <Link to="/search" className="text-xs font-bold text-violet-400 hover:underline">
               استكشف الكل ➔
             </Link>
           </div>
@@ -672,7 +679,7 @@ function HomePage() {
             whileInView="show"
             viewport={{ once: true, amount: 0.05 }}
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            className="grid grid-cols-1 gap-5 lg:grid-cols-2"
           >
             {categories.slice(0, settings.sections.categories.limit ?? 8).map((c) => (
               <motion.div
@@ -693,30 +700,30 @@ function HomePage() {
         </motion.section>
       )}
 
-      {/* 5. ROTATING, NON-DUPLICATING PRODUCT RAILS */}
+      {/* 5. PREMIUM OFFER RAILS */}
+      {settings.sections.deals.enabled && (
+        <StorefrontProductRail
+          title={settings.sections.deals.title || "أفضل العروض لك 🔥"}
+          eyebrow="عروض حقيقية من الكتالوج"
+          products={storefrontCollections.deals}
+          href="/offers"
+          eager
+        />
+      )}
+
       {settings.sections.latest.enabled && (
         <StorefrontProductRail
-          title={settings.sections.latest.title || "المنتجات الأكثر رواجاً"}
-          eyebrow="وصل حديثاً · يتجدد كل 5 دقائق"
+          title={settings.sections.latest.title || "وصل حديثاً"}
+          eyebrow="يتجدد كل 5 دقائق"
           products={storefrontCollections.latest}
-          eager
         />
       )}
 
       {settings.sections.recommended.enabled && (
         <StorefrontProductRail
-          title={settings.sections.recommended.title || "مقترحات الذكاء الاصطناعي"}
-          eyebrow="اختيارات لك"
+          title={settings.sections.recommended.title || "مختارة لك"}
+          eyebrow="مقترحات من المتجر"
           products={storefrontCollections.recommended}
-        />
-      )}
-
-      {settings.sections.deals.enabled && (
-        <StorefrontProductRail
-          title={settings.sections.deals.title || "أقوى العروض والخصومات 🔥"}
-          eyebrow="لفترة محدودة"
-          products={storefrontCollections.deals}
-          href="/offers"
         />
       )}
 
@@ -731,6 +738,8 @@ function HomePage() {
             href="/search"
           />
         ))}
+
+      <StorefrontBenefits />
 
       {/* 8b. VIRTUAL SHOWROOM */}
       {settings.sections.showroom.enabled && (
@@ -769,6 +778,8 @@ function HomePage() {
           </Link>
         </motion.section>
       )}
+
+      <StorefrontRewards />
 
       {/* 9. SOCIAL PROOF & TESTIMONIALS */}
       {settings.sections.testimonials.enabled !== false && (
