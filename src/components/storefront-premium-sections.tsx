@@ -29,10 +29,7 @@ export function StorefrontCategoryShortcuts({
 
   return (
     <section aria-label="اختصارات التصنيفات" className="relative z-10 px-4">
-      <div
-        dir="rtl"
-        className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3"
-      >
+      <div dir="rtl" className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">
         {visible.map((category, index) => {
           const Icon = shortcutIcons[index] ?? Package;
           return (
@@ -97,7 +94,9 @@ export function StorefrontBenefits() {
           <Icon className="h-7 w-7 shrink-0 text-violet-300" />
           <div className="text-start">
             <h3 className="text-xs font-black text-white">{title}</h3>
-            <p className="mt-1 text-[10px] leading-4 text-slate-400">{subtitle}</p>
+            <p className="mt-1 text-[10px] leading-4 text-slate-400">
+              {subtitle}
+            </p>
           </div>
         </div>
       ))}
@@ -132,7 +131,8 @@ export function StorefrontRewards() {
             برنامج <span className="text-violet-300">INDEXES</span> المميز
           </h2>
           <p className="mt-2 max-w-xl text-xs leading-6 text-slate-300">
-            اكسب نقاطاً مع الطلبات المؤهلة واستبدلها بمزايا وعروض خاصة عند تفعيلها لحسابك.
+            اكسب نقاطاً مع الطلبات المؤهلة واستبدلها بمزايا وعروض خاصة عند
+            تفعيلها لحسابك.
           </p>
         </div>
 
