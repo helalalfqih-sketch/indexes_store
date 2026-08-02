@@ -14,11 +14,7 @@
  * When Phase C completes, the fallback branch is removed and this file
  * becomes a pure DTO mapper.
  */
-import type {
-  ProductDTO,
-  CategoryDTO,
-  ProductMediaItem,
-} from "@/lib/domain/product";
+import type { ProductDTO, CategoryDTO, ProductMediaItem } from "@/lib/domain/product";
 export type { ProductMediaItem };
 
 import type { CategoryWithMetaDTO } from "@/lib/repositories/categories.repo";
@@ -79,8 +75,7 @@ const seedToCategoryDTO = (c: SeedCategory): CategoryWithMetaDTO => ({
   is_active: true,
 });
 
-export const fallbackProducts = (): ProductDTO[] =>
-  seedProducts.map(seedToProductDTO);
+export const fallbackProducts = (): ProductDTO[] => seedProducts.map(seedToProductDTO);
 export const fallbackCategories = (): CategoryWithMetaDTO[] =>
   seedCategories.map(seedToCategoryDTO);
 
@@ -100,8 +95,7 @@ export async function withFallback<T>(
     if (isEmpty(data)) return { data: fallback(), source: "fallback" };
     return { data, source: "db" };
   } catch (err) {
-    if (import.meta.env.DEV)
-      console.warn("[data-adapter] falling back to seed:", err);
+    if (import.meta.env.DEV) console.warn("[data-adapter] falling back to seed:", err);
     return { data: fallback(), source: "fallback" };
   }
 }
@@ -210,9 +204,7 @@ export type LegacyCategoryShape = {
   imageUrl?: string | null;
 };
 
-export const toLegacyCategory = (
-  c: CategoryWithMetaDTO,
-): LegacyCategoryShape => ({
+export const toLegacyCategory = (c: CategoryWithMetaDTO): LegacyCategoryShape => ({
   id: c.slug, // legacy code uses slug as id
   sourceId: c.id,
   name: c.name,
