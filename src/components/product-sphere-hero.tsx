@@ -170,6 +170,7 @@ function ProductSphereFallback({
               eager={index < 4}
               className="h-full w-full rounded-[18px]"
             />
+            <span className="sr-only">{product.name}</span>
           </Link>
         ))}
 
