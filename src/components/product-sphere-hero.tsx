@@ -22,7 +22,6 @@ import { toast } from "sonner";
 import { Play, X } from "lucide-react";
 import MuxPlayer from "@mux/mux-player-react";
 import { OptimizedImage } from "@/components/optimized-image";
-import { ProductCard } from "@/components/product-card";
 
 function supportsWebGL(): boolean {
   if (typeof window === "undefined") return false;
@@ -123,16 +122,74 @@ class WebGLErrorBoundary extends Component<
   }
 }
 
-function ProductSphereFallback({ products }: { products: LegacyProductShape[] }) {
+const fallbackTilePositions = [
+  { insetInlineStart: "12%", top: "18%" },
+  { insetInlineStart: "42%", top: "7%" },
+  { insetInlineStart: "72%", top: "20%" },
+  { insetInlineStart: "78%", top: "50%" },
+  { insetInlineStart: "60%", top: "75%" },
+  { insetInlineStart: "30%", top: "78%" },
+  { insetInlineStart: "5%", top: "54%" },
+  { insetInlineStart: "40%", top: "45%" },
+];
+
+function ProductSphereFallback({
+  products,
+  title = "آلاف المنتجات",
+  subtitle = "جودة عالية · أسعار منافسة · توصيل سريع",
+}: {
+  products: LegacyProductShape[];
+  title?: string;
+  subtitle?: string;
+}) {
+  const visible = products.filter((product) => Boolean(product.image)).slice(0, 8);
+
   return (
     <section
       data-testid="hero-sphere-fallback"
       aria-label="معرض المنتجات"
-      className="grid grid-cols-2 gap-4 p-6 md:grid-cols-4"
+      className="relative mx-2 flex h-[68vh] min-h-[520px] max-h-[760px] items-center justify-center overflow-hidden rounded-[32px] border border-violet-400/25 bg-[radial-gradient(circle_at_50%_42%,#211052,#09091f_52%,#02040c)] shadow-[0_30px_100px_rgba(76,29,149,0.32)] sm:mx-4 sm:h-[74vh] sm:min-h-[620px]"
     >
-      {products.slice(0, 8).map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
+      <div className="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(circle,rgba(196,181,253,0.75)_1px,transparent_1px)] [background-size:34px_34px]" />
+      <div className="relative aspect-square w-[min(88vw,660px)] rounded-full border border-violet-300/30 bg-[radial-gradient(circle_at_38%_30%,rgba(139,92,246,0.42),rgba(8,9,28,0.96)_55%,#02030a)] shadow-[inset_0_0_80px_rgba(124,58,237,0.35),0_0_70px_rgba(124,58,237,0.35)]">
+        <div className="pointer-events-none absolute -inset-7 rounded-full border border-fuchsia-400/20" />
+        <div className="pointer-events-none absolute -inset-3 rotate-12 rounded-[50%] border border-violet-300/25" />
+
+        {visible.map((product, index) => (
+          <Link
+            key={product.id}
+            to="/product/$slug"
+            params={{ slug: product.slug }}
+            aria-label={product.name}
+            className="absolute z-10 block aspect-square w-[clamp(62px,11vw,112px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[22px] border border-violet-300/35 bg-[#080d1a] p-1 shadow-[0_12px_35px_rgba(0,0,0,0.55),0_0_24px_rgba(124,58,237,0.28)] transition hover:z-30 hover:scale-105"
+            style={fallbackTilePositions[index]}
+          >
+            <OptimizedImage
+              src={product.image}
+              alt={product.name}
+              size="thumbnail"
+              eager={index < 4}
+              className="h-full w-full rounded-[18px]"
+            />
+          </Link>
+        ))}
+
+        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center px-16 text-center">
+          <span className="rounded-full border border-violet-300/30 bg-black/45 px-3 py-1 text-[9px] font-black tracking-[0.3em] text-violet-200">
+            INDEXES
+          </span>
+          <h1 className="mt-3 text-2xl font-black text-white drop-shadow-[0_0_28px_rgba(124,58,237,0.8)] sm:text-5xl">
+            {title}
+          </h1>
+          <p className="mt-2 max-w-sm text-[10px] leading-5 text-slate-300 sm:text-sm">{subtitle}</p>
+          <Link
+            to="/search"
+            className="pointer-events-auto mt-5 inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-violet-700 to-fuchsia-600 px-7 text-xs font-black text-white shadow-[0_12px_38px_rgba(124,58,237,0.46)] sm:text-sm"
+          >
+            استكشف المنتجات
+          </Link>
+        </div>
+      </div>
     </section>
   );
 }
@@ -773,7 +830,7 @@ export function ProductSphereHero({
   );
 
   if (webglSupported === false || renderFailed) {
-    return <ProductSphereFallback products={pool} />;
+    return <ProductSphereFallback products={pool} title={title} subtitle={subtitle} />;
   }
 
   return (
@@ -803,7 +860,7 @@ export function ProductSphereHero({
       {/* WebGL Canvas */}
       <div className="absolute inset-0" style={{ touchAction: "pan-y" }}>
         <WebGLErrorBoundary
-          fallback={<ProductSphereFallback products={pool} />}
+          fallback={<ProductSphereFallback products={pool} title={title} subtitle={subtitle} />}
           onError={() => setRenderFailed(true)}
         >
           <Suspense fallback={<Fallback />}>
