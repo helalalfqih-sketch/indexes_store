@@ -114,9 +114,9 @@ function StoreTopBar() {
     { to: "/account", label: "حسابي", icon: User },
   ];
 
-  const storeLogo =
-    settings.store_identity?.logoUrl || settings.navigation?.logoUrl || noqtaLogo;
-  const storeName = settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور";
+  const storeLogo = settings.store_identity?.logoUrl || settings.navigation?.logoUrl || noqtaLogo;
+  const storeName =
+    settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور";
   const searchPlaceholder = settings.navigation?.searchPlaceholder || "ابحث عن منتج...";
 
   return (
