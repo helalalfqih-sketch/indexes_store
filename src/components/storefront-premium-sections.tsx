@@ -46,7 +46,7 @@ export function StorefrontCategoryShortcuts({ categories }: { categories: Legacy
               key={category.id}
               to="/category/$id"
               params={{ id: category.id }}
-              className="group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[22px] border border-violet-400/20 bg-[#080d1a] px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-violet-400/55 hover:bg-violet-500/10"
+              className="group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[22px] border border-violet-400/20 bg-[linear-gradient(145deg,rgba(16,22,42,0.96),rgba(5,9,22,0.98))] px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition hover:-translate-y-0.5 hover:border-violet-400/55 hover:bg-violet-500/10 active:scale-[0.98]"
             >
               <Icon className="h-7 w-7 text-violet-300 transition group-hover:scale-110 group-hover:text-fuchsia-300" />
               <span className="line-clamp-1 text-[11px] font-bold text-slate-100 sm:text-xs">
@@ -57,7 +57,7 @@ export function StorefrontCategoryShortcuts({ categories }: { categories: Legacy
         })}
         <Link
           to="/search"
-          className="group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[22px] border border-violet-400/20 bg-[#080d1a] px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-violet-400/55 hover:bg-violet-500/10"
+          className="group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[22px] border border-violet-400/20 bg-[linear-gradient(145deg,rgba(16,22,42,0.96),rgba(5,9,22,0.98))] px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition hover:-translate-y-0.5 hover:border-violet-400/55 hover:bg-violet-500/10 active:scale-[0.98]"
         >
           <Grid2X2 className="h-7 w-7 text-violet-300 transition group-hover:scale-110 group-hover:text-fuchsia-300" />
           <span className="text-[11px] font-bold text-slate-100 sm:text-xs">المزيد</span>
@@ -132,7 +132,16 @@ export function StorefrontRewards() {
       <div className="pointer-events-none absolute -start-12 top-1/2 h-44 w-44 -translate-y-1/2 rounded-full border border-fuchsia-400/25" />
       <div className="relative grid items-center gap-5 sm:grid-cols-[180px_1fr_auto]">
         <div className="relative mx-auto grid h-28 w-28 place-items-center">
-          <div className="absolute inset-2 rotate-45 rounded-[26px] border border-fuchsia-300/50 bg-gradient-to-br from-fuchsia-300 via-violet-600 to-indigo-950 shadow-[0_0_40px_rgba(168,85,247,0.5)]" />
+          <motion.div
+            initial={false}
+            animate={
+              reducedMotion
+                ? { rotate: 45, scale: 1 }
+                : { rotate: [45, 48, 43, 45], scale: [1, 1.04, 1] }
+            }
+            transition={{ duration: 6, repeat: reducedMotion ? 0 : Infinity, ease: "easeInOut" }}
+            className="absolute inset-2 rounded-[26px] border border-fuchsia-300/50 bg-gradient-to-br from-fuchsia-300 via-violet-600 to-indigo-950 shadow-[0_0_40px_rgba(168,85,247,0.5)]"
+          />
           <Gem className="relative h-12 w-12 text-white drop-shadow-[0_0_16px_rgba(255,255,255,0.8)]" />
           <Sparkles className="absolute end-0 top-1 h-6 w-6 text-amber-300" />
         </div>
@@ -149,7 +158,7 @@ export function StorefrontRewards() {
 
         <Link
           to="/account"
-          className="mx-auto inline-flex min-h-11 items-center justify-center rounded-full border border-violet-300/35 bg-violet-500/15 px-6 text-xs font-black text-white transition hover:bg-violet-500/30 sm:mx-0"
+          className="mx-auto inline-flex min-h-11 items-center justify-center rounded-full border border-violet-300/35 bg-violet-500/15 px-6 text-xs font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-500/30 active:scale-[0.98] sm:mx-0"
         >
           اكتشف المزايا
         </Link>
