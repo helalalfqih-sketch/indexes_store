@@ -32,7 +32,8 @@ function CinematicBackground() {
             backgroundImage:
               "linear-gradient(color-mix(in oklab, var(--showcase-foreground) 40%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklab, var(--showcase-foreground) 40%, transparent) 1px, transparent 1px)",
             backgroundSize: "42px 42px",
-            maskImage: "radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)",
+            maskImage:
+              "radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)",
           }}
         />
       </div>
@@ -44,7 +45,11 @@ function CinematicBackground() {
         animate={
           reducedMotion
             ? undefined
-            : { x: [0, 46, -24, 0], y: [0, 34, 72, 0], scale: [1, 1.12, 0.96, 1] }
+            : {
+                x: [0, 46, -24, 0],
+                y: [0, 34, 72, 0],
+                scale: [1, 1.12, 0.96, 1],
+              }
         }
         transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
         className="absolute -start-24 top-[18vh] hidden h-[60vh] w-[60vh] rounded-full opacity-30 blur-3xl md:block"
@@ -61,7 +66,11 @@ function CinematicBackground() {
         animate={
           reducedMotion
             ? undefined
-            : { x: [0, -52, 18, 0], y: [0, -28, 54, 0], scale: [1, 0.94, 1.1, 1] }
+            : {
+                x: [0, -52, 18, 0],
+                y: [0, -28, 54, 0],
+                scale: [1, 0.94, 1.1, 1],
+              }
         }
         transition={{ duration: 29, repeat: Infinity, ease: "easeInOut" }}
         className="absolute -end-32 top-[58vh] hidden h-[70vh] w-[70vh] rounded-full opacity-25 blur-3xl md:block"
@@ -81,7 +90,9 @@ function CinematicBackground() {
 
 export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
   const { settings } = useAppearance();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
 
   return (
     <div
@@ -126,7 +137,8 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
 function StoreTopBar() {
   const count = useCart((s) => s.count());
   const { settings } = useAppearance();
-  const searchPlaceholder = settings.navigation?.searchPlaceholder || "ابحث عن منتج...";
+  const searchPlaceholder =
+    settings.navigation?.searchPlaceholder || "ابحث عن منتج...";
 
   return (
     <header className="sticky top-0 z-40 w-full px-3 py-3">
@@ -158,7 +170,9 @@ function StoreTopBar() {
         <Link
           to="/search"
           preload="intent"
-          onClick={() => trackEvent("click_search", { source: "header_desktop" })}
+          onClick={() =>
+            trackEvent("click_search", { source: "header_desktop" })
+          }
           className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-3 text-xs font-semibold text-showcase-muted transition hover:border-violet-400/50 hover:bg-black/55 hover:text-white md:text-sm"
         >
           <Search className="h-4 w-4 shrink-0 text-violet-300" />
