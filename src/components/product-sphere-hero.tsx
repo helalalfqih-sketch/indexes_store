@@ -124,7 +124,7 @@ class WebGLErrorBoundary extends Component<
 
 const fallbackTilePositions = [
   { insetInlineStart: "12%", top: "18%" },
-  { insetInlineStart: "42%", top: "7%" },
+  { insetInlineStart: "42%", top: "17%" },
   { insetInlineStart: "72%", top: "20%" },
   { insetInlineStart: "78%", top: "50%" },
   { insetInlineStart: "60%", top: "75%" },
