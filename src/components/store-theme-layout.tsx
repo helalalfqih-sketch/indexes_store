@@ -1,7 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Search, ShoppingCart, Tag, User } from "lucide-react";
+import { Bell, Menu, ScanLine, Search, ShoppingCart } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
-import noqtaLogo from "@/assets/noqta-logo.png";
 import { SiteFooter } from "@/components/site-footer";
 import { useAppearance } from "@/components/appearance-provider";
 import { ParticleField } from "@/components/design-system/glass";
@@ -61,6 +60,7 @@ function CinematicBackground() {
 
 export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
   const { settings } = useAppearance();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   return (
     <div
@@ -84,7 +84,7 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* 2. PWA & App Install Banner */}
-      <AppInstallBanner />
+      {pathname === "/" ? null : <AppInstallBanner />}
 
       {/* 3. Main Header */}
       <StoreTopBar />
@@ -103,96 +103,61 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
 }
 
 function StoreTopBar() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const count = useCart((s) => s.count());
   const { settings } = useAppearance();
-
-  const activeLinks = [
-    { to: "/", label: "الرئيسية", icon: Home },
-    { to: "/offers", label: "العروض", icon: Tag },
-    { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count },
-    { to: "/account", label: "حسابي", icon: User },
-  ];
-
-  const storeLogo = settings.store_identity?.logoUrl || settings.navigation?.logoUrl || noqtaLogo;
-  const storeName =
-    settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور";
   const searchPlaceholder = settings.navigation?.searchPlaceholder || "ابحث عن منتج...";
 
   return (
-    <header className="sticky top-0 z-40 w-full px-3 pt-3">
-      <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 rounded-[24px] border border-violet-400/20 bg-[#080d1a]/95 px-4 py-2.5 shadow-[0_16px_50px_rgba(0,0,0,0.35)] md:max-w-6xl md:px-5 lg:max-w-7xl">
-        {/* Brand Logo & Name */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="relative h-9 w-9 overflow-hidden rounded-full glow-neon transition-transform group-hover:scale-105">
-            <img src={storeLogo} alt={storeName} className="h-full w-full object-cover" />
-          </div>
-          <div className="leading-none">
-            <span className="text-sm font-black tracking-tight text-white drop-shadow-sm">
-              {storeName}
-            </span>
-          </div>
-        </Link>
+    <header className="sticky top-0 z-40 w-full px-3 py-3">
+      <div className="mx-auto flex w-full max-w-md items-center gap-2.5 rounded-[22px] border border-violet-400/20 bg-[#050916]/98 px-3 py-2.5 shadow-[0_16px_45px_rgba(0,0,0,0.32)] md:max-w-6xl md:gap-4 md:px-4 lg:max-w-7xl">
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Link
+            to="/cart"
+            preload="intent"
+            aria-label="السلة"
+            className="relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-violet-200 transition hover:border-violet-400/45 hover:text-white"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {count > 0 ? (
+              <span className="absolute -end-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-violet-600 px-1 text-[8px] font-black text-white">
+                {count}
+              </span>
+            ) : null}
+          </Link>
+          <Link
+            to="/account"
+            preload="intent"
+            aria-label="التنبيهات والحساب"
+            className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-violet-200 transition hover:border-violet-400/45 hover:text-white"
+          >
+            <Bell className="h-5 w-5" />
+          </Link>
+        </div>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden items-center gap-2 md:flex">
-          {activeLinks.map((tab) => {
-            const active = pathname === tab.to;
-            return (
-              <Link
-                key={tab.to}
-                to={tab.to}
-                preload="intent"
-                className={`relative flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                  active
-                    ? "bg-primary text-white shadow-brand"
-                    : "text-showcase-muted hover:bg-showcase-foreground/10 hover:text-white"
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                <span>{tab.label}</span>
-                {tab.badge ? (
-                  <span className="absolute -end-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[8px] font-bold text-white shadow-sm">
-                    {tab.badge}
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Desktop Single Search Bar */}
         <Link
           to="/search"
           preload="intent"
           onClick={() => trackEvent("click_search", { source: "header_desktop" })}
-          className="hidden md:flex flex-1 max-w-xs items-center gap-2 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-xs font-semibold text-showcase-muted backdrop-blur-sm transition-all hover:border-violet-400/50 hover:bg-black/50 hover:text-white"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-3 text-xs font-semibold text-showcase-muted transition hover:border-violet-400/50 hover:bg-black/55 hover:text-white md:text-sm"
         >
-          <Search className="h-3.5 w-3.5 text-violet-300" />
+          <Search className="h-4 w-4 shrink-0 text-violet-300" />
           <span className="truncate">{searchPlaceholder}</span>
         </Link>
 
-        {/* Mobile Header Quick Actions */}
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex shrink-0 items-center gap-1.5">
           <Link
             to="/search"
-            onClick={() => trackEvent("click_search", { source: "header_mobile" })}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-showcase-muted hover:text-white"
-            title="بحث"
+            aria-label="البحث المرئي"
+            className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-violet-200 transition hover:border-violet-400/45 hover:text-white"
           >
-            <Search className="h-4 w-4 text-violet-300" />
+            <ScanLine className="h-5 w-5" />
           </Link>
           <Link
-            to="/cart"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-showcase-muted hover:text-white"
-            title="السلة"
+            to="/search"
+            aria-label="قائمة الأقسام"
+            className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-violet-200 transition hover:border-violet-400/45 hover:text-white"
           >
-            <ShoppingCart className="h-4 w-4" />
-            {count > 0 && (
-              <span className="absolute -end-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[8px] font-bold text-white shadow-sm">
-                {count}
-              </span>
-            )}
+            <Menu className="h-5 w-5" />
           </Link>
         </div>
       </div>
