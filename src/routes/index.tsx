@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as Icons from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useTransform, useSpring } from "framer-motion";
 import { formatPrice, type Product } from "@/lib/store-data";
 import type { LegacyProductShape, LegacyCategoryShape } from "@/lib/data-adapter";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -109,6 +109,8 @@ function HeroContent({
 }
 
 function StorefrontAiSearch({ placeholder }: { placeholder: string }) {
+  const navigate = useNavigate();
+
   return (
     <motion.section {...revealProps} className="relative z-10 px-1">
       <div className="space-y-3 rounded-[24px] border border-violet-400/20 bg-[#080d1a] p-4 text-center shadow-[0_18px_55px_rgba(76,29,149,0.15)] sm:p-5">
@@ -125,8 +127,9 @@ function StorefrontAiSearch({ placeholder }: { placeholder: string }) {
           onSubmit={(event) => {
             event.preventDefault();
             const input = event.currentTarget.elements.namedItem("search") as HTMLInputElement;
-            if (input.value.trim()) {
-              window.location.href = `/search?q=${encodeURIComponent(input.value)}`;
+            const query = input.value.trim();
+            if (query) {
+              void navigate({ to: "/search", search: { q: query } });
             }
           }}
           className="flex items-center gap-2"
@@ -460,6 +463,7 @@ function HomePage() {
   const allProducts = allProductsRaw as LegacyProductShape[];
 
   const pageRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
   const { scrollY } = useScroll();
   const smoothY = useSpring(scrollY, { stiffness: 60, damping: 20, mass: 0.4 });
 
@@ -612,7 +616,10 @@ function HomePage() {
       }}
     >
       <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
-        <motion.div style={{ y: bgYSlow }} className="absolute inset-0 opacity-[0.12]">
+        <motion.div
+          style={{ y: reducedMotion ? 0 : bgYSlow }}
+          className="absolute inset-0 opacity-[0.12]"
+        >
           <div
             className="absolute inset-0"
             style={{
@@ -624,7 +631,7 @@ function HomePage() {
           />
         </motion.div>
         <motion.div
-          style={{ y: bgYMid, rotate: bgRotate }}
+          style={{ y: reducedMotion ? 0 : bgYMid, rotate: reducedMotion ? 0 : bgRotate }}
           className="absolute -start-24 top-[20vh] h-[60vh] w-[60vh] rounded-full opacity-40 blur-3xl"
         >
           <div
@@ -636,7 +643,7 @@ function HomePage() {
           />
         </motion.div>
         <motion.div
-          style={{ y: bgYSlow }}
+          style={{ y: reducedMotion ? 0 : bgYSlow }}
           className="absolute -end-32 top-[80vh] h-[70vh] w-[70vh] rounded-full opacity-40 blur-3xl"
         >
           <div
@@ -738,7 +745,8 @@ function HomePage() {
       )}
 
       {/* 9. SOCIAL PROOF & TESTIMONIALS */}
-      {settings.sections.testimonials.enabled !== false && (
+      {settings.sections.testimonials.enabled !== false &&
+        Boolean(settings.sections.testimonials.items?.length) && (
         <motion.section
           {...revealProps}
           className="relative z-10 px-4 mt-4 pb-4 border-t border-showcase-border/40 pt-6"
@@ -757,32 +765,7 @@ function HomePage() {
             )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(settings.sections.testimonials.items?.length
-              ? settings.sections.testimonials.items
-              : [
-                  {
-                    name: "أحمد الحميري",
-                    city: "صنعاء",
-                    comment:
-                      "تجربة شراء رائعة جداً، المنتج وصل مغلف تماماً والمعاينة ثلاثية الأبعاد ساعدتني أقرر بسرعة.",
-                    rating: 5,
-                  },
-                  {
-                    name: "جميل الشرعبي",
-                    city: "تعز",
-                    comment:
-                      "أفضل خدمة توصيل وتعامل محترم من الدعم الفني، الجودة ممتازة والأسعار منافسة.",
-                    rating: 5,
-                  },
-                  {
-                    name: "سامي الذبحاني",
-                    city: "عدن",
-                    comment:
-                      "الطلب عبر الواتساب سهل وسريع، والكرة ثلاثية الأبعاد فكرة مبتكرة جداً في متجر يمني.",
-                    rating: 5,
-                  },
-                ]
-            ).map((item, idx) => (
+            {settings.sections.testimonials.items!.map((item, idx) => (
               <div
                 key={idx}
                 className="rounded-2xl border border-showcase-border bg-surface/50 p-4 space-y-2 text-start"
