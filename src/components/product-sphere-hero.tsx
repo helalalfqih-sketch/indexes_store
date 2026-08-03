@@ -224,7 +224,7 @@ function ProductSphereFallback({
               src={product.image}
               alt={product.name}
               size="thumbnail"
-              eager={index < 4}
+              eager
               className="h-full w-full rounded-[18px]"
             />
             <span className="sr-only">{product.name}</span>
