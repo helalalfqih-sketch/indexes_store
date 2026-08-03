@@ -71,7 +71,6 @@ const ACCENT = "#8b5cf6"; // electric violet
 const ACCENT2 = "#d946ef"; // neon fuchsia
 const LIGHT = "#f7f2ff";
 const RING_CLR = "#7c3aed";
-const RADIUS = 2.2; // sphere radius
 const TILE = 0.7; // card size
 
 // ─── Image proxy ─────────────────────────────────────────────────────────────
@@ -285,7 +284,7 @@ function fibonacciSphere(count: number, radius: number): THREE.Vector3[] {
 }
 
 // ─── Glowing orbital ring ────────────────────────────────────────────────────
-function OrbitalRing() {
+function OrbitalRing({ radius }: { radius: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
   useFrame((_, delta) => {
     if (!meshRef.current) return;
@@ -294,14 +293,14 @@ function OrbitalRing() {
   });
   return (
     <RMesh ref={meshRef} rotation={[Math.PI / 2.5, 0.2, 0]}>
-      <RTorusGeometry args={[RADIUS + 0.55, 0.018, 16, 120]} />
+      <RTorusGeometry args={[radius + 0.55, 0.018, 16, 120]} />
       <RMeshBasicMaterial color={RING_CLR} transparent opacity={0.55} />
     </RMesh>
   );
 }
 
 // Second ring — slightly different angle & speed
-function OrbitalRing2() {
+function OrbitalRing2({ radius }: { radius: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
   useFrame((_, delta) => {
     if (!meshRef.current) return;
@@ -310,7 +309,7 @@ function OrbitalRing2() {
   });
   return (
     <RMesh ref={meshRef} rotation={[0.8, 1.2, 0.4]}>
-      <RTorusGeometry args={[RADIUS + 0.9, 0.01, 12, 100]} />
+      <RTorusGeometry args={[radius + 0.9, 0.01, 12, 100]} />
       <RMeshBasicMaterial color={ACCENT2} transparent opacity={0.3} />
     </RMesh>
   );
@@ -445,9 +444,11 @@ function ProductTile({
         onPointerOver={(e: { stopPropagation: () => void }) => {
           e.stopPropagation();
           document.body.style.cursor = "pointer";
+          onHover(data.product);
         }}
         onPointerOut={() => {
           document.body.style.cursor = "";
+          onLeave();
         }}
         onClick={(e: { stopPropagation: () => void }) => {
           e.stopPropagation();
@@ -612,8 +613,8 @@ function ProductSphere({
       </RMesh>
 
       {/* Orbital rings */}
-      <OrbitalRing />
-      <OrbitalRing2 />
+      <OrbitalRing radius={radius} />
+      <OrbitalRing2 radius={radius} />
 
       {/* Ambient particles — only if enabled */}
       {showParticles && <AmbientParticles count={60} />}
@@ -638,8 +639,8 @@ function ProductSphere({
                 isHovered={hoveredId === t.product.id}
                 cardShape={cardShape}
                 tileScale={tileScale}
-                onHover={() => {}}
-                onLeave={() => {}}
+                onHover={onHoverAny}
+                onLeave={() => onHoverAny(null)}
                 onSelect={(p) => {
                   onHoverAny(p);
                   rotationPausedUntil.current = Date.now() + 5000;
@@ -713,6 +714,9 @@ function Scene({
       {/* Warm point fill */}
       <RPointLight position={[3, 2, 4]} intensity={30} color={"#d0e0ff"} distance={14} decay={2} />
       <RPointLight position={[-3, -2, -3]} intensity={18} color={ACCENT2} distance={12} decay={2} />
+
+      {/* Desktop-only HDR environment: the mobile path uses the lightweight static sphere. */}
+      <Environment preset="city" background={false} blur={0.65} />
 
       {createElement(
         Float,
@@ -922,6 +926,11 @@ export function ProductSphereHero({
                   stencil: false,
                   depth: true,
                 }}
+                onCreated={({ gl }) => {
+                  gl.toneMapping = THREE.ACESFilmicToneMapping;
+                  gl.toneMappingExposure = 1.05;
+                  gl.outputColorSpace = THREE.SRGBColorSpace;
+                }}
               >
                 <Suspense fallback={null}>
                   <Scene
@@ -1033,22 +1042,31 @@ export function ProductSphereHero({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xs font-bold text-slate-100 truncate">{hovered.name}</h3>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    الماركة: {hovered.brand || "ماركة متميزة"} | {hovered.badge || "ضمان سنة"}
-                  </p>
+                  {hovered.brand || hovered.badge ? (
+                    <p className="mt-0.5 text-[10px] text-slate-400">
+                      {[hovered.brand, hovered.badge].filter(Boolean).join(" · ")}
+                    </p>
+                  ) : null}
                   <div className="flex items-center justify-between mt-1.5">
-                    <div className="flex items-center gap-1 text-[10px] text-amber-400">
-                      <span>⭐ 4.8 (25 تقييم)</span>
-                    </div>
+                    {hovered.rating > 0 ? (
+                      <div className="flex items-center gap-1 text-[10px] text-amber-400">
+                        <span>
+                          ⭐ {hovered.rating.toFixed(1)}
+                          {hovered.reviews > 0 ? ` (${hovered.reviews} تقييم)` : ""}
+                        </span>
+                      </div>
+                    ) : (
+                      <span />
+                    )}
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-black text-blue-400">
                         {formatPrice(hovered.price)}
                       </span>
-                      {hovered.oldPrice && (
+                      {hovered.oldPrice && hovered.oldPrice > hovered.price ? (
                         <span className="text-[10px] text-slate-500 line-through">
                           {formatPrice(hovered.oldPrice)}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>
