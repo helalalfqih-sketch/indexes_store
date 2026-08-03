@@ -138,6 +138,7 @@ function StorefrontAiSearch({ placeholder }: { placeholder: string }) {
             <input
               name="search"
               type="search"
+              enterKeyHint="search"
               aria-label="ابحث عن منتج"
               placeholder={placeholder}
               className="w-full rounded-full border border-white/10 bg-black/40 py-3 pr-10 pl-4 text-xs text-white placeholder:text-slate-500 focus:border-violet-400/60 focus:outline-none"
@@ -146,7 +147,7 @@ function StorefrontAiSearch({ placeholder }: { placeholder: string }) {
           </div>
           <button
             type="submit"
-            className="min-h-11 rounded-full bg-gradient-to-r from-violet-700 to-fuchsia-600 px-6 text-xs font-black text-white shadow-[0_8px_26px_rgba(124,58,237,0.32)]"
+            className="min-h-11 rounded-full bg-gradient-to-r from-violet-700 to-fuchsia-600 px-6 text-xs font-black text-white shadow-[0_8px_26px_rgba(124,58,237,0.32)] transition hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.98]"
           >
             ابحث
           </button>
