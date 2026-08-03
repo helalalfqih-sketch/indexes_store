@@ -1,12 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  ChevronLeft,
-  Heart,
-  Images,
-  Play,
-  ShoppingCart,
-  Star,
-} from "lucide-react";
+import { ChevronLeft, Heart, Images, Play, ShoppingCart, Star } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -20,16 +13,8 @@ const IMAGE_ROTATION_MS = 4500;
 
 function uniqueImages(product: LegacyProductShape) {
   const mediaImages =
-    product.media
-      ?.filter((item) => item.type === "image")
-      .map((item) => item.url) ?? [];
-  return [
-    ...new Set(
-      [product.image, ...(product.images ?? []), ...mediaImages].filter(
-        Boolean,
-      ),
-    ),
-  ];
+    product.media?.filter((item) => item.type === "image").map((item) => item.url) ?? [];
+  return [...new Set([product.image, ...(product.images ?? []), ...mediaImages].filter(Boolean))];
 }
 
 function productHasVideo(product: LegacyProductShape) {
@@ -58,9 +43,7 @@ function ShowroomProductCard({
   const favorite = isFavorite(product.id);
   const discount =
     product.oldPrice && product.oldPrice > product.price && product.price > 0
-      ? Math.round(
-          ((product.oldPrice - product.price) / product.oldPrice) * 100,
-        )
+      ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
       : 0;
 
   useEffect(() => {
@@ -88,11 +71,7 @@ function ShowroomProductCard({
   }, [images, isVisible, reducedMotion]);
 
   const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
-    if (
-      reducedMotion ||
-      !window.matchMedia("(hover: hover) and (pointer: fine)").matches
-    )
-      return;
+    if (reducedMotion || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
     const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
@@ -150,16 +129,12 @@ function ShowroomProductCard({
             toggleFavorite(product.id);
           }}
           aria-label={
-            favorite
-              ? `إزالة ${product.name} من المفضلة`
-              : `إضافة ${product.name} إلى المفضلة`
+            favorite ? `إزالة ${product.name} من المفضلة` : `إضافة ${product.name} إلى المفضلة`
           }
           aria-pressed={favorite}
           className="absolute start-2 top-2 z-10 grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/55 text-white transition hover:bg-black/80"
         >
-          <Heart
-            className={`h-4 w-4 ${favorite ? "fill-fuchsia-500 text-fuchsia-400" : ""}`}
-          />
+          <Heart className={`h-4 w-4 ${favorite ? "fill-fuchsia-500 text-fuchsia-400" : ""}`} />
         </button>
 
         <div className="absolute end-2 top-2 z-10 flex flex-col items-end gap-1.5">
@@ -187,11 +162,7 @@ function ShowroomProductCard({
       </Link>
 
       <div className="flex flex-1 flex-col p-3 text-start sm:p-4">
-        <Link
-          to="/product/$slug"
-          params={{ slug: product.slug }}
-          className="flex-1"
-        >
+        <Link to="/product/$slug" params={{ slug: product.slug }} className="flex-1">
           <h3 className="line-clamp-2 min-h-10 text-xs font-black leading-5 text-white transition-colors group-hover:text-violet-200 sm:text-sm">
             {product.name}
           </h3>
@@ -200,12 +171,8 @@ function ShowroomProductCard({
         {product.rating > 0 && (
           <div className="mt-1 flex items-center gap-1 text-[10px]">
             <Star className="h-3 w-3 fill-violet-500 text-violet-400" />
-            <span className="font-bold text-violet-300">
-              {product.rating.toFixed(1)}
-            </span>
-            {product.reviews > 0 && (
-              <span className="text-slate-500">({product.reviews})</span>
-            )}
+            <span className="font-bold text-violet-300">{product.rating.toFixed(1)}</span>
+            {product.reviews > 0 && <span className="text-slate-500">({product.reviews})</span>}
           </div>
         )}
 
@@ -274,11 +241,7 @@ export function StorefrontProductRail({
         className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-5 [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden sm:gap-4"
       >
         {products.map((product, index) => (
-          <ShowroomProductCard
-            key={product.id}
-            product={product}
-            eager={eager && index < 2}
-          />
+          <ShowroomProductCard key={product.id} product={product} eager={eager && index < 2} />
         ))}
         <div className="w-1 shrink-0" aria-hidden="true" />
       </div>
