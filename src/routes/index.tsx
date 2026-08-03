@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as Icons from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useTransform, useSpring } from "framer-motion";
 import { formatPrice, type Product } from "@/lib/store-data";
 import type { LegacyProductShape, LegacyCategoryShape } from "@/lib/data-adapter";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -11,8 +11,12 @@ import {
   offersQueryOptions,
   allProductsQueryOptions,
 } from "@/lib/store.queries";
-import { ProductCard } from "@/components/product-card";
-import { CategoryCard } from "@/components/category-card";
+import { StorefrontProductRail } from "@/components/storefront-product-rail";
+import {
+  StorefrontBenefits,
+  StorefrontCategoryShortcuts,
+  StorefrontRewards,
+} from "@/components/storefront-premium-sections";
 import { lazy, Suspense } from "react";
 import { ProductCardSkeleton, Skeleton } from "@/components/ui/skeleton";
 
@@ -46,7 +50,6 @@ const ImmersiveProductExperience = lazyWithRetry(() =>
 );
 import { quickOrderLink } from "@/lib/whatsapp";
 import { useAppearance } from "@/components/appearance-provider";
-import { type ProductsLayoutConfig } from "@/lib/domain/appearance";
 import type { HeroConfig, HeroSlide } from "@/lib/domain/appearance";
 
 const ProductSphereHero = lazyWithRetry(() =>
@@ -56,9 +59,7 @@ const ProductSphereHero = lazyWithRetry(() =>
 );
 
 function HeroSkeleton() {
-  return (
-    <Skeleton className="mx-2 h-[52vh] min-h-[380px] rounded-[28px] sm:mx-4 sm:h-[88vh] sm:min-h-[580px]" />
-  );
+  return <Skeleton className="h-[500px] rounded-[28px] sm:h-[540px] md:h-[430px]" />;
 }
 
 function BannerHero({ hero }: { hero: HeroConfig }) {
@@ -107,6 +108,55 @@ function HeroContent({
   );
 }
 
+function StorefrontAiSearch({ placeholder }: { placeholder: string }) {
+  const navigate = useNavigate();
+
+  return (
+    <motion.section {...revealProps} className="relative z-10 px-1">
+      <div className="space-y-3 rounded-[24px] border border-violet-400/20 bg-[#080d1a] p-4 text-center shadow-[0_18px_55px_rgba(76,29,149,0.15)] sm:p-5">
+        <div>
+          <h2 className="flex items-center justify-center gap-1.5 text-sm font-black text-white">
+            <Icons.Sparkles className="h-4 w-4 text-violet-400" />
+            البحث الذكي بالذكاء الاصطناعي
+          </h2>
+          <p className="mt-1 text-[10px] text-slate-400">
+            اكتب مواصفات ما تبحث عنه وسنجد أفضل النتائج
+          </p>
+        </div>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const input = event.currentTarget.elements.namedItem("search") as HTMLInputElement;
+            const query = input.value.trim();
+            if (query) {
+              void navigate({ to: "/search", search: { q: query } });
+            }
+          }}
+          className="flex items-center gap-2"
+        >
+          <div className="relative flex-1">
+            <input
+              name="search"
+              type="search"
+              enterKeyHint="search"
+              aria-label="ابحث عن منتج"
+              placeholder={placeholder}
+              className="w-full rounded-full border border-white/10 bg-black/40 py-3 pr-10 pl-4 text-xs text-white placeholder:text-slate-500 focus:border-violet-400/60 focus:outline-none"
+            />
+            <Icons.Search className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+          </div>
+          <button
+            type="submit"
+            className="min-h-11 rounded-full bg-gradient-to-r from-violet-700 to-fuchsia-600 px-6 text-xs font-black text-white shadow-[0_8px_26px_rgba(124,58,237,0.32)] transition hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.98]"
+          >
+            ابحث
+          </button>
+        </form>
+      </div>
+    </motion.section>
+  );
+}
+
 function VideoHero({ hero }: { hero: HeroConfig }) {
   return (
     <div
@@ -127,7 +177,7 @@ function VideoHero({ hero }: { hero: HeroConfig }) {
       )}
       <div className="relative z-10 flex min-h-[400px] flex-col items-center justify-center space-y-4 p-8 text-center sm:p-14">
         {hero.badgeText && (
-          <span className="rounded-full border border-cyan-500/30 bg-cyan-500/20 px-4 py-1 text-xs font-bold text-cyan-400">
+          <span className="rounded-full border border-cyan-500/30 bg-cyan-500/20 px-4 py-1 text-xs font-bold text-violet-400">
             {hero.badgeText}
           </span>
         )}
@@ -269,7 +319,11 @@ export const Route = createFileRoute("/")({
       loaderData as
         | {
             settings?: {
-              seo?: { metaTitle?: string; metaDescription?: string; ogImage?: string };
+              seo?: {
+                metaTitle?: string;
+                metaDescription?: string;
+                ogImage?: string;
+              };
             };
           }
         | undefined
@@ -349,6 +403,35 @@ const revealProps = {
   transition: { duration: 0.5, ease: "easeOut" as const },
 };
 
+const STOREFRONT_ROTATION_MS = 5 * 60 * 1000;
+
+function rotateProducts(products: LegacyProductShape[], offset: number) {
+  if (products.length < 2) return products;
+  const start = ((offset % products.length) + products.length) % products.length;
+  return [...products.slice(start), ...products.slice(0, start)];
+}
+
+function takeUnusedProducts(
+  preferred: LegacyProductShape[],
+  fallback: LegacyProductShape[],
+  limit: number,
+  offset: number,
+  used: Set<string>,
+) {
+  const result: LegacyProductShape[] = [];
+  const candidates = [
+    ...rotateProducts(preferred, offset),
+    ...rotateProducts(fallback, offset * 3 + 1),
+  ];
+  for (const product of candidates) {
+    if (used.has(product.id)) continue;
+    used.add(product.id);
+    result.push(product);
+    if (result.length === limit) break;
+  }
+  return result;
+}
+
 function HomePage() {
   const { data: categoriesRaw } = useSuspenseQuery(categoriesQueryOptions());
   const { data: bestSellersRaw } = useSuspenseQuery(bestSellersQueryOptions(4));
@@ -377,10 +460,11 @@ function HomePage() {
 
   const categories = categoriesRaw as LegacyCategoryShape[];
   const bestSellers = bestSellersRaw as LegacyProductShape[];
-  const dailyDeals = (dailyDealsRaw as LegacyProductShape[]).slice(0, 4);
+  const dailyDeals = dailyDealsRaw as LegacyProductShape[];
   const allProducts = allProductsRaw as LegacyProductShape[];
 
   const pageRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
   const { scrollY } = useScroll();
   const smoothY = useSpring(scrollY, { stiffness: 60, damping: 20, mass: 0.4 });
 
@@ -451,38 +535,92 @@ function HomePage() {
     settings.hero.sphereCustomProductIds,
   ]);
 
-  const getGridClass = (layout: ProductsLayoutConfig) => {
-    const m = layout.columnsMobile === 1 ? "grid-cols-1" : "grid-cols-2";
-    const t =
-      layout.columnsTablet === 1
-        ? "sm:grid-cols-1"
-        : layout.columnsTablet === 2
-          ? "sm:grid-cols-2"
-          : layout.columnsTablet === 4
-            ? "sm:grid-cols-4"
-            : "sm:grid-cols-3";
-    const d =
-      layout.columnsDesktop === 2
-        ? "md:grid-cols-2"
-        : layout.columnsDesktop === 3
-          ? "md:grid-cols-3"
-          : layout.columnsDesktop === 5
-            ? "md:grid-cols-5"
-            : layout.columnsDesktop === 6
-              ? "md:grid-cols-6"
-              : "md:grid-cols-4";
-    return `grid ${m} ${t} ${d} gap-4`;
-  };
+  const [rotationCycle, setRotationCycle] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setRotationCycle((cycle) => cycle + 1),
+      STOREFRONT_ROTATION_MS,
+    );
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const storefrontCollections = useMemo(() => {
+    const used = new Set<string>();
+    const latestLimit = Math.min(settings.products_layout.latestProductsLimit ?? 8, 10);
+    const recommendedLimit = Math.min(settings.products_layout.bestSellersLimit ?? 6, 8);
+    const dealsLimit = Math.min(settings.products_layout.dailyDealsLimit ?? 6, 8);
+
+    const latest = takeUnusedProducts(
+      allProducts,
+      [],
+      latestLimit,
+      rotationCycle * latestLimit,
+      used,
+    );
+    const recommended = takeUnusedProducts(
+      bestSellers,
+      allProducts,
+      recommendedLimit,
+      rotationCycle * recommendedLimit + 2,
+      used,
+    );
+    const deals = takeUnusedProducts(
+      dailyDeals,
+      allProducts,
+      dealsLimit,
+      rotationCycle * dealsLimit + 4,
+      used,
+    );
+
+    const categoryRails = categories
+      .slice(0, settings.sections.categories.limit ?? 8)
+      .map((category, categoryIndex) => {
+        const matching = allProducts.filter(
+          (product) =>
+            product.categoryId === category.sourceId || product.categoryId === category.id,
+        );
+        return {
+          category,
+          products: takeUnusedProducts(
+            matching,
+            [],
+            8,
+            rotationCycle * 8 + categoryIndex * 3,
+            used,
+          ),
+        };
+      })
+      .filter((rail) => rail.products.length > 0);
+
+    return { latest, recommended, deals, categoryRails };
+  }, [
+    allProducts,
+    bestSellers,
+    categories,
+    dailyDeals,
+    rotationCycle,
+    settings.products_layout.bestSellersLimit,
+    settings.products_layout.dailyDealsLimit,
+    settings.products_layout.latestProductsLimit,
+    settings.sections.categories.limit,
+  ]);
 
   return (
     <div
       ref={pageRef}
       data-home-root="true"
-      className="relative flex flex-col gap-6 md:gap-10 overflow-hidden pt-2 pb-6"
-      style={{ background: DARK, color: LIGHT, fontFamily: "Tajawal, system-ui, sans-serif" }}
+      className="relative flex flex-col gap-4 overflow-hidden bg-[#030611] pb-8 pt-1 md:gap-5"
+      style={{
+        background: "#030611",
+        color: LIGHT,
+        fontFamily: "Tajawal, system-ui, sans-serif",
+      }}
     >
       <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
-        <motion.div style={{ y: bgYSlow }} className="absolute inset-0 opacity-[0.12]">
+        <motion.div
+          style={{ y: reducedMotion ? 0 : bgYSlow }}
+          className="absolute inset-0 opacity-[0.12]"
+        >
           <div
             className="absolute inset-0"
             style={{
@@ -494,7 +632,10 @@ function HomePage() {
           />
         </motion.div>
         <motion.div
-          style={{ y: bgYMid, rotate: bgRotate }}
+          style={{
+            y: reducedMotion ? 0 : bgYMid,
+            rotate: reducedMotion ? 0 : bgRotate,
+          }}
           className="absolute -start-24 top-[20vh] h-[60vh] w-[60vh] rounded-full opacity-40 blur-3xl"
         >
           <div
@@ -506,7 +647,7 @@ function HomePage() {
           />
         </motion.div>
         <motion.div
-          style={{ y: bgYSlow }}
+          style={{ y: reducedMotion ? 0 : bgYSlow }}
           className="absolute -end-32 top-[80vh] h-[70vh] w-[70vh] rounded-full opacity-40 blur-3xl"
         >
           <div
@@ -522,195 +663,52 @@ function HomePage() {
       {/* 1. DYNAMIC STOREFRONT CMS HERO STAGE */}
       <StorefrontHero hero={settings.hero} products={sphereProducts} />
 
-      {/* 2. AI SEARCH */}
-      <motion.section {...revealProps} className="relative z-10 px-4 mt-2">
-        <div className="rounded-[32px] glass-dark glass-shimmer p-5 shadow-lg text-center space-y-3">
-          <div className="text-center">
-            <h3 className="text-xs font-black text-showcase-foreground flex items-center justify-center gap-1.5">
-              <Icons.Sparkles className="h-3.5 w-3.5 text-neon animate-pulse" />
-              البحث الذكي بالذكاء الاصطناعي
-            </h3>
-            <p className="text-[10px] text-showcase-foreground/60 mt-0.5">
-              اكتب مواصفات ما تبحث عنه، وسيقوم محرك البحث بإيجاده لك
-            </p>
-          </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const input = (e.currentTarget.elements.namedItem("search") as HTMLInputElement)
-                .value;
-              if (input.trim()) {
-                window.location.href = `/search?q=${encodeURIComponent(input)}`;
-              }
-            }}
-            className="relative flex items-center gap-2"
-          >
-            <div className="relative flex-1">
-              <input
-                name="search"
-                type="text"
-                placeholder={
-                  settings.navigation.searchPlaceholder || "ابحث بالاسم، اللون، المواصفات..."
-                }
-                className="w-full rounded-full border border-white/10 bg-black/40 py-2.5 pr-9 pl-4 text-xs text-showcase-foreground placeholder-showcase-muted focus:border-neon/50 focus:outline-none transition-all"
-              />
-              <Icons.Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-showcase-muted" />
-            </div>
-            <button
-              type="submit"
-              className="rounded-full bg-neon px-5 py-2.5 text-xs font-black text-[#04121d] glow-neon hover:brightness-110 transition"
-            >
-              ابحث
-            </button>
-          </form>
-          <div className="flex flex-wrap items-center justify-center gap-1 pt-0.5">
-            <span className="text-[9px] text-showcase-foreground/50">شائع:</span>
-            {["إلكترونيات", "أحدث الهواتف", "عروض اليوم"].map((tag) => (
-              <Link
-                key={tag}
-                to="/search"
-                search={{ q: tag }}
-                className="rounded-full bg-showcase-foreground/5 border border-showcase-border/40 px-2 py-0.5 text-[9px] text-showcase-foreground/75 hover:bg-showcase-foreground/10 transition"
-              >
-                #{tag}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </motion.section>
+      <StorefrontCategoryShortcuts categories={categories} />
 
-      {/* 4. SMART CATEGORIES */}
-      {settings.sections.categories.enabled && (
-        <motion.section key="categories" {...revealProps} className="relative z-10 px-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <span className="mb-0.5 inline-block text-[10px] font-bold tracking-[0.3em] text-cyan-400">
-                تصنيفات التصفح
-              </span>
-              <h3 className="text-xl font-black" style={{ color: LIGHT }}>
-                {settings.sections.categories.title || "التصنيفات"}
-              </h3>
-            </div>
-            <Link to="/search" className="text-xs font-bold text-cyan-400 hover:underline">
-              استكشف الكل ➔
-            </Link>
-          </div>
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.05 }}
-            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-          >
-            {categories.slice(0, settings.sections.categories.limit ?? 8).map((c) => (
-              <motion.div
-                key={c.id}
-                variants={{
-                  hidden: { opacity: 0, y: 30 },
-                  show: {
-                    opacity: 1,
-                    y: 0,
-                    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-                  },
-                }}
-              >
-                <CategoryCard category={c} />
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.section>
-      )}
-
-      {/* 5. TRENDING NOW */}
-      {settings.sections.latest.enabled && (
-        <motion.section key="latest" {...revealProps} className="relative z-10 px-4 pt-4 sm:pt-6">
-          <div className="mb-5 flex items-end justify-between">
-            <div>
-              <span
-                className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em]"
-                style={{
-                  color: "color-mix(in oklab, var(--showcase-foreground) 55%, transparent)",
-                }}
-              >
-                وصل حديثاً
-              </span>
-              <h2 className="text-xl font-black leading-tight sm:text-2xl" style={{ color: LIGHT }}>
-                {settings.sections.latest.title || "المنتجات الأكثر رواجاً"}
-              </h2>
-            </div>
-            <Link
-              to="/search"
-              className="text-xs font-bold"
-              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
-            >
-              استكشف الكل
-            </Link>
-          </div>
-          <div className={getGridClass(settings.products_layout)}>
-            {allProducts
-              .slice(
-                0,
-                settings.products_layout.latestProductsLimit ?? settings.sections.latest.limit,
-              )
-              .map((p, i) => (
-                <ProductCard key={p.id} product={p} eager={i < 2} />
-              ))}
-          </div>
-        </motion.section>
-      )}
-
-      {/* 6. AI RECOMMENDED */}
-      {settings.sections.recommended.enabled && (
-        <motion.section key="recommended" {...revealProps} className="relative z-10 px-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-black" style={{ color: LIGHT }}>
-              {settings.sections.recommended.title || "مقترحات الذكاء الاصطناعي"}
-            </h3>
-            <Link
-              to="/search"
-              className="text-xs font-bold"
-              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
-            >
-              الكل
-            </Link>
-          </div>
-          <div className={getGridClass(settings.products_layout)}>
-            {bestSellers
-              .slice(
-                0,
-                settings.products_layout.bestSellersLimit ?? settings.sections.recommended.limit,
-              )
-              .map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-          </div>
-        </motion.section>
-      )}
-
-      {/* 7. OFFERS */}
+      {/* REFERENCE-FIRST COMMERCE FLOW */}
       {settings.sections.deals.enabled && (
-        <motion.section key="deals" {...revealProps} className="relative z-10 px-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-black" style={{ color: LIGHT }}>
-              {settings.sections.deals.title || "أقوى العروض والخصومات 🔥"}
-            </h3>
-            <Link
-              to="/offers"
-              className="text-xs font-bold"
-              style={{ color: "color-mix(in oklab, var(--showcase-foreground) 65%, transparent)" }}
-            >
-              الكل
-            </Link>
-          </div>
-          <div className={getGridClass(settings.products_layout)}>
-            {dailyDeals
-              .slice(0, settings.products_layout.dailyDealsLimit ?? settings.sections.deals.limit)
-              .map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-          </div>
-        </motion.section>
+        <StorefrontProductRail
+          title={settings.sections.deals.title || "أفضل العروض لك 🔥"}
+          eyebrow="عروض حقيقية من الكتالوج"
+          products={storefrontCollections.deals}
+          href="/offers"
+          eager
+        />
       )}
+
+      <StorefrontBenefits />
+      <StorefrontRewards />
+      <StorefrontAiSearch
+        placeholder={settings.navigation.searchPlaceholder || "ابحث بالاسم، اللون، المواصفات..."}
+      />
+
+      {settings.sections.latest.enabled && (
+        <StorefrontProductRail
+          title={settings.sections.latest.title || "وصل حديثاً"}
+          eyebrow="يتجدد كل 5 دقائق"
+          products={storefrontCollections.latest}
+        />
+      )}
+
+      {settings.sections.recommended.enabled && (
+        <StorefrontProductRail
+          title={settings.sections.recommended.title || "مختارة لك"}
+          eyebrow="مقترحات من المتجر"
+          products={storefrontCollections.recommended}
+        />
+      )}
+
+      {/* 6. CATEGORY SHOWROOMS — vertical sections, horizontal snap inside each one */}
+      {settings.sections.categories.enabled &&
+        storefrontCollections.categoryRails.map(({ category, products }) => (
+          <StorefrontProductRail
+            key={category.id}
+            title={category.name}
+            eyebrow="معرض الفئة"
+            products={products}
+            href="/search"
+          />
+        ))}
 
       {/* 8b. VIRTUAL SHOWROOM */}
       {settings.sections.showroom.enabled && (
@@ -751,74 +749,50 @@ function HomePage() {
       )}
 
       {/* 9. SOCIAL PROOF & TESTIMONIALS */}
-      {settings.sections.testimonials.enabled !== false && (
-        <motion.section
-          {...revealProps}
-          className="relative z-10 px-4 mt-4 pb-4 border-t border-showcase-border/40 pt-6"
-        >
-          <div className="mb-4 text-center">
-            <span className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em] text-primary">
-              تقييمات العملاء
-            </span>
-            <h3 className="text-base font-black text-showcase-foreground">
-              {settings.sections.testimonials.title || "ماذا يقول عملاؤنا؟ ❤️"}
-            </h3>
-            {settings.sections.testimonials.subtitle && (
-              <p className="text-[11px] text-showcase-foreground/60 mt-0.5">
-                {settings.sections.testimonials.subtitle}
-              </p>
-            )}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(settings.sections.testimonials.items?.length
-              ? settings.sections.testimonials.items
-              : [
-                  {
-                    name: "أحمد الحميري",
-                    city: "صنعاء",
-                    comment:
-                      "تجربة شراء رائعة جداً، المنتج وصل مغلف تماماً والمعاينة ثلاثية الأبعاد ساعدتني أقرر بسرعة.",
-                    rating: 5,
-                  },
-                  {
-                    name: "جميل الشرعبي",
-                    city: "تعز",
-                    comment:
-                      "أفضل خدمة توصيل وتعامل محترم من الدعم الفني، الجودة ممتازة والأسعار منافسة.",
-                    rating: 5,
-                  },
-                  {
-                    name: "سامي الذبحاني",
-                    city: "عدن",
-                    comment:
-                      "الطلب عبر الواتساب سهل وسريع، والكرة ثلاثية الأبعاد فكرة مبتكرة جداً في متجر يمني.",
-                    rating: 5,
-                  },
-                ]
-            ).map((item, idx) => (
-              <div
-                key={idx}
-                className="rounded-2xl border border-showcase-border bg-surface/50 p-4 space-y-2 text-start"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-xs font-black text-showcase-foreground">{item.name}</h4>
-                    <p className="text-[9px] text-showcase-foreground/50">{item.city}</p>
-                  </div>
-                  <div className="flex gap-0.5 text-amber-400">
-                    {Array.from({ length: item.rating || 5 }).map((_, i) => (
-                      <Icons.Star key={i} className="h-3 w-3 fill-amber-400" />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-xs text-showcase-foreground/80 leading-relaxed italic">
-                  "{item.comment}"
+      {settings.sections.testimonials.enabled !== false &&
+        Boolean(settings.sections.testimonials.items?.length) && (
+          <motion.section
+            {...revealProps}
+            className="relative z-10 px-4 mt-4 pb-4 border-t border-showcase-border/40 pt-6"
+          >
+            <div className="mb-4 text-center">
+              <span className="mb-1 inline-block text-[10px] font-bold tracking-[0.3em] text-primary">
+                تقييمات العملاء
+              </span>
+              <h3 className="text-base font-black text-showcase-foreground">
+                {settings.sections.testimonials.title || "ماذا يقول عملاؤنا؟ ❤️"}
+              </h3>
+              {settings.sections.testimonials.subtitle && (
+                <p className="text-[11px] text-showcase-foreground/60 mt-0.5">
+                  {settings.sections.testimonials.subtitle}
                 </p>
-              </div>
-            ))}
-          </div>
-        </motion.section>
-      )}
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {settings.sections.testimonials.items!.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-2xl border border-showcase-border bg-surface/50 p-4 space-y-2 text-start"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-black text-showcase-foreground">{item.name}</h4>
+                      <p className="text-[9px] text-showcase-foreground/50">{item.city}</p>
+                    </div>
+                    <div className="flex gap-0.5 text-amber-400">
+                      {Array.from({ length: item.rating || 5 }).map((_, i) => (
+                        <Icons.Star key={i} className="h-3 w-3 fill-amber-400" />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-showcase-foreground/80 leading-relaxed italic">
+                    "{item.comment}"
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+        )}
 
       {/* 10. WHATSAPP CTA BANNER */}
       {settings.sections.whatsappCta?.enabled !== false && (
@@ -851,7 +825,10 @@ function HomePage() {
       {settings.cart_config.floatingBarEnabled && (
         <motion.div
           initial={false}
-          animate={{ y: focusedProduct ? 0 : 120, opacity: focusedProduct ? 1 : 0 }}
+          animate={{
+            y: focusedProduct ? 0 : 120,
+            opacity: focusedProduct ? 1 : 0,
+          }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="pointer-events-none fixed inset-x-0 z-30 mx-auto w-full max-w-md px-3 sm:inset-x-auto sm:end-4 sm:mx-0 sm:max-w-sm"
           style={{

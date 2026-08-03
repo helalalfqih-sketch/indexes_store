@@ -13,16 +13,15 @@ import {
 import { createPortal } from "react-dom";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { Environment, Float } from "@react-three/drei";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { useNavigate, Link } from "@tanstack/react-router";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import { formatPrice, STORE_CONTACT } from "@/lib/store-data";
 import { toast } from "sonner";
-import { Play, X } from "lucide-react";
+import { ArrowLeft, Play, X } from "lucide-react";
 import MuxPlayer from "@mux/mux-player-react";
 import { OptimizedImage } from "@/components/optimized-image";
-import { ProductCard } from "@/components/product-card";
 
 function supportsWebGL(): boolean {
   if (typeof window === "undefined") return false;
@@ -68,11 +67,10 @@ function getValidMuxId(id?: string | null): string | null {
 const BG_TOP = "#040818"; // deep navy top
 const BG_MID = "#06091f"; // midnight center
 const BG_BOT = "#000209"; // pure dark bottom
-const ACCENT = "#4f8cff"; // electric blue
-const ACCENT2 = "#a259ff"; // violet
-const LIGHT = "#eeeeff";
-const RING_CLR = "#3a6bdb";
-const RADIUS = 2.2; // sphere radius
+const ACCENT = "#8b5cf6"; // electric violet
+const ACCENT2 = "#d946ef"; // neon fuchsia
+const LIGHT = "#f7f2ff";
+const RING_CLR = "#7c3aed";
 const TILE = 0.7; // card size
 
 // ─── Image proxy ─────────────────────────────────────────────────────────────
@@ -123,16 +121,116 @@ class WebGLErrorBoundary extends Component<
   }
 }
 
-function ProductSphereFallback({ products }: { products: LegacyProductShape[] }) {
+const fallbackTilePositions = [
+  { insetInlineStart: "12%", top: "25%" },
+  { insetInlineStart: "42%", top: "25%" },
+  { insetInlineStart: "72%", top: "25%" },
+  { insetInlineStart: "78%", top: "50%" },
+  { insetInlineStart: "60%", top: "75%" },
+  { insetInlineStart: "30%", top: "78%" },
+  { insetInlineStart: "5%", top: "54%" },
+];
+
+function getHighestRealDiscount(products: LegacyProductShape[]) {
+  return products.reduce((highest, product) => {
+    if (!product.oldPrice || product.oldPrice <= product.price || product.oldPrice <= 0) {
+      return highest;
+    }
+    const discount = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
+    return Math.max(highest, discount);
+  }, 0);
+}
+
+function HeroOfferCopy({
+  products,
+  badgeText,
+}: {
+  products: LegacyProductShape[];
+  badgeText?: string;
+}) {
+  const highestDiscount = getHighestRealDiscount(products);
+
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end bg-gradient-to-t from-[#02040d] via-[#02040d]/92 to-transparent px-6 pb-7 pt-28 md:inset-y-0 md:left-0 md:right-auto md:w-[38%] md:items-center md:bg-gradient-to-r md:from-[#030611] md:via-[#030611]/90 md:to-transparent md:px-8 md:pb-0 md:pt-0 lg:px-12">
+      <div className="w-full text-right">
+        <span className="inline-flex rounded-full border border-violet-400/30 bg-violet-500/10 px-3 py-1 text-[9px] font-black tracking-[0.28em] text-violet-200">
+          {badgeText || "INDEXES · عروض مختارة"}
+        </span>
+        <h1
+          className="mt-3 font-black leading-none text-white"
+          style={{ fontSize: "clamp(2rem, 4vw, 4.5rem)" }}
+        >
+          عروض حصرية
+        </h1>
+        <p className="mt-2 text-sm font-bold text-slate-300">
+          {highestDiscount > 0 ? "خصومات حقيقية تصل إلى" : "أسعار مميزة من الكتالوج"}
+        </p>
+        {highestDiscount > 0 ? (
+          <p className="mt-1 bg-gradient-to-b from-fuchsia-300 via-violet-400 to-violet-700 bg-clip-text text-6xl font-black leading-none text-transparent lg:text-7xl">
+            {highestDiscount}%
+          </p>
+        ) : null}
+        <Link
+          to="/offers"
+          className="pointer-events-auto mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-violet-200/30 bg-gradient-to-r from-violet-700 to-fuchsia-600 px-6 text-sm font-black text-white shadow-[0_12px_35px_rgba(124,58,237,0.42)] transition hover:-translate-y-0.5 hover:brightness-110"
+        >
+          تسوّق الآن
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function ProductSphereFallback({
+  products,
+}: {
+  products: LegacyProductShape[];
+  title?: string;
+  subtitle?: string;
+}) {
+  const visible = products.filter((product) => Boolean(product.image)).slice(0, 7);
+
   return (
     <section
       data-testid="hero-sphere-fallback"
       aria-label="معرض المنتجات"
-      className="grid grid-cols-2 gap-4 p-6 md:grid-cols-4"
+      className="relative h-[500px] overflow-hidden rounded-[28px] border border-violet-400/25 bg-[radial-gradient(circle_at_66%_42%,#211052,#09091f_52%,#02040c)] shadow-[0_26px_80px_rgba(76,29,149,0.28)] sm:h-[540px] md:h-[430px]"
     >
-      {products.slice(0, 8).map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
+      <div className="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(circle,rgba(196,181,253,0.75)_1px,transparent_1px)] [background-size:34px_34px]" />
+      <div className="absolute right-1/2 top-[38%] aspect-square w-[92%] translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-300/30 bg-[radial-gradient(circle_at_38%_30%,rgba(139,92,246,0.42),rgba(8,9,28,0.96)_55%,#02030a)] shadow-[inset_0_0_80px_rgba(124,58,237,0.35),0_0_70px_rgba(124,58,237,0.35)] sm:w-[78%] md:right-[3%] md:top-1/2 md:w-[52%] md:max-w-[560px] md:translate-x-0">
+        <div className="pointer-events-none absolute -inset-7 rounded-full border border-fuchsia-400/20" />
+        <div className="pointer-events-none absolute -inset-3 rotate-12 rounded-[50%] border border-violet-300/25" />
+        <div
+          className="pointer-events-none absolute inset-[9%] rounded-[50%] border border-fuchsia-300/25"
+          style={{ transform: "rotate(-18deg) scaleX(1.3)" }}
+        />
+        <div
+          className="pointer-events-none absolute inset-[17%] rounded-[50%] border border-cyan-300/15"
+          style={{ transform: "rotate(24deg) scaleX(1.38)" }}
+        />
+
+        {visible.map((product, index) => (
+          <Link
+            key={product.id}
+            to="/product/$slug"
+            params={{ slug: product.slug }}
+            aria-label={product.name}
+            className="absolute z-10 block aspect-square w-[clamp(62px,11vw,112px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[22px] border border-violet-300/35 bg-[#080d1a] p-1 shadow-[0_12px_35px_rgba(0,0,0,0.55),0_0_24px_rgba(124,58,237,0.28)] transition hover:z-30 hover:scale-105"
+            style={fallbackTilePositions[index]}
+          >
+            <OptimizedImage
+              src={product.image}
+              alt={product.name}
+              size="thumbnail"
+              eager
+              className="h-full w-full rounded-[18px]"
+            />
+            <span className="sr-only">{product.name}</span>
+          </Link>
+        ))}
+      </div>
+      <HeroOfferCopy products={visible} />
     </section>
   );
 }
@@ -186,7 +284,7 @@ function fibonacciSphere(count: number, radius: number): THREE.Vector3[] {
 }
 
 // ─── Glowing orbital ring ────────────────────────────────────────────────────
-function OrbitalRing() {
+function OrbitalRing({ radius }: { radius: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
   useFrame((_, delta) => {
     if (!meshRef.current) return;
@@ -195,14 +293,14 @@ function OrbitalRing() {
   });
   return (
     <RMesh ref={meshRef} rotation={[Math.PI / 2.5, 0.2, 0]}>
-      <RTorusGeometry args={[RADIUS + 0.55, 0.018, 16, 120]} />
+      <RTorusGeometry args={[radius + 0.55, 0.018, 16, 120]} />
       <RMeshBasicMaterial color={RING_CLR} transparent opacity={0.55} />
     </RMesh>
   );
 }
 
 // Second ring — slightly different angle & speed
-function OrbitalRing2() {
+function OrbitalRing2({ radius }: { radius: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
   useFrame((_, delta) => {
     if (!meshRef.current) return;
@@ -211,7 +309,7 @@ function OrbitalRing2() {
   });
   return (
     <RMesh ref={meshRef} rotation={[0.8, 1.2, 0.4]}>
-      <RTorusGeometry args={[RADIUS + 0.9, 0.01, 12, 100]} />
+      <RTorusGeometry args={[radius + 0.9, 0.01, 12, 100]} />
       <RMeshBasicMaterial color={ACCENT2} transparent opacity={0.3} />
     </RMesh>
   );
@@ -346,9 +444,11 @@ function ProductTile({
         onPointerOver={(e: { stopPropagation: () => void }) => {
           e.stopPropagation();
           document.body.style.cursor = "pointer";
+          onHover(data.product);
         }}
         onPointerOut={() => {
           document.body.style.cursor = "";
+          onLeave();
         }}
         onClick={(e: { stopPropagation: () => void }) => {
           e.stopPropagation();
@@ -442,6 +542,7 @@ function ProductSphere({
   tileScale = 0.8,
   cardShape = "rectangle",
   showParticles = true,
+  reducedMotion = false,
 }: {
   products: LegacyProductShape[];
   onHoverAny: (p: LegacyProductShape | null) => void;
@@ -451,6 +552,7 @@ function ProductSphere({
   tileScale?: number;
   cardShape?: "rectangle" | "circle";
   showParticles?: boolean;
+  reducedMotion?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const { isDragging, autoRotate, velocity } = useDragRotation(
@@ -477,7 +579,7 @@ function ProductSphere({
   }, [products, radius]);
 
   useFrame((_, delta) => {
-    if (!groupRef.current) return;
+    if (!groupRef.current || reducedMotion) return;
     const isPaused = Date.now() < rotationPausedUntil.current;
     if (!isDragging.current && autoRotate.current && !isPaused) {
       // Gentle, slow auto-rotation — never dizzying
@@ -511,8 +613,8 @@ function ProductSphere({
       </RMesh>
 
       {/* Orbital rings */}
-      <OrbitalRing />
-      <OrbitalRing2 />
+      <OrbitalRing radius={radius} />
+      <OrbitalRing2 radius={radius} />
 
       {/* Ambient particles — only if enabled */}
       {showParticles && <AmbientParticles count={60} />}
@@ -537,8 +639,8 @@ function ProductSphere({
                 isHovered={hoveredId === t.product.id}
                 cardShape={cardShape}
                 tileScale={tileScale}
-                onHover={() => {}}
-                onLeave={() => {}}
+                onHover={onHoverAny}
+                onLeave={() => onHoverAny(null)}
                 onSelect={(p) => {
                   onHoverAny(p);
                   rotationPausedUntil.current = Date.now() + 5000;
@@ -562,6 +664,7 @@ function Scene({
   tileScale = 0.8,
   cardShape = "rectangle",
   showParticles = true,
+  reducedMotion = false,
 }: {
   products: LegacyProductShape[];
   onHoverAny: (p: LegacyProductShape | null) => void;
@@ -571,6 +674,7 @@ function Scene({
   tileScale?: number;
   cardShape?: "rectangle" | "circle";
   showParticles?: boolean;
+  reducedMotion?: boolean;
 }) {
   const { size, camera } = useThree();
 
@@ -611,9 +715,16 @@ function Scene({
       <RPointLight position={[3, 2, 4]} intensity={30} color={"#d0e0ff"} distance={14} decay={2} />
       <RPointLight position={[-3, -2, -3]} intensity={18} color={ACCENT2} distance={12} decay={2} />
 
+      {/* Desktop-only HDR environment: the mobile path uses the lightweight static sphere. */}
+      <Environment preset="city" background={false} blur={0.65} />
+
       {createElement(
         Float,
-        { speed: 0.6, rotationIntensity: 0.08, floatIntensity: 0.18 },
+        {
+          speed: reducedMotion ? 0 : 0.6,
+          rotationIntensity: reducedMotion ? 0 : 0.08,
+          floatIntensity: reducedMotion ? 0 : 0.18,
+        },
         <ProductSphere
           products={products}
           onHoverAny={onHoverAny}
@@ -623,6 +734,7 @@ function Scene({
           tileScale={tileScale}
           cardShape={cardShape}
           showParticles={showParticles}
+          reducedMotion={reducedMotion}
         />,
       )}
     </>
@@ -637,7 +749,9 @@ function Fallback() {
         <div className="relative h-12 w-12">
           <span
             className="absolute inset-0 animate-spin rounded-full border-2"
-            style={{ borderColor: `${ACCENT} transparent transparent transparent` }}
+            style={{
+              borderColor: `${ACCENT} transparent transparent transparent`,
+            }}
           />
           <span
             className="absolute inset-2 animate-ping rounded-full"
@@ -646,7 +760,10 @@ function Fallback() {
         </div>
         <span
           className="text-[10px] font-medium tracking-[0.35em]"
-          style={{ color: "rgba(200,210,255,0.45)", fontFamily: "Tajawal, system-ui, sans-serif" }}
+          style={{
+            color: "rgba(200,210,255,0.45)",
+            fontFamily: "Tajawal, system-ui, sans-serif",
+          }}
         >
           جاري تحميل المعرض…
         </span>
@@ -720,6 +837,7 @@ export function ProductSphereHero({
   showParticles?: boolean;
 }) {
   const navigate = useNavigate();
+  const reducedMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   const [mobilePerformanceMode, setMobilePerformanceMode] = useState(false);
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
@@ -750,10 +868,10 @@ export function ProductSphereHero({
 
   const dismissHint = useCallback(() => setShowHint(false), []);
 
-  const pool = useMemo(
-    () => products.filter((p) => !!p.image).slice(0, maxProducts),
-    [products, maxProducts],
-  );
+  const pool = useMemo(() => {
+    const renderLimit = mobilePerformanceMode ? Math.min(maxProducts, 24) : maxProducts;
+    return products.filter((product) => Boolean(product.image)).slice(0, renderLimit);
+  }, [mobilePerformanceMode, products, maxProducts]);
 
   const hoveredId = hovered?.id ?? null;
 
@@ -763,15 +881,15 @@ export function ProductSphereHero({
   );
 
   if (webglSupported === false || renderFailed) {
-    return <ProductSphereFallback products={pool} />;
+    return <ProductSphereFallback products={pool} title={title} subtitle={subtitle} />;
   }
 
   return (
     <section
       dir="rtl"
-      className="relative -mx-4 overflow-hidden rounded-3xl h-[52vh] min-h-[380px] sm:h-[88vh] sm:min-h-[580px]"
+      className="relative h-[500px] overflow-hidden rounded-[28px] border border-violet-400/25 shadow-[0_26px_80px_rgba(76,29,149,0.28)] sm:h-[540px] md:h-[430px]"
       style={{
-        background: `radial-gradient(ellipse at 50% 30%, #0d1435 0%, #06091f 55%, ${BG_BOT} 100%)`,
+        background: `radial-gradient(ellipse at 50% 38%, #1b0c3d 0%, #08081d 48%, ${BG_BOT} 100%)`,
       }}
       onPointerDown={dismissHint}
       onTouchStart={dismissHint}
@@ -791,9 +909,9 @@ export function ProductSphereHero({
       />
 
       {/* WebGL Canvas */}
-      <div className="absolute inset-0" style={{ touchAction: "pan-y" }}>
+      <div className="absolute inset-0 md:left-[32%]" style={{ touchAction: "pan-y" }}>
         <WebGLErrorBoundary
-          fallback={<ProductSphereFallback products={pool} />}
+          fallback={<ProductSphereFallback products={pool} title={title} subtitle={subtitle} />}
           onError={() => setRenderFailed(true)}
         >
           <Suspense fallback={<Fallback />}>
@@ -808,6 +926,11 @@ export function ProductSphereHero({
                   stencil: false,
                   depth: true,
                 }}
+                onCreated={({ gl }) => {
+                  gl.toneMapping = THREE.ACESFilmicToneMapping;
+                  gl.toneMappingExposure = 1.05;
+                  gl.outputColorSpace = THREE.SRGBColorSpace;
+                }}
               >
                 <Suspense fallback={null}>
                   <Scene
@@ -818,7 +941,8 @@ export function ProductSphereHero({
                     radius={radius}
                     tileScale={tileScale}
                     cardShape={cardShape}
-                    showParticles={showParticles && !mobilePerformanceMode}
+                    showParticles={showParticles && !mobilePerformanceMode && !reducedMotion}
+                    reducedMotion={Boolean(reducedMotion)}
                   />
                 </Suspense>
               </Canvas>
@@ -845,57 +969,7 @@ export function ProductSphereHero({
         }}
       />
 
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col items-center px-6 pt-7 text-center"
-        style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}
-      >
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1"
-          style={{
-            border: "1px solid rgba(79,140,255,0.35)",
-            background: "rgba(79,140,255,0.10)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: ACCENT }} />
-          <span
-            className="text-[9px] font-bold tracking-[0.35em]"
-            style={{ color: "rgba(200,220,255,0.85)" }}
-          >
-            {badgeText}
-          </span>
-        </motion.div>
-
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.7 }}
-          className="text-3xl font-black leading-tight sm:text-5xl"
-          style={{
-            color: LIGHT,
-            textShadow: `0 0 40px ${ACCENT}55, 0 2px 12px rgba(0,0,0,0.8)`,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {title}
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.8 }}
-          className="mt-2 text-[11px] leading-relaxed sm:text-sm"
-          style={{ color: "rgba(180,200,255,0.60)" }}
-        >
-          {subtitle}
-        </motion.p>
-      </div>
+      <HeroOfferCopy products={pool} badgeText={badgeText} />
 
       {/* ── Drag hint ────────────────────────────────────────────────────── */}
       <AnimatePresence>
@@ -905,7 +979,7 @@ export function ProductSphereHero({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.85 }}
             transition={{ delay: 1.2, duration: 0.5 }}
-            className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+            className="pointer-events-none absolute bottom-7 left-1/2 z-10 -translate-x-1/2"
           >
             <motion.div
               animate={{ scale: [1, 1.15, 1], opacity: [0.6, 0.9, 0.6] }}
@@ -915,7 +989,10 @@ export function ProductSphereHero({
               <span className="text-2xl">✦</span>
               <span
                 className="text-[9px] font-bold tracking-[0.4em]"
-                style={{ color: "rgba(180,200,255,0.55)", fontFamily: "Tajawal, system-ui" }}
+                style={{
+                  color: "rgba(180,200,255,0.55)",
+                  fontFamily: "Tajawal, system-ui",
+                }}
               >
                 اسحب
               </span>
@@ -965,22 +1042,31 @@ export function ProductSphereHero({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xs font-bold text-slate-100 truncate">{hovered.name}</h3>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    الماركة: {hovered.brand || "ماركة متميزة"} | {hovered.badge || "ضمان سنة"}
-                  </p>
+                  {hovered.brand || hovered.badge ? (
+                    <p className="mt-0.5 text-[10px] text-slate-400">
+                      {[hovered.brand, hovered.badge].filter(Boolean).join(" · ")}
+                    </p>
+                  ) : null}
                   <div className="flex items-center justify-between mt-1.5">
-                    <div className="flex items-center gap-1 text-[10px] text-amber-400">
-                      <span>⭐ 4.8 (25 تقييم)</span>
-                    </div>
+                    {hovered.rating > 0 ? (
+                      <div className="flex items-center gap-1 text-[10px] text-amber-400">
+                        <span>
+                          ⭐ {hovered.rating.toFixed(1)}
+                          {hovered.reviews > 0 ? ` (${hovered.reviews} تقييم)` : ""}
+                        </span>
+                      </div>
+                    ) : (
+                      <span />
+                    )}
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-black text-blue-400">
                         {formatPrice(hovered.price)}
                       </span>
-                      {hovered.oldPrice && (
+                      {hovered.oldPrice && hovered.oldPrice > hovered.price ? (
                         <span className="text-[10px] text-slate-500 line-through">
                           {formatPrice(hovered.oldPrice)}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -990,7 +1076,12 @@ export function ProductSphereHero({
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => navigate({ to: "/product/$slug", params: { slug: hovered.slug } })}
+                  onClick={() =>
+                    navigate({
+                      to: "/product/$slug",
+                      params: { slug: hovered.slug },
+                    })
+                  }
                   className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white transition hover:bg-blue-500 active:scale-95 shadow-md"
                 >
                   🛒 أطلب الآن
