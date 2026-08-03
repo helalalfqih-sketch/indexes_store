@@ -32,7 +32,11 @@ function getShortcutIcon(name: string) {
   return Package;
 }
 
-export function StorefrontCategoryShortcuts({ categories }: { categories: LegacyCategoryShape[] }) {
+export function StorefrontCategoryShortcuts({
+  categories,
+}: {
+  categories: LegacyCategoryShape[];
+}) {
   const visible = categories.slice(0, 5);
   if (visible.length === 0) return null;
 
@@ -60,7 +64,9 @@ export function StorefrontCategoryShortcuts({ categories }: { categories: Legacy
           className="group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[22px] border border-violet-400/20 bg-[linear-gradient(145deg,rgba(16,22,42,0.96),rgba(5,9,22,0.98))] px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition hover:-translate-y-0.5 hover:border-violet-400/55 hover:bg-violet-500/10 active:scale-[0.98]"
         >
           <Grid2X2 className="h-7 w-7 text-violet-300 transition group-hover:scale-110 group-hover:text-fuchsia-300" />
-          <span className="text-[11px] font-bold text-slate-100 sm:text-xs">المزيد</span>
+          <span className="text-[11px] font-bold text-slate-100 sm:text-xs">
+            المزيد
+          </span>
         </Link>
       </div>
     </section>
@@ -110,7 +116,9 @@ export function StorefrontBenefits() {
           <Icon className="h-7 w-7 shrink-0 text-violet-300" />
           <div className="text-start">
             <h3 className="text-xs font-black text-white">{title}</h3>
-            <p className="mt-1 text-[10px] leading-4 text-slate-400">{subtitle}</p>
+            <p className="mt-1 text-[10px] leading-4 text-slate-400">
+              {subtitle}
+            </p>
           </div>
         </div>
       ))}
@@ -139,7 +147,11 @@ export function StorefrontRewards() {
                 ? { rotate: 45, scale: 1 }
                 : { rotate: [45, 48, 43, 45], scale: [1, 1.04, 1] }
             }
-            transition={{ duration: 6, repeat: reducedMotion ? 0 : Infinity, ease: "easeInOut" }}
+            transition={{
+              duration: 6,
+              repeat: reducedMotion ? 0 : Infinity,
+              ease: "easeInOut",
+            }}
             className="absolute inset-2 rounded-[26px] border border-fuchsia-300/50 bg-gradient-to-br from-fuchsia-300 via-violet-600 to-indigo-950 shadow-[0_0_40px_rgba(168,85,247,0.5)]"
           />
           <Gem className="relative h-12 w-12 text-white drop-shadow-[0_0_16px_rgba(255,255,255,0.8)]" />
@@ -147,12 +159,15 @@ export function StorefrontRewards() {
         </div>
 
         <div className="text-center sm:text-start">
-          <p className="text-[10px] font-bold tracking-[0.24em] text-fuchsia-300">مكافآت حصرية</p>
+          <p className="text-[10px] font-bold tracking-[0.24em] text-fuchsia-300">
+            مكافآت حصرية
+          </p>
           <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">
             برنامج <span className="text-violet-300">INDEXES</span> المميز
           </h2>
           <p className="mt-2 max-w-xl text-xs leading-6 text-slate-300">
-            اكسب نقاطاً مع الطلبات المؤهلة واستبدلها بمزايا وعروض خاصة عند تفعيلها لحسابك.
+            اكسب نقاطاً مع الطلبات المؤهلة واستبدلها بمزايا وعروض خاصة عند
+            تفعيلها لحسابك.
           </p>
         </div>
 
