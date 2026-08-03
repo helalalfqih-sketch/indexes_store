@@ -37,8 +37,7 @@ function supportsWebGL(): boolean {
 }
 
 function prefersMobilePerformanceMode(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function")
-    return false;
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
   return window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
 }
 
@@ -134,16 +133,10 @@ const fallbackTilePositions = [
 
 function getHighestRealDiscount(products: LegacyProductShape[]) {
   return products.reduce((highest, product) => {
-    if (
-      !product.oldPrice ||
-      product.oldPrice <= product.price ||
-      product.oldPrice <= 0
-    ) {
+    if (!product.oldPrice || product.oldPrice <= product.price || product.oldPrice <= 0) {
       return highest;
     }
-    const discount = Math.round(
-      ((product.oldPrice - product.price) / product.oldPrice) * 100,
-    );
+    const discount = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
     return Math.max(highest, discount);
   }, 0);
 }
@@ -170,9 +163,7 @@ function HeroOfferCopy({
           عروض حصرية
         </h1>
         <p className="mt-2 text-sm font-bold text-slate-300">
-          {highestDiscount > 0
-            ? "خصومات حقيقية تصل إلى"
-            : "أسعار مميزة من الكتالوج"}
+          {highestDiscount > 0 ? "خصومات حقيقية تصل إلى" : "أسعار مميزة من الكتالوج"}
         </p>
         {highestDiscount > 0 ? (
           <p className="mt-1 bg-gradient-to-b from-fuchsia-300 via-violet-400 to-violet-700 bg-clip-text text-6xl font-black leading-none text-transparent lg:text-7xl">
@@ -198,9 +189,7 @@ function ProductSphereFallback({
   title?: string;
   subtitle?: string;
 }) {
-  const visible = products
-    .filter((product) => Boolean(product.image))
-    .slice(0, 7);
+  const visible = products.filter((product) => Boolean(product.image)).slice(0, 7);
 
   return (
     <section
@@ -289,13 +278,7 @@ function fibonacciSphere(count: number, radius: number): THREE.Vector3[] {
     const y = 1 - (i / (count - 1)) * 2;
     const r = Math.sqrt(1 - y * y);
     const theta = phi * i;
-    pts.push(
-      new THREE.Vector3(
-        Math.cos(theta) * r,
-        y,
-        Math.sin(theta) * r,
-      ).multiplyScalar(radius),
-    );
+    pts.push(new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r).multiplyScalar(radius));
   }
   return pts;
 }
@@ -440,8 +423,7 @@ function ProductTile({
     // Glow ring around hovered tile
     if (glowRef.current) {
       const mat = glowRef.current.material as THREE.MeshBasicMaterial;
-      mat.opacity +=
-        ((isHovered ? 0.6 : 0) - mat.opacity) * Math.min(1, delta * 8);
+      mat.opacity += ((isHovered ? 0.6 : 0) - mat.opacity) * Math.min(1, delta * 8);
     }
   });
 
@@ -454,12 +436,7 @@ function ProductTile({
         ) : (
           <RPlaneGeometry args={[tileScale * 1.18, tileScale * 1.18]} />
         )}
-        <RMeshBasicMaterial
-          color={ACCENT}
-          transparent
-          opacity={0}
-          side={THREE.DoubleSide}
-        />
+        <RMeshBasicMaterial color={ACCENT} transparent opacity={0} side={THREE.DoubleSide} />
       </RMesh>
       {/* Main card */}
       <RMesh
@@ -483,11 +460,7 @@ function ProductTile({
         ) : (
           <RPlaneGeometry args={[tileScale, tileScale]} />
         )}
-        <RMeshBasicMaterial
-          map={texture}
-          toneMapped={false}
-          side={THREE.DoubleSide}
-        />
+        <RMeshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
       </RMesh>
     </RGroup>
   );
@@ -594,15 +567,10 @@ function ProductSphere({
     return products.map((p, i) => {
       const pos = positions[i];
       const normal = pos.clone().normalize();
-      const q = new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 0, 1),
-        normal,
-      );
+      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
       const right = new THREE.Vector3().crossVectors(up, normal).normalize();
       if (right.lengthSq() > 0.001) {
-        const tileUp = new THREE.Vector3()
-          .crossVectors(normal, right)
-          .normalize();
+        const tileUp = new THREE.Vector3().crossVectors(normal, right).normalize();
         const m = new THREE.Matrix4().makeBasis(right, tileUp, normal);
         q.setFromRotationMatrix(m);
       }
@@ -626,9 +594,7 @@ function ProductSphere({
     }
   });
 
-  const fallbackMat = (
-    <RMeshBasicMaterial color="#1e2a4a" side={THREE.DoubleSide} />
-  );
+  const fallbackMat = <RMeshBasicMaterial color="#1e2a4a" side={THREE.DoubleSide} />;
 
   return (
     <RGroup ref={groupRef}>
@@ -656,11 +622,7 @@ function ProductSphere({
       {/* Product tiles */}
       {tiles.map((t) => {
         const fb = (
-          <RMesh
-            key={t.product.id}
-            position={t.position}
-            quaternion={t.quaternion}
-          >
+          <RMesh key={t.product.id} position={t.position} quaternion={t.quaternion}>
             {cardShape === "circle" ? (
               <RCircleGeometry args={[tileScale / 2, 32]} />
             ) : (
@@ -741,41 +703,17 @@ function Scene({
       <RAmbientLight intensity={1.8} />
 
       {/* Key light — warm top */}
-      <RDirectionalLight
-        position={[2, 4, 6]}
-        intensity={2.8}
-        color={"#c8d4ff"}
-      />
+      <RDirectionalLight position={[2, 4, 6]} intensity={2.8} color={"#c8d4ff"} />
 
       {/* Accent rim — blue left */}
-      <RDirectionalLight
-        position={[-5, 2, -3]}
-        intensity={2.0}
-        color={ACCENT}
-      />
+      <RDirectionalLight position={[-5, 2, -3]} intensity={2.0} color={ACCENT} />
 
       {/* Violet back */}
-      <RDirectionalLight
-        position={[0, -4, -5]}
-        intensity={1.4}
-        color={ACCENT2}
-      />
+      <RDirectionalLight position={[0, -4, -5]} intensity={1.4} color={ACCENT2} />
 
       {/* Warm point fill */}
-      <RPointLight
-        position={[3, 2, 4]}
-        intensity={30}
-        color={"#d0e0ff"}
-        distance={14}
-        decay={2}
-      />
-      <RPointLight
-        position={[-3, -2, -3]}
-        intensity={18}
-        color={ACCENT2}
-        distance={12}
-        decay={2}
-      />
+      <RPointLight position={[3, 2, 4]} intensity={30} color={"#d0e0ff"} distance={14} decay={2} />
+      <RPointLight position={[-3, -2, -3]} intensity={18} color={ACCENT2} distance={12} decay={2} />
 
       {/* Desktop-only HDR environment: the mobile path uses the lightweight static sphere. */}
       <Environment preset="city" background={false} blur={0.65} />
@@ -837,8 +775,7 @@ function Fallback() {
 // ─── 2D Starfield background (CSS-only, zero JS cost) ────────────────────────
 function StarField() {
   const stars = useMemo(() => {
-    const arr: { x: number; y: number; r: number; op: number; dur: number }[] =
-      [];
+    const arr: { x: number; y: number; r: number; op: number; dur: number }[] = [];
     for (let i = 0; i < 80; i++) {
       arr.push({
         x: deterministicUnit(i, 5) * 100,
@@ -908,8 +845,7 @@ export function ProductSphereHero({
   const [hovered, setHovered] = useState<LegacyProductShape | null>(null);
   const [showHint, setShowHint] = useState(true);
   const [showVideo, setShowVideo] = useState(false);
-  const [activeSpecsProduct, setActiveSpecsProduct] =
-    useState<LegacyProductShape | null>(null);
+  const [activeSpecsProduct, setActiveSpecsProduct] = useState<LegacyProductShape | null>(null);
 
   useEffect(() => {
     setWebglSupported(supportsWebGL());
@@ -920,9 +856,7 @@ export function ProductSphereHero({
       sphereHasMountedOnce = true;
       setMounted(true);
     };
-    const timer = sphereHasMountedOnce
-      ? null
-      : window.setTimeout(mountCanvas, 60);
+    const timer = sphereHasMountedOnce ? null : window.setTimeout(mountCanvas, 60);
     if (sphereHasMountedOnce) mountCanvas();
 
     const t = window.setTimeout(() => setShowHint(false), 4000);
@@ -935,30 +869,19 @@ export function ProductSphereHero({
   const dismissHint = useCallback(() => setShowHint(false), []);
 
   const pool = useMemo(() => {
-    const renderLimit = mobilePerformanceMode
-      ? Math.min(maxProducts, 24)
-      : maxProducts;
-    return products
-      .filter((product) => Boolean(product.image))
-      .slice(0, renderLimit);
+    const renderLimit = mobilePerformanceMode ? Math.min(maxProducts, 24) : maxProducts;
+    return products.filter((product) => Boolean(product.image)).slice(0, renderLimit);
   }, [mobilePerformanceMode, products, maxProducts]);
 
   const hoveredId = hovered?.id ?? null;
 
   const handleSelect = useCallback(
-    (p: LegacyProductShape) =>
-      navigate({ to: "/product/$slug", params: { slug: p.slug } }),
+    (p: LegacyProductShape) => navigate({ to: "/product/$slug", params: { slug: p.slug } }),
     [navigate],
   );
 
   if (webglSupported === false || renderFailed) {
-    return (
-      <ProductSphereFallback
-        products={pool}
-        title={title}
-        subtitle={subtitle}
-      />
-    );
+    return <ProductSphereFallback products={pool} title={title} subtitle={subtitle} />;
   }
 
   return (
@@ -986,18 +909,9 @@ export function ProductSphereHero({
       />
 
       {/* WebGL Canvas */}
-      <div
-        className="absolute inset-0 md:left-[32%]"
-        style={{ touchAction: "pan-y" }}
-      >
+      <div className="absolute inset-0 md:left-[32%]" style={{ touchAction: "pan-y" }}>
         <WebGLErrorBoundary
-          fallback={
-            <ProductSphereFallback
-              products={pool}
-              title={title}
-              subtitle={subtitle}
-            />
-          }
+          fallback={<ProductSphereFallback products={pool} title={title} subtitle={subtitle} />}
           onError={() => setRenderFailed(true)}
         >
           <Suspense fallback={<Fallback />}>
@@ -1008,9 +922,7 @@ export function ProductSphereHero({
                 gl={{
                   antialias: !mobilePerformanceMode,
                   alpha: false,
-                  powerPreference: mobilePerformanceMode
-                    ? "low-power"
-                    : "high-performance",
+                  powerPreference: mobilePerformanceMode ? "low-power" : "high-performance",
                   stencil: false,
                   depth: true,
                 }}
@@ -1029,9 +941,7 @@ export function ProductSphereHero({
                     radius={radius}
                     tileScale={tileScale}
                     cardShape={cardShape}
-                    showParticles={
-                      showParticles && !mobilePerformanceMode && !reducedMotion
-                    }
+                    showParticles={showParticles && !mobilePerformanceMode && !reducedMotion}
                     reducedMotion={Boolean(reducedMotion)}
                   />
                 </Suspense>
@@ -1131,14 +1041,10 @@ export function ProductSphereHero({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xs font-bold text-slate-100 truncate">
-                    {hovered.name}
-                  </h3>
+                  <h3 className="text-xs font-bold text-slate-100 truncate">{hovered.name}</h3>
                   {hovered.brand || hovered.badge ? (
                     <p className="mt-0.5 text-[10px] text-slate-400">
-                      {[hovered.brand, hovered.badge]
-                        .filter(Boolean)
-                        .join(" · ")}
+                      {[hovered.brand, hovered.badge].filter(Boolean).join(" · ")}
                     </p>
                   ) : null}
                   <div className="flex items-center justify-between mt-1.5">
@@ -1146,9 +1052,7 @@ export function ProductSphereHero({
                       <div className="flex items-center gap-1 text-[10px] text-amber-400">
                         <span>
                           ⭐ {hovered.rating.toFixed(1)}
-                          {hovered.reviews > 0
-                            ? ` (${hovered.reviews} تقييم)`
-                            : ""}
+                          {hovered.reviews > 0 ? ` (${hovered.reviews} تقييم)` : ""}
                         </span>
                       </div>
                     ) : (
@@ -1231,10 +1135,7 @@ export function ProductSphereHero({
           className="h-1.5 w-1.5 rounded-full animate-pulse"
           style={{ background: "#4ade80" }}
         />
-        <span
-          className="text-[9px] font-bold"
-          style={{ color: "rgba(180,210,255,0.65)" }}
-        >
+        <span className="text-[9px] font-bold" style={{ color: "rgba(180,210,255,0.65)" }}>
           {pool.length} منتج
         </span>
       </motion.div>
@@ -1275,12 +1176,8 @@ export function ProductSphereHero({
                 )}
               </div>
               <div className="p-4 text-start">
-                <h4 className="text-sm font-black text-foreground">
-                  {hovered.name}
-                </h4>
-                <p className="text-xs text-muted-foreground mt-1">
-                  فيديو توضيحي للمنتج
-                </p>
+                <h4 className="text-sm font-black text-foreground">{hovered.name}</h4>
+                <p className="text-xs text-muted-foreground mt-1">فيديو توضيحي للمنتج</p>
               </div>
             </div>
           </div>,
@@ -1374,26 +1271,19 @@ export function ProductSphereHero({
 
                 {/* Description */}
                 <div className="space-y-1.5 text-right">
-                  <h4 className="text-xs font-bold text-white/60">
-                    وصف المنتج ومميزاته:
-                  </h4>
+                  <h4 className="text-xs font-bold text-white/60">وصف المنتج ومميزاته:</h4>
                   <p className="text-xs text-white/80 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5 whitespace-pre-wrap">
-                    {activeSpecsProduct.description ||
-                      "لا يوجد وصف متوفر لهذا المنتج حالياً."}
+                    {activeSpecsProduct.description || "لا يوجد وصف متوفر لهذا المنتج حالياً."}
                   </p>
                 </div>
 
                 {/* Video Section */}
                 <div className="space-y-2 border-t border-white/5 pt-4 text-right">
-                  <h4 className="text-xs font-bold text-white/60">
-                    الفيديو التوضيحي:
-                  </h4>
+                  <h4 className="text-xs font-bold text-white/60">الفيديو التوضيحي:</h4>
                   {getValidMuxId(activeSpecsProduct.videoPlaybackId) ? (
                     <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black/60 border border-white/5">
                       <MuxPlayer
-                        playbackId={
-                          getValidMuxId(activeSpecsProduct.videoPlaybackId)!
-                        }
+                        playbackId={getValidMuxId(activeSpecsProduct.videoPlaybackId)!}
                         autoPlay={false}
                         style={{ width: "100%", height: "100%" }}
                       />
@@ -1416,24 +1306,19 @@ export function ProductSphereHero({
                         onClick={async (e) => {
                           e.preventDefault();
                           try {
-                            const { supabase } =
-                              await import("@/integrations/supabase/client");
+                            const { supabase } = await import("@/integrations/supabase/client");
                             if (supabase) {
                               // Generated DB types do not include this optional table yet.
                               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                              await (supabase as any)
-                                .from("product_video_requests")
-                                .insert({
-                                  product_id: activeSpecsProduct.id,
-                                  product_name: activeSpecsProduct.name,
-                                });
+                              await (supabase as any).from("product_video_requests").insert({
+                                product_id: activeSpecsProduct.id,
+                                product_name: activeSpecsProduct.name,
+                              });
                             }
                           } catch (err) {
                             console.error("Failed to request video:", err);
                           }
-                          toast.success(
-                            "تم إرسال طلب توفير فيديو للمنتج بنجاح إلى المدير! 👍",
-                          );
+                          toast.success("تم إرسال طلب توفير فيديو للمنتج بنجاح إلى المدير! 👍");
                         }}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-black text-white hover:bg-primary/95 transition cursor-pointer shadow-brand"
                       >
