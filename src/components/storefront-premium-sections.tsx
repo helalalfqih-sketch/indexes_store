@@ -1,5 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import {
+  Boxes,
+  CookingPot,
+  Dumbbell,
   Gem,
   Grid2X2,
   Headphones,
@@ -17,17 +20,27 @@ import {
 import { motion, useReducedMotion } from "framer-motion";
 import type { LegacyCategoryShape } from "@/lib/data-adapter";
 
-const shortcutIcons = [Home, Smartphone, HeartPulse, SprayCan, Shirt, Grid2X2];
+function getShortcutIcon(name: string) {
+  if (/إلكترون|هاتف|تقني/.test(name)) return Smartphone;
+  if (/جمال|عناية|عطر/.test(name)) return SprayCan;
+  if (/صح|مساج|لياقة/.test(name)) return HeartPulse;
+  if (/رياض|تمرين/.test(name)) return Dumbbell;
+  if (/مطبخ|أواني/.test(name)) return CookingPot;
+  if (/تنظيم|تخزين/.test(name)) return Boxes;
+  if (/ملابس|أزياء/.test(name)) return Shirt;
+  if (/منزل|منزلي/.test(name)) return Home;
+  return Package;
+}
 
 export function StorefrontCategoryShortcuts({ categories }: { categories: LegacyCategoryShape[] }) {
-  const visible = categories.slice(0, 6);
+  const visible = categories.slice(0, 5);
   if (visible.length === 0) return null;
 
   return (
     <section aria-label="اختصارات التصنيفات" className="relative z-10 px-4">
       <div dir="rtl" className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">
-        {visible.map((category, index) => {
-          const Icon = shortcutIcons[index] ?? Package;
+        {visible.map((category) => {
+          const Icon = getShortcutIcon(category.name);
           return (
             <Link
               key={category.id}
@@ -42,6 +55,13 @@ export function StorefrontCategoryShortcuts({ categories }: { categories: Legacy
             </Link>
           );
         })}
+        <Link
+          to="/search"
+          className="group flex min-h-24 flex-col items-center justify-center gap-2 rounded-[22px] border border-violet-400/20 bg-[#080d1a] px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-violet-400/55 hover:bg-violet-500/10"
+        >
+          <Grid2X2 className="h-7 w-7 text-violet-300 transition group-hover:scale-110 group-hover:text-fuchsia-300" />
+          <span className="text-[11px] font-bold text-slate-100 sm:text-xs">المزيد</span>
+        </Link>
       </div>
     </section>
   );
