@@ -69,6 +69,25 @@
   --accent-copper: #b87e52;
   --neon-blue: #38bdf8;
   --teal-glow: #2dd4bf;
+  /* Storefront V3 reference tokens — isolated from CMS theme variables so the
+     premium composition remains internally consistent. */
+  --sf-page: #030611;
+  --sf-surface: #080d1a;
+  --sf-surface-elevated: #10162a;
+  --sf-border: rgba(167, 139, 250, 0.22);
+  --sf-text: #f8f7ff;
+  --sf-text-muted: #8e94a8;
+  --sf-violet: #7c3aed;
+  --sf-electric-violet: #8b5cf6;
+  --sf-magenta: #d946ef;
+  --sf-lavender: #c4b5fd;
+  --sf-cta: linear-gradient(90deg, #6d28d9, #c026d3);
+  --sf-glow-soft: 0 18px 55px rgba(109, 40, 217, 0.22);
+  --sf-glow-strong: 0 0 34px rgba(124, 58, 237, 0.65);
+  --sf-panel-radius: 28px;
+  --sf-control-radius: 14px;
+  --sf-header-height: 72px;
+  --sf-bottom-nav-height: 82px;
   /* Noqta brand */
   --background: oklch(0.985 0.008 250); /* #EEF4FC-ish soft */
   --surface: oklch(1 0 0); /* card white */
@@ -99,6 +118,22 @@
   --border: oklch(0.9 0.02 255);
   --input: oklch(0.92 0.02 255);
   --ring: oklch(0.58 0.22 260);
+}
+
+.storefront-v3 {
+  color: var(--sf-text);
+  background: var(--sf-page);
+  --bottom-nav-height: var(--sf-bottom-nav-height);
+}
+
+.storefront-v3 main {
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 16px);
+}
+
+@media (min-width: 1100px) {
+  .storefront-v3 main {
+    padding-bottom: 3rem;
+  }
 }
 
 .dark {
@@ -366,5 +401,23 @@
   .animate-particle,
   .glass-shimmer {
     animation: none;
+  }
+}
+
+/* Mobile-web performance mode: avoid continuous backdrop recomposition while
+   scrolling and pause decorative animations on coarse-pointer devices. */
+@media (max-width: 767px), (pointer: coarse) {
+  .glass,
+  .glass-dark,
+  .glass-float,
+  .glass-strong {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .animate-particle,
+  .glass-shimmer {
+    animation: none !important;
+    will-change: auto;
   }
 }

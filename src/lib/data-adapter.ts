@@ -41,7 +41,13 @@ const seedToProductDTO = (p: SeedProduct): ProductDTO => ({
   media: [
     { type: "image", url: p.image },
     ...(p.videoPlaybackId
-      ? [{ type: "video" as const, url: p.videoPlaybackId, playbackId: p.videoPlaybackId }]
+      ? [
+          {
+            type: "video" as const,
+            url: p.videoPlaybackId,
+            playbackId: p.videoPlaybackId,
+          },
+        ]
       : []),
   ],
   model_url: null,
@@ -70,7 +76,8 @@ const seedToCategoryDTO = (c: SeedCategory): CategoryWithMetaDTO => ({
 });
 
 export const fallbackProducts = (): ProductDTO[] => seedProducts.map(seedToProductDTO);
-export const fallbackCategories = (): CategoryWithMetaDTO[] => seedCategories.map(seedToCategoryDTO);
+export const fallbackCategories = (): CategoryWithMetaDTO[] =>
+  seedCategories.map(seedToCategoryDTO);
 
 // ---------- Adapter ----------
 
@@ -155,7 +162,12 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   name: p.name,
   description: p.description,
   price: p.price,
-  oldPrice: p.old_price != null ? p.old_price : (p.compare_at_price != null && p.compare_at_price > p.price ? p.compare_at_price : undefined),
+  oldPrice:
+    p.old_price != null
+      ? p.old_price
+      : p.compare_at_price != null && p.compare_at_price > p.price
+        ? p.compare_at_price
+        : undefined,
   stock: p.stock,
   image: p.images[0] ?? "",
   images: p.images,
@@ -182,7 +194,10 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
 });
 
 export type LegacyCategoryShape = {
+  /** Public slug used by legacy routes. */
   id: string;
+  /** Original database identifier used by Product.categoryId. */
+  sourceId?: string;
   name: string;
   icon: string;
   color: string;
@@ -191,6 +206,7 @@ export type LegacyCategoryShape = {
 
 export const toLegacyCategory = (c: CategoryWithMetaDTO): LegacyCategoryShape => ({
   id: c.slug, // legacy code uses slug as id
+  sourceId: c.id,
   name: c.name,
   icon: c.icon ?? "Package",
   color: c.color ?? "from-slate-500 to-slate-700",

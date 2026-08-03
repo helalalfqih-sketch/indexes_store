@@ -1,10 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Search, ShoppingCart, Tag, User } from "lucide-react";
+import { Bell, Menu, Rocket, ScanLine, Search, ShoppingCart, Truck, Zap } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useCart } from "@/lib/cart-store";
-import noqtaLogo from "@/assets/noqta-logo.png";
 import { SiteFooter } from "@/components/site-footer";
 import { useAppearance } from "@/components/appearance-provider";
-import { NetworkManager } from "@/components/network-manager";
 import { ParticleField } from "@/components/design-system/glass";
 import { AppInstallBanner } from "@/components/app-install-banner";
 import {
@@ -15,6 +14,8 @@ import { trackEvent } from "@/lib/analytics";
 
 // Animated Cinematic Background Layer — futuristic showroom depth
 function CinematicBackground() {
+  const reducedMotion = useReducedMotion();
+
   return (
     <div
       className="pointer-events-none fixed inset-0 -z-0 overflow-hidden"
@@ -35,26 +36,52 @@ function CinematicBackground() {
           }}
         />
       </div>
-      {/* Neon-blue orbital glow */}
-      <div className="absolute -start-24 top-[18vh] h-[60vh] w-[60vh] rounded-full opacity-30 blur-3xl">
+      {/* Lightweight static aurora for phones; avoids continuously animating large blurred layers. */}
+      <div className="absolute inset-x-0 top-20 h-[46vh] bg-[radial-gradient(ellipse_at_30%_20%,rgba(124,58,237,0.2),transparent_55%),radial-gradient(ellipse_at_80%_50%,rgba(217,70,239,0.14),transparent_52%)] md:hidden" />
+
+      {/* Transform-only aurora drift on larger screens. */}
+      <motion.div
+        animate={
+          reducedMotion
+            ? undefined
+            : {
+                x: [0, 46, -24, 0],
+                y: [0, 34, 72, 0],
+                scale: [1, 1.12, 0.96, 1],
+              }
+        }
+        transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -start-24 top-[18vh] hidden h-[60vh] w-[60vh] rounded-full opacity-30 blur-3xl md:block"
+      >
         <div
           className="h-full w-full"
           style={{
             background:
-              "radial-gradient(circle, color-mix(in oklab, var(--neon-blue) 45%, transparent) 0%, transparent 65%)",
+              "radial-gradient(circle, color-mix(in oklab, #7c3aed 45%, transparent) 0%, transparent 65%)",
           }}
         />
-      </div>
-      {/* Teal ambient drift */}
-      <div className="absolute -end-32 top-[58vh] h-[70vh] w-[70vh] rounded-full opacity-25 blur-3xl">
+      </motion.div>
+      <motion.div
+        animate={
+          reducedMotion
+            ? undefined
+            : {
+                x: [0, -52, 18, 0],
+                y: [0, -28, 54, 0],
+                scale: [1, 0.94, 1.1, 1],
+              }
+        }
+        transition={{ duration: 29, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -end-32 top-[58vh] hidden h-[70vh] w-[70vh] rounded-full opacity-25 blur-3xl md:block"
+      >
         <div
           className="h-full w-full"
           style={{
             background:
-              "radial-gradient(circle, color-mix(in oklab, var(--teal-glow) 40%, transparent) 0%, transparent 65%)",
+              "radial-gradient(circle, color-mix(in oklab, #d946ef 40%, transparent) 0%, transparent 65%)",
           }}
         />
-      </div>
+      </motion.div>
       <ParticleField count={14} />
     </div>
   );
@@ -62,36 +89,28 @@ function CinematicBackground() {
 
 export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
   const { settings } = useAppearance();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
 
   return (
     <div
-      className="relative flex min-h-screen w-full max-w-full overflow-x-hidden flex-col font-sans transition-colors duration-300 bg-showcase text-showcase-foreground selection:bg-primary/30 selection:text-white"
+      className="storefront-v3 relative flex min-h-screen w-full max-w-full overflow-x-hidden flex-col font-sans transition-colors duration-300 selection:bg-primary/30 selection:text-white"
       dir="rtl"
     >
       <CinematicBackground />
 
-      {/* 1. Announcement Bar */}
-      {settings.notifications?.announcementEnabled ? (
-        <div
-          style={{ backgroundColor: settings.notifications.announcementBg }}
-          className="relative z-50 text-white text-xs font-bold py-2 px-4 text-center shrink-0"
-        >
-          {settings.notifications.announcementText}
-        </div>
-      ) : (
-        <div className="relative z-50 bg-primary/90 text-white text-xs font-bold py-1.5 px-4 text-center shrink-0">
-          شحن مجاني للطلبات فوق 50,000 ريال يمني 🚚
-        </div>
-      )}
+      {/* 1. PWA & App Install Banner */}
+      {pathname === "/" ? null : <AppInstallBanner />}
 
-      {/* 2. PWA & App Install Banner */}
-      <AppInstallBanner />
-
-      {/* 3. Main Header */}
+      {/* 2. Main Header */}
       <StoreTopBar />
 
+      {/* 3. Delivery and shipping facts */}
+      <ShippingInfoStrip />
+
       {/* 4. Main Body Content */}
-      <main className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-28 pt-4 md:max-w-6xl md:px-6 md:pb-12 lg:max-w-7xl">
+      <main className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-28 pt-3 md:max-w-[1180px] md:px-9 md:pb-28 min-[1100px]:pb-12">
         {children}
         <SiteFooter isHome={true} />
       </main>
@@ -99,102 +118,95 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
       {/* 5. Desktop Floating WhatsApp & Mobile Commerce Bar */}
       <StorefrontWhatsAppFloating />
       <MobileCommerceBottomBar />
-
-      <NetworkManager />
     </div>
   );
 }
 
+function ShippingInfoStrip() {
+  const { settings } = useAppearance();
+  const threshold = settings.cart_config?.freeShippingThreshold ?? 30_000;
+  const formattedThreshold = new Intl.NumberFormat("ar-YE").format(threshold);
+
+  return (
+    <aside
+      aria-label="معلومات التوصيل والشحن"
+      className="relative z-30 mx-auto flex w-[calc(100%-2rem)] max-w-md items-center justify-between gap-3 rounded-[18px] border border-white/[0.07] bg-[#080d1a]/95 px-4 py-3 text-[10px] font-bold text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] md:w-[calc(100%-4.5rem)] md:max-w-[1108px] md:px-7 md:text-sm"
+    >
+      <span className="inline-flex min-w-0 items-center gap-2 whitespace-nowrap">
+        <Zap className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
+        توصيل سريع خلال 24 - 48 ساعة
+      </span>
+      <span className="inline-flex min-w-0 items-center gap-2 whitespace-nowrap">
+        <Rocket className="hidden h-4 w-4 shrink-0 text-fuchsia-300 sm:block" aria-hidden="true" />
+        {threshold > 0
+          ? `شحن مجاني للطلبات فوق ${formattedThreshold} ريال`
+          : "شحن مجاني لجميع الطلبات"}
+        <Truck className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
+      </span>
+    </aside>
+  );
+}
+
 function StoreTopBar() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const count = useCart((s) => s.count());
   const { settings } = useAppearance();
-
-  const activeLinks = [
-    { to: "/", label: "الرئيسية", icon: Home },
-    { to: "/offers", label: "العروض", icon: Tag },
-    { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count },
-    { to: "/account", label: "حسابي", icon: User },
-  ];
-
-  const storeLogo = settings.store_identity?.logoUrl || settings.navigation?.logoUrl || noqtaLogo;
-  const storeName = settings.brand_settings?.storeName || settings.navigation?.storeName || "اندكس ستور";
   const searchPlaceholder = settings.navigation?.searchPlaceholder || "ابحث عن منتج...";
 
   return (
-    <header className="sticky top-0 z-40 w-full px-3 pt-3">
-      <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 rounded-full glass-dark glass-shimmer px-4 py-2.5 shadow-xl md:max-w-6xl md:px-5 lg:max-w-7xl">
-        {/* Brand Logo & Name */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="relative h-9 w-9 overflow-hidden rounded-full glow-neon transition-transform group-hover:scale-105">
-            <img src={storeLogo} alt={storeName} className="h-full w-full object-cover" />
-          </div>
-          <div className="leading-none">
-            <span className="text-sm font-black tracking-tight text-white drop-shadow-sm">
-              {storeName}
-            </span>
-          </div>
-        </Link>
+    <header className="relative z-40 w-full px-4 pb-3 pt-5 md:px-9 md:pb-4 md:pt-8">
+      <div className="mx-auto flex w-full max-w-md items-center gap-2.5 rounded-[22px] border border-violet-400/20 bg-[#050916]/98 px-3 py-2.5 shadow-[0_16px_45px_rgba(0,0,0,0.32)] md:max-w-[1108px] md:gap-4 md:px-4 md:py-3">
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Link
+            to="/cart"
+            preload="intent"
+            aria-label="السلة"
+            className="relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-violet-200 transition hover:border-violet-400/45 hover:text-white"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {count > 0 ? (
+              <span className="absolute -end-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-violet-600 px-1 text-[8px] font-black text-white">
+                {count}
+              </span>
+            ) : null}
+          </Link>
+          <Link
+            to="/account"
+            preload="intent"
+            aria-label="التنبيهات والحساب"
+            className="relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-violet-200 transition hover:border-violet-400/45 hover:text-white"
+          >
+            <Bell className="h-5 w-5" />
+            <span
+              className="absolute end-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-violet-500"
+              aria-hidden="true"
+            />
+          </Link>
+        </div>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden items-center gap-2 md:flex">
-          {activeLinks.map((tab) => {
-            const active = pathname === tab.to;
-            return (
-              <Link
-                key={tab.to}
-                to={tab.to}
-                preload="intent"
-                className={`relative flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                  active
-                    ? "bg-primary text-white shadow-brand"
-                    : "text-showcase-muted hover:bg-showcase-foreground/10 hover:text-white"
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                <span>{tab.label}</span>
-                {tab.badge ? (
-                  <span className="absolute -end-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[8px] font-bold text-white shadow-sm">
-                    {tab.badge}
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Desktop Single Search Bar */}
         <Link
           to="/search"
           preload="intent"
           onClick={() => trackEvent("click_search", { source: "header_desktop" })}
-          className="hidden md:flex flex-1 max-w-xs items-center gap-2 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-xs font-semibold text-showcase-muted backdrop-blur-sm transition-all hover:border-neon/40 hover:bg-black/50 hover:text-white"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-3 text-xs font-semibold text-showcase-muted transition hover:border-violet-400/50 hover:bg-black/55 hover:text-white md:text-sm"
         >
-          <Search className="h-3.5 w-3.5 text-neon" />
+          <Search className="h-4 w-4 shrink-0 text-violet-300" />
           <span className="truncate">{searchPlaceholder}</span>
         </Link>
 
-        {/* Mobile Header Quick Actions */}
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex shrink-0 items-center gap-1.5">
           <Link
             to="/search"
-            onClick={() => trackEvent("click_search", { source: "header_mobile" })}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-showcase-muted hover:text-white"
-            title="بحث"
+            aria-label="البحث المرئي"
+            className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-violet-200 transition hover:border-violet-400/45 hover:text-white"
           >
-            <Search className="h-4 w-4 text-neon" />
+            <ScanLine className="h-5 w-5" />
           </Link>
           <Link
-            to="/cart"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-showcase-muted hover:text-white"
-            title="السلة"
+            to="/search"
+            aria-label="قائمة الأقسام"
+            className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-violet-200 transition hover:border-violet-400/45 hover:text-white"
           >
-            <ShoppingCart className="h-4 w-4" />
-            {count > 0 && (
-              <span className="absolute -end-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[8px] font-bold text-white shadow-sm">
-                {count}
-              </span>
-            )}
+            <Menu className="h-5 w-5" />
           </Link>
         </div>
       </div>

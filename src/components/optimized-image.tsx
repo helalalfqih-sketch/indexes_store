@@ -12,6 +12,8 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   naturalWidth?: number;
   /** Natural image height for CLS prevention (avoids layout shift) */
   naturalHeight?: number;
+  /** How the source is fitted inside the reserved media box. */
+  fit?: "cover" | "contain";
 }
 
 export function OptimizedImage({
@@ -22,6 +24,7 @@ export function OptimizedImage({
   eager = false,
   naturalWidth,
   naturalHeight,
+  fit = "cover",
   ...props
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -119,15 +122,34 @@ export function OptimizedImage({
           onLoad={() => setIsLoaded(true)}
           onError={handleError}
           className={cn(
-            "h-full w-full object-cover transition-opacity duration-500 ease-in-out",
-            isLoaded || eager ? "opacity-100" : "opacity-0 absolute inset-0"
+            "h-full w-full transition-opacity duration-500 ease-in-out",
+            fit === "contain" ? "object-contain" : "object-cover",
+            isLoaded || eager ? "opacity-100" : "opacity-0 absolute inset-0",
           )}
           loading={loadingAttr}
           decoding="async"
-          // @ts-ignore — fetchpriority is valid HTML5 but not yet in TS types
+          // @ts-expect-error — fetchpriority is valid HTML5 but not yet in TS types
           fetchpriority={fetchPriority}
-          width={naturalWidth ?? (size === "thumbnail" ? 128 : size === "card" ? 384 : size === "large" ? 800 : undefined)}
-          height={naturalHeight ?? (size === "thumbnail" ? 128 : size === "card" ? 384 : size === "large" ? 800 : undefined)}
+          width={
+            naturalWidth ??
+            (size === "thumbnail"
+              ? 128
+              : size === "card"
+                ? 384
+                : size === "large"
+                  ? 800
+                  : undefined)
+          }
+          height={
+            naturalHeight ??
+            (size === "thumbnail"
+              ? 128
+              : size === "card"
+                ? 384
+                : size === "large"
+                  ? 800
+                  : undefined)
+          }
           {...props}
         />
       )}
