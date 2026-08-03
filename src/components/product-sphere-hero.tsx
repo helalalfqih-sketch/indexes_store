@@ -157,7 +157,10 @@ function HeroOfferCopy({
         <span className="inline-flex rounded-full border border-violet-400/30 bg-violet-500/10 px-3 py-1 text-[9px] font-black tracking-[0.28em] text-violet-200">
           {badgeText || "INDEXES · عروض مختارة"}
         </span>
-        <h1 className="mt-3 text-3xl font-black leading-none text-white sm:text-4xl lg:text-5xl">
+        <h1
+          className="mt-3 font-black leading-none text-white"
+          style={{ fontSize: "clamp(2rem, 4vw, 4.5rem)" }}
+        >
           عروض حصرية
         </h1>
         <p className="mt-2 text-sm font-bold text-slate-300">
@@ -196,9 +199,17 @@ function ProductSphereFallback({
       className="relative h-[500px] overflow-hidden rounded-[28px] border border-violet-400/25 bg-[radial-gradient(circle_at_66%_42%,#211052,#09091f_52%,#02040c)] shadow-[0_26px_80px_rgba(76,29,149,0.28)] sm:h-[540px] md:h-[430px]"
     >
       <div className="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(circle,rgba(196,181,253,0.75)_1px,transparent_1px)] [background-size:34px_34px]" />
-      <div className="absolute right-1/2 top-[38%] aspect-square w-[92%] translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-300/30 bg-[radial-gradient(circle_at_38%_30%,rgba(139,92,246,0.42),rgba(8,9,28,0.96)_55%,#02030a)] shadow-[inset_0_0_80px_rgba(124,58,237,0.35),0_0_70px_rgba(124,58,237,0.35)] sm:w-[78%] md:right-[-3%] md:top-1/2 md:w-[69%] md:translate-x-0">
+      <div className="absolute right-1/2 top-[38%] aspect-square w-[92%] translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-300/30 bg-[radial-gradient(circle_at_38%_30%,rgba(139,92,246,0.42),rgba(8,9,28,0.96)_55%,#02030a)] shadow-[inset_0_0_80px_rgba(124,58,237,0.35),0_0_70px_rgba(124,58,237,0.35)] sm:w-[78%] md:right-[3%] md:top-1/2 md:w-[52%] md:max-w-[560px] md:translate-x-0">
         <div className="pointer-events-none absolute -inset-7 rounded-full border border-fuchsia-400/20" />
         <div className="pointer-events-none absolute -inset-3 rotate-12 rounded-[50%] border border-violet-300/25" />
+        <div
+          className="pointer-events-none absolute inset-[9%] rounded-[50%] border border-fuchsia-300/25"
+          style={{ transform: "rotate(-18deg) scaleX(1.3)" }}
+        />
+        <div
+          className="pointer-events-none absolute inset-[17%] rounded-[50%] border border-cyan-300/15"
+          style={{ transform: "rotate(24deg) scaleX(1.38)" }}
+        />
 
         {visible.map((product, index) => (
           <Link
