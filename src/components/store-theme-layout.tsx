@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bell, Menu, ScanLine, Search, ShoppingCart } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useCart } from "@/lib/cart-store";
 import { SiteFooter } from "@/components/site-footer";
 import { useAppearance } from "@/components/appearance-provider";
@@ -13,6 +14,8 @@ import { trackEvent } from "@/lib/analytics";
 
 // Animated Cinematic Background Layer — futuristic showroom depth
 function CinematicBackground() {
+  const reducedMotion = useReducedMotion();
+
   return (
     <div
       className="pointer-events-none fixed inset-0 -z-0 overflow-hidden"
@@ -33,8 +36,19 @@ function CinematicBackground() {
           }}
         />
       </div>
-      {/* Violet orbital glow */}
-      <div className="absolute -start-24 top-[18vh] h-[60vh] w-[60vh] rounded-full opacity-30 blur-3xl">
+      {/* Lightweight static aurora for phones; avoids continuously animating large blurred layers. */}
+      <div className="absolute inset-x-0 top-20 h-[46vh] bg-[radial-gradient(ellipse_at_30%_20%,rgba(124,58,237,0.2),transparent_55%),radial-gradient(ellipse_at_80%_50%,rgba(217,70,239,0.14),transparent_52%)] md:hidden" />
+
+      {/* Transform-only aurora drift on larger screens. */}
+      <motion.div
+        animate={
+          reducedMotion
+            ? undefined
+            : { x: [0, 46, -24, 0], y: [0, 34, 72, 0], scale: [1, 1.12, 0.96, 1] }
+        }
+        transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -start-24 top-[18vh] hidden h-[60vh] w-[60vh] rounded-full opacity-30 blur-3xl md:block"
+      >
         <div
           className="h-full w-full"
           style={{
@@ -42,9 +56,16 @@ function CinematicBackground() {
               "radial-gradient(circle, color-mix(in oklab, #7c3aed 45%, transparent) 0%, transparent 65%)",
           }}
         />
-      </div>
-      {/* Teal ambient drift */}
-      <div className="absolute -end-32 top-[58vh] h-[70vh] w-[70vh] rounded-full opacity-25 blur-3xl">
+      </motion.div>
+      <motion.div
+        animate={
+          reducedMotion
+            ? undefined
+            : { x: [0, -52, 18, 0], y: [0, -28, 54, 0], scale: [1, 0.94, 1.1, 1] }
+        }
+        transition={{ duration: 29, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -end-32 top-[58vh] hidden h-[70vh] w-[70vh] rounded-full opacity-25 blur-3xl md:block"
+      >
         <div
           className="h-full w-full"
           style={{
@@ -52,7 +73,7 @@ function CinematicBackground() {
               "radial-gradient(circle, color-mix(in oklab, #d946ef 40%, transparent) 0%, transparent 65%)",
           }}
         />
-      </div>
+      </motion.div>
       <ParticleField count={14} />
     </div>
   );
