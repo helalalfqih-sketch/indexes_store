@@ -19,7 +19,7 @@ import { useNavigate, Link } from "@tanstack/react-router";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import { formatPrice, STORE_CONTACT } from "@/lib/store-data";
 import { toast } from "sonner";
-import { Play, X } from "lucide-react";
+import { ArrowLeft, Play, X } from "lucide-react";
 import MuxPlayer from "@mux/mux-player-react";
 import { OptimizedImage } from "@/components/optimized-image";
 
@@ -132,10 +132,56 @@ const fallbackTilePositions = [
   { insetInlineStart: "5%", top: "54%" },
 ];
 
+function getHighestRealDiscount(products: LegacyProductShape[]) {
+  return products.reduce((highest, product) => {
+    if (!product.oldPrice || product.oldPrice <= product.price || product.oldPrice <= 0) {
+      return highest;
+    }
+    const discount = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
+    return Math.max(highest, discount);
+  }, 0);
+}
+
+function HeroOfferCopy({
+  products,
+  badgeText,
+}: {
+  products: LegacyProductShape[];
+  badgeText?: string;
+}) {
+  const highestDiscount = getHighestRealDiscount(products);
+
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end bg-gradient-to-t from-[#02040d] via-[#02040d]/92 to-transparent px-6 pb-7 pt-28 md:inset-y-0 md:left-0 md:right-auto md:w-[38%] md:items-center md:bg-gradient-to-r md:from-[#030611] md:via-[#030611]/90 md:to-transparent md:px-8 md:pb-0 md:pt-0 lg:px-12">
+      <div className="w-full text-right">
+        <span className="inline-flex rounded-full border border-violet-400/30 bg-violet-500/10 px-3 py-1 text-[9px] font-black tracking-[0.28em] text-violet-200">
+          {badgeText || "INDEXES · عروض مختارة"}
+        </span>
+        <h1 className="mt-3 text-3xl font-black leading-none text-white sm:text-4xl lg:text-5xl">
+          عروض حصرية
+        </h1>
+        <p className="mt-2 text-sm font-bold text-slate-300">
+          {highestDiscount > 0 ? "خصومات حقيقية تصل إلى" : "أسعار مميزة من الكتالوج"}
+        </p>
+        {highestDiscount > 0 ? (
+          <p className="mt-1 bg-gradient-to-b from-fuchsia-300 via-violet-400 to-violet-700 bg-clip-text text-6xl font-black leading-none text-transparent lg:text-7xl">
+            {highestDiscount}%
+          </p>
+        ) : null}
+        <Link
+          to="/offers"
+          className="pointer-events-auto mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-violet-200/30 bg-gradient-to-r from-violet-700 to-fuchsia-600 px-6 text-sm font-black text-white shadow-[0_12px_35px_rgba(124,58,237,0.42)] transition hover:-translate-y-0.5 hover:brightness-110"
+        >
+          تسوّق الآن
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 function ProductSphereFallback({
   products,
-  title = "آلاف المنتجات",
-  subtitle = "جودة عالية · أسعار منافسة · توصيل سريع",
 }: {
   products: LegacyProductShape[];
   title?: string;
@@ -147,10 +193,10 @@ function ProductSphereFallback({
     <section
       data-testid="hero-sphere-fallback"
       aria-label="معرض المنتجات"
-      className="relative mx-2 flex h-[68vh] min-h-[520px] max-h-[760px] items-center justify-center overflow-hidden rounded-[32px] border border-violet-400/25 bg-[radial-gradient(circle_at_50%_42%,#211052,#09091f_52%,#02040c)] shadow-[0_30px_100px_rgba(76,29,149,0.32)] sm:mx-4 sm:h-[74vh] sm:min-h-[620px]"
+      className="relative h-[500px] overflow-hidden rounded-[28px] border border-violet-400/25 bg-[radial-gradient(circle_at_66%_42%,#211052,#09091f_52%,#02040c)] shadow-[0_26px_80px_rgba(76,29,149,0.28)] sm:h-[540px] md:h-[430px]"
     >
       <div className="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(circle,rgba(196,181,253,0.75)_1px,transparent_1px)] [background-size:34px_34px]" />
-      <div className="relative aspect-square w-[min(88vw,660px)] rounded-full border border-violet-300/30 bg-[radial-gradient(circle_at_38%_30%,rgba(139,92,246,0.42),rgba(8,9,28,0.96)_55%,#02030a)] shadow-[inset_0_0_80px_rgba(124,58,237,0.35),0_0_70px_rgba(124,58,237,0.35)]">
+      <div className="absolute right-1/2 top-[38%] aspect-square w-[92%] translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-300/30 bg-[radial-gradient(circle_at_38%_30%,rgba(139,92,246,0.42),rgba(8,9,28,0.96)_55%,#02030a)] shadow-[inset_0_0_80px_rgba(124,58,237,0.35),0_0_70px_rgba(124,58,237,0.35)] sm:w-[78%] md:right-[-3%] md:top-1/2 md:w-[69%] md:translate-x-0">
         <div className="pointer-events-none absolute -inset-7 rounded-full border border-fuchsia-400/20" />
         <div className="pointer-events-none absolute -inset-3 rotate-12 rounded-[50%] border border-violet-300/25" />
 
@@ -173,25 +219,8 @@ function ProductSphereFallback({
             <span className="sr-only">{product.name}</span>
           </Link>
         ))}
-
-        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center px-16 text-center">
-          <span className="rounded-full border border-violet-300/30 bg-black/45 px-3 py-1 text-[9px] font-black tracking-[0.3em] text-violet-200">
-            INDEXES
-          </span>
-          <h1 className="mt-3 text-2xl font-black text-white drop-shadow-[0_0_28px_rgba(124,58,237,0.8)] sm:text-5xl">
-            {title}
-          </h1>
-          <p className="mt-2 max-w-sm text-[10px] leading-5 text-slate-300 sm:text-sm">
-            {subtitle}
-          </p>
-          <Link
-            to="/search"
-            className="pointer-events-auto mt-5 inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-violet-700 to-fuchsia-600 px-7 text-xs font-black text-white shadow-[0_12px_38px_rgba(124,58,237,0.46)] sm:text-sm"
-          >
-            استكشف المنتجات
-          </Link>
-        </div>
       </div>
+      <HeroOfferCopy products={visible} />
     </section>
   );
 }
@@ -843,7 +872,7 @@ export function ProductSphereHero({
   return (
     <section
       dir="rtl"
-      className="relative mx-2 h-[68vh] min-h-[520px] max-h-[760px] overflow-hidden rounded-[32px] border border-violet-400/25 shadow-[0_30px_100px_rgba(76,29,149,0.32)] sm:mx-4 sm:h-[74vh] sm:min-h-[620px] sm:max-h-[820px]"
+      className="relative h-[500px] overflow-hidden rounded-[28px] border border-violet-400/25 shadow-[0_26px_80px_rgba(76,29,149,0.28)] sm:h-[540px] md:h-[430px]"
       style={{
         background: `radial-gradient(ellipse at 50% 38%, #1b0c3d 0%, #08081d 48%, ${BG_BOT} 100%)`,
       }}
@@ -865,7 +894,7 @@ export function ProductSphereHero({
       />
 
       {/* WebGL Canvas */}
-      <div className="absolute inset-0" style={{ touchAction: "pan-y" }}>
+      <div className="absolute inset-0 md:left-[32%]" style={{ touchAction: "pan-y" }}>
         <WebGLErrorBoundary
           fallback={<ProductSphereFallback products={pool} title={title} subtitle={subtitle} />}
           onError={() => setRenderFailed(true)}
@@ -920,71 +949,7 @@ export function ProductSphereHero({
         }}
       />
 
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-[45%] z-10 flex -translate-y-1/2 flex-col items-center px-6 text-center"
-        style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}
-      >
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1"
-          style={{
-            border: "1px solid rgba(79,140,255,0.35)",
-            background: "rgba(79,140,255,0.10)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: ACCENT }} />
-          <span
-            className="text-[9px] font-bold tracking-[0.35em]"
-            style={{ color: "rgba(200,220,255,0.85)" }}
-          >
-            {badgeText}
-          </span>
-        </motion.div>
-
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.7 }}
-          className="text-3xl font-black leading-tight sm:text-5xl"
-          style={{
-            color: LIGHT,
-            textShadow: `0 0 40px ${ACCENT}55, 0 2px 12px rgba(0,0,0,0.8)`,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {title}
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.8 }}
-          className="mt-2 text-[11px] leading-relaxed sm:text-sm"
-          style={{ color: "rgba(180,200,255,0.60)" }}
-        >
-          {subtitle}
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.85, duration: 0.55 }}
-          className="pointer-events-auto mt-5"
-        >
-          <Link
-            to="/search"
-            className="inline-flex min-h-12 items-center justify-center rounded-full border border-violet-200/25 bg-gradient-to-r from-violet-700 to-fuchsia-600 px-7 text-sm font-black text-white shadow-[0_12px_38px_rgba(124,58,237,0.46)] transition hover:brightness-110"
-          >
-            استكشف المنتجات
-          </Link>
-        </motion.div>
-      </div>
+      <HeroOfferCopy products={pool} badgeText={badgeText} />
 
       {/* ── Drag hint ────────────────────────────────────────────────────── */}
       <AnimatePresence>
