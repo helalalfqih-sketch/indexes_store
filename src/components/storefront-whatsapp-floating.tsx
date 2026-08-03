@@ -24,7 +24,7 @@ export function StorefrontWhatsAppFloating() {
         rel="noopener noreferrer"
         onClick={handleWhatsAppClick}
         title="تواصل معنا عبر واتساب"
-        className="fixed bottom-6 end-6 z-40 hidden md:flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-xs font-bold text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:bg-emerald-500 hover:shadow-emerald-500/30 border border-emerald-400/40 group"
+        className="fixed bottom-6 end-6 z-40 hidden min-[1100px]:flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-xs font-bold text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:bg-emerald-500 hover:shadow-emerald-500/30 border border-emerald-400/40 group"
       >
         <MessageCircle className="h-5 w-5 text-white animate-pulse" />
         <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300">
@@ -44,24 +44,31 @@ export function MobileCommerceBottomBar() {
   const waHref = whatsappLink(`مرحباً، أود الاستفسار والتسوق من ${storeName}`, phone);
 
   const items = [
-    { to: "/", label: "الرئيسية", icon: Home },
-    { to: "/search", label: "البحث", icon: Search, event: "click_search" },
     { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count },
-    { isWhatsApp: true, href: waHref, label: "واتساب", icon: MessageCircle, event: "click_whatsapp" },
+    { to: "/search", label: "البحث", icon: Search, event: "click_search" },
+    { to: "/", label: "الرئيسية", icon: Home },
+    {
+      isWhatsApp: true,
+      href: waHref,
+      label: "واتساب",
+      icon: MessageCircle,
+      event: "click_whatsapp",
+    },
     { to: "/account", label: "حسابي", icon: User },
   ];
 
   return (
     <nav
-      className="fixed inset-x-3 z-40 mx-auto w-auto max-w-md md:hidden"
+      aria-label="التنقل الرئيسي"
+      className="fixed inset-x-3 z-40 mx-auto w-auto max-w-[960px] min-[1100px]:hidden"
       style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
     >
       <ul
-        className="grid grid-cols-5 items-center rounded-[28px] px-1 py-1.5 shadow-2xl backdrop-blur-[20px]"
+        className="grid grid-cols-5 items-center rounded-[30px] px-1 py-1.5 shadow-2xl"
         style={{
-          background: "rgba(6, 18, 30, 0.92)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "inset 0 1px 0 rgba(31,94,255,0.4), 0 18px 44px -16px rgba(0,0,0,0.85)",
+          background: "rgba(5, 8, 20, 0.98)",
+          border: "1px solid rgba(139,92,246,0.28)",
+          boxShadow: "inset 0 1px 0 rgba(168,85,247,0.22), 0 18px 50px -14px rgba(0,0,0,0.9)",
         }}
       >
         {items.map((it, idx) => {
@@ -74,7 +81,7 @@ export function MobileCommerceBottomBar() {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => trackEvent("click_whatsapp", { source: "bottom_nav" })}
-                  className="mx-auto flex w-fit flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5 text-[10px] font-bold text-emerald-400 hover:text-white transition-all"
+                  className="mx-auto flex min-h-11 w-fit min-w-11 flex-col items-center justify-center gap-0.5 rounded-2xl px-2 py-1.5 text-[10px] font-bold text-emerald-400 hover:text-white transition-all sm:text-xs"
                 >
                   <Icon className="h-5 w-5 stroke-[2.5]" />
                   <span>{it.label}</span>
@@ -94,9 +101,9 @@ export function MobileCommerceBottomBar() {
                     trackEvent("click_search", { source: "bottom_nav" });
                   }
                 }}
-                className={`mx-auto flex w-fit flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5 text-[10px] font-bold transition-all ${
+                className={`mx-auto flex min-h-11 min-w-11 w-fit flex-col items-center justify-center gap-0.5 rounded-2xl px-2 py-1.5 text-[10px] font-bold transition-all sm:text-xs ${
                   active
-                    ? "bg-primary/20 text-neon glow-neon"
+                    ? "-mt-5 min-h-16 min-w-16 rounded-full border border-violet-300/35 bg-gradient-to-b from-violet-600 to-fuchsia-700 text-white shadow-[0_0_34px_rgba(124,58,237,0.65)] sm:min-h-20 sm:min-w-20"
                     : "text-showcase-muted hover:text-white"
                 }`}
               >

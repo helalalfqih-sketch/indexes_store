@@ -22,6 +22,7 @@ import { fetchCategories } from "@/lib/actions/category.actions";
 import {
   fallbackProducts,
   toLegacyProduct,
+  type LegacyCategoryShape,
   type LegacyProductShape,
 } from "@/lib/data-adapter";
 import type { ProductDTO } from "@/lib/domain/product";
@@ -121,7 +122,7 @@ export async function fetchProductsByCategory(
   const key = categoryIdOrSlug.trim();
   const cleanKey = key.toLowerCase().replace(/_/g, "-");
 
-  let categories: any[] = [];
+  let categories: Array<LegacyCategoryShape & { slug?: string }> = [];
   try {
     categories = await fetchCategories();
   } catch (e) {
@@ -129,14 +130,15 @@ export async function fetchProductsByCategory(
   }
 
   const matchedCat = categories.find(
-    (c) => c.id === key || c.slug === key || c.slug === cleanKey || c.id === cleanKey
+    (c) => c.id === key || c.slug === key || c.slug === cleanKey || c.id === cleanKey,
   );
-  const targetSlug = matchedCat ? matchedCat.slug : cleanKey;
+  const targetSlug = matchedCat ? (matchedCat.slug ?? matchedCat.id) : cleanKey;
   const targetId = matchedCat ? matchedCat.id : key;
 
   const all = await fetchProducts();
   return all.filter((p) => {
-    if (p.categoryId === targetId || p.categoryId === targetSlug || p.categoryId === cleanKey) return true;
+    if (p.categoryId === targetId || p.categoryId === targetSlug || p.categoryId === cleanKey)
+      return true;
     const inferred = inferCategorySlug(p.name, [], p.description ?? "");
     return inferred === targetSlug || inferred === cleanKey;
   });
@@ -154,19 +156,11 @@ export async function fetchOffers(): Promise<LegacyProductShape[]> {
     (p) =>
       p.isDeal ||
       (typeof p.oldPrice === "number" && p.oldPrice > p.price) ||
-      (p.badge && (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
+      (p.badge &&
+        (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
   );
 
-  if (explicitOffers.length > 0) {
-    return explicitOffers;
-  }
-
-  // Fallback: pick products and compute deal pricing so offers page & home deals section are vibrant
-  return all.slice(0, 8).map((p) => ({
-    ...p,
-    oldPrice: p.oldPrice || Math.round(p.price * 1.25),
-    badge: p.badge || "عرض خاص 🔥",
-  }));
+  return explicitOffers;
 }
 
 export async function fetchBestSellers(limit = 4): Promise<LegacyProductShape[]> {

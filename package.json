@@ -21,6 +21,8 @@
     "test:integration": "vitest run tests/unit/p0-security.test.ts",
     "test:security": "vitest run tests/unit/p0-security.test.ts",
     "test:e2e": "playwright test tests/e2e/seo-routes.spec.ts",
+    "test:storefront": "playwright test tests/e2e/storefront-reference.spec.ts",
+    "visual:storefront:compare": "node scripts/compare-storefront-reference.mjs",
     "test:accessibility": "playwright test tests/e2e/accessibility.spec.ts",
     "test:coverage": "vitest run --coverage"
   },
