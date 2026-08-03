@@ -100,8 +100,11 @@ function ShowroomProductCard({
       transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
       onPointerMove={handlePointerMove}
       onPointerLeave={resetTilt}
-      className="group relative flex w-[44vw] min-w-[154px] max-w-[230px] shrink-0 snap-start flex-col overflow-hidden rounded-[24px] border border-violet-400/20 bg-[#080d1a] shadow-[0_18px_55px_rgba(0,0,0,0.34)] transition-[transform,border-color,box-shadow] duration-200 hover:border-violet-400/55 md:hover:shadow-[0_22px_70px_rgba(109,40,217,0.22)]"
+      style={{ contentVisibility: "auto", containIntrinsicSize: "230px 430px" }}
+      className="group relative isolate flex w-[44vw] min-w-[154px] max-w-[230px] shrink-0 snap-start flex-col overflow-hidden rounded-[24px] border border-violet-400/20 bg-[linear-gradient(155deg,rgba(18,24,45,0.98),rgba(5,9,22,0.98)_52%,rgba(11,5,28,0.98))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_18px_55px_rgba(0,0,0,0.34)] transition-[transform,border-color,box-shadow] duration-200 hover:border-violet-400/55 md:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_22px_70px_rgba(109,40,217,0.22)]"
     >
+      <div className="pointer-events-none absolute -left-1/2 top-0 z-30 h-full w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-[transform,opacity] duration-700 group-hover:translate-x-[520%] group-hover:opacity-100 motion-reduce:hidden" />
+      <div className="pointer-events-none absolute inset-0 z-20 rounded-[inherit] bg-[linear-gradient(135deg,rgba(255,255,255,0.06),transparent_24%,transparent_72%,rgba(139,92,246,0.06))]" />
       <Link
         to="/product/$slug"
         params={{ slug: product.slug }}
