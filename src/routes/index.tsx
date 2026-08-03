@@ -654,7 +654,7 @@ function HomePage() {
 
       <StorefrontCategoryShortcuts categories={categories} />
 
-      {/* 5. PREMIUM OFFER RAILS */}
+      {/* REFERENCE-FIRST COMMERCE FLOW */}
       {settings.sections.deals.enabled && (
         <StorefrontProductRail
           title={settings.sections.deals.title || "أفضل العروض لك 🔥"}
