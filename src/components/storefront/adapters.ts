@@ -26,9 +26,13 @@ export function resolveProductImage(p: LegacyProductShape): string {
     const imgMedia = p.media.find((m) => m.type === "image" && m.url && !isVideoUrl(m.url));
     if (imgMedia?.url) return imgMedia.url;
 
-    const vidMedia = p.media.find((m) => m.type === "video" && (m.thumbnailUrl || m.thumbnail));
-    if (vidMedia?.thumbnailUrl) return vidMedia.thumbnailUrl;
-    if (vidMedia?.thumbnail) return vidMedia.thumbnail;
+    const vidMedia = p.media.find((m) => m.type === "video");
+    if (vidMedia) {
+      const vidObj = vidMedia as Record<string, any>;
+      if (vidObj.poster) return vidObj.poster;
+      if (vidObj.thumbnailUrl) return vidObj.thumbnailUrl;
+      if (vidObj.thumbnail) return vidObj.thumbnail;
+    }
   }
 
   // 2. Check p.image
