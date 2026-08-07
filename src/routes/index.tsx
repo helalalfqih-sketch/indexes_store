@@ -100,8 +100,8 @@ function HomePage() {
   // Map production products to AI Studio design products
   const products: DesignProduct[] = useMemo(() => {
     const rawList = allProducts.length ? allProducts : dailyDeals.length ? dailyDeals : bestSellers;
-    return (rawList as (LegacyProductShape | ProductionProduct)[]).map((p, idx) =>
-      mapProductionProductToDesignProduct(p, idx),
+    return (rawList as (LegacyProductShape | ProductionProduct)[]).map((p) =>
+      mapProductionProductToDesignProduct(p),
     );
   }, [allProducts, dailyDeals, bestSellers]);
 

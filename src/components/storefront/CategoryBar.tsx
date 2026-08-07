@@ -14,6 +14,7 @@ import {
   Flame,
   CheckCircle2,
   ChevronDown,
+  type LucideIcon,
 } from "lucide-react";
 
 interface CategoryBarProps {
@@ -32,7 +33,7 @@ const CATEGORY_ITEMS = [
   { id: "home", name: "المنزل", icon: Home },
 ];
 
-const SORT_OPTIONS: { id: SortOption; label: string; icon: React.ElementType; badge?: string }[] = [
+const SORT_OPTIONS: { id: SortOption; label: string; icon: LucideIcon; badge?: string }[] = [
   { id: "default", label: "الترتيب الافتراضي", icon: SlidersHorizontal },
   { id: "price-high", label: "الأعلى سعراً", icon: TrendingUp },
   { id: "price-low", label: "الأقل سعراً", icon: TrendingDown },
