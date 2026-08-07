@@ -30,7 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <TopBar />
       <main
         className="mx-auto w-full max-w-md lg:max-w-[1024px]"
-        style={{ paddingBottom: "calc(110px + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: "calc(104px + env(safe-area-inset-bottom))" }}
       >
         {children}
         <SiteFooter />
@@ -54,22 +54,22 @@ function TopBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { scrollY } = useScroll();
   const smooth = useSpring(scrollY, SCROLL_SPRING);
-  const bgAlpha = useTransform(smooth, [0, 80], [0.75, 0.96]);
-  const background = useMotionTemplate`color-mix(in oklab, var(--ink) calc(${bgAlpha} * 100%), transparent)`;
-  const borderAlpha = useTransform(smooth, [0, 80], [0, 1]);
-  const borderColor = useMotionTemplate`color-mix(in oklab, var(--ink-line) calc(${borderAlpha} * 100%), transparent)`;
+  const bgAlpha = useTransform(smooth, [0, 80], [0.82, 0.96]);
+  const background = useMotionTemplate`color-mix(in oklab, var(--color-bg-elevated) calc(${bgAlpha} * 100%), transparent)`;
+  const borderAlpha = useTransform(smooth, [0, 80], [0.55, 1]);
+  const borderColor = useMotionTemplate`color-mix(in oklab, var(--color-border-default) calc(${borderAlpha} * 100%), transparent)`;
 
   return (
     <motion.header
       dir="ltr"
       style={{ background, borderColor }}
-      className="sticky top-0 z-40 mx-auto grid h-16 w-full max-w-md grid-cols-[44px_44px_1fr_44px_44px] items-center gap-2 border-b px-3.5 pt-2 backdrop-blur lg:h-[72px] lg:grid-cols-[58px_58px_1fr_58px_58px] lg:gap-3.5"
+      className="sticky top-0 z-40 mx-auto grid h-16 w-full max-w-md grid-cols-[44px_44px_1fr_44px_44px] items-center gap-2 border-b px-3.5 pt-2 shadow-[var(--shadow-sm)] backdrop-blur-xl lg:h-[72px] lg:max-w-[1024px] lg:grid-cols-[48px_48px_1fr_48px_48px] lg:gap-3 lg:px-5"
     >
       <button
         type="button"
         aria-label="القائمة"
         onClick={() => setMenuOpen(true)}
-        className="press grid h-11 w-11 place-items-center rounded-[14px] border border-ink-line bg-ink-card text-ink-text lg:h-[58px] lg:w-[58px]"
+        className="press grid h-11 w-11 place-items-center rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] lg:h-12 lg:w-12"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -77,36 +77,37 @@ function TopBar() {
         to="/search"
         search={{ q: "" }}
         aria-label="المسح الضوئي"
-        className="press grid h-11 w-11 place-items-center rounded-[14px] border border-ink-line bg-ink-card text-ink-text lg:h-[58px] lg:w-[58px]"
+        className="press grid h-11 w-11 place-items-center rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] lg:h-12 lg:w-12"
       >
         <ScanLine className="h-5 w-5" />
       </Link>
       <Link
         to="/search"
         search={{ q: "" }}
-        className="press flex h-[46px] min-w-0 items-center gap-2 rounded-[23px] border border-ink-line bg-ink-card px-3.5 text-[11.5px] text-ink-muted lg:h-[62px] lg:rounded-[31px] lg:text-[15px]"
+        aria-label="البحث في المتجر"
+        className="press flex h-[46px] min-w-0 items-center gap-2 rounded-[15px] border border-[var(--color-border-default)] bg-[var(--color-surface-1)] px-3.5 text-[11.5px] text-[var(--color-text-muted)] shadow-[var(--shadow-sm)] hover:border-[var(--color-border-strong)] lg:h-12 lg:rounded-2xl lg:px-4 lg:text-sm"
       >
-        <Search className="h-4 w-4 shrink-0 lg:h-5 lg:w-5" />
+        <Search className="h-4 w-4 shrink-0 text-[var(--color-text-secondary)] lg:h-[18px] lg:w-[18px]" />
         <span dir="rtl" className="min-w-0 flex-1 truncate text-right">
           ابحث عن منتج، قسم أو علامة تجارية...
         </span>
       </Link>
       <Link
         to="/account"
-        aria-label="الحساب"
-        className="press relative grid h-11 w-11 place-items-center text-ink-text lg:h-[58px] lg:w-[58px]"
+        aria-label="الإشعارات والحساب"
+        className="press relative grid h-11 w-11 place-items-center rounded-[14px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] lg:h-12 lg:w-12"
       >
-        <Bell className="h-[22px] w-[22px] lg:h-7 lg:w-7" />
-        <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-neon" />
+        <Bell className="h-[21px] w-[21px]" />
+        <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--color-primary-ui)] ring-2 ring-[var(--color-bg-elevated)]" />
       </Link>
       <Link
         to="/cart"
-        aria-label="السلة"
-        className="press relative grid h-11 w-11 place-items-center text-ink-text lg:h-[58px] lg:w-[58px]"
+        aria-label={`السلة${count > 0 ? `، ${count} عناصر` : ""}`}
+        className="press relative grid h-11 w-11 place-items-center rounded-[14px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] lg:h-12 lg:w-12"
       >
-        <ShoppingCart className="h-[22px] w-[22px] lg:h-7 lg:w-7" />
+        <ShoppingCart className="h-[21px] w-[21px]" />
         {count > 0 ? (
-          <span className="absolute -right-0.5 top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-neon px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-0.5 top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[var(--color-primary-ui)] px-1 text-[10px] font-bold text-white ring-2 ring-[var(--color-bg-elevated)]">
             {count}
           </span>
         ) : null}
@@ -131,7 +132,8 @@ function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-3.5 z-40 mx-auto h-[72px] w-auto max-w-[362px] rounded-[36px] border border-ink-line bg-ink-card/95 backdrop-blur sm:max-w-[398px] lg:h-[86px] lg:max-w-[964px]"
+      aria-label="التنقل الرئيسي"
+      className="fixed inset-x-3.5 z-40 mx-auto h-[70px] w-auto max-w-[398px] rounded-[28px] border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-lg)] backdrop-blur-xl md:hidden"
       style={{ bottom: "calc(10px + env(safe-area-inset-bottom))" }}
     >
       <ul className="grid h-full grid-cols-5 items-center px-2">
@@ -141,26 +143,30 @@ function BottomNav() {
           const inner =
             "center" in t && t.center ? (
               <div className="flex flex-col items-center gap-1">
-                <div className="grid h-16 w-16 -translate-y-5 place-items-center rounded-full bg-neon text-white shadow-[0_10px_25px_-6px_var(--neon)] lg:h-[76px] lg:w-[76px]">
-                  <Icon className="h-6 w-6" />
+                <div className="grid h-14 w-14 -translate-y-4 place-items-center rounded-full border border-[var(--color-primary-border)] bg-[var(--color-primary-ui)] text-white shadow-[var(--shadow-md)]">
+                  <Icon className="h-[22px] w-[22px]" />
                 </div>
-                <span className="-mt-4 text-[10px] font-bold text-neon-2">{t.label}</span>
+                <span className="-mt-3 text-[10px] font-bold text-[var(--color-primary-ui)]">
+                  {t.label}
+                </span>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1">
                 <div className="relative">
-                  <Icon className={`h-5 w-5 ${active ? "text-neon-2" : "text-ink-muted"}`} />
+                  <Icon
+                    className={`h-5 w-5 ${active ? "text-[var(--color-primary-ui)]" : "text-[var(--color-text-muted)]"}`}
+                  />
                   {"badge" in t && t.badge ? (
-                    <span className="absolute -end-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-neon px-1 text-[9px] font-bold text-white">
+                    <span className="absolute -end-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--color-primary-ui)] px-1 text-[9px] font-bold text-white">
                       {t.badge}
                     </span>
                   ) : null}
                   {"dot" in t && t.dot ? (
-                    <span className="absolute -end-1 -top-1 h-2 w-2 rounded-full bg-neon-2" />
+                    <span className="absolute -end-1 -top-1 h-2 w-2 rounded-full bg-[var(--color-success)]" />
                   ) : null}
                 </div>
                 <span
-                  className={`text-[10px] font-semibold ${active ? "text-neon-2" : "text-ink-muted"}`}
+                  className={`text-[10px] font-semibold ${active ? "text-[var(--color-primary-ui)]" : "text-[var(--color-text-muted)]"}`}
                 >
                   {t.label}
                 </span>
@@ -174,6 +180,7 @@ function BottomNav() {
                   href={whatsappLink("مرحباً، أريد الاستفسار عن منتج")}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="التواصل عبر واتساب"
                   className="press flex flex-col items-center"
                 >
                   {inner}
@@ -185,6 +192,7 @@ function BottomNav() {
             <li key={t.label}>
               <Link
                 to={t.to}
+                aria-label={t.label}
                 className="press flex flex-col items-center"
                 onClick={(e) => {
                   if (pathname !== t.to) return;
