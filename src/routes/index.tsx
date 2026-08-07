@@ -25,8 +25,7 @@ export const Route = createFileRoute("/")({
       { title: "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن" },
       {
         name: "description",
-        content:
-          "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، عطور، والمزيد.",
+        content: "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، عطور، والمزيد.",
       },
       { property: "og:title", content: "اندكس ستور — تسوّق أونلاين في اليمن" },
       {
@@ -94,11 +93,14 @@ function HomePage() {
       {/* Shipping strip — two info badges matching target image */}
       <div className="flex h-10 items-center justify-between gap-2 rounded-[14px] border border-ink-line/60 bg-ink-card px-3 text-[11px] font-semibold leading-4 md:h-[46px] md:rounded-2xl md:px-[24px] md:text-[13px]">
         <div className="flex items-center gap-1.5 text-ink-muted">
-          <span className="text-amber-400 text-xs">⚡</span> {nav?.shippingBarDeliveryText ?? "توصيل سريع خلال 24 - 48 ساعة"}
+          <span className="text-amber-400 text-xs">⚡</span>{" "}
+          {nav?.shippingBarDeliveryText ?? "توصيل سريع خلال 24 - 48 ساعة"}
         </div>
         <div className="flex items-center gap-1.5 text-ink-muted">
           <span>🚀</span> {nav?.shippingBarFreeText ?? "شحن مجاني للطلبات فوق"}{" "}
-          <span className="text-neon-2 font-bold">{(nav?.shippingBarThreshold ?? 30000).toLocaleString("en-US")}</span>{" "}
+          <span className="text-neon-2 font-bold">
+            {(nav?.shippingBarThreshold ?? 30000).toLocaleString("en-US")}
+          </span>{" "}
           {nav?.shippingBarCurrency ?? "ريال"} <span className="text-amber-400 text-xs">🚚</span>
         </div>
       </div>
@@ -114,7 +116,10 @@ function HomePage() {
             search={{ q: "" }}
             className="press card-lift flex h-[64px] w-[58px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-[13px] border border-ink-line bg-ink-card px-1.5 sm:w-[63px] md:h-[78px] md:w-[120px]"
           >
-            <Icons.LayoutGrid className="h-[19px] w-[19px] text-neon-2 md:h-6 md:w-6" strokeWidth={1.6} />
+            <Icons.LayoutGrid
+              className="h-[19px] w-[19px] text-neon-2 md:h-6 md:w-6"
+              strokeWidth={1.6}
+            />
             <span className="line-clamp-2 w-full text-center text-[9px] font-semibold leading-tight text-ink-text md:text-[11px]">
               المزيد
             </span>
@@ -146,16 +151,16 @@ function HomePage() {
             أفضل العروض
             <span className="text-[14px] md:text-[18px]">🔥</span>
           </h2>
-          <Link to="/offers" className="flex items-center gap-1 text-[11px] font-bold text-neon-2 md:text-[14px]">
+          <Link
+            to="/offers"
+            className="flex items-center gap-1 text-[11px] font-bold text-neon-2 md:text-[14px]"
+          >
             عرض الكل
             <Icons.ChevronLeft className="h-3.5 w-3.5" />
           </Link>
         </div>
         <div className="relative">
-          <SnapRail
-            className="-mx-3.5 px-3.5 sm:-mx-4 sm:px-4 md:hidden"
-            itemGapClass="gap-3"
-          >
+          <SnapRail className="-mx-3.5 px-3.5 sm:-mx-4 sm:px-4 md:hidden" itemGapClass="gap-3">
             {deals.map((p, i) => (
               <Reveal key={p.id} index={i} className="shrink-0">
                 <NeonProductCard product={p} />
@@ -229,11 +234,23 @@ function HomePage() {
           <div className="flex flex-col gap-3 text-right text-[13px] text-ink-muted">
             <div className="flex items-center justify-start gap-2">
               <Icons.MessageSquare className="h-5 w-5 text-emerald-500 shrink-0" />
-              <span>لطلب والاستفسار (واتساب): <a href={`https://wa.me/${nav?.whatsappPhone ?? "967771370740"}`} target="_blank" rel="noreferrer" className="font-bold text-ink-text hover:text-emerald-400">{nav?.whatsappPhone ?? "967771370740"}</a></span>
+              <span>
+                لطلب والاستفسار (واتساب):{" "}
+                <a
+                  href={`https://wa.me/${nav?.whatsappPhone ?? "967771370740"}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-ink-text hover:text-emerald-400"
+                >
+                  {nav?.whatsappPhone ?? "967771370740"}
+                </a>
+              </span>
             </div>
             <div className="flex items-center justify-start gap-2">
               <Icons.MapPin className="h-5 w-5 text-neon-2 shrink-0" />
-              <span>العنوان: {nav?.addressText ?? "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية"}</span>
+              <span>
+                العنوان: {nav?.addressText ?? "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية"}
+              </span>
             </div>
             <div className="flex items-center justify-start gap-2">
               <span className="text-base shrink-0">🇾🇪</span>
@@ -241,27 +258,38 @@ function HomePage() {
             </div>
             <div className="flex items-center justify-start gap-2">
               <Icons.PackageCheck className="h-5 w-5 text-blue-400 shrink-0" />
-              <span><strong className="text-ink-text">تتبع طلبك</strong> - برقم الطلب وآخر 4 أرقام من هاتفك</span>
+              <span>
+                <strong className="text-ink-text">تتبع طلبك</strong> - برقم الطلب وآخر 4 أرقام من
+                هاتفك
+              </span>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-between gap-4 border-t border-ink-line pt-4 md:border-t-0 md:pt-0">
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-ink-text">تواصل معنا الآن</span>
-              <a href={`https://wa.me/${nav?.whatsappPhone ?? "967771370740"}`} target="_blank" rel="noreferrer" className="grid h-10 w-10 place-items-center rounded-full border border-ink-line bg-ink-card text-emerald-400 transition hover:bg-emerald-500 hover:text-white">
+              <a
+                href={`https://wa.me/${nav?.whatsappPhone ?? "967771370740"}`}
+                target="_blank"
+                rel="noreferrer"
+                className="grid h-10 w-10 place-items-center rounded-full border border-ink-line bg-ink-card text-emerald-400 transition hover:bg-emerald-500 hover:text-white"
+              >
                 <Icons.MessageSquare className="h-5 w-5" />
               </a>
             </div>
-            
+
             <div className="relative flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-full border-2 border-dashed border-amber-400 text-center p-2">
               <Icons.ShoppingCart className="h-6 w-6 text-ink-text mb-0.5" />
-              <span className="text-[11px] font-black leading-none text-ink-text">{nav?.stampLogoTitle ?? "INDEXES STORE"}</span>
-              <span className="text-[7px] font-bold tracking-widest text-amber-400 mt-1">{nav?.stampLogoSubtitle ?? "PREMIUM QUALITY"}</span>
+              <span className="text-[11px] font-black leading-none text-ink-text">
+                {nav?.stampLogoTitle ?? "INDEXES STORE"}
+              </span>
+              <span className="text-[7px] font-bold tracking-widest text-amber-400 mt-1">
+                {nav?.stampLogoSubtitle ?? "PREMIUM QUALITY"}
+              </span>
             </div>
           </div>
         </div>
       </footer>
-
     </div>
   );
 }
@@ -293,7 +321,10 @@ export function StorefrontHero({ hero, products = [] }: StorefrontHeroProps) {
       );
     case "banner_image":
       return (
-        <div data-testid="hero-banner" className="relative overflow-hidden rounded-[32px] mx-2 sm:mx-4 my-2 border border-white/10 bg-surface shadow-2xl">
+        <div
+          data-testid="hero-banner"
+          className="relative overflow-hidden rounded-[32px] mx-2 sm:mx-4 my-2 border border-white/10 bg-surface shadow-2xl"
+        >
           {hero.bannerImageUrl ? (
             <img
               src={hero.bannerImageUrl}
@@ -312,9 +343,7 @@ export function StorefrontHero({ hero, products = [] }: StorefrontHeroProps) {
             <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight">
               {hero.title}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-200 max-w-xl">
-              {hero.subtitle}
-            </p>
+            <p className="text-xs sm:text-sm text-gray-200 max-w-xl">{hero.subtitle}</p>
             {hero.ctaText && (
               <a
                 href={hero.ctaLink || "/offers"}
@@ -328,7 +357,10 @@ export function StorefrontHero({ hero, products = [] }: StorefrontHeroProps) {
       );
     case "video":
       return (
-        <div data-testid="hero-video" className="relative overflow-hidden rounded-[32px] mx-2 sm:mx-4 my-2 border border-white/10 bg-black min-h-[400px] shadow-2xl">
+        <div
+          data-testid="hero-video"
+          className="relative overflow-hidden rounded-[32px] mx-2 sm:mx-4 my-2 border border-white/10 bg-black min-h-[400px] shadow-2xl"
+        >
           {hero.bannerVideoUrl ? (
             <video
               src={hero.bannerVideoUrl}
@@ -350,9 +382,7 @@ export function StorefrontHero({ hero, products = [] }: StorefrontHeroProps) {
             <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
               {hero.title}
             </h1>
-            <p className="text-sm sm:text-base text-gray-300 max-w-lg">
-              {hero.subtitle}
-            </p>
+            <p className="text-sm sm:text-base text-gray-300 max-w-lg">{hero.subtitle}</p>
             {hero.ctaText && (
               <a
                 href={hero.ctaLink || "/offers"}
@@ -366,7 +396,10 @@ export function StorefrontHero({ hero, products = [] }: StorefrontHeroProps) {
       );
     case "slideshow":
       return (
-        <div data-testid="hero-slideshow" className="relative overflow-hidden rounded-[32px] mx-2 sm:mx-4 my-2 border border-white/10 bg-surface shadow-2xl">
+        <div
+          data-testid="hero-slideshow"
+          className="relative overflow-hidden rounded-[32px] mx-2 sm:mx-4 my-2 border border-white/10 bg-surface shadow-2xl"
+        >
           {hero.bannerImageUrl ? (
             <img
               src={hero.bannerImageUrl}
@@ -385,9 +418,7 @@ export function StorefrontHero({ hero, products = [] }: StorefrontHeroProps) {
             <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight">
               {hero.title}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-200 max-w-xl">
-              {hero.subtitle}
-            </p>
+            <p className="text-xs sm:text-sm text-gray-200 max-w-xl">{hero.subtitle}</p>
             {hero.ctaText && (
               <a
                 href={hero.ctaLink || "/offers"}

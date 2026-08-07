@@ -19,7 +19,6 @@ import { useWebglQuality, type WebglQuality } from "@/lib/use-webgl-quality";
 import { useLoadableProducts } from "@/lib/use-loadable-products";
 import { getPublishedStorefrontAppearance } from "@/lib/actions/appearance.actions";
 
-
 const DARK = "#000209";
 const LIGHT = "#EEEEEE";
 const RADIUS = 2.1;
@@ -191,7 +190,6 @@ function ProductTile({
     };
   }, [data.product.image]);
 
-
   const groupRef = useRef<THREE.Group>(null);
   const imageMat = useRef<THREE.MeshBasicMaterial>(null);
   const backMat = useRef<THREE.MeshBasicMaterial>(null);
@@ -211,7 +209,6 @@ function ProductTile({
       group.visible = false;
       return;
     }
-
 
     group.getWorldPosition(world);
     group.parent?.getWorldQuaternion(parentQ);
@@ -747,9 +744,6 @@ export function ProductGlobeCanvas({
     const list = loadable.length > 0 ? loadable : products;
     return list.slice(0, requestedMax);
   }, [loadable, products, requestedMax]);
-
-
-
 
   // The globe shell (core, wireframe, atmosphere, orbits) renders as soon as
   // WebGL is available — it never waits for products or textures.
