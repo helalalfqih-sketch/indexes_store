@@ -122,7 +122,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </span>
               )}
 
-              <h2 className="text-2xl font-bold text-white mb-1">{product.name}</h2>
+              <a
+                href={`/product/${product.slug || product.id}`}
+                className="text-2xl font-bold text-white mb-1 hover:text-[#7B3FFF] transition-colors block"
+              >
+                {product.name}
+              </a>
               <p className="text-gray-300 text-sm mb-3">{product.subtitle}</p>
 
               {/* Rating */}

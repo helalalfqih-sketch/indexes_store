@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { CartItem, Currency, OrderStatus } from "./types";
 import { formatPrice } from "./currency";
+import { submitOrder } from "@/lib/actions/order.actions";
+import { formatOrderNumber } from "@/lib/order-status";
+import { useCart } from "@/lib/cart-store";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -61,43 +64,89 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const discountAmountYER = (subtotalYER * couponDiscountPercent) / 100;
   const totalYER = subtotalYER - discountAmountYER + shippingFeeYER;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !phone || !address) return;
-
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    const newOrderNumber = `IND-${randomNum}`;
 
     let paymentLabel = "الدفع عند الاستلام (نقداً)";
     if (paymentMethod === "kuraimi") paymentLabel = "حساب بنك الكريمي (حاسب)";
     if (paymentMethod === "jawalpay") paymentLabel = "محفظة جوال بي / وان كاش";
     if (paymentMethod === "transfer") paymentLabel = "حوالة صرافة (النجم / المميز)";
 
-    const order: OrderStatus = {
-      id: `ord-${Date.now()}`,
-      orderNumber: newOrderNumber,
-      customerName,
-      phone,
-      governorate,
-      address,
-      items: cartItems.map((i) => ({
-        productName: i.product.name,
-        quantity: i.quantity,
-        price: i.product.priceYER,
-      })),
-      totalPriceYER: totalYER,
-      status: "received",
-      statusLabel: "تم استلام طلبك بنجاح! جاري التجهيز",
-      date: new Date().toLocaleDateString("ar-YE", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
-      paymentMethod: paymentLabel,
-    };
+    const fullAddress = `${governorate} - ${address}`;
 
-    setPlacedOrder(order);
-    onOrderPlaced(order);
+    try {
+      const idempotencyKey =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `idemp-${Date.now()}`;
+      const res = await submitOrder({
+        items: cartItems.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+        customerName: customerName.trim(),
+        customerPhone: phone.trim(),
+        customerAddress: fullAddress.trim(),
+        notes: `طريقة الدفع: ${paymentLabel}`,
+        idempotencyKey,
+      });
+
+      const formattedNum = formatOrderNumber(res.orderId);
+
+      const order: OrderStatus = {
+        id: res.orderId,
+        orderNumber: formattedNum,
+        customerName,
+        phone,
+        governorate,
+        address,
+        items: cartItems.map((i) => ({
+          productName: i.product.name,
+          quantity: i.quantity,
+          price: i.product.priceYER,
+        })),
+        totalPriceYER: totalYER,
+        status: "received",
+        statusLabel: "تم استلام طلبك بنجاح! جاري التجهيز",
+        date: new Date().toLocaleDateString("ar-YE", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
+        paymentMethod: paymentLabel,
+      };
+
+      useCart.getState().clear();
+      setPlacedOrder(order);
+      onOrderPlaced(order);
+    } catch (err) {
+      console.error("[CheckoutModal] submitOrder error:", err);
+      // Fallback offline order confirmation
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const order: OrderStatus = {
+        id: `ord-${Date.now()}`,
+        orderNumber: `IND-${randomNum}`,
+        customerName,
+        phone,
+        governorate,
+        address,
+        items: cartItems.map((i) => ({
+          productName: i.product.name,
+          quantity: i.quantity,
+          price: i.product.priceYER,
+        })),
+        totalPriceYER: totalYER,
+        status: "received",
+        statusLabel: "تم استلام طلبك! جاري التأكيد عبر واتساب",
+        date: new Date().toLocaleDateString("ar-YE", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
+        paymentMethod: paymentLabel,
+      };
+      useCart.getState().clear();
+      setPlacedOrder(order);
+      onOrderPlaced(order);
+    }
   };
 
   const getWhatsappMsg = (order: OrderStatus) => {

@@ -3,6 +3,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product as ProductionProduct } from "@/lib/store-data";
+import { useCart } from "@/lib/cart-store";
+import { useFavorites } from "@/lib/use-favorites";
 import {
   categoriesQuery,
   bestSellersQuery,
@@ -98,12 +100,58 @@ function HomePage() {
   const { data: allProducts } = useSuspenseQuery(globePoolQuery(100));
 
   // Map production products to AI Studio design products
+  const rawProductList = useMemo(() => {
+    return allProducts.length ? allProducts : dailyDeals.length ? dailyDeals : bestSellers;
+  }, [allProducts, dailyDeals, bestSellers]);
+
+  const rawProductMap = useMemo(() => {
+    const map = new Map<string, LegacyProductShape>();
+    (rawProductList as LegacyProductShape[]).forEach((p) => {
+      map.set(p.id, p);
+    });
+    return map;
+  }, [rawProductList]);
+
   const products: DesignProduct[] = useMemo(() => {
-    const rawList = allProducts.length ? allProducts : dailyDeals.length ? dailyDeals : bestSellers;
-    return (rawList as (LegacyProductShape | ProductionProduct)[]).map((p) =>
+    return (rawProductList as (LegacyProductShape | ProductionProduct)[]).map((p) =>
       mapProductionProductToDesignProduct(p),
     );
-  }, [allProducts, dailyDeals, bestSellers]);
+  }, [rawProductList]);
+
+  // Real production cart & favorites hooks
+  const cartStoreItems = useCart((s) => s.items);
+  const cartStoreCount = useCart((s) => s.count());
+  const addToCartStore = useCart((s) => s.add);
+  const setQtyCartStore = useCart((s) => s.setQty);
+  const removeFromCartStore = useCart((s) => s.remove);
+
+  const { favorites, toggleFavorite } = useFavorites();
+
+  // Map Zustand cart lines to design CartItem[] for CartDrawer & CheckoutModal views
+  const cartItems: CartItem[] = useMemo(() => {
+    return cartStoreItems.map((item) => {
+      const foundRaw = rawProductMap.get(item.productId);
+      const designProd = foundRaw
+        ? mapProductionProductToDesignProduct(foundRaw)
+        : {
+            id: item.productId,
+            name: item.name,
+            subtitle: item.name,
+            description: item.name,
+            priceYER: item.price,
+            originalPriceYER: item.price,
+            rating: 4.8,
+            reviewsCount: 12,
+            image: item.image,
+            category: "all",
+            inStock: true,
+          };
+      return {
+        product: designProd,
+        quantity: item.qty,
+      };
+    });
+  }, [cartStoreItems, rawProductMap]);
 
   // Theme State
   const [theme, setTheme] = useState<"dark" | "light">(() => {
@@ -145,21 +193,6 @@ function HomePage() {
     setTimeout(() => setIsLoading(false), 250);
   };
 
-  // Cart state initialized with first product if available
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    if (products.length >= 3) {
-      return [
-        { product: products[0], quantity: 1, selectedColor: "#7B3FFF" },
-        { product: products[1], quantity: 1, selectedColor: "#FFFFFF" },
-        { product: products[2], quantity: 1 },
-      ];
-    }
-    return [];
-  });
-
-  const [favorites, setFavorites] = useState<string[]>(() =>
-    products.length >= 2 ? [products[0].id, products[1].id] : [],
-  );
   const [compareList, setCompareList] = useState<DesignProduct[]>([]);
   const [userOrders, setUserOrders] = useState<OrderStatus[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([
@@ -202,19 +235,13 @@ function HomePage() {
 
   const [appliedCouponDiscount, setAppliedCouponDiscount] = useState(0);
 
-  // Computed Properties
-  const totalCartCount = useMemo(
-    () => cartItems.reduce((acc, item) => acc + item.quantity, 0),
-    [cartItems],
-  );
-
   const unreadNotificationsCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications],
   );
 
   const bestOffers = useMemo(
-    () => products.filter((p) => p.isBestOffer || p.discountBadge),
+    () => products.filter((p) => p.isBestOffer || (p.discountBadge && p.discountBadge.length > 0)),
     [products],
   );
 
@@ -244,43 +271,38 @@ function HomePage() {
     }
   }, [products, selectedCategory, searchQuery, sortBy]);
 
-  // Handlers
+  // Handlers using real production cart and favorites
   const handleToggleFavorite = (product: DesignProduct) => {
-    setFavorites((prev) =>
-      prev.includes(product.id) ? prev.filter((id) => id !== product.id) : [...prev, product.id],
-    );
+    toggleFavorite(product.id);
   };
 
-  const handleAddToCart = (
-    product: DesignProduct,
-    quantity: number = 1,
-    selectedColor?: string,
-  ) => {
-    setCartItems((prev) => {
-      const existingIdx = prev.findIndex((item) => item.product.id === product.id);
-      if (existingIdx > -1) {
-        const updated = [...prev];
-        updated[existingIdx].quantity += quantity;
-        if (selectedColor) updated[existingIdx].selectedColor = selectedColor;
-        return updated;
-      }
-      return [...prev, { product, quantity, selectedColor }];
-    });
+  const handleAddToCart = (product: DesignProduct, quantity: number = 1) => {
+    const raw = rawProductMap.get(product.id) || {
+      id: product.id,
+      slug: product.slug || product.id,
+      name: product.name,
+      description: product.description,
+      price: product.priceYER,
+      oldPrice: product.originalPriceYER > product.priceYER ? product.originalPriceYER : undefined,
+      stock: product.inStock ? 50 : 0,
+      image: product.image,
+      rating: product.rating,
+      reviews: product.reviewsCount,
+      categoryId: product.category,
+    };
+    addToCartStore(raw, quantity);
   };
 
   const handleUpdateCartQuantity = (productId: string, quantity: number) => {
-    setCartItems((prev) =>
-      prev.map((item) => (item.product.id === productId ? { ...item, quantity } : item)),
-    );
+    setQtyCartStore(productId, quantity);
   };
 
   const handleRemoveCartItem = (productId: string) => {
-    setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
+    removeFromCartStore(productId);
   };
 
   const handleOrderPlaced = (newOrder: OrderStatus) => {
     setUserOrders((prev) => [newOrder, ...prev]);
-    setCartItems([]);
 
     setNotifications((prev) => [
       {
@@ -324,7 +346,7 @@ function HomePage() {
         <Header
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          cartCount={totalCartCount}
+          cartCount={cartStoreCount}
           unreadNotificationsCount={unreadNotificationsCount}
           wishlistCount={favorites.length}
           compareCount={compareList.length}
@@ -509,7 +531,7 @@ function HomePage() {
         <BottomNav
           activeTab={activeTab}
           setActiveTab={handleBottomNavTabChange}
-          cartCount={totalCartCount}
+          cartCount={cartStoreCount}
         />
 
         {/* Floating WhatsApp Quick Contact Button */}
@@ -521,8 +543,8 @@ function HomePage() {
           currency={currency}
           isFavorite={selectedProductModal ? favorites.includes(selectedProductModal.id) : false}
           onClose={() => setSelectedProductModal(null)}
-          onAddToCart={(prod, qty, col) => {
-            handleAddToCart(prod, qty, col);
+          onAddToCart={(prod, qty) => {
+            handleAddToCart(prod, qty);
             showToast(`تمت إضافة ${prod.name} إلى السلة بنجاح 🛒`);
           }}
           onToggleFavorite={(p) => {
