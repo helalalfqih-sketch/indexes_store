@@ -445,13 +445,37 @@ function Fallback() {
   );
 }
 
+import { ProductCard } from "@/components/product-card";
+
 export function ProductSphereHero({ products }: { products: LegacyProductShape[] }) {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
+  const quality = useWebglQuality();
   useEffect(() => setMounted(true), []);
   const [hovered, setHovered] = useState<LegacyProductShape | null>(null);
 
   const pool = useMemo(() => products.filter((p) => !!p.image).slice(0, 24), [products]);
+
+  if (!mounted || !quality.supported) {
+    return (
+      <section
+        dir="rtl"
+        data-testid="hero-sphere-fallback"
+        className="relative -mx-4 min-h-[420px] rounded-3xl p-6"
+        style={{ background: DARK }}
+      >
+        <div className="mb-4 text-center">
+          <h1 className="text-2xl font-black text-white">كوكب المنتجات</h1>
+          <p className="mt-1 text-xs text-white/60">تسوّق أشهر منتجاتنا الآن</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
