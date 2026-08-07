@@ -28,10 +28,10 @@ export function resolveProductImage(p: LegacyProductShape): string {
 
     const vidMedia = p.media.find((m) => m.type === "video");
     if (vidMedia) {
-      const vidObj = vidMedia as Record<string, any>;
-      if (vidObj.poster) return vidObj.poster;
-      if (vidObj.thumbnailUrl) return vidObj.thumbnailUrl;
-      if (vidObj.thumbnail) return vidObj.thumbnail;
+      const vidObj = vidMedia as Record<string, unknown>;
+      if (typeof vidObj.poster === "string") return vidObj.poster;
+      if (typeof vidObj.thumbnailUrl === "string") return vidObj.thumbnailUrl;
+      if (typeof vidObj.thumbnail === "string") return vidObj.thumbnail;
     }
   }
 
