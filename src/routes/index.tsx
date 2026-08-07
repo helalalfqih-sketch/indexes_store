@@ -1,33 +1,65 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
-import * as Icons from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useState, useMemo, useEffect } from "react";
 import type { LegacyProductShape } from "@/lib/data-adapter";
-import type { Product } from "@/lib/store-data";
+import type { Product as ProductionProduct } from "@/lib/store-data";
 import {
   categoriesQuery,
   bestSellersQuery,
   offersQuery,
   globePoolQuery,
 } from "@/lib/queries/catalog";
-import { CategoryRailSkeleton, ProductRailSkeleton } from "@/components/home/home-skeletons";
-import { NeonProductCard } from "@/components/home/neon-product-card";
-import { ScrollGlobeHero } from "@/components/home/scroll-globe-hero";
-import { TrustStrip } from "@/components/home/trust-strip";
-import loyaltyGem from "@/assets/loyalty-gem.png";
-import { Reveal } from "@/components/motion/reveal";
-import { SnapRail } from "@/components/motion/snap-rail";
-import { useSession } from "@/hooks/use-session";
-import { getPublishedStorefrontAppearance } from "@/lib/actions/appearance.actions";
+
+import {
+  Product as DesignProduct,
+  CartItem,
+  Currency,
+  ActiveTab,
+  OrderStatus,
+  NotificationItem,
+  SortOption,
+} from "@/components/storefront/types";
+import { mapProductionProductToDesignProduct } from "@/components/storefront/adapters";
+
+import { Header } from "@/components/storefront/Header";
+import { ShippingBanner } from "@/components/storefront/ShippingBanner";
+import { AISearchSection } from "@/components/storefront/AISearchSection";
+import { HeroCarousel } from "@/components/storefront/HeroCarousel";
+import { CategoryBar } from "@/components/storefront/CategoryBar";
+import { ProductCard } from "@/components/storefront/ProductCard";
+import { TrustBar } from "@/components/storefront/TrustBar";
+import { LoyaltyBanner } from "@/components/storefront/LoyaltyBanner";
+import { StoreFooter } from "@/components/storefront/StoreFooter";
+import { BottomNav } from "@/components/storefront/BottomNav";
+import { AmbientBackground } from "@/components/storefront/AmbientBackground";
+import { FloatingWhatsAppButton } from "@/components/storefront/FloatingWhatsAppButton";
+import {
+  ProductCardSkeleton,
+  HeroCarouselSkeleton,
+  ProductGridSkeleton,
+} from "@/components/storefront/SkeletonLoader";
+
+import { ProductDetailModal } from "@/components/storefront/ProductDetailModal";
+import { CartDrawer } from "@/components/storefront/CartDrawer";
+import { CheckoutModal } from "@/components/storefront/CheckoutModal";
+import { OrderTrackerModal } from "@/components/storefront/OrderTrackerModal";
+import { NotificationsModal } from "@/components/storefront/NotificationsModal";
+import { AccountDrawer } from "@/components/storefront/AccountDrawer";
+import { AdminPanel } from "@/components/storefront/AdminPanel";
+import { WishlistDrawer } from "@/components/storefront/WishlistDrawer";
+import { ProductCompareModal } from "@/components/storefront/ProductCompareModal";
+import { ToastNotification } from "@/components/storefront/ToastNotification";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "اندكس ستور — الرئيسية | تسوّق أونلاين في اليمن" },
+      { title: "متجر إندكس — INDEXES STORE | التسوق الإلكتروني الفاخر في اليمن" },
       {
         name: "description",
-        content: "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، عطور، والمزيد.",
+        content:
+          "اكتشف أحدث الإلكترونيات والمنتجات الأصلية في متجر إندكس: تسوق فاخر، عروض حصرية، توصيل سريع لجميع المحافظات.",
       },
-      { property: "og:title", content: "اندكس ستور — تسوّق أونلاين في اليمن" },
+      { property: "og:title", content: "متجر إندكس — INDEXES STORE" },
       {
         property: "og:description",
         content: "عروض حصرية تصل إلى 50% وشحن مجاني للطلبات فوق 30,000 ريال.",
@@ -45,7 +77,7 @@ export const Route = createFileRoute("/")({
     ]);
   },
   errorComponent: ({ error }) => (
-    <div className="p-8 text-center text-destructive">حدث خطأ: {error.message}</div>
+    <div className="p-8 text-center text-rose-500 font-bold dir-rtl">حدث خطأ: {error.message}</div>
   ),
   pendingComponent: HomeSkeleton,
   component: HomePage,
@@ -53,243 +85,555 @@ export const Route = createFileRoute("/")({
 
 function HomeSkeleton() {
   return (
-    <div
-      dir="rtl"
-      className="flex flex-col gap-3.5 bg-ink px-3.5 pt-3 text-ink-text sm:px-4 md:px-0"
-    >
-      <div className="h-11 rounded-[14px] border border-ink-line bg-ink-card md:h-[50px]" />
-      <div className="h-[228px] rounded-[24px] border border-ink-line bg-[#0A1020]" />
-      <CategoryRailSkeleton />
-      <ProductRailSkeleton />
-      <div className="h-24 rounded-2xl border border-ink-line bg-[#0A1020] md:h-[84px]" />
-      <div className="min-h-[170px] rounded-[24px] border border-ink-line bg-[#0A1020]" />
+    <div dir="rtl" className="min-h-screen bg-[#08060F] text-white p-4 space-y-6">
+      <HeroCarouselSkeleton />
+      <ProductGridSkeleton count={8} />
     </div>
   );
 }
 
 function HomePage() {
-  const { data: categories } = useSuspenseQuery(categoriesQuery());
   const { data: bestSellers } = useSuspenseQuery(bestSellersQuery(20));
   const { data: dailyDeals } = useSuspenseQuery(offersQuery(20));
   const { data: allProducts } = useSuspenseQuery(globePoolQuery(100));
 
-  const settingsQ = useQuery({
-    queryKey: ["storefront-settings"],
-    queryFn: () => getPublishedStorefrontAppearance(),
-    staleTime: 60 * 1000,
+  // Map production products to AI Studio design products
+  const products: DesignProduct[] = useMemo(() => {
+    const rawList = allProducts.length ? allProducts : dailyDeals.length ? dailyDeals : bestSellers;
+    return (rawList as (LegacyProductShape | ProductionProduct)[]).map((p, idx) =>
+      mapProductionProductToDesignProduct(p, idx),
+    );
+  }, [allProducts, dailyDeals, bestSellers]);
+
+  // Theme State
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window === "undefined") return "dark";
+    const saved = localStorage.getItem("indexes_store_theme");
+    if (saved === "dark" || saved === "light") return saved;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches
+      ? "light"
+      : "dark";
   });
 
-  const { user } = useSession();
-  const deals = (dailyDeals.length ? dailyDeals : bestSellers) as unknown as Product[];
-  const globeProducts = (allProducts.length ? allProducts : dailyDeals) as LegacyProductShape[];
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    if (theme === "light") {
+      document.documentElement.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+    }
+    localStorage.setItem("indexes_store_theme", theme);
+  }, [theme]);
 
-  const nav = settingsQ.data?.navigation;
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
+  // UI State
+  const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [currency, setCurrency] = useState<Currency>("YER");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("home");
+  const [sortBy, setSortBy] = useState<SortOption>("default");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Category change loading feedback
+  const handleSelectCategoryWithLoading = (catId: string) => {
+    setIsLoading(true);
+    setSelectedCategory(catId);
+    setTimeout(() => setIsLoading(false), 250);
+  };
+
+  // Cart state initialized with first product if available
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    if (products.length >= 3) {
+      return [
+        { product: products[0], quantity: 1, selectedColor: "#7B3FFF" },
+        { product: products[1], quantity: 1, selectedColor: "#FFFFFF" },
+        { product: products[2], quantity: 1 },
+      ];
+    }
+    return [];
+  });
+
+  const [favorites, setFavorites] = useState<string[]>(() =>
+    products.length >= 2 ? [products[0].id, products[1].id] : [],
+  );
+  const [compareList, setCompareList] = useState<DesignProduct[]>([]);
+  const [userOrders, setUserOrders] = useState<OrderStatus[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    {
+      id: "notif-1",
+      title: "مرحباً بك في متجر إندكس 🎉",
+      message: "استمتع بتجربة تسوق فريدة وشحن مجاني للطلبات فوق 30,000 ريال.",
+      time: "منذ قليل",
+      read: false,
+      type: "offer",
+    },
+  ]);
+
+  // Toast Notification State
+  const [toasts, setToasts] = useState<
+    { id: string; type: "success" | "error" | "info"; message: string }[]
+  >([]);
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    const id = "toast-" + Date.now();
+    setToasts((prev) => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  };
+
+  const handleDismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Modal / Drawer States
+  const [selectedProductModal, setSelectedProductModal] = useState<DesignProduct | null>(null);
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [isTrackerModalOpen, setIsTrackerModalOpen] = useState(false);
+  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
+  const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false);
+  const [isWishlistDrawerOpen, setIsWishlistDrawerOpen] = useState(false);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+
+  const [appliedCouponDiscount, setAppliedCouponDiscount] = useState(0);
+
+  // Computed Properties
+  const totalCartCount = useMemo(
+    () => cartItems.reduce((acc, item) => acc + item.quantity, 0),
+    [cartItems],
+  );
+
+  const unreadNotificationsCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications],
+  );
+
+  const bestOffers = useMemo(
+    () => products.filter((p) => p.isBestOffer || p.discountBadge),
+    [products],
+  );
+
+  const filteredProducts = useMemo(() => {
+    const list = products.filter((p) => {
+      const matchCategory = selectedCategory === "all" || p.category === selectedCategory;
+      const matchSearch =
+        !searchQuery ||
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchCategory && matchSearch;
+    });
+
+    switch (sortBy) {
+      case "price-high":
+        return [...list].sort((a, b) => b.priceYER - a.priceYER);
+      case "price-low":
+        return [...list].sort((a, b) => a.priceYER - b.priceYER);
+      case "best-selling":
+        return [...list].sort((a, b) => b.reviewsCount - a.reviewsCount);
+      case "newest":
+        return [...list].sort((a, b) => (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0));
+      case "default":
+      default:
+        return list;
+    }
+  }, [products, selectedCategory, searchQuery, sortBy]);
+
+  // Handlers
+  const handleToggleFavorite = (product: DesignProduct) => {
+    setFavorites((prev) =>
+      prev.includes(product.id) ? prev.filter((id) => id !== product.id) : [...prev, product.id],
+    );
+  };
+
+  const handleAddToCart = (
+    product: DesignProduct,
+    quantity: number = 1,
+    selectedColor?: string,
+  ) => {
+    setCartItems((prev) => {
+      const existingIdx = prev.findIndex((item) => item.product.id === product.id);
+      if (existingIdx > -1) {
+        const updated = [...prev];
+        updated[existingIdx].quantity += quantity;
+        if (selectedColor) updated[existingIdx].selectedColor = selectedColor;
+        return updated;
+      }
+      return [...prev, { product, quantity, selectedColor }];
+    });
+  };
+
+  const handleUpdateCartQuantity = (productId: string, quantity: number) => {
+    setCartItems((prev) =>
+      prev.map((item) => (item.product.id === productId ? { ...item, quantity } : item)),
+    );
+  };
+
+  const handleRemoveCartItem = (productId: string) => {
+    setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
+  };
+
+  const handleOrderPlaced = (newOrder: OrderStatus) => {
+    setUserOrders((prev) => [newOrder, ...prev]);
+    setCartItems([]);
+
+    setNotifications((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        title: `تم ثبت طلبك برقم #${newOrder.orderNumber}`,
+        message: "تم حفظ طلبك وسيتم التواصل معك لتأكيد التوصيل.",
+        time: "الآن",
+        read: false,
+        type: "order",
+      },
+      ...prev,
+    ]);
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleBottomNavTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    if (tab === "cart") {
+      setIsCartDrawerOpen(true);
+    } else if (tab === "account") {
+      setIsAccountDrawerOpen(true);
+    } else if (tab === "search") {
+      window.scrollTo({ top: 400, behavior: "smooth" });
+    }
+  };
 
   return (
-    <div
-      dir="rtl"
-      className="flex flex-col gap-3.5 bg-ink px-3.5 pt-3 text-ink-text sm:px-4 md:px-0"
-    >
-      {/* Shipping strip — two info badges matching target image */}
-      <div className="flex h-10 items-center justify-between gap-2 rounded-[14px] border border-ink-line/60 bg-ink-card px-3 text-[11px] font-semibold leading-4 md:h-[46px] md:rounded-2xl md:px-[24px] md:text-[13px]">
-        <div className="flex items-center gap-1.5 text-ink-muted">
-          <span className="text-amber-400 text-xs">⚡</span>{" "}
-          {nav?.shippingBarDeliveryText ?? "توصيل سريع خلال 24 - 48 ساعة"}
-        </div>
-        <div className="flex items-center gap-1.5 text-ink-muted">
-          <span>🚀</span> {nav?.shippingBarFreeText ?? "شحن مجاني للطلبات فوق"}{" "}
-          <span className="text-neon-2 font-bold">
-            {(nav?.shippingBarThreshold ?? 30000).toLocaleString("en-US")}
-          </span>{" "}
-          {nav?.shippingBarCurrency ?? "ريال"} <span className="text-amber-400 text-xs">🚚</span>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#08060F] text-white flex flex-col font-sans pb-28 selection:bg-[#7B3FFF] selection:text-white relative overflow-x-hidden transition-colors duration-200 dir-rtl text-right">
+      {/* High-Tech Ambient Background in Empty Spaces */}
+      <AmbientBackground />
 
-      {/* Hero Globe */}
-      <ScrollGlobeHero products={globeProducts} />
+      {/* Global Toast Notifications */}
+      <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
 
-      {/* Categories */}
-      <Reveal as="section" className="-mx-3.5 sm:-mx-4 md:mx-0">
-        <SnapRail className="px-3.5 sm:px-4 md:px-0" itemGapClass="gap-2 md:gap-3">
-          <Link
-            to="/search"
-            search={{ q: "" }}
-            className="press card-lift flex h-[64px] w-[58px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-[13px] border border-ink-line bg-ink-card px-1.5 sm:w-[63px] md:h-[78px] md:w-[120px]"
-          >
-            <Icons.LayoutGrid
-              className="h-[19px] w-[19px] text-neon-2 md:h-6 md:w-6"
-              strokeWidth={1.6}
+      {/* Foreground Store Content */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* 1. Sticky Header */}
+        <Header
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          cartCount={totalCartCount}
+          unreadNotificationsCount={unreadNotificationsCount}
+          wishlistCount={favorites.length}
+          compareCount={compareList.length}
+          products={products}
+          currency={currency}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenCart={() => setIsCartDrawerOpen(true)}
+          onOpenNotifications={() => setIsNotificationsModalOpen(true)}
+          onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
+          onOpenCompare={() => setIsCompareModalOpen(true)}
+          onOpenMenu={() => setIsAccountDrawerOpen(true)}
+          onOpenTracker={() => setIsTrackerModalOpen(true)}
+          onOpenAdmin={() => setIsAdminOpen(true)}
+          onSelectProduct={(p) => setSelectedProductModal(p)}
+        />
+
+        {/* 2. Top Shipping Announcement Banner */}
+        <ShippingBanner onOpenShippingInfo={() => setIsTrackerModalOpen(true)} />
+
+        {/* Main Container */}
+        <main className="flex-grow w-full max-w-7xl mx-auto pb-28 sm:pb-32">
+          {/* 3. Hero Carousel Banner ("عروض حصرية 50%") */}
+          {isLoading ? (
+            <HeroCarouselSkeleton />
+          ) : (
+            <HeroCarousel
+              onSelectCategory={handleSelectCategoryWithLoading}
+              onSelectProduct={(prod) => setSelectedProductModal(prod)}
             />
-            <span className="line-clamp-2 w-full text-center text-[9px] font-semibold leading-tight text-ink-text md:text-[11px]">
-              المزيد
-            </span>
-          </Link>
-          {categories.map((c) => {
-            const Icon =
-              (Icons as unknown as Record<string, Icons.LucideIcon>)[c.icon] ?? Icons.Package;
-            return (
-              <Link
-                key={c.id}
-                to="/category/$id"
-                params={{ id: c.id }}
-                className="press card-lift flex h-[64px] w-[58px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-[13px] border border-ink-line bg-ink-card px-1.5 sm:w-[63px] md:h-[78px] md:w-full md:flex-1"
-              >
-                <Icon className="h-[19px] w-[19px] text-neon-2 md:h-6 md:w-6" strokeWidth={1.6} />
-                <span className="line-clamp-2 w-full text-center text-[9px] font-semibold leading-tight text-ink-text md:text-[11px]">
-                  {c.name}
-                </span>
-              </Link>
-            );
-          })}
-        </SnapRail>
-      </Reveal>
+          )}
 
-      {/* Best offers */}
-      <Reveal as="section">
-        <div className="mb-2.5 flex h-[22px] items-center justify-between md:h-[26px]">
-          <h2 className="flex items-center gap-1.5 text-[14px] font-bold md:text-[18px]">
-            أفضل العروض
-            <span className="text-[14px] md:text-[18px]">🔥</span>
-          </h2>
-          <Link
-            to="/offers"
-            className="flex items-center gap-1 text-[11px] font-bold text-neon-2 md:text-[14px]"
-          >
-            عرض الكل
-            <Icons.ChevronLeft className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-        <div className="relative">
-          <SnapRail className="-mx-3.5 px-3.5 sm:-mx-4 sm:px-4 md:hidden" itemGapClass="gap-3">
-            {deals.map((p, i) => (
-              <Reveal key={p.id} index={i} className="shrink-0">
-                <NeonProductCard product={p} />
-              </Reveal>
-            ))}
-          </SnapRail>
-          {/* Desktop grid */}
-          <div className="hidden gap-3 md:grid md:grid-cols-4 md:justify-items-center">
-            {deals.slice(0, 4).map((p, i) => (
-              <Reveal key={p.id} index={i} className="w-full">
-                <NeonProductCard product={p} />
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </Reveal>
+          {/* 4. 6-Category Grid & Filter/Sort Bar */}
+          <CategoryBar
+            selectedCategoryId={selectedCategory}
+            onSelectCategory={handleSelectCategoryWithLoading}
+            selectedSort={sortBy}
+            onSelectSort={(sortOption) => setSortBy(sortOption)}
+          />
 
-      {/* Trust strip */}
-      <Reveal as="div" className="defer-paint">
-        <TrustStrip variant="inline" />
-      </Reveal>
-
-      {/* Loyalty Card */}
-      <Reveal
-        as="section"
-        className="defer-paint relative overflow-hidden rounded-[24px] border border-neon/40 bg-linear-to-r from-neon-soft via-ink-card to-ink-card p-4 md:h-[176px] md:px-5"
-      >
-        <div className="flex h-full flex-col gap-3 md:flex-row md:items-center md:gap-4">
-          <div className="flex min-w-0 items-center gap-3 md:order-2 md:flex-1 md:flex-row-reverse md:justify-end md:text-center">
-            <img
-              src={loyaltyGem}
-              alt="جوهرة برنامج الولاء"
-              loading="lazy"
-              width={512}
-              height={512}
-              className="h-[62px] w-[62px] shrink-0 object-contain drop-shadow-[0_0_18px_var(--neon)] md:h-[110px] md:w-[110px]"
-            />
-            <div className="min-w-0 flex-1">
-              <h3 className="text-[15px] font-bold leading-tight md:text-[17px]">
-                {nav?.loyaltyTitle ?? "برنامج INDEXES المميز"}
-              </h3>
-              <p className="mt-1 text-[12px] leading-snug text-ink-muted md:text-[13px]">
-                {nav?.loyaltySubtitle ?? "اكسب نقاط مع كل طلب واستبدلها بمكافآت حصرية"}
-              </p>
-              <Link
-                to={user ? "/account" : "/auth"}
-                className="press mt-2.5 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-neon px-3.5 py-1.5 text-[12px] font-bold text-white"
-              >
-                {nav?.loyaltyButtonText ?? "اكتشف المزايا"}
-                <Icons.ChevronLeft className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-ink-line bg-ink/60 p-3 text-center md:order-1 md:w-[38%] md:shrink-0">
-            <p className="text-[11px] font-semibold text-ink-muted mb-0.5">نقاطك الحالية</p>
-            <p className="flex items-center justify-center gap-1 text-[20px] font-black text-neon-2">
-              <Icons.Sparkles className="h-5 w-5 shrink-0 fill-neon-2 text-neon-2" />
-              {nav?.loyaltyPointsText ?? "2,560"}
-            </p>
-            <p className="mt-1 text-[11px] font-bold text-amber-400">
-              {nav?.loyaltyLevelText ?? "المستوى ذهبي 👑"}
-            </p>
-          </div>
-        </div>
-      </Reveal>
-
-      {/* Footer */}
-      <footer className="mt-6 border-t border-ink-line pt-8 pb-24">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-col gap-3 text-right text-[13px] text-ink-muted">
-            <div className="flex items-center justify-start gap-2">
-              <Icons.MessageSquare className="h-5 w-5 text-emerald-500 shrink-0" />
-              <span>
-                لطلب والاستفسار (واتساب):{" "}
-                <a
-                  href={`https://wa.me/${nav?.whatsappPhone ?? "967771370740"}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold text-ink-text hover:text-emerald-400"
+          {/* 5. Best Offers Section (أفضل العروض 🔥) */}
+          {selectedCategory === "all" && !searchQuery && (
+            <section className="py-2 relative">
+              <div className="px-4 sm:px-6 flex justify-between items-center mb-3">
+                <h3 className="text-xl sm:text-2xl font-black flex items-center gap-2 text-white">
+                  <span>أفضل العروض</span>
+                  <span className="text-xl sm:text-2xl">🔥</span>
+                </h3>
+                <button
+                  onClick={() => handleSelectCategoryWithLoading("all")}
+                  className="text-[#7B3FFF] text-xs sm:text-sm flex items-center gap-1 font-bold hover:underline cursor-pointer"
                 >
-                  {nav?.whatsappPhone ?? "967771370740"}
-                </a>
-              </span>
-            </div>
-            <div className="flex items-center justify-start gap-2">
-              <Icons.MapPin className="h-5 w-5 text-neon-2 shrink-0" />
-              <span>
-                العنوان: {nav?.addressText ?? "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية"}
-              </span>
-            </div>
-            <div className="flex items-center justify-start gap-2">
-              <span className="text-base shrink-0">🇾🇪</span>
-              <span>{nav?.deliveryInfoText ?? "متوفر لدينا خدمة التوصيل لجميع المحافظات"}</span>
-            </div>
-            <div className="flex items-center justify-start gap-2">
-              <Icons.PackageCheck className="h-5 w-5 text-blue-400 shrink-0" />
-              <span>
-                <strong className="text-ink-text">تتبع طلبك</strong> - برقم الطلب وآخر 4 أرقام من
-                هاتفك
-              </span>
-            </div>
-          </div>
+                  <span>عرض الكل</span>
+                  <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                </button>
+              </div>
 
-          <div className="flex items-center justify-between gap-4 border-t border-ink-line pt-4 md:border-t-0 md:pt-0">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-ink-text">تواصل معنا الآن</span>
-              <a
-                href={`https://wa.me/${nav?.whatsappPhone ?? "967771370740"}`}
-                target="_blank"
-                rel="noreferrer"
-                className="grid h-10 w-10 place-items-center rounded-full border border-ink-line bg-ink-card text-emerald-400 transition hover:bg-emerald-500 hover:text-white"
-              >
-                <Icons.MessageSquare className="h-5 w-5" />
-              </a>
+              {/* Horizontal Snap Scroll / Responsive 4-Card Grid Container */}
+              <div className="relative group/scroll">
+                <div
+                  id="best-offers-scroll"
+                  className="px-3 sm:px-6 flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar snap-x pb-2 pt-1"
+                >
+                  {isLoading
+                    ? [1, 2, 3, 4].map((idx) => (
+                        <ProductCardSkeleton key={idx} variant="horizontal" />
+                      ))
+                    : (bestOffers.length ? bestOffers : products.slice(0, 6)).map((product) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          currency={currency}
+                          isFavorite={favorites.includes(product.id)}
+                          onToggleFavorite={handleToggleFavorite}
+                          onAddToCart={(prod) => handleAddToCart(prod, 1)}
+                          onSelectProduct={(prod) => setSelectedProductModal(prod)}
+                          variant="horizontal"
+                        />
+                      ))}
+                </div>
+
+                {/* Scroll Right Arrow Button */}
+                <button
+                  onClick={() => {
+                    const el = document.getElementById("best-offers-scroll");
+                    if (el) el.scrollBy({ left: -220, behavior: "smooth" });
+                  }}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-[#100B1A]/95 border border-[#7B3FFF]/60 text-white flex items-center justify-center shadow-[0_0_15px_rgba(123,63,255,0.4)] hover:bg-[#7B3FFF] hover:border-purple-400 transition-all cursor-pointer"
+                  aria-label="التمرير لليمين"
+                >
+                  <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                </button>
+
+                {/* Pagination Dots Indicator */}
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  <span className="w-5 h-1.5 bg-[#7B3FFF] rounded-full shadow-[0_0_8px_#7B3FFF]" />
+                  <span className="w-1.5 h-1.5 bg-gray-700/80 rounded-full" />
+                  <span className="w-1.5 h-1.5 bg-gray-700/80 rounded-full" />
+                  <span className="w-1.5 h-1.5 bg-gray-700/80 rounded-full" />
+                  <span className="w-1.5 h-1.5 bg-gray-700/80 rounded-full" />
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* 6. AI-Powered Smart Search Section */}
+          <AISearchSection
+            currency={currency}
+            onSelectProduct={(prod) => setSelectedProductModal(prod)}
+            onSearchQuerySubmit={(q) => {
+              setIsLoading(true);
+              setSearchQuery(q);
+              setTimeout(() => setIsLoading(false), 250);
+            }}
+          />
+
+          {/* 7. Product Catalog Grid Section */}
+          <section className="px-4 sm:px-6 py-6">
+            <div className="flex justify-between items-center mb-6 border-b border-gray-800/80 pb-4">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold text-white">
+                  {selectedCategory === "all"
+                    ? searchQuery
+                      ? `نتائج البحث عن "${searchQuery}"`
+                      : "جميع المنتجات المتوفرة"
+                    : "منتجات القسم المختار"}
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                  عرض {filteredProducts.length} منتجات أصلية مع ضمان متجر إندكس
+                </p>
+              </div>
             </div>
 
-            <div className="relative flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-full border-2 border-dashed border-amber-400 text-center p-2">
-              <Icons.ShoppingCart className="h-6 w-6 text-ink-text mb-0.5" />
-              <span className="text-[11px] font-black leading-none text-ink-text">
-                {nav?.stampLogoTitle ?? "INDEXES STORE"}
-              </span>
-              <span className="text-[7px] font-bold tracking-widest text-amber-400 mt-1">
-                {nav?.stampLogoSubtitle ?? "PREMIUM QUALITY"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </footer>
+            {isLoading ? (
+              <ProductGridSkeleton count={8} />
+            ) : filteredProducts.length === 0 ? (
+              <div className="py-16 text-center text-gray-400 bg-[#100B1A] rounded-3xl border border-gray-800">
+                <span className="material-symbols-outlined text-[64px] text-gray-600 mb-2">
+                  search_off
+                </span>
+                <p className="text-lg font-bold text-white">لم نتمكن من العثور على منتجات مطابقة</p>
+                <p className="text-sm text-gray-500 mt-1">جرّب تغيير كلمة البحث أو قسم المنتجات.</p>
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    handleSelectCategoryWithLoading("all");
+                  }}
+                  className="mt-4 bg-[#7B3FFF] text-white px-6 py-2.5 rounded-2xl text-sm font-bold shadow-lg shadow-[#7B3FFF]/30 cursor-pointer"
+                >
+                  إعادة ضبط البحث
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    currency={currency}
+                    isFavorite={favorites.includes(product.id)}
+                    onToggleFavorite={handleToggleFavorite}
+                    onAddToCart={(prod) => handleAddToCart(prod, 1)}
+                    onSelectProduct={(prod) => setSelectedProductModal(prod)}
+                    variant="grid"
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* 9. Trust Features Bar */}
+          <TrustBar />
+
+          {/* 10. Loyalty Banner */}
+          <LoyaltyBanner onOpenLoyaltyModal={() => setIsAccountDrawerOpen(true)} />
+
+          {/* 11. Footer */}
+          <StoreFooter onOpenTracker={() => setIsTrackerModalOpen(true)} />
+        </main>
+
+        {/* 12. Bottom Navigation Bar */}
+        <BottomNav
+          activeTab={activeTab}
+          setActiveTab={handleBottomNavTabChange}
+          cartCount={totalCartCount}
+        />
+
+        {/* Floating WhatsApp Quick Contact Button */}
+        <FloatingWhatsAppButton />
+
+        {/* Modals & Drawers */}
+        <ProductDetailModal
+          product={selectedProductModal}
+          currency={currency}
+          isFavorite={selectedProductModal ? favorites.includes(selectedProductModal.id) : false}
+          onClose={() => setSelectedProductModal(null)}
+          onAddToCart={(prod, qty, col) => {
+            handleAddToCart(prod, qty, col);
+            showToast(`تمت إضافة ${prod.name} إلى السلة بنجاح 🛒`);
+          }}
+          onToggleFavorite={(p) => {
+            handleToggleFavorite(p);
+            const isFavNow = !favorites.includes(p.id);
+            showToast(
+              isFavNow ? `تمت إضافة ${p.name} إلى المفضلة ❤️` : `تمت إزالة ${p.name} من المفضلة`,
+            );
+          }}
+          onAddToCompare={(prod) => {
+            if (!compareList.some((c) => c.id === prod.id)) {
+              setCompareList((prev) => [...prev, prod]);
+              showToast(`تمت إضافة ${prod.name} إلى المقارنة ⚖️`);
+            } else {
+              showToast("هذا المنتج مضاف بالفعل في قائمة المقارنة", "info");
+            }
+            setIsCompareModalOpen(true);
+          }}
+        />
+
+        <CartDrawer
+          isOpen={isCartDrawerOpen}
+          onClose={() => setIsCartDrawerOpen(false)}
+          cartItems={cartItems}
+          currency={currency}
+          onUpdateQuantity={handleUpdateCartQuantity}
+          onRemoveItem={handleRemoveCartItem}
+          onCheckout={(discount) => {
+            setAppliedCouponDiscount(discount);
+            setIsCartDrawerOpen(false);
+            setIsCheckoutModalOpen(true);
+          }}
+        />
+
+        <CheckoutModal
+          isOpen={isCheckoutModalOpen}
+          onClose={() => setIsCheckoutModalOpen(false)}
+          cartItems={cartItems}
+          currency={currency}
+          couponDiscountPercent={appliedCouponDiscount}
+          onOrderPlaced={handleOrderPlaced}
+        />
+
+        <OrderTrackerModal
+          isOpen={isTrackerModalOpen}
+          onClose={() => setIsTrackerModalOpen(false)}
+          allOrders={userOrders}
+          currency={currency}
+        />
+
+        <NotificationsModal
+          isOpen={isNotificationsModalOpen}
+          onClose={() => setIsNotificationsModalOpen(false)}
+          notifications={notifications}
+          onMarkAllAsRead={handleMarkAllNotificationsRead}
+        />
+
+        <AccountDrawer
+          isOpen={isAccountDrawerOpen}
+          onClose={() => setIsAccountDrawerOpen(false)}
+          currency={currency}
+          onSelectCurrency={setCurrency}
+          userOrders={userOrders}
+          favoritesCount={favorites.length}
+          onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
+          onOpenTracker={() => setIsTrackerModalOpen(true)}
+          onOpenAdmin={() => setIsAdminOpen(true)}
+        />
+
+        {isAdminOpen && (
+          <AdminPanel
+            products={products}
+            orders={userOrders}
+            currency={currency}
+            onClose={() => setIsAdminOpen(false)}
+          />
+        )}
+
+        <WishlistDrawer
+          isOpen={isWishlistDrawerOpen}
+          favorites={favorites}
+          products={products}
+          currency={currency}
+          onClose={() => setIsWishlistDrawerOpen(false)}
+          onToggleFavorite={handleToggleFavorite}
+          onAddToCart={(p, qty) => {
+            handleAddToCart(p, qty);
+            showToast(`تمت إضافة ${p.name} إلى السلة بنجاح 🛒`);
+          }}
+          onSelectProduct={(p) => {
+            setIsWishlistDrawerOpen(false);
+            setSelectedProductModal(p);
+          }}
+        />
+
+        <ProductCompareModal
+          isOpen={isCompareModalOpen}
+          compareList={compareList}
+          products={products}
+          currency={currency}
+          onClose={() => setIsCompareModalOpen(false)}
+          onRemoveFromCompare={(id) => {
+            setCompareList((prev) => prev.filter((item) => item.id !== id));
+            showToast("تمت إزالة المنتج من المقارنة");
+          }}
+          onAddToCart={(p, qty) => {
+            handleAddToCart(p, qty);
+            showToast(`تمت إضافة ${p.name} إلى السلة بنجاح 🛒`);
+          }}
+        />
+      </div>
     </div>
   );
 }
