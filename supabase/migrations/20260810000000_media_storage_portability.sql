@@ -8,6 +8,176 @@ begin;
 set local lock_timeout = '5s';
 set local statement_timeout = '120s';
 
+-- ---------------------------------------------------------------------------
+-- 1. Reconcile the media schema expected by the current application.
+-- ---------------------------------------------------------------------------
+
+alter table public.media_files
+  add column if not exists sequence_number bigint,
+  add column if not exists thumbnail_url text;
+
+with numbered as (
+  select
+    id,
+    row_number() over (
+      partition by tenant_id
+      order by created_at asc, id asc
+    ) as sequence_number
+  from public.media_files
+)
+update public.media_files as media
+set sequence_number = numbered.sequence_number
+from numbered
+where media.id = numbered.id
+  and media.sequence_number is null;
+
+create or replace function public.set_media_sequence_number()
+returns trigger
+language plpgsql
+security invoker
+set search_path = pg_catalog, public
+as $function$
+declare
+  next_sequence bigint;
+begin
+  if new.sequence_number is null then
+    select coalesce(max(media.sequence_number), 0) + 1
+      into next_sequence
+    from public.media_files as media
+    where media.tenant_id = new.tenant_id;
+
+    new.sequence_number := next_sequence;
+  end if;
+
+  return new;
+end;
+$function$;
+
+drop trigger if exists trigger_media_sequence_number on public.media_files;
+create trigger trigger_media_sequence_number
+  before insert on public.media_files
+  for each row
+  execute function public.set_media_sequence_number();
+
+create index if not exists idx_media_files_sequence
+  on public.media_files (tenant_id, sequence_number desc);
+
+-- Composite keys make tenant identity part of the media relationship itself,
+-- preventing a link row from pairing a product with another tenant's media.
+do $tenant_keys$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.products'::regclass
+      and conname = 'products_tenant_id_id_key'
+  ) then
+    alter table public.products
+      add constraint products_tenant_id_id_key unique (tenant_id, id);
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.media_files'::regclass
+      and conname = 'media_files_tenant_id_id_key'
+  ) then
+    alter table public.media_files
+      add constraint media_files_tenant_id_id_key unique (tenant_id, id);
+  end if;
+end
+$tenant_keys$;
+
+create table if not exists public.product_media (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
+  product_id uuid not null,
+  media_id uuid not null,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  constraint product_media_product_media_key unique (product_id, media_id),
+  constraint product_media_tenant_product_fkey
+    foreign key (tenant_id, product_id)
+    references public.products(tenant_id, id)
+    on delete cascade,
+  constraint product_media_tenant_media_fkey
+    foreign key (tenant_id, media_id)
+    references public.media_files(tenant_id, id)
+    on delete cascade
+);
+
+do $product_media_shape$
+begin
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'product_media'
+      and column_name = 'tenant_id'
+  ) or not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'product_media'
+      and column_name = 'product_id'
+  ) or not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'product_media'
+      and column_name = 'media_id'
+  ) then
+    raise exception 'product_media exists with an incompatible schema; reconciliation aborted';
+  end if;
+end
+$product_media_shape$;
+
+create index if not exists idx_product_media_product
+  on public.product_media (product_id, sort_order asc);
+create index if not exists idx_product_media_media
+  on public.product_media (media_id);
+create index if not exists idx_product_media_tenant
+  on public.product_media (tenant_id);
+
+alter table public.product_media enable row level security;
+
+drop policy if exists "Public read product_media" on public.product_media;
+drop policy if exists "Published product media read" on public.product_media;
+create policy "Published product media read"
+  on public.product_media
+  for select
+  to anon, authenticated
+  using (
+    exists (
+      select 1
+      from public.products as product
+      where product.id = product_media.product_id
+        and product.tenant_id = product_media.tenant_id
+        and product.is_published = true
+    )
+  );
+
+drop policy if exists "Tenant members manage product_media" on public.product_media;
+create policy "Tenant members manage product_media"
+  on public.product_media
+  for all
+  to authenticated
+  using (
+    public.can_manage_tenant(tenant_id, (select auth.uid()))
+  )
+  with check (
+    public.can_manage_tenant(tenant_id, (select auth.uid()))
+  );
+
+revoke all on table public.product_media from anon, authenticated;
+grant select on table public.product_media to anon;
+grant select, insert, update, delete on table public.product_media to authenticated;
+grant all on table public.product_media to service_role;
+
+-- ---------------------------------------------------------------------------
+-- 2. Add provider-neutral storage identity.
+-- ---------------------------------------------------------------------------
+
 alter table public.media_files
   add column if not exists storage_provider text,
   add column if not exists storage_bucket text,
