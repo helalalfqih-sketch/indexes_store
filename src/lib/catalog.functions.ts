@@ -34,21 +34,6 @@ import {
 } from "@/lib/validators/catalog";
 import { resolveTenantId } from "@/lib/saas/tenant-context";
 
-type ProductInsert = Database["public"]["Tables"]["products"]["Insert"];
-type CsvProduct = ProductDTO & { category_name: string };
-type CsvCategory = {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  image_url: string | null;
-  parent_id: null;
-  sort: number;
-  icon: string;
-  color: string | null;
-  is_active: boolean;
-};
-
 const publicClient = () =>
   createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
@@ -97,247 +82,6 @@ const resolveAdminTenant = async (
   });
 };
 
-// -------- CSV Feed Parser & Helpers for storefront --------
-// This URL may contain a storage access token, so it must remain server-only.
-function getServerCatalogUrl(): string | null {
-  const rawUrl = process.env.CATALOG_IMPORT_URL?.trim();
-  if (!rawUrl) return null;
-
-  let parsed: URL;
-  try {
-    parsed = new URL(rawUrl);
-  } catch {
-    throw new Error("CATALOG_IMPORT_URL is not a valid URL");
-  }
-
-  const allowedHosts = new Set(["firebasestorage.googleapis.com", "storage.googleapis.com"]);
-  if (parsed.protocol !== "https:" || !allowedHosts.has(parsed.hostname.toLowerCase())) {
-    throw new Error("CATALOG_IMPORT_URL must use HTTPS and an approved storage host");
-  }
-
-  return parsed.toString();
-}
-
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cur = "";
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') {
-          cur += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else cur += c;
-    } else {
-      if (c === '"') inQuotes = true;
-      else if (c === ",") {
-        row.push(cur);
-        cur = "";
-      } else if (c === "\n" || c === "\r") {
-        if (c === "\r" && text[i + 1] === "\n") i++;
-        row.push(cur);
-        cur = "";
-        if (row.length > 1 || row[0] !== "") rows.push(row);
-        row = [];
-      } else cur += c;
-    }
-  }
-  if (cur.length > 0 || row.length > 0) {
-    row.push(cur);
-    rows.push(row);
-  }
-  return rows;
-}
-
-function slugify(input: string, fallback: string): string {
-  const base = input
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\u0600-\u06FF\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .slice(0, 60);
-  return base || fallback;
-}
-
-function parsePrice(raw: string): { price: number; currency: string } {
-  const s = (raw || "").trim();
-  if (!s) return { price: 0, currency: "YER" };
-  const m = s.match(/([\d.,]+)\s*([A-Za-z]{3})?/);
-  const price = m ? Number(m[1].replace(/,/g, "")) : 0;
-  return { price: Number.isFinite(price) ? price : 0, currency: (m?.[2] || "YER").toUpperCase() };
-}
-
-async function fetchCsvProducts() {
-  try {
-    const catalogUrl = getServerCatalogUrl();
-    if (!catalogUrl) return [];
-
-    const res = await fetch(catalogUrl);
-    if (!res.ok) {
-      console.error(`Failed to fetch CSV: ${res.status}`);
-      return [];
-    }
-    const text = await res.text();
-    const rows = parseCsv(text);
-    if (rows.length < 2) return [];
-
-    const header = rows[0].map((h) => h.trim());
-    const col = (name: string) => header.indexOf(name);
-
-    const idIdx = col("id");
-    const titleIdx = col("title");
-    const descIdx = col("description");
-    const availIdx = col("availability");
-    const condIdx = col("condition");
-    const priceIdx = col("price");
-    const linkIdx = col("link");
-    const imageIdx = col("image_link");
-    const brandIdx = col("brand");
-    const qtyIdx = col("quantity_to_sell_on_facebook");
-
-    // V2 columns
-    const skuIdx = col("sku");
-    const barcodeIdx = header.findIndex((h) => h === "gtin" || h === "barcode");
-    const salePriceIdx = col("sale_price");
-    const costPriceIdx = col("cost_price");
-    const colorIdx = col("color");
-    const sizeIdx = col("size");
-    const gcatIdx = col("google_product_category");
-    const fbcatIdx = col("fb_product_category");
-    const materialIdx = col("material");
-    const patternIdx = col("pattern");
-    const genderIdx = col("gender");
-    const ageGroupIdx = col("age_group");
-    const productTypeIdx = col("product_type");
-
-    const seenSlugs = new Set<string>();
-    const products: CsvProduct[] = [];
-
-    for (let r = 1; r < rows.length; r++) {
-      const row = rows[r];
-      if (!row || row.every((c) => !c?.trim())) continue;
-      const title = (row[titleIdx] || "").trim();
-      if (!title) continue;
-      const externalId = idIdx >= 0 ? (row[idIdx] || "").trim() || null : null;
-
-      const { price: regPrice, currency } = parsePrice(row[priceIdx] || "");
-      const { price: salePrice } =
-        salePriceIdx >= 0 ? parsePrice(row[salePriceIdx] || "") : { price: 0 };
-      const { price: costPrice } =
-        costPriceIdx >= 0 ? parsePrice(row[costPriceIdx] || "") : { price: 0 };
-
-      let price = regPrice;
-      let compareAtPrice: number | null = null;
-      if (salePrice > 0 && salePrice < regPrice) {
-        price = salePrice;
-        compareAtPrice = regPrice;
-      }
-
-      const image = (row[imageIdx] || "").trim();
-      const stockRaw = qtyIdx >= 0 ? Number((row[qtyIdx] || "").trim()) : NaN;
-      const stock = Number.isFinite(stockRaw) && stockRaw >= 0 ? Math.floor(stockRaw) : 1;
-
-      let slug = slugify(title, externalId ?? `product-${r}`);
-      let uniq = slug;
-      let i = 2;
-      while (seenSlugs.has(uniq)) {
-        uniq = `${slug}-${i++}`.slice(0, 60);
-      }
-      seenSlugs.add(uniq);
-      slug = uniq;
-
-      // Extract metadata tags
-      const tags: string[] = [];
-      const color = colorIdx >= 0 ? (row[colorIdx] || "").trim() : "";
-      const size = sizeIdx >= 0 ? (row[sizeIdx] || "").trim() : "";
-      const gcat = gcatIdx >= 0 ? (row[gcatIdx] || "").trim() : "";
-      const fbcat = fbcatIdx >= 0 ? (row[fbcatIdx] || "").trim() : "";
-      const material = materialIdx >= 0 ? (row[materialIdx] || "").trim() : "";
-      const pattern = patternIdx >= 0 ? (row[patternIdx] || "").trim() : "";
-      const gender = genderIdx >= 0 ? (row[genderIdx] || "").trim() : "";
-      const ageGroup = ageGroupIdx >= 0 ? (row[ageGroupIdx] || "").trim() : "";
-
-      if (color) tags.push(`_color:${color}`);
-      if (size) tags.push(`_size:${size}`);
-      if (gcat) tags.push(`_gcat:${gcat}`);
-      if (fbcat) tags.push(`_fbcat:${fbcat}`);
-      if (material) tags.push(`_material:${material}`);
-      if (pattern) tags.push(`_pattern:${pattern}`);
-      if (gender) tags.push(`_gender:${gender}`);
-      if (ageGroup) tags.push(`_age:${ageGroup}`);
-
-      // Extract additional image links
-      const images: string[] = [];
-      if (image) images.push(image);
-      header.forEach((h, idx) => {
-        if (h.startsWith("additional_image_link") && row[idx]) {
-          const imgUrl = row[idx].trim();
-          if (imgUrl) images.push(imgUrl);
-        }
-      });
-
-      // Categories mapping
-      const categoryName = productTypeIdx >= 0 ? (row[productTypeIdx] || "").trim() : "أخرى";
-      const categoryId = slugify(categoryName, "other");
-      const rawLink = linkIdx >= 0 ? (row[linkIdx] || "").trim() : null;
-
-      const {
-        images: cleanImages,
-        videos: cleanVideos,
-        media: cleanMedia,
-      } = buildProductMediaAndVideos({
-        images: images.filter(Boolean),
-        source_url: rawLink,
-      });
-
-      products.push({
-        id: externalId || `product-${r}`,
-        slug,
-        name: title,
-        description: (descIdx >= 0 ? row[descIdx] : "") || "",
-        price,
-        compare_at_price: compareAtPrice,
-        cost_price: costPrice > 0 ? costPrice : null,
-        currency: currency || "YER",
-        images: cleanImages,
-        videos: cleanVideos,
-        media: cleanMedia,
-        model_url: null,
-        stock,
-        reserved_stock: 0,
-        rating: 5,
-        reviews_count: 0,
-        tags,
-        is_published: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        video_playback_id: null,
-        brand: (brandIdx >= 0 ? (row[brandIdx] || "").trim() : "") || null,
-        availability: (availIdx >= 0 ? (row[availIdx] || "").trim() : "") || null,
-        condition: (condIdx >= 0 ? (row[condIdx] || "").trim() : "") || null,
-        source_url: rawLink || null,
-        sku: skuIdx >= 0 ? (row[skuIdx] || "").trim() || null : null,
-        barcode: barcodeIdx >= 0 ? (row[barcodeIdx] || "").trim() || null : null,
-        category_id: categoryId,
-        category_name: categoryName,
-      });
-    }
-
-    return products;
-  } catch (error) {
-    console.error("Error reading CSV catalog feed:", error);
-    return [];
-  }
-}
-
 // ============ PUBLIC READS ============
 
 export const listProducts = createServerFn({ method: "GET" })
@@ -355,65 +99,18 @@ export const listProducts = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const db = publicClient();
     const tenantId = await resolvePublicTenant(db, data.tenantId ?? null);
-
-    // Fetch Supabase DB products
-    let dbProducts: ProductDTO[] = [];
-    try {
-      dbProducts = await productsRepo.list(db, {
-        tenantId,
-        categoryId: data.categoryId,
-        search: data.search,
-      });
-    } catch (e) {
-      console.warn("DB products list error:", e);
-    }
-
-    // Fetch CSV catalog feed
-    let csvList: CsvProduct[] = [];
-    try {
-      csvList = await fetchCsvProducts();
-    } catch (e) {
-      console.warn("CSV catalog fetch error:", e);
-    }
-
-    // Merge: DB products take precedence over CSV
-    const dbProductMap = new Map<string, ProductDTO>();
-    const dbSlugSet = new Set<string>();
-    for (const p of dbProducts) {
-      dbProductMap.set(p.id, p);
-      if (p.slug) dbSlugSet.add(p.slug);
-    }
-
-    const mergedList: ProductDTO[] = [...dbProducts];
-    for (const csv of csvList) {
-      const alreadyInDb = dbProductMap.has(csv.id) || dbSlugSet.has(csv.slug);
-      if (!alreadyInDb) {
-        mergedList.push(csv as unknown as ProductDTO);
-      }
-    }
-
-    let filtered = mergedList;
-    if (data.categoryId) {
-      filtered = filtered.filter((p) => p.category_id === data.categoryId);
-    }
-    if (data.search) {
-      const s = data.search.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(s) ||
-          (p.description ?? "").toLowerCase().includes(s) ||
-          (p.sku ?? "").toLowerCase().includes(s) ||
-          (p.brand ?? "").toLowerCase().includes(s),
-      );
-    }
+    const products = await productsRepo.list(db, {
+      tenantId,
+      categoryId: data.categoryId,
+      search: data.search,
+    });
 
     if (data.offset != null && data.limit) {
-      filtered = filtered.slice(data.offset, data.offset + data.limit);
-    } else if (data.limit) {
-      filtered = filtered.slice(0, data.limit);
+      return products.slice(data.offset, data.offset + data.limit);
     }
-
-    return filtered;
+    if (data.offset != null) return products.slice(data.offset);
+    if (data.limit) return products.slice(0, data.limit);
+    return products;
   });
 
 export const getProductBySlug = createServerFn({ method: "GET" })
@@ -423,12 +120,7 @@ export const getProductBySlug = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const db = publicClient();
     const tenantId = await resolvePublicTenant(db, data.tenantId ?? null);
-    const prod = await productsRepo.getBySlug(db, data.slug, tenantId);
-    if (prod) return prod as unknown as ProductDTO;
-
-    // Fall back to CSV catalog
-    const list = await fetchCsvProducts();
-    return (list.find((p) => p.slug === data.slug) || null) as unknown as ProductDTO | null;
+    return productsRepo.getBySlug(db, data.slug, tenantId);
   });
 
 /**
@@ -568,46 +260,7 @@ export const listCategories = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const db = publicClient();
     const tenantId = await resolvePublicTenant(db, data.tenantId);
-
-    const categoriesMap = new Map<string, any>();
-
-    try {
-      const dbCategories = await categoriesRepo.list(db, { tenantId, includeInactive: false });
-      if (dbCategories) {
-        for (const c of dbCategories) {
-          categoriesMap.set(c.id, c);
-          if (c.slug) categoriesMap.set(c.slug, c);
-        }
-      }
-    } catch (err) {
-      console.warn("Error fetching Supabase categories:", err);
-    }
-
-    try {
-      const products = await fetchCsvProducts();
-      products.forEach((p) => {
-        if (p.category_name && p.category_id) {
-          if (!categoriesMap.has(p.category_id)) {
-            categoriesMap.set(p.category_id, {
-              id: p.category_id,
-              slug: p.category_id,
-              name: p.category_name,
-              description: "",
-              image_url: p.images[0] || null,
-              parent_id: null,
-              sort: 0,
-              icon: "shopping-bag",
-              color: null,
-              is_active: true,
-            });
-          }
-        }
-      });
-    } catch (err) {
-      console.warn("Error deriving CSV categories:", err);
-    }
-
-    return Array.from(new Set(categoriesMap.values()));
+    return categoriesRepo.list(db, { tenantId, includeInactive: false });
   });
 
 export const getCategoryBySlug = createServerFn({ method: "GET" })
@@ -646,54 +299,12 @@ export const adminListProducts = createServerFn({ method: "GET" })
     await assertAdmin(ctx);
     const tenantId = await resolveAdminTenant(ctx, data.tenantId);
 
-    // ── 1. Fetch Supabase products (PRIMARY SOURCE OF TRUTH) ──────────────────
-    const dbProducts = await productsRepo.list(ctx.supabase, {
+    // Supabase is the operational source of truth for admin catalog reads.
+    let filtered = await productsRepo.list(ctx.supabase, {
       tenantId,
       search: data.search,
       categoryId: data.categoryId,
     });
-
-    // ── 2. Fetch CSV catalog feed (LEGACY FALLBACK / SEED) ────────────────────
-    let csvList: CsvProduct[] = [];
-    try {
-      csvList = await fetchCsvProducts();
-    } catch (e) {
-      console.warn("Failed to fetch legacy CSV products feed:", e);
-    }
-
-    // ── 3. Merge: Supabase products ALWAYS take precedence over CSV ──────────
-    // Track IDs and Slugs existing in Supabase
-    const dbProductMap = new Map<string, ProductDTO>();
-    const dbSlugSet = new Set<string>();
-
-    for (const p of dbProducts) {
-      dbProductMap.set(p.id, p);
-      if (p.slug) dbSlugSet.add(p.slug);
-    }
-
-    const mergedList: ProductDTO[] = [...dbProducts];
-
-    // Append CSV products that do not exist in Supabase DB yet
-    for (const csv of csvList) {
-      const alreadyInDb = dbProductMap.has(csv.id) || dbSlugSet.has(csv.slug);
-
-      if (!alreadyInDb) {
-        mergedList.push(csv);
-      }
-    }
-
-    // ── 4. Apply filters ──────────────────────────────────────────────────────
-    let filtered = mergedList;
-    if (data.search) {
-      const s = data.search.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          (p.name && p.name.toLowerCase().includes(s)) ||
-          (p.description && p.description.toLowerCase().includes(s)) ||
-          (p.sku && p.sku.toLowerCase().includes(s)) ||
-          (p.brand && p.brand.toLowerCase().includes(s)),
-      );
-    }
 
     if (data.publishedOnly) filtered = filtered.filter((r) => r.is_published !== false);
     if (data.unpublishedOnly) filtered = filtered.filter((r) => r.is_published === false);
@@ -860,10 +471,11 @@ export const adminAutoCategorizeProducts = createServerFn({ method: "POST" })
     await assertAdmin(ctx);
     const tenantId = await resolveAdminTenant(ctx, data.tenantId);
 
-    // 1. Fetch categories from DB
-    let dbCategories = await categoriesRepo.list(ctx.supabase, { tenantId, includeInactive: true });
+    let dbCategories = await categoriesRepo.list(ctx.supabase, {
+      tenantId,
+      includeInactive: true,
+    });
 
-    // Seed default categories if empty
     if (!dbCategories || dbCategories.length === 0) {
       const defaultCats = [
         { name: "إلكترونيات", slug: "electronics", icon: "Smartphone", color: "purple" },
@@ -892,61 +504,38 @@ export const adminAutoCategorizeProducts = createServerFn({ method: "POST" })
             sort: i,
           });
         } catch {
-          /* ignore */
+          // Category may already exist; refresh below.
         }
       }
-      dbCategories = await categoriesRepo.list(ctx.supabase, { tenantId, includeInactive: true });
+      dbCategories = await categoriesRepo.list(ctx.supabase, {
+        tenantId,
+        includeInactive: true,
+      });
     }
 
     const catMap = new Map<string, string>();
-    for (const c of dbCategories) {
-      catMap.set(c.slug.toLowerCase(), c.id);
+    for (const category of dbCategories) {
+      catMap.set(category.slug.toLowerCase(), category.id);
     }
     const defaultCatId = dbCategories[0]?.id;
-
-    // 2. Fetch CSV products
-    const csvProducts = await fetchCsvProducts();
-
-    // 3. For each CSV product, compute category and upsert into Supabase
+    const products = await productsRepo.list(ctx.supabase, { tenantId });
     let categorizedCount = 0;
-    const recordsToUpsert: ProductInsert[] = csvProducts.map((p) => {
-      const slugMatch = inferCategorySlug(p.name, p.tags ?? [], p.description ?? "");
-      const catId = catMap.get(slugMatch) ?? defaultCatId;
+
+    for (const product of products) {
+      const slugMatch = inferCategorySlug(
+        product.name,
+        product.tags ?? [],
+        product.description ?? "",
+      );
+      const categoryId = catMap.get(slugMatch) ?? defaultCatId;
+      if (!categoryId || product.category_id === categoryId) continue;
+      await productsRepo.update(ctx.supabase, tenantId, product.id, {
+        category_id: categoryId,
+      });
       categorizedCount++;
-
-      return {
-        tenant_id: tenantId,
-        slug: p.slug,
-        name: p.name,
-        description: p.description ?? "",
-        price: p.price,
-        compare_at_price: p.compare_at_price ?? null,
-        cost_price: p.cost_price ?? null,
-        currency: p.currency || "YER",
-        images: p.images ?? [],
-        stock: p.stock ?? 1,
-        brand: p.brand ?? null,
-        is_published: true,
-        external_id: p.id ?? null,
-        availability: p.availability ?? null,
-        condition: p.condition ?? null,
-        source_url: p.source_url ?? null,
-        sku: p.sku ?? null,
-        barcode: p.barcode ?? null,
-        tags: p.tags ?? [],
-        category_id: catId,
-      };
-    });
-
-    if (recordsToUpsert.length > 0) {
-      const BATCH_SIZE = 50;
-      for (let i = 0; i < recordsToUpsert.length; i += BATCH_SIZE) {
-        const batch = recordsToUpsert.slice(i, i + BATCH_SIZE);
-        await ctx.supabase.from("products").upsert(batch, { onConflict: "tenant_id,slug" });
-      }
     }
 
-    return { total: csvProducts.length, categorizedCount };
+    return { total: products.length, categorizedCount };
   });
 
 export const adminBulkAssignCategory = createServerFn({ method: "POST" })

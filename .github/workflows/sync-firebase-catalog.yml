@@ -1,0 +1,28 @@
+name: Sync Firebase Catalog to Supabase
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Invoke protected catalog sync
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_ANON_KEY:-}" || { echo "Missing repository secret SUPABASE_ANON_KEY"; exit 1; }
+          curl --fail-with-body --retry 3 --retry-all-errors \
+            -X POST \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            https://wtudcippyxbaobqzbmok.supabase.co/functions/v1/sync-firebase-catalog

@@ -309,7 +309,9 @@ describe("P0 Security Suite — UI State & Polling Constraints", () => {
     );
     expect(catalogFunctionsFile).not.toContain("GLOBAL_CSV_URL");
     expect(catalogFunctionsFile).not.toMatch(/[?&]token=[A-Za-z0-9_-]+/);
-    expect(catalogFunctionsFile).toContain("process.env.CATALOG_IMPORT_URL");
+    expect(catalogFunctionsFile).not.toContain("process.env.CATALOG_IMPORT_URL");
+    expect(catalogFunctionsFile).not.toContain("fetchCsvProducts");
+    expect(catalogFunctionsFile).not.toContain("firebasestorage.googleapis.com");
   });
 
   it("keeps catalog database reads and writes in bounded batches", () => {
