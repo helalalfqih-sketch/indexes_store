@@ -1,22 +1,44 @@
-﻿import React, { useMemo, useRef, useState, useEffect, Suspense, Component, ErrorInfo, ReactNode } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html, Sparkles, Stars } from '@react-three/drei';
-import * as THREE from 'three';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Product } from './types';
-import { useLiteMode } from '@/lib/liteMode';
+﻿import React, {
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+  Suspense,
+  Component,
+  ErrorInfo,
+  ReactNode,
+} from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls, Html, Sparkles, Stars } from "@react-three/drei";
+import * as THREE from "three";
+import { motion, AnimatePresence } from "framer-motion";
+import { useLiteMode } from "@/lib/liteMode";
 
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80';
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80";
 const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
   e.currentTarget.src = FALLBACK_IMAGE;
 };
 
+export interface HolographicGlobeProduct {
+  id: string;
+  slug?: string;
+  name: string;
+  image: string;
+  price?: number;
+  priceYER?: number;
+  category?: string;
+}
+
 interface HolographicGlobeProps {
-  products?: Product[];
-  onSelectProduct?: (product: Product) => void;
+  products?: HolographicGlobeProduct[];
+  onSelectProduct?: {
+    bivarianceHack(product: HolographicGlobeProduct): void;
+  }["bivarianceHack"];
   size?: number | string;
   className?: string;
   showTitleBadge?: boolean;
+  paused?: boolean;
 }
 
 // Error Boundary for WebGL fallback on unsupported or context-lost mobile devices
@@ -40,7 +62,7 @@ class WebGLErrorBoundary extends Component<WebGLErrorBoundaryProps, WebGLErrorBo
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.warn('WebGL Rendering fallback triggered:', error, errorInfo);
+    console.warn("WebGL Rendering fallback triggered:", error, errorInfo);
   }
 
   render() {
@@ -71,22 +93,22 @@ const ParticleSphere: React.FC<{ isPaused?: boolean }> = ({ isPaused = false }) 
 
   // Check prefers-reduced-motion
   const prefersReducedMotion = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }, []);
 
   // Create smooth round glowing point texture
   const particleTexture = useMemo(() => {
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = 32;
     canvas.height = 32;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (ctx) {
       const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-      gradient.addColorStop(0.25, 'rgba(255, 255, 255, 0.8)');
-      gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.2)');
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+      gradient.addColorStop(0.25, "rgba(255, 255, 255, 0.8)");
+      gradient.addColorStop(0.6, "rgba(255, 255, 255, 0.2)");
+      gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, 32, 32);
     }
@@ -97,7 +119,7 @@ const ParticleSphere: React.FC<{ isPaused?: boolean }> = ({ isPaused = false }) 
 
   // Generate outer glowing particles using Fibonacci distribution for fast rendering
   const { positions, colors } = useMemo(() => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
     const count = isMobile ? 1200 : 1800;
     const pos = new Float32Array(count * 3);
     const col = new Float32Array(count * 3);
@@ -105,9 +127,9 @@ const ParticleSphere: React.FC<{ isPaused?: boolean }> = ({ isPaused = false }) 
     const phi = (1 + Math.sqrt(5)) / 2; // Golden ratio
     const radius = 2.25;
 
-    const cyan = new THREE.Color('#00f0ff');
-    const magenta = new THREE.Color('#ff007f');
-    const violet = new THREE.Color('#a855f7');
+    const cyan = new THREE.Color("#00f0ff");
+    const magenta = new THREE.Color("#ff007f");
+    const violet = new THREE.Color("#a855f7");
     const tempColor = new THREE.Color();
 
     for (let i = 0; i < count; i++) {
@@ -143,7 +165,7 @@ const ParticleSphere: React.FC<{ isPaused?: boolean }> = ({ isPaused = false }) 
 
   // Hollow Core Particle Sphere Cloud
   const corePositions = useMemo(() => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
     const count = isMobile ? 600 : 800;
     const pos = new Float32Array(count * 3);
     const phi = (1 + Math.sqrt(5)) / 2;
@@ -187,14 +209,8 @@ const ParticleSphere: React.FC<{ isPaused?: boolean }> = ({ isPaused = false }) 
       {/* Outer 3D CGI Particle Sphere Cloud */}
       <points ref={pointsRef}>
         <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[positions, 3]}
-          />
-          <bufferAttribute
-            attach="attributes-color"
-            args={[colors, 3]}
-          />
+          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+          <bufferAttribute attach="attributes-color" args={[colors, 3]} />
         </bufferGeometry>
         <pointsMaterial
           size={0.07}
@@ -210,10 +226,7 @@ const ParticleSphere: React.FC<{ isPaused?: boolean }> = ({ isPaused = false }) 
       {/* Hollow Core Stardust Particle Sphere (Replaces solid sphere mesh) */}
       <points ref={coreRef}>
         <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[corePositions, 3]}
-          />
+          <bufferAttribute attach="attributes-position" args={[corePositions, 3]} />
         </bufferGeometry>
         <pointsMaterial
           size={0.03}
@@ -252,18 +265,13 @@ const ParticleSphere: React.FC<{ isPaused?: boolean }> = ({ isPaused = false }) 
 
 // 3D Glassmorphic Squircle Product Card Overlay
 interface ProductNodeProps {
-  product: Product;
+  product: HolographicGlobeProduct;
   lat: number;
   lon: number;
-  onSelectProduct?: (product: Product) => void;
+  onSelectProduct?: (product: HolographicGlobeProduct) => void;
 }
 
-const ProductNode: React.FC<ProductNodeProps> = ({
-  product,
-  lat,
-  lon,
-  onSelectProduct,
-}) => {
+const ProductNode: React.FC<ProductNodeProps> = ({ product, lat, lon, onSelectProduct }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   // Convert Spherical Lat/Lon to 3D Cartesian coordinates on sphere radius ~2.55
@@ -280,12 +288,7 @@ const ProductNode: React.FC<ProductNodeProps> = ({
 
   return (
     <group position={position}>
-      <Html
-        center
-        distanceFactor={9}
-        zIndexRange={[100, 0]}
-        style={{ pointerEvents: 'auto' }}
-      >
+      <Html center distanceFactor={9} zIndexRange={[100, 0]} style={{ pointerEvents: "auto" }}>
         <div
           onClick={(e) => {
             e.stopPropagation();
@@ -320,10 +323,10 @@ const ProductNode: React.FC<ProductNodeProps> = ({
                 </div>
                 <div className="flex items-center justify-between gap-2 text-[11px]">
                   <span className="text-cyan-300 font-bold font-mono">
-                    {product.priceYER.toLocaleString('ar-YE')} ر.س
+                    {(product.priceYER ?? product.price ?? 0).toLocaleString("ar-YE")} ر.س
                   </span>
                   <span className="text-slate-300 text-[9px] bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
-                    {product.category}
+                    {product.category ?? "منتج"}
                   </span>
                 </div>
                 <div className="text-[9px] text-purple-300 font-medium flex items-center gap-1 justify-end pt-1 border-t border-white/10 mt-0.5">
@@ -341,8 +344,8 @@ const ProductNode: React.FC<ProductNodeProps> = ({
 
 // Sleek 2D Holographic Fallback for Devices without WebGL support
 const HolographicFallback: React.FC<{
-  products: Product[];
-  onSelectProduct?: (p: Product) => void;
+  products: HolographicGlobeProduct[];
+  onSelectProduct?: (p: HolographicGlobeProduct) => void;
 }> = ({ products, onSelectProduct }) => {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center p-4 relative">
@@ -359,6 +362,13 @@ const HolographicFallback: React.FC<{
           <button
             key={p.id}
             onClick={() => onSelectProduct?.(p)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelectProduct?.(p);
+              }
+            }}
+            aria-label={`عرض تفاصيل ${p.name}`}
             className="w-12 h-12 rounded-[1.2rem] bg-[#050514]/80 border border-white/15 p-1.5 shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-transform"
           >
             <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
@@ -379,7 +389,7 @@ interface SmartOrbitControlsProps {
 }
 
 const SmartOrbitControls: React.FC<SmartOrbitControlsProps> = (props) => {
-  const controlsRef = useRef<any>(null);
+  const controlsRef = useRef<React.ElementRef<typeof OrbitControls>>(null);
   const { gl } = useThree();
 
   useEffect(() => {
@@ -387,7 +397,7 @@ const SmartOrbitControls: React.FC<SmartOrbitControlsProps> = (props) => {
     if (!canvas) return;
 
     // Set touchAction to pan-y so browser native vertical scroll is prioritized
-    canvas.style.touchAction = 'pan-y';
+    canvas.style.touchAction = "pan-y";
 
     let touchStartX = 0;
     let touchStartY = 0;
@@ -427,16 +437,16 @@ const SmartOrbitControls: React.FC<SmartOrbitControlsProps> = (props) => {
       }
     };
 
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: true });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: true });
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: true });
-    canvas.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+    canvas.addEventListener("touchstart", handleTouchStart, { passive: true });
+    canvas.addEventListener("touchmove", handleTouchMove, { passive: true });
+    canvas.addEventListener("touchend", handleTouchEnd, { passive: true });
+    canvas.addEventListener("touchcancel", handleTouchEnd, { passive: true });
 
     return () => {
-      canvas.removeEventListener('touchstart', handleTouchStart);
-      canvas.removeEventListener('touchmove', handleTouchMove);
-      canvas.removeEventListener('touchend', handleTouchEnd);
-      canvas.removeEventListener('touchcancel', handleTouchEnd);
+      canvas.removeEventListener("touchstart", handleTouchStart);
+      canvas.removeEventListener("touchmove", handleTouchMove);
+      canvas.removeEventListener("touchend", handleTouchEnd);
+      canvas.removeEventListener("touchcancel", handleTouchEnd);
     };
   }, [gl]);
 
@@ -447,21 +457,30 @@ export const HolographicGlobe: React.FC<HolographicGlobeProps> = ({
   products = [],
   onSelectProduct,
   size,
-  className = '',
+  className = "",
   showTitleBadge = true,
+  paused = false,
 }) => {
   const { isActive } = useLiteMode();
 
+  useEffect(() => {
+    const animationFrameId = window.requestAnimationFrame(() => undefined);
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, []);
+
   const dimensionStyle = size
     ? {
-        width: typeof size === 'number' ? `${size}px` : size,
-        height: typeof size === 'number' ? `${size}px` : size,
+        width: typeof size === "number" ? `${size}px` : size,
+        height: typeof size === "number" ? `${size}px` : size,
       }
     : undefined;
 
   if (isActive) {
     return (
-      <div className={`relative flex flex-col items-center justify-center rounded-[2rem] bg-[#02000A] overflow-hidden border border-white/10 ${className}`} style={dimensionStyle}>
+      <div
+        className={`relative flex flex-col items-center justify-center rounded-[2rem] bg-[#02000A] overflow-hidden border border-white/10 ${className}`}
+        style={dimensionStyle}
+      >
         <HolographicFallback products={products} onSelectProduct={onSelectProduct} />
       </div>
     );
@@ -470,7 +489,7 @@ export const HolographicGlobe: React.FC<HolographicGlobeProps> = ({
   return (
     <div
       className={`relative flex flex-col items-center justify-center select-none rounded-[2rem] bg-[#02000A] overflow-hidden shadow-2xl border border-white/10 ${className}`}
-      style={{ ...dimensionStyle, touchAction: 'pan-y' }}
+      style={{ ...dimensionStyle, touchAction: "pan-y" }}
     >
       {/* Deep Space Ambient Glow Background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(20,10,40,0.8)_0%,rgba(2,0,10,1)_100%)] pointer-events-none" />
@@ -489,21 +508,22 @@ export const HolographicGlobe: React.FC<HolographicGlobeProps> = ({
       )}
 
       {/* R3F WebGL Canvas Scene with Error Boundary */}
-      <div className="w-full h-full relative z-10" style={{ touchAction: 'pan-y' }}>
+      <div className="w-full h-full relative z-10" style={{ touchAction: "pan-y" }}>
         <WebGLErrorBoundary
           fallback={<HolographicFallback products={products} onSelectProduct={onSelectProduct} />}
         >
           <Canvas
+            frameloop={paused ? "never" : "always"}
             camera={{ position: [0, 0, 7.5], fov: 45 }}
             dpr={[1, 1.5]}
             gl={{
               antialias: false,
               alpha: true,
-              powerPreference: 'high-performance',
+              powerPreference: "high-performance",
               preserveDrawingBuffer: false,
               failIfMajorPerformanceCaveat: false,
             }}
-            style={{ width: '100%', height: '100%', touchAction: 'pan-y' }}
+            style={{ width: "100%", height: "100%", touchAction: "pan-y" }}
           >
             <Suspense fallback={null}>
               <ambientLight intensity={0.7} />
@@ -536,7 +556,7 @@ export const HolographicGlobe: React.FC<HolographicGlobeProps> = ({
 
               {/* Smart Touch-Aware Cinematic Orbit Controls */}
               <SmartOrbitControls
-                autoRotate
+                autoRotate={!paused}
                 autoRotateSpeed={0.5}
                 enableZoom={false}
                 enablePan={false}
@@ -549,5 +569,3 @@ export const HolographicGlobe: React.FC<HolographicGlobeProps> = ({
     </div>
   );
 };
-
-

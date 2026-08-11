@@ -370,6 +370,17 @@ function HomePage() {
       setIsAccountDrawerOpen(true);
     } else if (tab === "search") {
       window.scrollTo({ top: 400, behavior: "smooth" });
+    } else if (tab === "offers") {
+      setSearchQuery("");
+      setSelectedCategory("all");
+      setTimeout(() => {
+        const offersElement = document.getElementById("best-offers-section");
+        if (offersElement) {
+          offersElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          window.scrollTo({ top: 500, behavior: "smooth" });
+        }
+      }, 50);
     }
   };
 
@@ -672,7 +683,9 @@ function HomePage() {
           onClose={() => setIsCartShareOpen(false)}
           cartItems={cartItems}
           catalogProducts={products}
-          onApplyRecoveredCart={(items) => items.forEach(i => handleAddToCart(i.product, i.quantity))}
+          onApplyRecoveredCart={(items) =>
+            items.forEach((i) => handleAddToCart(i.product, i.quantity))
+          }
         />
 
         {/* Customer Support Hub */}
@@ -788,6 +801,12 @@ function HomePage() {
           products={products}
           currency={currency}
           onClose={() => setIsCompareModalOpen(false)}
+          onAddToCompare={(product) => {
+            setCompareList((previous) =>
+              previous.some((item) => item.id === product.id) ? previous : [...previous, product],
+            );
+            showToast(`تمت إضافة ${product.name} إلى المقارنة ⚖️`);
+          }}
           onRemoveFromCompare={(id) => {
             setCompareList((prev) => prev.filter((item) => item.id !== id));
             showToast("تمت إزالة المنتج من المقارنة");
