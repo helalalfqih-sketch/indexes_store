@@ -1,4 +1,4 @@
-﻿export type Currency = 'YER' | 'SAR' | 'USD';
+﻿export type Currency = "YER" | "SAR" | "USD";
 
 export interface Product {
   id: string;
@@ -52,7 +52,7 @@ export interface OrderStatus {
     price: number;
   }[];
   totalPriceYER: number;
-  status: 'received' | 'processing' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled';
+  status: "received" | "processing" | "shipped" | "out_for_delivery" | "delivered" | "cancelled";
   statusLabel: string;
   date: string;
   paymentMethod: string;
@@ -64,10 +64,11 @@ export interface NotificationItem {
   message: string;
   time: string;
   read: boolean;
-  type: 'offer' | 'order' | 'system';
+  type: "offer" | "order" | "system";
   link?: string;
 }
 
-export type ActiveTab = 'home' | 'search' | 'cart' | 'whatsapp' | 'account' | 'orders' | 'wishlist';
+export type ActiveTab =
+  "home" | "search" | "offers" | "cart" | "whatsapp" | "account" | "orders" | "wishlist";
 
-export type SortOption = 'default' | 'price-high' | 'price-low' | 'best-selling' | 'newest';
+export type SortOption = "default" | "price-high" | "price-low" | "best-selling" | "newest";
