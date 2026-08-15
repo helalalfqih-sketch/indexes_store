@@ -384,8 +384,8 @@ export const AccountDrawer: React.FC<AccountDrawerProps> = ({
 
           {/* Tab Content Container */}
           <div className="flex-1 overflow-y-auto no-scrollbar py-4 space-y-4">
-            {/* Top Admin Banner & Direct Access Button */}
-            {onOpenAdmin && (
+            {/* Top Admin Banner & Direct Access Button (Only for authenticated Admin) */}
+            {isAdminUser && onOpenAdmin && (
               <div className="bg-gradient-to-r from-purple-950/80 via-indigo-950/80 to-slate-900/90 border border-purple-500/50 p-4 rounded-2xl flex items-center justify-between shadow-xl backdrop-blur-md">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center font-bold text-xl shadow-md shrink-0 border border-purple-300/30">
@@ -419,8 +419,8 @@ export const AccountDrawer: React.FC<AccountDrawerProps> = ({
               </div>
             )}
 
-            {/* Indexes Evolution Studio AI Visual Editor Banner */}
-            {onOpenEvolutionStudio && (
+            {/* Indexes Evolution Studio AI Visual Editor Banner (Only for authenticated Admin) */}
+            {isAdminUser && onOpenEvolutionStudio && (
               <div className="bg-gradient-to-r from-blue-950/80 via-cyan-950/80 to-slate-900/90 border border-cyan-500/40 p-4 rounded-2xl flex items-center justify-between shadow-xl backdrop-blur-md">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md shrink-0 border border-cyan-300/30">
@@ -1157,8 +1157,8 @@ export const AccountDrawer: React.FC<AccountDrawerProps> = ({
                   </a>
                 </div>
 
-                {/* Admin & Evolution studio links */}
-                {onOpenAdmin && (
+                {/* Admin & Evolution studio links (Only for authenticated Admin) */}
+                {isAdminUser && onOpenAdmin && (
                   <button
                     onClick={() => {
                       onClose();

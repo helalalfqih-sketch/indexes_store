@@ -364,8 +364,8 @@ export const Header: React.FC<HeaderProps> = ({
           <Plus className="w-5 h-5 text-white" />
         </motion.button>
 
-        {/* 7. Admin Panel Control Button */}
-        {onOpenAdmin && (
+        {/* 7. Admin Panel Control Button (Only for authenticated Admin/Owner) */}
+        {isAdminUser && onOpenAdmin && (
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}

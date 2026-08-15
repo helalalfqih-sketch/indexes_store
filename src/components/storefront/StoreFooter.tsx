@@ -154,7 +154,7 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
       </div>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs">
-        {onOpenAdmin && (
+        {isAdminUser && onOpenAdmin && (
           <button
             onClick={onOpenAdmin}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 font-bold transition-all cursor-pointer"
