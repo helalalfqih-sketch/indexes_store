@@ -1,69 +1,44 @@
 import React from 'react';
-import { motion } from 'motion/react';
-import { OrderStatus, Currency } from '../types';
-import { formatPrice } from '../lib/currency';
+import { motion } from 'framer-motion';
 import {
   PackageCheck,
-  Clock,
   Truck,
   CheckCircle2,
-  Box,
+  Clock,
   Calendar,
-  ShoppingBag,
-  ShieldCheck,
   Phone,
+  ShieldCheck,
+  ShoppingBag,
 } from 'lucide-react';
-import { STORE_INFO } from '../data/mockData';
+import { OrderStatus, Currency } from './types';
+import { STORE_INFO } from './constants';
+import { formatPrice } from './currency';
 
 interface OrderStatusTrackerProps {
   order: OrderStatus;
   currency?: Currency;
-  showQuickSummary?: boolean;
-  className?: string;
+  isCompact?: boolean;
 }
-
-export const getEstimatedDelivery = (status: OrderStatus['status']): string => {
-  switch (status) {
-    case 'received':
-      return 'خلال 3-5 أيام عمل (Expected delivery: 3-5 business days)';
-    case 'processing':
-      return 'خلال 2-3 أيام عمل (Expected delivery: 2-3 business days)';
-    case 'shipped':
-      return 'خلال 1-2 أيام عمل (Expected delivery: 1-2 business days)';
-    case 'out_for_delivery':
-      return 'اليوم خلال ساعات قليلة (Expected delivery: Today within hours)';
-    case 'delivered':
-      return 'تم التسليم بنجاح (Delivered)';
-    case 'cancelled':
-      return 'تم إلغاء الطلب (Cancelled)';
-    default:
-      return 'خلال 2-4 أيام عمل (Expected delivery: 2-4 business days)';
-  }
-};
 
 export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
   order,
   currency = 'YER',
-  showQuickSummary = true,
-  className = '',
+  isCompact = false,
 }) => {
-  const totalItemsCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
-  const estimatedDelivery = getEstimatedDelivery(order.status);
-
-  // 4 Core steps as requested: Ordered, Processing, Shipped, Delivered
+  // Timeline Stages
   const steps = [
     {
-      key: 'ordered',
-      label: 'Ordered',
-      labelAr: 'تم الطلب',
-      icon: Box,
+      key: 'received',
+      label: 'Received',
+      labelAr: 'تم الاستلام',
+      icon: Clock,
       statuses: ['received', 'processing', 'shipped', 'out_for_delivery', 'delivered'],
     },
     {
       key: 'processing',
       label: 'Processing',
       labelAr: 'قيد التجهيز',
-      icon: Clock,
+      icon: PackageCheck,
       statuses: ['processing', 'shipped', 'out_for_delivery', 'delivered'],
     },
     {
@@ -82,8 +57,8 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
     },
   ];
 
-  const getActiveStepIndex = (status: OrderStatus['status']) => {
-    switch (status) {
+  const getStepIndex = (statusStr: string) => {
+    switch (statusStr) {
       case 'received':
         return 0;
       case 'processing':
@@ -93,48 +68,66 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
         return 2;
       case 'delivered':
         return 3;
-      case 'cancelled':
-        return -1;
       default:
         return 0;
     }
   };
 
-  const currentStepIdx = getActiveStepIndex(order.status);
-  const progressPercentage =
-    order.status === 'cancelled'
-      ? 0
-      : Math.round((currentStepIdx / (steps.length - 1)) * 100);
+  const currentStepIdx = getStepIndex(order.status);
+  const progressPercentage = Math.round(((currentStepIdx + 1) / steps.length) * 100);
+
+  // Dynamic status badge color
+  const getStatusBadgeClass = () => {
+    switch (order.status) {
+      case 'delivered':
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+      case 'shipped':
+      case 'out_for_delivery':
+        return 'bg-[#2F6BFF]/10 text-[#2F6BFF] border-[#2F6BFF]/30';
+      case 'processing':
+        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+      default:
+        return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+    }
+  };
+
+  // Approximate delivery message (usually 24-48h in Yemen cities)
+  const estimatedDelivery = order.status === 'delivered' 
+    ? 'تم التوصيل بنجاح' 
+    : 'خلال 24 - 48 ساعة كحد أقصى';
+
+  const totalItemsCount = order.items?.reduce((sum, i) => sum + i.quantity, 0) || 0;
 
   return (
-    <div className={`space-y-4 text-right dir-rtl ${className}`}>
-      {/* Quick Summary Header */}
-      {showQuickSummary && (
+    <div className="w-full space-y-4 dir-rtl text-right">
+      {/* Header Info Card */}
+      {!isCompact && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-[#2F6BFF]/10 via-[var(--color-surface-2)] to-emerald-500/10 p-4 sm:p-5 rounded-2xl border border-[#2F6BFF]/30 shadow-md relative overflow-hidden"
+          className="bg-[var(--color-surface-2)] p-4 sm:p-5 rounded-2xl border border-[var(--color-border-default)] shadow-sm"
         >
-          <div className="flex items-center justify-between mb-3 border-b border-[var(--color-border-subtle)] pb-2.5">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-[#2F6BFF]/20 text-[#2F6BFF]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#2F6BFF]/10 flex items-center justify-center text-[#2F6BFF]">
                 <PackageCheck className="w-5 h-5" />
               </div>
               <div>
                 <h4 className="text-xs sm:text-sm font-black text-[var(--color-text-primary)]">
-                  Quick Summary | ملخص سريع للطلب
+                  ملخص سريع للطلب
                 </h4>
                 <p className="text-[11px] text-[var(--color-text-muted)] font-mono dir-ltr">
                   #{order.orderNumber}
                 </p>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#2F6BFF]/15 text-[#2F6BFF] border border-[#2F6BFF]/30">
-              {order.statusLabel}
+
+            <span className={`px-3 py-1 rounded-full text-xs font-black border ${getStatusBadgeClass()}`}>
+              {order.statusLabel || order.status}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-3">
             <div className="bg-[var(--color-surface-1)] p-2.5 sm:p-3 rounded-xl border border-[var(--color-border-subtle)]">
               <span className="text-[10px] text-[var(--color-text-muted)] block flex items-center gap-1">
                 <ShoppingBag className="w-3 h-3 text-[#2F6BFF]" />
@@ -212,7 +205,6 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
               const IconComponent = step.icon;
               const isCompleted = currentStepIdx > idx;
               const isCurrent = currentStepIdx === idx;
-              const isPending = currentStepIdx < idx;
 
               return (
                 <div key={step.key} className="flex flex-col items-center text-center group">

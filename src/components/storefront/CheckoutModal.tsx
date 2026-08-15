@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { CartItem, Currency, OrderStatus } from "../types";
-import { formatPrice } from "../lib/currency";
-import { STORE_INFO } from "../data/mockData";
+import { motion, AnimatePresence } from "framer-motion";
+import { CartItem, Currency, OrderStatus } from "./types";
+import { formatPrice } from "./currency";
+import { STORE_INFO } from "./constants";
 import {
   CustomerProfile,
   SavedAddress,
@@ -15,9 +15,8 @@ import {
   clearCheckoutDraft,
   normalizePhoneDigits,
   maskPhoneNumber,
-} from "../lib/customerProfile";
-import { auth } from "../lib/auth";
-import { supabase } from "../lib/supabase";
+} from "@/lib/customerProfile";
+import { supabase } from "@/integrations/supabase/client";
 import {
   User,
   Phone,
@@ -144,38 +143,40 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     // Check if draft exists first and load it
     const draftLoaded = loadGuestProfileOrDraft();
 
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      getCustomerProfile(currentUser.uid).then((prof) => {
-        if (prof && prof.autofillEnabled !== false) {
-          setCustomerProfile(prof);
-          // If no draft exists, populate from user profile defaults
-          if (!draftLoaded) {
-            if (prof.fullName) setCustomerName(prof.fullName);
-            if (prof.phone) setPhone(prof.phone);
-            if (prof.altPhone) {
-              setAltPhone(prof.altPhone);
-              setShowAltPhone(true);
-            }
-            if (prof.preferredGovernorate)
-              setGovernorate(prof.preferredGovernorate);
-            if (prof.deliveryInstructions)
-              setDeliveryInstruction(prof.deliveryInstructions);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const currentUser = session?.user ? { uid: session.user.id, email: session.user.email } : null;
+      if (currentUser) {
+        getCustomerProfile(currentUser.uid).then((prof) => {
+          if (prof && prof.autofillEnabled !== false) {
+            setCustomerProfile(prof);
+            // If no draft exists, populate from user profile defaults
+            if (!draftLoaded) {
+              if (prof.fullName) setCustomerName(prof.fullName);
+              if (prof.phone) setPhone(prof.phone);
+              if (prof.altPhone) {
+                setAltPhone(prof.altPhone);
+                setShowAltPhone(true);
+              }
+              if (prof.preferredGovernorate)
+                setGovernorate(prof.preferredGovernorate);
+              if (prof.deliveryInstructions)
+                setDeliveryInstruction(prof.deliveryInstructions);
 
-            // Default address
-            if (prof.addresses && prof.addresses.length > 0) {
-              const def =
-                prof.addresses.find((a) => a.isDefault) || prof.addresses[0];
-              setSelectedAddressId(def.id);
-              setGovernorate(def.governorate);
-              setAddress(def.address);
-              if (def.nearestLandmark) setNearestLandmark(def.nearestLandmark);
+              // Default address
+              if (prof.addresses && prof.addresses.length > 0) {
+                const def =
+                  prof.addresses.find((a) => a.isDefault) || prof.addresses[0];
+                setSelectedAddressId(def.id);
+                setGovernorate(def.governorate);
+                setAddress(def.address);
+                if (def.nearestLandmark) setNearestLandmark(def.nearestLandmark);
+              }
             }
+            setIsPrefilled(true);
           }
-          setIsPrefilled(true);
-        }
-      });
-    }
+        });
+      }
+    });
   }, [isOpen]);
 
   const loadGuestProfileOrDraft = (): boolean => {
@@ -385,7 +386,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     saveCheckoutDraft(currentInputData);
 
     try {
-      const currentUser = auth.currentUser;
+      const { data: { session: _orderSession } } = await supabase.auth.getSession();
+      const currentUser = _orderSession?.user ? { uid: _orderSession.user.id, email: _orderSession.user.email } : null;
       const orderNum = `IND-${Math.floor(100000 + Math.random() * 900000)}`;
 
       let paymentLabel = "الدفع عند الاستلام (نقداً)";
@@ -1140,7 +1142,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </div>
 
                   {/* Guest remember device option */}
-                  {!auth.currentUser && (
+                  {true && (
                     <div className="bg-[var(--color-surface-2)] p-2.5 rounded-xl border border-[var(--color-border-default)]">
                       <label className="flex items-center gap-2 cursor-pointer text-[11px] text-[var(--color-text-primary)] font-bold">
                         <input

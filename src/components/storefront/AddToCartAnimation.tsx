@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, Check, Sparkles, ArrowLeft } from 'lucide-react';
-import { Product } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShoppingCart, Check, Sparkles } from 'lucide-react';
+import { Product } from './types';
+
+const NEUTRAL_FALLBACK_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%23181825"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="16">لا تتوفر صورة</text></svg>';
 
 export interface FlyingCartItem {
   id: string;
@@ -17,8 +19,6 @@ interface AddToCartAnimationProps {
   onOpenCart?: () => void;
   lastAddedProduct?: { product: Product; quantity: number; selectedColor?: string; timestamp: number } | null;
 }
-
-import { getSmartProductImage } from '../lib/productImages';
 
 export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
   activeFlyingItems,
@@ -43,6 +43,7 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
 
   // Determine cart icon location on screen (defaults to top-left for RTL header)
   const getCartTargetPosition = () => {
+    if (typeof document === 'undefined') return { x: 36, y: 32 };
     const cartButton = document.querySelector('[aria-label="سلة التسوق"]');
     if (cartButton) {
       const rect = cartButton.getBoundingClientRect();
@@ -51,11 +52,7 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
         y: rect.top + rect.height / 2,
       };
     }
-    // Fallback: top left corner area
-    return {
-      x: 36,
-      y: 32,
-    };
+    return { x: 36, y: 32 };
   };
 
   const target = getCartTargetPosition();
@@ -65,8 +62,8 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
       {/* 1. FLYING PRODUCT PARTICLES ANIMATION */}
       <AnimatePresence>
         {activeFlyingItems.map((item) => {
-          const startX = item.startX || window.innerWidth / 2;
-          const startY = item.startY || window.innerHeight / 2;
+          const startX = item.startX || (typeof window !== 'undefined' ? window.innerWidth / 2 : 200);
+          const startY = item.startY || (typeof window !== 'undefined' ? window.innerHeight / 2 : 400);
 
           // Midpoint for parabolic flight trajectory
           const midX = (startX + target.x) / 2 + (startX > target.x ? -30 : 30);
@@ -111,11 +108,9 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
                 className="absolute z-50 w-14 h-14 rounded-2xl bg-[var(--color-surface-1)] border-2 border-[#2F6BFF] shadow-2xl shadow-blue-500/50 p-1 flex items-center justify-center overflow-hidden"
               >
                 <img
-                  src={getSmartProductImage(item.product.name, item.product.category, item.product.image)}
+                  src={item.product.image || NEUTRAL_FALLBACK_IMAGE}
                   alt={item.product.name}
-                  onError={(e) => {
-                    e.currentTarget.src = getSmartProductImage(item.product.name, item.product.category);
-                  }}
+                  onError={(e) => { e.currentTarget.src = NEUTRAL_FALLBACK_IMAGE; }}
                   className="w-full h-full object-contain rounded-xl"
                 />
                 <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-[1px]" />
@@ -147,11 +142,9 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="relative w-12 h-12 rounded-xl bg-[var(--color-surface-2)] p-1 border border-[var(--color-border-default)] shrink-0 overflow-hidden">
                 <img
-                  src={getSmartProductImage(currentToast.product.name, currentToast.product.category, currentToast.product.image)}
+                  src={currentToast.product.image || NEUTRAL_FALLBACK_IMAGE}
                   alt={currentToast.product.name}
-                  onError={(e) => {
-                    e.currentTarget.src = getSmartProductImage(currentToast.product.name, currentToast.product.category);
-                  }}
+                  onError={(e) => { e.currentTarget.src = NEUTRAL_FALLBACK_IMAGE; }}
                   className="w-full h-full object-contain"
                 />
                 <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm">
