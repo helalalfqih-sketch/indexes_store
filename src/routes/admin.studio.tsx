@@ -3,6 +3,10 @@ import { useRef, useState } from "react";
 import { Sparkles, Upload, X, Wand2, Save, RotateCcw, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAdmin, type AdminProduct } from "@/lib/admin-store";
+import { IndexesEvolutionStudio } from "@/components/storefront/evolution-studio/IndexesEvolutionStudio";
+import { products as seedProducts } from "@/lib/store-data";
+import { saveActiveDraft, type DraftConfig } from "@/lib/evolutionStudioStore";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/studio")({
   component: StudioPage,
@@ -28,6 +32,7 @@ function StudioPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AIResult | null>(null);
+  const [isEvolutionStudioOpen, setIsEvolutionStudioOpen] = useState(false);
   const addProduct = useAdmin((s) => s.addProduct);
   const addSession = useAdmin((s) => s.addSession);
   const updateSession = useAdmin((s) => s.updateSession);
@@ -117,14 +122,24 @@ function StudioPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-          <Sparkles className="h-3.5 w-3.5" /> AI Studio
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+            <Sparkles className="h-3.5 w-3.5" /> AI Studio
+          </div>
+          <h1 className="mt-3 text-3xl font-black lg:text-4xl text-foreground">
+            {t("studio.title")}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t("studio.subtitle")}</p>
         </div>
-        <h1 className="mt-3 text-3xl font-black lg:text-4xl text-foreground">
-          {t("studio.title")}
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t("studio.subtitle")}</p>
+        <button
+          type="button"
+          onClick={() => setIsEvolutionStudioOpen(true)}
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-purple-500/25 transition cursor-pointer font-sans"
+        >
+          <Sparkles className="h-4 w-4 text-amber-300 animate-spin-slow" />
+          <span>استوديو التطور البصري (Evolution Studio 3D)</span>
+        </button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -294,6 +309,19 @@ function StudioPage() {
           )}
         </div>
       </div>
+
+      {/* Evolution Studio 3D Interactive Modal */}
+      {isEvolutionStudioOpen && (
+        <IndexesEvolutionStudio
+          products={seedProducts as any}
+          onClose={() => setIsEvolutionStudioOpen(false)}
+          onApplyDraftToStore={(draft) => {
+            saveActiveDraft(draft);
+            toast.success("✨ تم حفظ وتطبيق إعدادات مسودة الاستوديو البصري بنجاح!");
+            setIsEvolutionStudioOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

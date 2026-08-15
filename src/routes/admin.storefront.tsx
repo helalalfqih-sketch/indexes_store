@@ -57,6 +57,8 @@ import {
 } from "@/lib/actions/appearance.actions";
 import { notifyStorefrontPublished } from "@/components/appearance-provider";
 import { MediaUploader } from "@/components/media-uploader";
+import { IndexesEvolutionStudio } from "@/components/storefront/evolution-studio/IndexesEvolutionStudio";
+import { loadActiveDraft, saveActiveDraft, type DraftConfig } from "@/lib/evolutionStudioStore";
 import {
   DEFAULT_STOREFRONT_SETTINGS,
   type StorefrontSettingsShape,
@@ -2414,7 +2416,7 @@ function NotificationsTab({
 }
 
 // ── 08. Studio Dashboard & Logs Tab ───────────────────────────────────────────
-function StudioTab() {
+function StudioTab({ onOpenEvolutionStudio }: { onOpenEvolutionStudio?: () => void }) {
   const getLogs = useServerFn(getStorefrontChangeLogs);
   const restoreVersion = useServerFn(restoreStorefrontVersion);
   const logsQ = useQuery({
@@ -2440,6 +2442,53 @@ function StudioTab() {
 
   return (
     <div className="space-y-4">
+      {/* Visual Evolution Studio Launcher Banner */}
+      <SectionCard title="استوديو التطور البصري المباشر (3D Evolution Studio & AI Lab)" badge="Interactive 3D Engine">
+        <div className="bg-gradient-to-tr from-purple-950/40 via-indigo-950/30 to-cyan-950/40 p-5 rounded-2xl border border-purple-500/30 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-400 animate-pulse" />
+                <h4 className="font-black text-sm text-foreground">
+                  استوديو إندكس للتطور الذكي والتصميم البصري ثلاثي الأبعاد
+                </h4>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                تحكم فوري في عالم المنتجات ثلاثي الأبعاد (3D Universe)، محرر رموز التصميم والألوان الحية (Design Tokens)، محاكي الأجهزة والشاشات، والمدير الإبداعي بالذكاء الاصطناعي.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onOpenEvolutionStudio}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white font-extrabold text-xs shadow-lg shadow-purple-500/25 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+            >
+              <Sparkles className="h-4 w-4 text-amber-300" />
+              <span>فتح الاستوديو البصري الكامل 🚀</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-purple-500/20 text-center">
+            <div className="bg-background/40 p-2.5 rounded-xl border border-white/5">
+              <span className="text-[10px] text-muted-foreground block font-bold">عالم المنتجات 3D</span>
+              <span className="text-xs font-black text-cyan-400 mt-0.5 block">Three.js Engine</span>
+            </div>
+            <div className="bg-background/40 p-2.5 rounded-xl border border-white/5">
+              <span className="text-[10px] text-muted-foreground block font-bold">رموز التصميم</span>
+              <span className="text-xs font-black text-purple-400 mt-0.5 block">Live Tokens</span>
+            </div>
+            <div className="bg-background/40 p-2.5 rounded-xl border border-white/5">
+              <span className="text-[10px] text-muted-foreground block font-bold">الذكاء الاصطناعي</span>
+              <span className="text-xs font-black text-amber-400 mt-0.5 block">AI Director</span>
+            </div>
+            <div className="bg-background/40 p-2.5 rounded-xl border border-white/5">
+              <span className="text-[10px] text-muted-foreground block font-bold">حارس الجودة</span>
+              <span className="text-xs font-black text-emerald-400 mt-0.5 block">Quality Guardian</span>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+
       {/* Analytics Dashboard */}
       <SectionCard title="استوديو إحصائيات المتجر والتحويل" badge="Analytics Dashboard">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -2548,7 +2597,36 @@ function StorefrontCMSPage() {
   const [previewMode, setPreviewMode] = useState<"real_site" | "draft_preview">("real_site");
   const [iframeKey, setIframeKey] = useState<number>(0);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [isEvolutionStudioOpen, setIsEvolutionStudioOpen] = useState<boolean>(false);
   const dirty = useRef(false);
+
+  const handleApplyEvolutionStudioDraft = useCallback((draft: DraftConfig) => {
+    saveActiveDraft(draft);
+    const universe = draft.universe3d;
+    const tokens = draft.designTokens;
+    setLocal((prev) => ({
+      ...prev,
+      theme: {
+        ...prev.theme,
+        primaryColor: tokens.colors.primary,
+        secondaryColor: tokens.colors.secondary,
+        accentColor: tokens.colors.accent,
+        backgroundColor: tokens.colors.background,
+        surfaceColor: tokens.colors.surface,
+        borderRadius: `${tokens.geometry.radiusScale * 12}px`,
+      },
+      hero: {
+        ...prev.hero,
+        globeRadius: universe.sphereRadius,
+        globeCardShape: universe.nodeCardShape,
+        globeShowParticles: universe.particleFieldEnabled,
+        globeRotationSpeed: universe.autoRotateSpeed,
+      },
+    }));
+    dirty.current = true;
+    setIsEvolutionStudioOpen(false);
+    toast.success("✨ تم تطبيق ودمج إعدادات استوديو التطور البصري في لوحة التحكم بنجاح!");
+  }, []);
 
   const settingsQ = useQuery({
     queryKey: ["storefront-settings-cms-premium"],
@@ -2675,6 +2753,14 @@ function StorefrontCMSPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsEvolutionStudioOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-purple-500/25 transition cursor-pointer font-sans"
+          >
+            <Sparkles className="h-4 w-4 text-amber-300 animate-spin-slow" />
+            <span>استوديو التطور البصري (Evolution Studio 3D)</span>
+          </button>
           <a
             href="/app/"
             target="_blank"
@@ -2776,7 +2862,9 @@ function StorefrontCMSPage() {
               onSeoChange={(v) => handleChange("seo", v)}
             />
           )}
-          {activeTab === "studio" && <StudioTab />}
+          {activeTab === "studio" && (
+            <StudioTab onOpenEvolutionStudio={() => setIsEvolutionStudioOpen(true)} />
+          )}
         </div>
 
         {/* Live Preview (Col width: 5/12 - STICKY) */}
@@ -2899,6 +2987,15 @@ function StorefrontCMSPage() {
           </div>
         </div>
       </div>
+
+      {/* Evolution Studio 3D Interactive Modal */}
+      {isEvolutionStudioOpen && (
+        <IndexesEvolutionStudio
+          products={seedProducts as any}
+          onClose={() => setIsEvolutionStudioOpen(false)}
+          onApplyDraftToStore={handleApplyEvolutionStudioDraft}
+        />
+      )}
     </div>
   );
 }
