@@ -44,6 +44,7 @@ import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
 import { Route as GoogleShoppingXmlRouteImport } from './routes/google-shopping.xml'
 import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
+import { Route as ApiOrdersRouteImport } from './routes/api/orders'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSystemHealthRouteImport } from './routes/admin.system-health'
 import { Route as AdminStudioRouteImport } from './routes/admin.studio'
@@ -261,6 +262,11 @@ const Demo3dViewerRoute = Demo3dViewerRouteImport.update({
 const CategoryIdRoute = CategoryIdRouteImport.update({
   id: '/category/$id',
   path: '/category/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOrdersRoute = ApiOrdersRouteImport.update({
+  id: '/api/orders',
+  path: '/api/orders',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -531,6 +537,7 @@ export interface FileRoutesByFullPath {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
   '/google-shopping/xml': typeof GoogleShoppingXmlRoute
@@ -609,6 +616,7 @@ export interface FileRoutesByTo {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
   '/google-shopping/xml': typeof GoogleShoppingXmlRoute
@@ -690,6 +698,7 @@ export interface FileRoutesById {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
   '/google-shopping/xml': typeof GoogleShoppingXmlRoute
@@ -772,6 +781,7 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/orders'
     | '/category/$id'
     | '/demo/3d-viewer'
     | '/google-shopping/xml'
@@ -850,6 +860,7 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/orders'
     | '/category/$id'
     | '/demo/3d-viewer'
     | '/google-shopping/xml'
@@ -930,6 +941,7 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/orders'
     | '/category/$id'
     | '/demo/3d-viewer'
     | '/google-shopping/xml'
@@ -978,6 +990,7 @@ export interface RootRouteChildren {
   StoreRoute: typeof StoreRouteWithChildren
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
+  ApiOrdersRoute: typeof ApiOrdersRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
   GoogleShoppingXmlRoute: typeof GoogleShoppingXmlRoute
@@ -1239,6 +1252,13 @@ declare module '@tanstack/react-router' {
       path: '/category/$id'
       fullPath: '/category/$id'
       preLoaderRoute: typeof CategoryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/orders': {
+      id: '/api/orders'
+      path: '/api/orders'
+      fullPath: '/api/orders'
+      preLoaderRoute: typeof ApiOrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -1685,6 +1705,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoreRoute: StoreRouteWithChildren,
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
+  ApiOrdersRoute: ApiOrdersRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
   GoogleShoppingXmlRoute: GoogleShoppingXmlRoute,
