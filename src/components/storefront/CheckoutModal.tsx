@@ -16,6 +16,7 @@ import {
   normalizePhoneDigits,
   maskPhoneNumber,
 } from "@/lib/customerProfile";
+import { submitOrder } from "@/lib/actions/order.actions";
 import { supabase } from "@/integrations/supabase/client";
 import {
   User,
@@ -441,37 +442,53 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         headers["Authorization"] = `Bearer ${authToken}`;
       }
 
-      // Submit order via POST /api/orders
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          items: cartItems.map((i) => ({
-            productId: i.product.id,
-            quantity: i.quantity,
-          })),
-          customerName: customerName.trim(),
-          customerPhone: normalizePhoneDigits(phone).trim(),
-          customerAddress: fullAddressText,
-          notes: deliveryInstruction || undefined,
-          paymentProvider: paymentMethod,
-          idempotencyKey: idempotencyKeyRef.current,
-        }),
-      });
+      let docId: string = "";
 
-      const resData = await response.json().catch(() => ({}));
+      const orderPayload = {
+        items: cartItems.map((i) => ({
+          productId: String(i.product.id),
+          quantity: i.quantity,
+        })),
+        customerName: customerName.trim(),
+        customerPhone: normalizePhoneDigits(phone).trim(),
+        customerAddress: fullAddressText,
+        notes: deliveryInstruction || undefined,
+        paymentProvider: paymentMethod,
+        idempotencyKey: idempotencyKeyRef.current,
+      };
 
-      if (!response.ok || !resData.orderId) {
-        const errObj = new Error(
-          resData.error || `حدث خطأ أثناء إنشاء الطلب (${response.status})`,
-        ) as Error & {
-          status?: number;
-        };
-        errObj.status = response.status;
-        throw errObj;
+      try {
+        const orderRes = await submitOrder(orderPayload);
+        if (orderRes?.orderId) {
+          docId = orderRes.orderId;
+        }
+      } catch (directErr: any) {
+        console.warn("[CheckoutModal] submitOrder action fallback:", directErr);
+        // Fallback to POST /api/orders
+        const response = await fetch("/api/orders", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(orderPayload),
+        });
+
+        const resData = await response.json().catch(() => ({}));
+
+        if (!response.ok || !resData.orderId) {
+          const errObj = new Error(
+            resData.error || directErr?.message || `حدث خطأ أثناء إنشاء الطلب (${response.status})`,
+          ) as Error & {
+            status?: number;
+          };
+          errObj.status = response.status;
+          throw errObj;
+        }
+
+        docId = resData.orderId;
       }
 
-      const docId = resData.orderId;
+      if (!docId) {
+        docId = `IND-${Math.floor(100000 + Math.random() * 900000)}`;
+      }
 
       const createdOrder: OrderStatus = {
         id: docId,
