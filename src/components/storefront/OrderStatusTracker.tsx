@@ -1,7 +1,7 @@
-﻿import React from 'react';
-import { motion } from 'framer-motion';
-import { OrderStatus, Currency } from './types';
-import { formatPrice } from './currency';
+import React from 'react';
+import { motion } from 'motion/react';
+import { OrderStatus, Currency } from '../types';
+import { formatPrice } from '../lib/currency';
 import {
   PackageCheck,
   Clock,
@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Phone,
 } from 'lucide-react';
-import { STORE_INFO } from './constants';
+import { STORE_INFO } from '../data/mockData';
 
 interface OrderStatusTrackerProps {
   order: OrderStatus;
@@ -25,19 +25,19 @@ interface OrderStatusTrackerProps {
 export const getEstimatedDelivery = (status: OrderStatus['status']): string => {
   switch (status) {
     case 'received':
-      return 'ط®ظ„ط§ظ„ 3-5 ط£ظٹط§ظ… ط¹ظ…ظ„ (Expected delivery: 3-5 business days)';
+      return 'خلال 3-5 أيام عمل (Expected delivery: 3-5 business days)';
     case 'processing':
-      return 'ط®ظ„ط§ظ„ 2-3 ط£ظٹط§ظ… ط¹ظ…ظ„ (Expected delivery: 2-3 business days)';
+      return 'خلال 2-3 أيام عمل (Expected delivery: 2-3 business days)';
     case 'shipped':
-      return 'ط®ظ„ط§ظ„ 1-2 ط£ظٹط§ظ… ط¹ظ…ظ„ (Expected delivery: 1-2 business days)';
+      return 'خلال 1-2 أيام عمل (Expected delivery: 1-2 business days)';
     case 'out_for_delivery':
-      return 'ط§ظ„ظٹظˆظ… ط®ظ„ط§ظ„ ط³ط§ط¹ط§طھ ظ‚ظ„ظٹظ„ط© (Expected delivery: Today within hours)';
+      return 'اليوم خلال ساعات قليلة (Expected delivery: Today within hours)';
     case 'delivered':
-      return 'طھظ… ط§ظ„طھط³ظ„ظٹظ… ط¨ظ†ط¬ط§ط­ (Delivered)';
+      return 'تم التسليم بنجاح (Delivered)';
     case 'cancelled':
-      return 'طھظ… ط¥ظ„ط؛ط§ط، ط§ظ„ط·ظ„ط¨ (Cancelled)';
+      return 'تم إلغاء الطلب (Cancelled)';
     default:
-      return 'ط®ظ„ط§ظ„ 2-4 ط£ظٹط§ظ… ط¹ظ…ظ„ (Expected delivery: 2-4 business days)';
+      return 'خلال 2-4 أيام عمل (Expected delivery: 2-4 business days)';
   }
 };
 
@@ -55,28 +55,28 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
     {
       key: 'ordered',
       label: 'Ordered',
-      labelAr: 'طھظ… ط§ظ„ط·ظ„ط¨',
+      labelAr: 'تم الطلب',
       icon: Box,
       statuses: ['received', 'processing', 'shipped', 'out_for_delivery', 'delivered'],
     },
     {
       key: 'processing',
       label: 'Processing',
-      labelAr: 'ظ‚ظٹط¯ ط§ظ„طھط¬ظ‡ظٹط²',
+      labelAr: 'قيد التجهيز',
       icon: Clock,
       statuses: ['processing', 'shipped', 'out_for_delivery', 'delivered'],
     },
     {
       key: 'shipped',
       label: 'Shipped',
-      labelAr: 'طھظ… ط§ظ„ط´ط­ظ†',
+      labelAr: 'تم الشحن',
       icon: Truck,
       statuses: ['shipped', 'out_for_delivery', 'delivered'],
     },
     {
       key: 'delivered',
       label: 'Delivered',
-      labelAr: 'طھظ… ط§ظ„طھط³ظ„ظٹظ…',
+      labelAr: 'تم التسليم',
       icon: CheckCircle2,
       statuses: ['delivered'],
     },
@@ -122,7 +122,7 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
               </div>
               <div>
                 <h4 className="text-xs sm:text-sm font-black text-[var(--color-text-primary)]">
-                  Quick Summary | ظ…ظ„ط®طµ ط³ط±ظٹط¹ ظ„ظ„ط·ظ„ط¨
+                  Quick Summary | ملخص سريع للطلب
                 </h4>
                 <p className="text-[11px] text-[var(--color-text-muted)] font-mono dir-ltr">
                   #{order.orderNumber}
@@ -138,17 +138,17 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
             <div className="bg-[var(--color-surface-1)] p-2.5 sm:p-3 rounded-xl border border-[var(--color-border-subtle)]">
               <span className="text-[10px] text-[var(--color-text-muted)] block flex items-center gap-1">
                 <ShoppingBag className="w-3 h-3 text-[#2F6BFF]" />
-                ط¹ط¯ط¯ ط§ظ„ظ…ظ†طھط¬ط§طھ (Items)
+                عدد المنتجات (Items)
               </span>
               <span className="text-sm sm:text-base font-black text-[var(--color-text-primary)] mt-0.5 block">
-                {totalItemsCount} {totalItemsCount === 1 ? 'ظ…ظ†طھط¬' : 'ظ…ظ†طھط¬ط§طھ'} ({totalItemsCount} items)
+                {totalItemsCount} {totalItemsCount === 1 ? 'منتج' : 'منتجات'} ({totalItemsCount} items)
               </span>
             </div>
 
             <div className="bg-[var(--color-surface-1)] p-2.5 sm:p-3 rounded-xl border border-[var(--color-border-subtle)]">
               <span className="text-[10px] text-[var(--color-text-muted)] block flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ط·ظ„ط¨ (Total)
+                إجمالي الطلب (Total)
               </span>
               <span className="text-sm sm:text-base font-black text-emerald-500 mt-0.5 block">
                 {formatPrice(order.totalPriceYER, currency)}
@@ -158,7 +158,7 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
             <div className="col-span-2 sm:col-span-1 bg-[var(--color-surface-1)] p-2.5 sm:p-3 rounded-xl border border-[var(--color-border-subtle)]">
               <span className="text-[10px] text-[var(--color-text-muted)] block flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-amber-400" />
-                ط§ظ„طھط§ط±ظٹط® (Date)
+                التاريخ (Date)
               </span>
               <span className="text-xs sm:text-sm font-bold text-[var(--color-text-secondary)] mt-0.5 block">
                 {order.date}
@@ -171,7 +171,7 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
             <Calendar className="w-5 h-5 text-amber-500 shrink-0 animate-pulse" />
             <div className="text-xs">
               <span className="font-bold text-amber-500 block">
-                ظ…ظˆط¹ط¯ ط§ظ„طھظˆطµظٹظ„ ط§ظ„ظ…طھظˆظ‚ط¹ (Estimated Delivery):
+                موعد التوصيل المتوقع (Estimated Delivery):
               </span>
               <span className="text-[var(--color-text-primary)] font-semibold">
                 {estimatedDelivery}
@@ -186,10 +186,10 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
         <div className="flex items-center justify-between">
           <h4 className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <Truck className="w-4 h-4 text-[#2F6BFF]" />
-            <span>ظ…ط³ط§ط± طھطھط¨ط¹ ط­ط§ظ„ط© ط§ظ„ط·ظ„ط¨ (Order Status)</span>
+            <span>مسار تتبع حالة الطلب (Order Status)</span>
           </h4>
           <span className="text-xs font-mono text-[var(--color-text-muted)]">
-            {progressPercentage}% ظ…ظƒطھظ…ظ„
+            {progressPercentage}% مكتمل
           </span>
         </div>
 
@@ -248,7 +248,7 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
                   {isCurrent && (
                     <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-[#2F6BFF] bg-[#2F6BFF]/10 px-2 py-0.5 rounded-full border border-[#2F6BFF]/20">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#2F6BFF] animate-ping" />
-                      ط§ظ„ط­ط§ظ„ط© ط§ظ„ط­ط§ظ„ظٹط©
+                      الحالة الحالية
                     </span>
                   )}
                 </div>
@@ -261,7 +261,7 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
         {order.items && order.items.length > 0 && (
           <div className="pt-3 border-t border-[var(--color-border-subtle)] space-y-2">
             <h5 className="text-xs font-bold text-[var(--color-text-secondary)]">
-              ظ…ط­طھظˆظٹط§طھ ط§ظ„ط·ظ„ط¨ ({order.items.length}):
+              محتويات الطلب ({order.items.length}):
             </h5>
             <div className="space-y-1.5 max-h-36 overflow-y-auto no-scrollbar pr-1">
               {order.items.map((item, idx) => (
@@ -289,32 +289,31 @@ export const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({
         {/* Shipping & Contact Info */}
         <div className="pt-2 border-t border-[var(--color-border-subtle)] text-xs text-[var(--color-text-secondary)] space-y-1">
           <p>
-            <strong className="text-[var(--color-text-primary)]">ط§ط³ظ… ط§ظ„ط¹ظ…ظٹظ„:</strong>{' '}
+            <strong className="text-[var(--color-text-primary)]">اسم العميل:</strong>{' '}
             {order.customerName}
           </p>
           <p>
-            <strong className="text-[var(--color-text-primary)]">ط¹ظ†ظˆط§ظ† ط§ظ„طھظˆطµظٹظ„:</strong>{' '}
+            <strong className="text-[var(--color-text-primary)]">عنوان التوصيل:</strong>{' '}
             {order.governorate} - {order.address}
           </p>
           <p>
-            <strong className="text-[var(--color-text-primary)]">ط·ط±ظٹظ‚ط© ط§ظ„ط¯ظپط¹:</strong>{' '}
+            <strong className="text-[var(--color-text-primary)]">طريقة الدفع:</strong>{' '}
             {order.paymentMethod}
           </p>
         </div>
 
         <a
           href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodeURIComponent(
-            `ط§ظ„ط³ظ„ط§ظ… ط¹ظ„ظٹظƒظ…طŒ ط£ظˆط¯ ط§ظ„ط§ط³طھظپط³ط§ط± ط¹ظ† ط­ط§ظ„ط© ط·ظ„ط¨ظٹ ط±ظ‚ظ… ${order.orderNumber}`
+            `السلام عليكم، أود الاستفسار عن حالة طلبي رقم ${order.orderNumber}`
           )}`}
           target="_blank"
           rel="noopener noreferrer"
           className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs transition-all shadow-sm cursor-pointer"
         >
-          <span>طھظˆط§طµظ„ ظ…ط¹ ط§ظ„ط¯ط¹ظ… ط§ظ„ظپظ†ظٹ / ط§ظ„ظ…ظ†ط¯ظˆط¨ ط¹ط¨ط± ظˆط§طھط³ط§ط¨</span>
+          <span>تواصل مع الدعم الفني / المندوب عبر واتساب</span>
           <Phone className="w-4 h-4" />
         </a>
       </div>
     </div>
   );
 };
-

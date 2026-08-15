@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Check, Sparkles } from 'lucide-react';
-import { Product } from './types';
-
-const NEUTRAL_FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='800' viewBox='0 0 800 800'%3E%3Crect width='800' height='800' fill='%23140E24'/%3E%3Cpath d='M270 330h260v180H270z' fill='none' stroke='%236b7280' stroke-width='18'/%3E%3Ccircle cx='350' cy='390' r='34' fill='%236b7280'/%3E%3Cpath d='m290 490 90-90 60 60 45-45 55 75' fill='none' stroke='%236b7280' stroke-width='18'/%3E%3C/svg%3E";
+import { motion, AnimatePresence } from 'motion/react';
+import { ShoppingCart, Check, Sparkles, ArrowLeft } from 'lucide-react';
+import { Product } from '../types';
 
 export interface FlyingCartItem {
   id: string;
@@ -19,6 +17,8 @@ interface AddToCartAnimationProps {
   onOpenCart?: () => void;
   lastAddedProduct?: { product: Product; quantity: number; selectedColor?: string; timestamp: number } | null;
 }
+
+import { getSmartProductImage } from '../lib/productImages';
 
 export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
   activeFlyingItems,
@@ -43,9 +43,7 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
 
   // Determine cart icon location on screen (defaults to top-left for RTL header)
   const getCartTargetPosition = () => {
-    if (typeof document === 'undefined') return { x: 36, y: 32 };
-    if (typeof document === 'undefined') return { x: 36, y: 32 };
-    const cartButton = document.querySelector('[aria-label="ط³ظ„ط© ط§ظ„طھط³ظˆظ‚"]');
+    const cartButton = document.querySelector('[aria-label="سلة التسوق"]');
     if (cartButton) {
       const rect = cartButton.getBoundingClientRect();
       return {
@@ -53,7 +51,11 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
         y: rect.top + rect.height / 2,
       };
     }
-    return { x: 36, y: 32 };
+    // Fallback: top left corner area
+    return {
+      x: 36,
+      y: 32,
+    };
   };
 
   const target = getCartTargetPosition();
@@ -63,8 +65,8 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
       {/* 1. FLYING PRODUCT PARTICLES ANIMATION */}
       <AnimatePresence>
         {activeFlyingItems.map((item) => {
-          const startX = item.startX || (typeof window !== 'undefined' ? window.innerWidth / 2 : 200);
-          const startY = item.startY || (typeof window !== 'undefined' ? window.innerHeight / 2 : 400);
+          const startX = item.startX || window.innerWidth / 2;
+          const startY = item.startY || window.innerHeight / 2;
 
           // Midpoint for parabolic flight trajectory
           const midX = (startX + target.x) / 2 + (startX > target.x ? -30 : 30);
@@ -109,9 +111,11 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
                 className="absolute z-50 w-14 h-14 rounded-2xl bg-[var(--color-surface-1)] border-2 border-[#2F6BFF] shadow-2xl shadow-blue-500/50 p-1 flex items-center justify-center overflow-hidden"
               >
                 <img
-                  src={item.product.image || NEUTRAL_FALLBACK_IMAGE}
+                  src={getSmartProductImage(item.product.name, item.product.category, item.product.image)}
                   alt={item.product.name}
-                  onError={(e) => { e.currentTarget.src = NEUTRAL_FALLBACK_IMAGE; }}
+                  onError={(e) => {
+                    e.currentTarget.src = getSmartProductImage(item.product.name, item.product.category);
+                  }}
                   className="w-full h-full object-contain rounded-xl"
                 />
                 <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-[1px]" />
@@ -143,9 +147,11 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="relative w-12 h-12 rounded-xl bg-[var(--color-surface-2)] p-1 border border-[var(--color-border-default)] shrink-0 overflow-hidden">
                 <img
-                  src={currentToast.product.image || NEUTRAL_FALLBACK_IMAGE}
+                  src={getSmartProductImage(currentToast.product.name, currentToast.product.category, currentToast.product.image)}
                   alt={currentToast.product.name}
-                  onError={(e) => { e.currentTarget.src = NEUTRAL_FALLBACK_IMAGE; }}
+                  onError={(e) => {
+                    e.currentTarget.src = getSmartProductImage(currentToast.product.name, currentToast.product.category);
+                  }}
                   className="w-full h-full object-contain"
                 />
                 <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm">
@@ -156,13 +162,13 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400">
                   <Sparkles className="w-3 h-3" />
-                  <span>طھظ…طھ ط§ظ„ط¥ط¶ط§ظپط© ط¥ظ„ظ‰ ط³ظ„ط© ط§ظ„طھط³ظˆظ‚!</span>
+                  <span>تمت الإضافة إلى سلة التسوق!</span>
                 </div>
                 <h5 className="text-xs sm:text-sm font-black text-[var(--color-text-primary)] truncate">
                   {currentToast.product.name}
                 </h5>
                 <p className="text-[10px] text-[var(--color-text-secondary)] truncate">
-                  ط§ظ„ظƒظ…ظٹط©: {currentToast.quantity} {currentToast.selectedColor ? `â€¢ ط§ظ„ظ„ظˆظ†: ${currentToast.selectedColor}` : ''}
+                  الكمية: {currentToast.quantity} {currentToast.selectedColor ? `• اللون: ${currentToast.selectedColor}` : ''}
                 </p>
               </div>
             </div>
@@ -177,7 +183,7 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
                 }}
                 className="px-3.5 py-2 bg-[#2F6BFF] hover:bg-[#2458D8] active:scale-95 text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-blue-500/25"
               >
-                <span>ط§ظ„ط³ظ„ط©</span>
+                <span>السلة</span>
                 <ShoppingCart className="w-3.5 h-3.5" />
               </button>
 
@@ -185,9 +191,9 @@ export const AddToCartAnimationOverlay: React.FC<AddToCartAnimationProps> = ({
                 type="button"
                 onClick={() => setShowToast(false)}
                 className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors rounded-lg hover:bg-[var(--color-surface-2)] cursor-pointer"
-                title="ط¥ط؛ظ„ط§ظ‚"
+                title="إغلاق"
               >
-                âœ•
+                ✕
               </button>
             </div>
 

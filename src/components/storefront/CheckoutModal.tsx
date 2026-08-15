@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CartItem, Currency, OrderStatus } from "./types";
-import { formatPrice } from "./currency";
-import { STORE_INFO } from "./constants";
+import { motion, AnimatePresence } from "motion/react";
+import { CartItem, Currency, OrderStatus } from "../types";
+import { formatPrice } from "../lib/currency";
+import { STORE_INFO } from "../data/mockData";
 import {
   CustomerProfile,
   SavedAddress,
@@ -15,9 +15,9 @@ import {
   clearCheckoutDraft,
   normalizePhoneDigits,
   maskPhoneNumber,
-} from "@/lib/customerProfile";
-import { supabase } from "@/integrations/supabase/client";
-
+} from "../lib/customerProfile";
+import { auth } from "../lib/auth";
+import { supabase } from "../lib/supabase";
 import {
   User,
   Phone,
@@ -144,40 +144,38 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     // Check if draft exists first and load it
     const draftLoaded = loadGuestProfileOrDraft();
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const currentUser = session?.user ? { uid: session.user.id, email: session.user.email } : null;
-      if (currentUser) {
-        getCustomerProfile(currentUser.uid).then((prof) => {
-          if (prof && prof.autofillEnabled !== false) {
-            setCustomerProfile(prof);
-            // If no draft exists, populate from user profile defaults
-            if (!draftLoaded) {
-              if (prof.fullName) setCustomerName(prof.fullName);
-              if (prof.phone) setPhone(prof.phone);
-              if (prof.altPhone) {
-                setAltPhone(prof.altPhone);
-                setShowAltPhone(true);
-              }
-              if (prof.preferredGovernorate)
-                setGovernorate(prof.preferredGovernorate);
-              if (prof.deliveryInstructions)
-                setDeliveryInstruction(prof.deliveryInstructions);
-
-              // Default address
-              if (prof.addresses && prof.addresses.length > 0) {
-                const def =
-                  prof.addresses.find((a) => a.isDefault) || prof.addresses[0];
-                setSelectedAddressId(def.id);
-                setGovernorate(def.governorate);
-                setAddress(def.address);
-                if (def.nearestLandmark) setNearestLandmark(def.nearestLandmark);
-              }
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      getCustomerProfile(currentUser.uid).then((prof) => {
+        if (prof && prof.autofillEnabled !== false) {
+          setCustomerProfile(prof);
+          // If no draft exists, populate from user profile defaults
+          if (!draftLoaded) {
+            if (prof.fullName) setCustomerName(prof.fullName);
+            if (prof.phone) setPhone(prof.phone);
+            if (prof.altPhone) {
+              setAltPhone(prof.altPhone);
+              setShowAltPhone(true);
             }
-            setIsPrefilled(true);
+            if (prof.preferredGovernorate)
+              setGovernorate(prof.preferredGovernorate);
+            if (prof.deliveryInstructions)
+              setDeliveryInstruction(prof.deliveryInstructions);
+
+            // Default address
+            if (prof.addresses && prof.addresses.length > 0) {
+              const def =
+                prof.addresses.find((a) => a.isDefault) || prof.addresses[0];
+              setSelectedAddressId(def.id);
+              setGovernorate(def.governorate);
+              setAddress(def.address);
+              if (def.nearestLandmark) setNearestLandmark(def.nearestLandmark);
+            }
           }
-        });
-      }
-    });
+          setIsPrefilled(true);
+        }
+      });
+    }
   }, [isOpen]);
 
   const loadGuestProfileOrDraft = (): boolean => {
@@ -275,10 +273,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Instruction chips suggestions
   const instructionChips = [
-    "ط§طھطµظ„ ظ‚ط¨ظ„ ط§ظ„ظˆطµظˆظ„",
-    "ط§ظ„طھط³ظ„ظٹظ… ظ„ظٹ ط´ط®طµظٹط§ظ‹",
-    "ط§ظ„طھط³ظ„ظٹظ… ظ„ط´ط®طµ ط¢ط®ط±",
-    "طھط¬ظ†ط¨ ط§ظ„ط§طھطµط§ظ„ ظپظٹ ظˆظ‚طھ ظ…ط­ط¯ط¯",
+    "اتصل قبل الوصول",
+    "التسليم لي شخصياً",
+    "التسليم لشخص آخر",
+    "تجنب الاتصال في وقت محدد",
   ];
 
   // Address Selection handler
@@ -296,10 +294,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const cleanPhone = normalizePhoneDigits(phone).replace(/[^\d]/g, "");
 
     if (!customerName.trim() || customerName.trim().length < 2) {
-      errs.name = "ظٹط±ط¬ظ‰ ط¥ط¯ط®ط§ظ„ ط§ظ„ط§ط³ظ… ط§ظ„ظƒط§ظ…ظ„ ط§ظ„ط«ظ„ط§ط«ظٹ";
+      errs.name = "يرجى إدخال الاسم الكامل الثلاثي";
     }
     if (!cleanPhone || cleanPhone.length < 8) {
-      errs.phone = "ظٹط±ط¬ظ‰ ط¥ط¯ط®ط§ظ„ ط±ظ‚ظ… ظ‡ط§طھظپ طµط­ظٹط­ط© ظ…ظ† 8 ط£ط±ظ‚ط§ظ… ط¹ظ„ظ‰ ط§ظ„ط£ظ‚ظ„";
+      errs.phone = "يرجى إدخال رقم هاتف صحيحة من 8 أرقام على الأقل";
     }
 
     setErrors(errs);
@@ -315,7 +313,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const validateStep2 = () => {
     const errs: { address?: string } = {};
     if (!address.trim() || address.trim().length < 5) {
-      errs.address = "ظٹط±ط¬ظ‰ ط¥ط¯ط®ط§ظ„ ط¹ظ†ظˆط§ظ† ط§ظ„طھظپطµظٹظ„ظٹ ظ„ظ„طھظˆطµظٹظ„ (ط§ظ„ط´ط§ط±ط¹ ظˆط§ظ„ط­ظٹ)";
+      errs.address = "يرجى إدخال عنوان التفصيلي للتوصيل (الشارع والحي)";
     }
     setErrors((prev) => ({ ...prev, ...errs }));
     if (errs.address && addressInputRef.current) {
@@ -387,19 +385,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     saveCheckoutDraft(currentInputData);
 
     try {
-      const { data: { session: _orderSession } } = await supabase.auth.getSession();
-      const currentUser = _orderSession?.user ? { uid: _orderSession.user.id, email: _orderSession.user.email } : null;
+      const currentUser = auth.currentUser;
       const orderNum = `IND-${Math.floor(100000 + Math.random() * 900000)}`;
 
-      let paymentLabel = "ط§ظ„ط¯ظپط¹ ط¹ظ†ط¯ ط§ظ„ط§ط³طھظ„ط§ظ… (ظ†ظ‚ط¯ط§ظ‹)";
-      if (paymentMethod === "kuraimi") paymentLabel = "ط­ط³ط§ط¨ ط¨ظ†ظƒ ط§ظ„ظƒط±ظٹظ…ظٹ (ط­ط§ط³ط¨)";
+      let paymentLabel = "الدفع عند الاستلام (نقداً)";
+      if (paymentMethod === "kuraimi") paymentLabel = "حساب بنك الكريمي (حاسب)";
       if (paymentMethod === "jawalpay")
-        paymentLabel = "ظ…ط­ظپط¸ط© ط¬ظˆط§ظ„ ط¨ظٹ / ظˆط§ظ† ظƒط§ط´";
+        paymentLabel = "محفظة جوال بي / وان كاش";
       if (paymentMethod === "transfer")
-        paymentLabel = "ط­ظˆط§ظ„ط© طµط±ط§ظپط© (ط§ظ„ظ†ط¬ظ… / ط§ظ„ظ…ظ…ظٹط²)";
+        paymentLabel = "حوالة صرافة (النجم / المميز)";
 
       const fullAddressText = nearestLandmark
-        ? `${address} (ط£ظ‚ط±ط¨ ظ…ط¹ظ„ظ…: ${nearestLandmark})`
+        ? `${address} (أقرب معلم: ${nearestLandmark})`
         : address;
 
       const orderData: Omit<OrderStatus, "id"> = {
@@ -415,7 +412,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         })),
         totalPriceYER: totalYER,
         status: "received",
-        statusLabel: "طھظ… ط§ط³طھظ„ط§ظ… ط·ظ„ط¨ظƒ ط¨ظ†ط¬ط§ط­! ط¬ط§ط±ظٹ ط§ظ„طھط¬ظ‡ظٹط² ًں“¦",
+        statusLabel: "تم استلام طلبك بنجاح! جاري التجهيز 📦",
         date: new Date().toLocaleDateString("ar-YE", {
           day: "numeric",
           month: "long",
@@ -464,7 +461,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
       if (!response.ok || !resData.orderId) {
         const errObj = new Error(
-          resData.error || `ط­ط¯ط« ط®ط·ط£ ط£ط«ظ†ط§ط، ط¥ظ†ط´ط§ط، ط§ظ„ط·ظ„ط¨ (${response.status})`,
+          resData.error || `حدث خطأ أثناء إنشاء الطلب (${response.status})`,
         ) as Error & {
           status?: number;
         };
@@ -536,7 +533,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         // Do NOT clear cart; retain items and present non-retryable message
         setErrors({
           submitErr:
-            "ط®ط·ط£ 402 (ط§ظ„ط¯ظپط¹ ظ…ط·ظ„ظˆط¨): ظٹطھط·ظ„ط¨ ط¥طھظ…ط§ظ… ط§ظ„ط¹ظ…ظ„ظٹط© ط§ظ„ط¯ظپط¹ ط£ظˆظ„ط§ظ‹. ظ„ط§ ظٹظ…ظƒظ† ط¥ط¹ط§ط¯ط© ط§ظ„ظ…ط­ط§ظˆظ„ط©.",
+            "خطأ 402 (الدفع مطلوب): يتطلب إتمام العملية الدفع أولاً. لا يمكن إعادة المحاولة.",
         });
       } else {
         // Ensure cached input data is preserved and re-saved in case of network failure
@@ -557,7 +554,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         setErrors({
           submitErr:
             message ||
-            "ط­ط¯ط« ط®ط·ط£ ظپظٹ ط§ظ„ط§طھطµط§ظ„ ط£ط«ظ†ط§ط، ط¥ط±ط³ط§ظ„ ط§ظ„ط·ظ„ط¨. ط¨ظٹط§ظ†ط§طھظƒ ظ…ط­ظپظˆط¸ط© ط¨ط§ظ„ظƒط§ظ…ظ„ ظˆظٹظ…ظƒظ†ظƒ ط¥ط¹ط§ط¯ط© ط§ظ„ظ…ط­ط§ظˆظ„ط© ط§ظ„ط¢ظ†.",
+            "حدث خطأ في الاتصال أثناء إرسال الطلب. بياناتك محفوظة بالكامل ويمكنك إعادة المحاولة الآن.",
         });
       }
     } finally {
@@ -567,20 +564,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const getWhatsappMsg = (order: OrderStatus) => {
     const itemsText = order.items
-      .map((i) => `â€¢ ${i.productName} (ط§ظ„ظƒظ…ظٹط©: ${i.quantity})`)
+      .map((i) => `• ${i.productName} (الكمية: ${i.quantity})`)
       .join("\n");
 
     return encodeURIComponent(
-      `ًں›چï¸ڈ *ط·ظ„ط¨ ط¬ط¯ظٹط¯ ظ…ظ† ظ…طھط¬ط± ط¥ظ†ط¯ظƒط³*\n` +
-        `ط±ظ‚ظ… ط§ظ„ط·ظ„ط¨: *${order.orderNumber}*\n\n` +
-        `ًں‘¤ *ط§ظ„ط§ط³ظ…:* ${order.customerName}\n` +
-        `ًں“± *ط§ظ„ظ‡ط§طھظپ:* ${order.phone}\n` +
-        `ًں“چ *ط§ظ„ظ…ط­ط§ظپط¸ط©:* ${order.governorate}\n` +
-        `ًںڈ  *ط§ظ„ط¹ظ†ظˆط§ظ†:* ${order.address}\n` +
-        `ًں’³ *ط·ط±ظٹظ‚ط© ط§ظ„ط¯ظپط¹:* ${order.paymentMethod}\n\n` +
-        `ًں“¦ *ط§ظ„ظ…ظ†طھط¬ط§طھ:*\n${itemsText}\n\n` +
-        `ًں’° *ط§ظ„ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ†ظ‡ط§ط¦ظٹ:* ${formatPrice(order.totalPriceYER, currency)}\n` +
-        `ط´ظƒط±ط§ظ‹ ظ„ظƒظ…!`,
+      `🛍️ *طلب جديد من متجر إندكس*\n` +
+        `رقم الطلب: *${order.orderNumber}*\n\n` +
+        `👤 *الاسم:* ${order.customerName}\n` +
+        `📱 *الهاتف:* ${order.phone}\n` +
+        `📍 *المحافظة:* ${order.governorate}\n` +
+        `🏠 *العنوان:* ${order.address}\n` +
+        `💳 *طريقة الدفع:* ${order.paymentMethod}\n\n` +
+        `📦 *المنتجات:*\n${itemsText}\n\n` +
+        `💰 *الإجمالي النهائي:* ${formatPrice(order.totalPriceYER, currency)}\n` +
+        `شكراً لكم!`,
     );
   };
 
@@ -610,20 +607,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div>
                 <h3 className="text-base sm:text-lg font-black text-[var(--color-text-primary)]">
                   {placedOrder
-                    ? "طھظ… طھط£ظƒظٹط¯ ط·ظ„ط¨ظƒ ط¨ظ†ط¬ط§ط­"
-                    : "ط¥طھظ…ط§ظ… ط§ظ„ط·ظ„ط¨ ظˆط§ظ„طھظˆطµظٹظ„ ط§ظ„ط³ط±ظٹط¹"}
+                    ? "تم تأكيد طلبك بنجاح"
+                    : "إتمام الطلب والتوصيل السريع"}
                 </h3>
                 <span className="text-[11px] text-[var(--color-text-secondary)] font-medium block">
                   {placedOrder
-                    ? "طھظپط§طµظٹظ„ ظˆظ…ط¹ظ„ظˆظ…ط§طھ ط§ظ„ظ…طھط§ط¨ط¹ط©"
-                    : "3 ط®ط·ظˆط§طھ ظ…ط±ظٹط­ط© ظˆط¨ط¯ظˆظ† طھط¹ظ‚ظٹط¯"}
+                    ? "تفاصيل ومعلومات المتابعة"
+                    : "3 خطوات مريحة وبدون تعقيد"}
                 </span>
               </div>
             </div>
 
             <button
               onClick={onClose}
-              aria-label="ط¥ط؛ظ„ط§ظ‚"
+              aria-label="إغلاق"
               className="w-8 h-8 rounded-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px]">
@@ -640,10 +637,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               <h3 className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)]">
-                طھظ… طھط³ط¬ظٹظ„ ط·ظ„ط¨ظƒ ط¨ظ†ط¬ط§ط­! ًںژ‰
+                تم تسجيل طلبك بنجاح! 🎉
               </h3>
               <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm">
-                ط±ظ‚ظ… ط§ظ„ط·ظ„ط¨ ط§ظ„ط®ط§طµ ط¨ظƒ ظ‡ظˆ:{" "}
+                رقم الطلب الخاص بك هو:{" "}
                 <strong className="text-[#2F6BFF] bg-[#2F6BFF]/10 border border-[#2F6BFF]/20 px-3 py-1 rounded-xl text-base font-mono font-extrabold dir-ltr inline-block">
                   {placedOrder.orderNumber}
                 </strong>
@@ -652,30 +649,30 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="bg-[var(--color-surface-2)] p-4 rounded-2xl border border-[var(--color-border-default)] text-right text-xs space-y-2 text-[var(--color-text-secondary)] shadow-inner">
                 <p>
                   <strong className="text-[var(--color-text-primary)]">
-                    ط§ظ„ط§ط³ظ…:
+                    الاسم:
                   </strong>{" "}
                   {placedOrder.customerName}
                 </p>
                 <p>
                   <strong className="text-[var(--color-text-primary)]">
-                    ط§ظ„ظ…ط­ط§ظپط¸ط©:
+                    المحافظة:
                   </strong>{" "}
                   {placedOrder.governorate}
                 </p>
                 <p>
                   <strong className="text-[var(--color-text-primary)]">
-                    ط§ظ„ط¹ظ†ظˆط§ظ†:
+                    العنوان:
                   </strong>{" "}
                   {placedOrder.address}
                 </p>
                 <p>
                   <strong className="text-[var(--color-text-primary)]">
-                    ط·ط±ظٹظ‚ط© ط§ظ„ط¯ظپط¹:
+                    طريقة الدفع:
                   </strong>{" "}
                   {placedOrder.paymentMethod}
                 </p>
                 <p className="text-sm font-bold text-[#2F6BFF] pt-2 border-t border-[var(--color-border-subtle)] flex justify-between items-center">
-                  <span>ط§ظ„ظ…ط¨ظ„ط؛ ط§ظ„ط¥ط¬ظ…ط§ظ„ظٹ:</span>
+                  <span>المبلغ الإجمالي:</span>
                   <span className="text-base font-black">
                     {formatPrice(placedOrder.totalPriceYER, currency)}
                   </span>
@@ -691,7 +688,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     }}
                     className="w-full bg-[#2F6BFF] hover:bg-[#2458D8] text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all text-xs sm:text-sm cursor-pointer"
                   >
-                    <span>ظپطھط­ ط·ظ„ط¨ظٹ ظˆط§ظ„طھطھط¨ط¹ ط§ظ„ظ…ط¨ط§ط´ط±</span>
+                    <span>فتح طلبي والتتبع المباشر</span>
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                 )}
@@ -702,7 +699,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   rel="noopener noreferrer"
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all text-xs sm:text-sm cursor-pointer"
                 >
-                  <span>ط¥ط±ط³ط§ظ„ طھظپط§طµظٹظ„ ط§ظ„ط·ظ„ط¨ ط¹ط¨ط± ظˆط§طھط³ط§ط¨</span>
+                  <span>إرسال تفاصيل الطلب عبر واتساب</span>
                   <Phone className="w-4 h-4" />
                 </a>
 
@@ -710,7 +707,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={onClose}
                   className="w-full bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] text-[var(--color-text-primary)] font-bold py-3 rounded-2xl border border-[var(--color-border-default)] transition-all text-xs cursor-pointer"
                 >
-                  ظ…طھط§ط¨ط¹ط© ط§ظ„طھط³ظˆظ‚
+                  متابعة التسوق
                 </button>
               </div>
             </div>
@@ -731,7 +728,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span className="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
                     1
                   </span>
-                  <span>ط§ظ„طھظˆط§طµظ„</span>
+                  <span>التواصل</span>
                 </button>
 
                 <div className="w-4 h-0.5 bg-[var(--color-border-default)]" />
@@ -748,7 +745,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span className="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
                     2
                   </span>
-                  <span>ط§ظ„طھظˆطµظٹظ„</span>
+                  <span>التوصيل</span>
                 </button>
 
                 <div className="w-4 h-0.5 bg-[var(--color-border-default)]" />
@@ -767,7 +764,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span className="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
                     3
                   </span>
-                  <span>ط§ظ„طھط£ظƒظٹط¯</span>
+                  <span>التأكيد</span>
                 </button>
               </div>
 
@@ -776,7 +773,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <div className="bg-[#2F6BFF]/10 border border-[#2F6BFF]/30 p-2.5 rounded-xl flex items-center justify-between text-[11px] text-[#2F6BFF]">
                   <div className="flex items-center gap-1.5 font-bold">
                     <Sparkles className="w-4 h-4 shrink-0" />
-                    <span>ط§ط³طھط®ط¯ظ…ظ†ط§ ط¨ظٹط§ظ†ط§طھ ط­ط³ط§ط¨ظƒ ظ„طھط³ط±ظٹط¹ ط§ظ„ط·ظ„ط¨</span>
+                    <span>استخدمنا بيانات حسابك لتسريع الطلب</span>
                   </div>
                   <button
                     type="button"
@@ -788,7 +785,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     }}
                     className="text-[10px] text-[var(--color-text-secondary)] hover:underline font-semibold cursor-pointer"
                   >
-                    ط¥ظ„ط؛ط§ط، ط§ظ„طھط¹ط¨ط¦ط©
+                    إلغاء التعبئة
                   </button>
                 </div>
               )}
@@ -798,7 +795,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <div className="space-y-3">
                   <div>
                     <label className="block text-[var(--color-text-secondary)] text-xs font-bold mb-1">
-                      ط§ظ„ط§ط³ظ… ط§ظ„ظƒط§ظ…ظ„ *
+                      الاسم الكامل *
                     </label>
                     <input
                       ref={nameInputRef}
@@ -812,7 +809,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         if (errors.name)
                           setErrors((prev) => ({ ...prev, name: undefined }));
                       }}
-                      placeholder="ط£ط¯ط®ظ„ ط§ط³ظ…ظƒ ط§ظ„ط«ظ„ط§ط«ظٹ"
+                      placeholder="أدخل اسمك الثلاثي"
                       className="w-full h-11 bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl px-3.5 text-xs sm:text-sm text-[var(--color-text-primary)] focus:border-[#2F6BFF] outline-none transition-all placeholder-[var(--color-text-muted)]"
                     />
                     {errors.name && (
@@ -824,7 +821,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div>
                     <label className="block text-[var(--color-text-secondary)] text-xs font-bold mb-1">
-                      ط±ظ‚ظ… ط§ظ„ظ‡ط§طھظپ (ط§ظ„ظˆط§طھط³ط§ط¨ ظ„ظ„طھط£ظƒظٹط¯) *
+                      رقم الهاتف (الواتساب للتأكيد) *
                     </label>
                     <input
                       ref={phoneInputRef}
@@ -856,12 +853,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       className="text-[11px] text-[#2F6BFF] hover:underline font-bold flex items-center gap-1 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>ط¥ط¶ط§ظپط© ظ‡ط§طھظپ ط¨ط¯ظٹظ„ (ط§ط®طھظٹط§ط±ظٹ)</span>
+                      <span>إضافة هاتف بديل (اختياري)</span>
                     </button>
                   ) : (
                     <div>
                       <label className="block text-[var(--color-text-secondary)] text-xs font-bold mb-1">
-                        ط±ظ‚ظ… ظ‡ط§طھظپ ط¨ط¯ظٹظ„ (ط§ط®طھظٹط§ط±ظٹ)
+                        رقم هاتف بديل (اختياري)
                       </label>
                       <input
                         type="tel"
@@ -879,7 +876,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     onClick={handleNextToStep2}
                     className="w-full bg-[#2F6BFF] hover:bg-[#2458D8] text-white font-extrabold py-3.5 rounded-2xl shadow-md transition-all text-xs sm:text-sm cursor-pointer mt-2 flex items-center justify-center gap-2"
                   >
-                    <span>ط§ظ„طھط§ظ„ظٹ: ط§ظ„ط¹ظ†ظˆط§ظ† ظˆط§ظ„طھظˆطµظٹظ„</span>
+                    <span>التالي: العنوان والتوصيل</span>
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                 </div>
@@ -893,7 +890,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     customerProfile.addresses.length > 0 && (
                       <div>
                         <label className="block text-[var(--color-text-secondary)] text-xs font-bold mb-1.5">
-                          ط§ط®طھط± ط¹ظ†ظˆط§ظ†ط§ظ‹ ظ…ط­ظپظˆط¸ط§ظ‹ ظ„طھط³ط±ظٹط¹ ط§ظ„ط·ظ„ط¨:
+                          اختر عنواناً محفوظاً لتسريع الطلب:
                         </label>
                         <div className="space-y-1.5 max-h-36 overflow-y-auto no-scrollbar">
                           {customerProfile.addresses.map((addr) => (
@@ -908,7 +905,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             >
                               <div>
                                 <span className="font-extrabold block text-xs">
-                                  {addr.label === "منزل" ? "🏠" : "🏢"}{" "}
+                                  {addr.label === "منزل" ? "🏠" : "💼"}{" "}
                                   {addr.label} ({addr.governorate})
                                 </span>
                                 <span className="text-[10px] text-[var(--color-text-muted)] truncate block max-w-[240px]">
@@ -926,7 +923,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div>
                     <label className="block text-[var(--color-text-secondary)] text-xs font-bold mb-1">
-                      ط§ظ„ظ…ط­ط§ظپط¸ط© *
+                      المحافظة *
                     </label>
                     <select
                       value={governorate}
@@ -943,7 +940,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div>
                     <label className="block text-[var(--color-text-secondary)] text-xs font-bold mb-1">
-                      ط§ظ„ط¹ظ†ظˆط§ظ† ط§ظ„طھظپطµظٹظ„ظٹ (ط§ظ„ط´ط§ط±ط¹ ظˆط§ظ„ط­ظٹ) *
+                      العنوان التفصيلي (الشارع والحي) *
                     </label>
                     <textarea
                       ref={addressInputRef}
@@ -958,7 +955,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             address: undefined,
                           }));
                       }}
-                      placeholder="ظ…ط«ط§ظ„: طµظ†ط¹ط§ط، - ط´ط§ط±ط¹ ط­ط¯ط© - ط­ظٹ ط­ط¯ط§ط،"
+                      placeholder="مثال: صنعاء - شارع حدة - حي حداء"
                       className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl p-3 text-xs sm:text-sm text-[var(--color-text-primary)] focus:border-[#2F6BFF] outline-none transition-all placeholder-[var(--color-text-muted)] resize-none"
                     />
                     {errors.address && (
@@ -970,13 +967,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                   <div>
                     <label className="block text-[var(--color-text-secondary)] text-xs font-bold mb-1">
-                      ط£ظ‚ط±ط¨ ظ…ط¹ظ„ظ… ط¨ط§ط±ط² (ط§ط®طھظٹط§ط±ظٹ)
+                      أقرب معلم بارز (اختياري)
                     </label>
                     <input
                       type="text"
                       value={nearestLandmark}
                       onChange={(e) => setNearestLandmark(e.target.value)}
-                      placeholder="ظ…ط«ط§ظ„: ط¨ط¬ط§ظ†ط¨ ظ…ط±ظƒط² طµط®ط± / ط®ظ„ظپ طµظٹط¯ظ„ظٹط© ط§ط¨ظ† ط­ظٹط§ظ†"
+                      placeholder="مثال: بجانب مركز صخر / خلف صيدلية ابن حيان"
                       className="w-full h-10 bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl px-3.5 text-xs text-[var(--color-text-primary)] focus:border-[#2F6BFF] outline-none"
                     />
                   </div>
@@ -984,7 +981,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {/* Delivery instructions chips */}
                   <div>
                     <label className="block text-[var(--color-text-secondary)] text-[11px] font-bold mb-1.5">
-                      طھط¹ظ„ظٹظ…ط§طھ ط®ط§طµط© ط¨ط§ظ„طھظˆطµظٹظ„:
+                      تعليمات خاصة بالتوصيل:
                     </label>
                     <div className="flex flex-wrap gap-1.5">
                       {instructionChips.map((chip) => (
@@ -1014,14 +1011,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       onClick={() => setStep(1)}
                       className="w-1/3 bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] font-bold py-3 rounded-2xl border border-[var(--color-border-default)] text-xs cursor-pointer"
                     >
-                      ط§ظ„ط³ط§ط¨ظ‚
+                      السابق
                     </button>
                     <button
                       type="button"
                       onClick={handleNextToStep3}
                       className="w-2/3 bg-[#2F6BFF] hover:bg-[#2458D8] text-white font-extrabold py-3 rounded-2xl shadow-md transition-all text-xs cursor-pointer flex items-center justify-center gap-1"
                     >
-                      <span>ط§ظ„طھط§ظ„ظٹ: ط§ظ„ظ…ط±ط§ط¬ط¹ط© ظˆط§ظ„ط¯ظپط¹</span>
+                      <span>التالي: المراجعة والدفع</span>
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                   </div>
@@ -1034,32 +1031,32 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {/* Summary Card */}
                   <div className="bg-[var(--color-surface-2)] p-3.5 rounded-2xl border border-[var(--color-border-default)] text-xs space-y-2 text-[var(--color-text-secondary)]">
                     <div className="flex justify-between items-center pb-2 border-b border-[var(--color-border-subtle)] font-bold text-[var(--color-text-primary)]">
-                      <span>ظ…ظ„ط®طµ ط§ظ„ظ…ط³طھظ„ظ… ظˆط§ظ„ط´ط­ظ†</span>
+                      <span>ملخص المستلم والشحن</span>
                       <button
                         type="button"
                         onClick={() => setStep(1)}
                         className="text-[10px] text-[#2F6BFF] hover:underline"
                       >
-                        طھط¹ط¯ظٹظ„
+                        تعديل
                       </button>
                     </div>
 
                     <p>
                       <strong className="text-[var(--color-text-primary)]">
-                        ط§ظ„ط¹ظ…ظٹظ„:
+                        العميل:
                       </strong>{" "}
                       {customerName} ({phone})
                     </p>
                     <p>
                       <strong className="text-[var(--color-text-primary)]">
-                        ط§ظ„ط¹ظ†ظˆط§ظ†:
+                        العنوان:
                       </strong>{" "}
                       {governorate} - {address}
                     </p>
                     {deliveryInstruction && (
                       <p>
                         <strong className="text-[var(--color-text-primary)]">
-                          طھط¹ظ„ظٹظ…ط§طھ:
+                          تعليمات:
                         </strong>{" "}
                         {deliveryInstruction}
                       </p>
@@ -1069,7 +1066,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {/* Payment Method Selector */}
                   <div>
                     <label className="block text-[var(--color-text-secondary)] text-xs font-bold mb-1.5">
-                      ط·ط±ظٹظ‚ط© ط§ظ„ط¯ظپط¹ ط§ظ„ظ…ظ†ط§ط³ط¨ط©:
+                      طريقة الدفع المناسبة:
                     </label>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <button
@@ -1082,10 +1079,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         }`}
                       >
                         <span className="font-bold text-xs block">
-                          ًں’µ ط¹ظ†ط¯ ط§ظ„ط§ط³طھظ„ط§ظ…
+                          💵 عند الاستلام
                         </span>
                         <span className="text-[10px] text-[var(--color-text-muted)]">
-                          ظ†ظ‚ط¯ط§ظ‹ ظ„ظ„ظ…ظ†ط¯ظˆط¨
+                          نقداً للمندوب
                         </span>
                       </button>
 
@@ -1099,10 +1096,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         }`}
                       >
                         <span className="font-bold text-xs block">
-                          ًںڈ¦ ط¨ظ†ظƒ ط§ظ„ظƒط±ظٹظ…ظٹ
+                          🏦 بنك الكريمي
                         </span>
                         <span className="text-[10px] text-[var(--color-text-muted)]">
-                          ط­ط§ط³ط¨ / ط¥ظٹط¯ط§ط¹
+                          حاسب / إيداع
                         </span>
                       </button>
 
@@ -1116,10 +1113,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         }`}
                       >
                         <span className="font-bold text-xs block">
-                          ًں“± ط¬ظˆط§ظ„ ط¨ظٹ / ظˆط§ظ† ظƒط§ط´
+                          📱 جوال بي / وان كاش
                         </span>
                         <span className="text-[10px] text-[var(--color-text-muted)]">
-                          ظ…ط­ظپط¸ط© ط¥ظ„ظƒطھط±ظˆظ†ظٹط©
+                          محفظة إلكترونية
                         </span>
                       </button>
 
@@ -1133,17 +1130,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         }`}
                       >
                         <span className="font-bold text-xs block">
-                          âœ‰ï¸ڈ ط­ظˆط§ظ„ط© طµط±ط§ظپط©
+                          ✉️ حوالة صرافة
                         </span>
                         <span className="text-[10px] text-[var(--color-text-muted)]">
-                          ط§ظ„ظ†ط¬ظ… / ط§ظ„ظ…ظ…ظٹط²
+                          النجم / المميز
                         </span>
                       </button>
                     </div>
                   </div>
 
                   {/* Guest remember device option */}
-                  {true && (
+                  {!auth.currentUser && (
                     <div className="bg-[var(--color-surface-2)] p-2.5 rounded-xl border border-[var(--color-border-default)]">
                       <label className="flex items-center gap-2 cursor-pointer text-[11px] text-[var(--color-text-primary)] font-bold">
                         <input
@@ -1153,19 +1150,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           className="w-4 h-4 rounded text-[#2F6BFF]"
                         />
                         <span>
-                          طھط°ظƒظ‘ط± ط¨ظٹط§ظ†ط§طھظٹ ط¹ظ„ظ‰ ظ‡ط°ط§ ط§ظ„ط¬ظ‡ط§ط² ظ„طھط³ط±ظٹط¹ ط·ظ„ط¨ظٹ ط§ظ„ظ‚ط§ط¯ظ…
+                          تذكّر بياناتي على هذا الجهاز لتسريع طلبي القادم
                         </span>
                       </label>
                       <p className="text-[10px] text-[var(--color-text-secondary)] mt-1">
-                        ط³ظٹطھظ… ط­ظپط¸ ط§ط³ظ…ظƒ ظˆظ‡ط§طھظپظƒ ظ…ط­ظ„ظٹط§ظ‹ ط¹ظ„ظ‰ ظ‡ط°ط§ ط§ظ„ط¬ظ‡ط§ط² ظ„طھط³ظ‡ظٹظ„ ط§ظ„ط·ظ„ط¨
-                        ط§ظ„ظ…ط±ط© ط§ظ„ظ‚ط§ط¯ظ…ط©.
+                        سيتم حفظ اسمك وهاتفك محلياً على هذا الجهاز لتسهيل الطلب
+                        المرة القادمة.
                       </p>
                     </div>
                   )}
 
                   {/* Total summary price banner */}
                   <div className="bg-[var(--color-surface-2)] p-3.5 rounded-2xl border border-[var(--color-border-default)] flex justify-between items-center text-xs sm:text-sm font-bold text-[var(--color-text-primary)] shadow-sm">
-                    <span>ط§ظ„ظ…ط¨ظ„ط؛ ط§ظ„ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ†ظ‡ط§ط¦ظٹ:</span>
+                    <span>المبلغ الإجمالي النهائي:</span>
                     <span className="text-[#2F6BFF] text-lg font-black">
                       {formatPrice(totalYER, currency)}
                     </span>
@@ -1183,12 +1180,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       onClick={() => setStep(2)}
                       className="w-1/3 bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] font-bold py-3.5 rounded-2xl border border-[var(--color-border-default)] text-xs cursor-pointer"
                     >
-                      ط§ظ„ط³ط§ط¨ظ‚
+                      السابق
                     </button>
                     {is402Error ? (
                       <div className="w-2/3 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold py-3.5 px-2 rounded-2xl text-center text-xs flex items-center justify-center gap-1">
                         <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>طھط¹ط°ط± ط¥ط¹ط§ط¯ط© ط§ظ„ظ…ط­ط§ظˆظ„ط© (HTTP 402)</span>
+                        <span>تعذر إعادة المحاولة (HTTP 402)</span>
                       </div>
                     ) : (
                       <button
@@ -1199,12 +1196,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         {isSubmitting ? (
                           <>
                             <RefreshCw className="w-4 h-4 animate-spin" />
-                            <span>ط¬ط§ط±ظٹ طھط³ط¬ظٹظ„ ظˆظ†ظ‚ظ„ ط·ظ„ط¨ظƒ...</span>
+                            <span>جاري تسجيل ونقل طلبك...</span>
                           </>
                         ) : (
                           <>
                             <CheckCircle2 className="w-4 h-4" />
-                            <span>طھط£ظƒظٹط¯ ظˆط¥ط±ط³ط§ظ„ ط§ظ„ط·ظ„ط¨ ظ†ظ‡ط§ط¦ظٹط§ظ‹</span>
+                            <span>تأكيد وإرسال الطلب نهائياً</span>
                           </>
                         )}
                       </button>
