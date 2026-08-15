@@ -61,7 +61,9 @@ export function normalizeYemeniPhone(raw: string): string | null {
   const normalized = raw
     .replace(/[\u0660-\u0669]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
     .replace(/[\u06F0-\u06F9]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
-    .replace(/[\s()-]/g, "");
-  const match = normalized.match(/^(?:\+?967)?(7\d{8})$/);
-  return match ? `967${match[1]}` : null;
+    .replace(/[\s()+-]/g, "")
+    .replace(/^(?:00967|967)/, "")
+    .replace(/^0/, "");
+  const match = normalized.match(/^(\d{7,10})$/);
+  return match ? `967${match[1]}` : (normalized.length >= 7 ? normalized : null);
 }
