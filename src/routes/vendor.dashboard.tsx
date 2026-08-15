@@ -277,7 +277,7 @@ function VendorDashboardPage() {
                     <DollarSign className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-white">{analytics?.total_sales.toLocaleString()} YER</div>
+                <div className="text-2xl font-black text-white">{(analytics?.total_sales ?? 0).toLocaleString()} YER</div>
                 <span className="text-xs text-slate-500 mt-1 block">إجمالي قيمة المنتجات المبيعة</span>
               </div>
 
@@ -288,7 +288,7 @@ function VendorDashboardPage() {
                     <TrendingUp className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-emerald-400">{analytics?.net_earnings.toLocaleString()} YER</div>
+                <div className="text-2xl font-black text-emerald-400">{(analytics?.net_earnings ?? 0).toLocaleString()} YER</div>
                 <span className="text-xs text-slate-500 mt-1 block">بعد خصم عمولة المنصة ({vendor.commission_rate}%)</span>
               </div>
 
@@ -299,7 +299,7 @@ function VendorDashboardPage() {
                     <ShoppingBag className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-white">{analytics?.total_orders}</div>
+                <div className="text-2xl font-black text-white">{analytics?.total_orders ?? 0}</div>
                 <span className="text-xs text-slate-500 mt-1 block">طلبات الشراء المستلمة</span>
               </div>
 
@@ -310,7 +310,7 @@ function VendorDashboardPage() {
                     <CreditCard className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-amber-400">{analytics?.pending_commission.toLocaleString()} YER</div>
+                <div className="text-2xl font-black text-amber-400">{(analytics?.pending_commission ?? 0).toLocaleString()} YER</div>
                 <span className="text-xs text-slate-500 mt-1 block">عمولة المنصة قيد التسوية</span>
               </div>
             </div>

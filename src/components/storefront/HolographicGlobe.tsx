@@ -285,7 +285,7 @@ const ProductNode: React.FC<ProductNodeProps> = ({
               )}
               {showPrice && (
                 <span className="text-[7.5px] sm:text-[8.5px] font-black text-cyan-300 font-mono mt-0.5 drop-shadow">
-                  {product.priceYER.toLocaleString('ar-YE')} ر.ي
+                  {(product.priceYER ?? product.price ?? 0).toLocaleString('ar-YE')} ر.ي
                 </span>
               )}
             </div>
@@ -306,7 +306,7 @@ const ProductNode: React.FC<ProductNodeProps> = ({
                 </div>
                 <div className="flex items-center justify-between gap-2 text-[11px]">
                   <span className="text-cyan-300 font-bold font-mono">
-                    {product.priceYER.toLocaleString('ar-YE')} ر.ي
+                    {(product.priceYER ?? product.price ?? 0).toLocaleString('ar-YE')} ر.ي
                   </span>
                   <span className="text-slate-300 text-[9px] bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
                     {product.category}

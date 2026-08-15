@@ -1811,7 +1811,7 @@ function CheckoutTab({ cart, checkout, onCartChange, onCheckoutChange }: Checkou
                   <span className="font-bold">{rate.city}</span>
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-muted-foreground">
-                      {rate.rate.toLocaleString()} ر.ي
+                      {(Number(rate.rate) || 0).toLocaleString()} ر.ي
                     </span>
                     <button
                       type="button"

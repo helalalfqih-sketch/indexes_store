@@ -450,8 +450,8 @@ function BigChart({ values, loading }: { values?: number[]; loading?: boolean })
         <div
           key={i}
           className="flex-1 rounded-t-lg bg-gradient-to-t from-primary to-primary-light transition-all hover:opacity-90"
-          style={{ height: `${Math.max(4, (v / max) * 100)}%` }}
-          title={`${v.toLocaleString("ar-EG")}`}
+          style={{ height: `${Math.max(4, ((Number(v) || 0) / max) * 100)}%` }}
+          title={`${(Number(v) || 0).toLocaleString("ar-EG")}`}
         />
       ))}
     </div>

@@ -13,7 +13,7 @@ export interface ShippingBannerProps {
 
 export const ShippingBanner: React.FC<ShippingBannerProps> = ({ onOpenShippingInfo, shippingConfig }) => {
   const deliveryText = shippingConfig?.deliveryText || 'توصيل سريع خلال 24-48 ساعة للمحافظات';
-  const freeThreshold = shippingConfig?.threshold || 30000;
+  const freeThreshold = Number(shippingConfig?.threshold) || 30000;
   const freeText = shippingConfig?.freeText || 'شحن مجاني فوق';
 
   return (
@@ -44,7 +44,7 @@ export const ShippingBanner: React.FC<ShippingBannerProps> = ({ onOpenShippingIn
         <div className="flex items-center justify-between w-full sm:w-auto gap-2 text-[11px] sm:text-xs text-[var(--color-text-secondary)] border-t sm:border-t-0 border-[var(--color-border-subtle)] pt-1 sm:pt-0 relative z-10">
           <div className="flex items-center gap-1.5">
             <span className="hidden sm:inline">•</span>
-            <span>{freeText} <strong className="text-[var(--color-text-primary)] font-black text-xs">{freeThreshold.toLocaleString('ar-YE')} ريال</strong></span>
+            <span>{freeText} <strong className="text-[var(--color-text-primary)] font-black text-xs">{(Number(freeThreshold) || 30000).toLocaleString('ar-YE')} ريال</strong></span>
           </div>
 
           <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 group-hover:rotate-12 transition-transform">

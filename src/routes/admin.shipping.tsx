@@ -144,9 +144,9 @@ function ShippingPage() {
                     <span className="font-medium">{z.name}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 font-bold text-primary">{z.price.toLocaleString()} ر.ي</td>
+                <td className="px-4 py-3 font-bold text-primary">{(Number(z.price) || 0).toLocaleString()} ر.ي</td>
                 <td className="px-4 py-3 text-muted-foreground">
-                  {z.free_threshold.toLocaleString()} ر.ي
+                  {(Number(z.free_threshold) || 0).toLocaleString()} ر.ي
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   <div className="flex items-center gap-1">
