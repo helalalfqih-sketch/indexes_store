@@ -344,8 +344,15 @@ const HolographicFallback: React.FC<{
         {products.slice(0, 4).map((p) => (
           <button
             key={p.id}
+            aria-label={`عرض تفاصيل ${p.name}`}
             onClick={() => onSelectProduct?.(p)}
-            className="w-12 h-12 rounded-[1.2rem] bg-[#050514]/80 border border-white/15 p-1.5 shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-transform"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectProduct?.(p);
+              }
+            }}
+            className="w-12 h-12 rounded-[1.2rem] bg-[#050514]/80 border border-white/15 p-1.5 shadow-lg backdrop-blur-md hover:scale-110 active:scale-95 transition-transform cursor-pointer"
           >
             <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
           </button>
@@ -461,6 +468,13 @@ export const HolographicGlobe: React.FC<HolographicGlobeProps> = ({
     const limit = maxProducts > 0 ? maxProducts : 50;
     return products.slice(0, limit);
   }, [products, maxProducts]);
+
+  useEffect(() => {
+    const animId = requestAnimationFrame(() => {});
+    return () => {
+      cancelAnimationFrame(animId);
+    };
+  }, []);
 
   if (isActive) {
     return (

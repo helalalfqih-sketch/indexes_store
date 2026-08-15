@@ -14,9 +14,7 @@ export const yemeniPhoneSchema = z
   .transform((value) => value.replace(/[\s()+-]/g, ""))
   // Strip leading 00967 or 967 prefix
   .transform((value) => value.replace(/^(?:00967|967)/, ""))
-  // Strip leading 0
-  .transform((value) => value.replace(/^0/, ""))
-  .refine((value) => /^\d{7,15}$/.test(value), "أدخل رقم هاتف صحيح (مثل 771234567)")
-  .transform((value) => {
-    return value.startsWith("967") ? value : `967${value}`;
-  });
+  // Strip leading 0 from 0771234567 -> 771234567
+  .transform((value) => value.replace(/^0(?=7\d{8}$)/, ""))
+  .refine((value) => /^7\d{8}$/.test(value), "أدخل رقم جوال يمني صحيح مكون من 9 أرقام (مثل 771234567)")
+  .transform((value) => `967${value}`);

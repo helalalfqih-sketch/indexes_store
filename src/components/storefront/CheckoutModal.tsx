@@ -298,8 +298,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!customerName.trim() || customerName.trim().length < 2) {
       errs.name = "يرجى إدخال الاسم الكامل الثلاثي";
     }
-    if (!cleanPhone || cleanPhone.length < 8) {
-      errs.phone = "يرجى إدخال رقم هاتف صحيح من 8 أرقام على الأقل";
+    if (!cleanPhone || cleanPhone.length < 9) {
+      errs.phone = "يرجى إدخال رقم جوال يمني مكون من 9 أرقام (مثل 771234567)";
     }
 
     setErrors(errs);
