@@ -297,7 +297,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       errs.name = "يرجى إدخال الاسم الكامل الثلاثي";
     }
     if (!cleanPhone || cleanPhone.length < 8) {
-      errs.phone = "يرجى إدخال رقم هاتف صحيحة من 8 أرقام على الأقل";
+      errs.phone = "يرجى إدخال رقم هاتف صحيح من 8 أرقام على الأقل";
     }
 
     setErrors(errs);
@@ -313,7 +313,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const validateStep2 = () => {
     const errs: { address?: string } = {};
     if (!address.trim() || address.trim().length < 5) {
-      errs.address = "يرجى إدخال عنوان التفصيلي للتوصيل (الشارع والحي)";
+      errs.address = "يرجى إدخال العنوان التفصيلي للتوصيل (الشارع والحي)";
     }
     setErrors((prev) => ({ ...prev, ...errs }));
     if (errs.address && addressInputRef.current) {
