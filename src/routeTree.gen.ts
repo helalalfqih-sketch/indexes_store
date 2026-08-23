@@ -80,6 +80,7 @@ import { Route as AdminAiDeveloperRouteImport } from './routes/admin.ai-develope
 import { Route as AdminAiAgentRouteImport } from './routes/admin.ai-agent'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks.whatsapp'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
+import { Route as ApiCatalogChar123idChar125DotcsvRouteImport } from './routes/api/catalog.{$id}[.]csv'
 import { Route as ApiAiDebugRouteImport } from './routes/api/ai.debug'
 import { Route as ApiAiAnalyzeProductRouteImport } from './routes/api/ai.analyze-product'
 import { Route as ApiAiAgentRouteImport } from './routes/api/ai.agent'
@@ -444,6 +445,12 @@ const ApiPublicImageProxyRoute = ApiPublicImageProxyRouteImport.update({
   path: '/api/public/image-proxy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCatalogChar123idChar125DotcsvRoute =
+  ApiCatalogChar123idChar125DotcsvRouteImport.update({
+    id: '/api/catalog/{$id}.csv',
+    path: '/api/catalog/{$id}.csv',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAiDebugRoute = ApiAiDebugRouteImport.update({
   id: '/api/ai/debug',
   path: '/api/ai/debug',
@@ -566,6 +573,7 @@ export interface FileRoutesByFullPath {
   '/api/ai/agent': typeof ApiAiAgentRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/ai/debug': typeof ApiAiDebugRoute
+  '/api/catalog/{$id}.csv': typeof ApiCatalogChar123idChar125DotcsvRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
@@ -645,6 +653,7 @@ export interface FileRoutesByTo {
   '/api/ai/agent': typeof ApiAiAgentRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/ai/debug': typeof ApiAiDebugRoute
+  '/api/catalog/{$id}.csv': typeof ApiCatalogChar123idChar125DotcsvRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
@@ -727,6 +736,7 @@ export interface FileRoutesById {
   '/api/ai/agent': typeof ApiAiAgentRoute
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/ai/debug': typeof ApiAiDebugRoute
+  '/api/catalog/{$id}.csv': typeof ApiCatalogChar123idChar125DotcsvRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
@@ -810,6 +820,7 @@ export interface FileRouteTypes {
     | '/api/ai/agent'
     | '/api/ai/analyze-product'
     | '/api/ai/debug'
+    | '/api/catalog/{$id}.csv'
     | '/api/public/image-proxy'
     | '/api/webhooks/whatsapp'
   fileRoutesByTo: FileRoutesByTo
@@ -889,6 +900,7 @@ export interface FileRouteTypes {
     | '/api/ai/agent'
     | '/api/ai/analyze-product'
     | '/api/ai/debug'
+    | '/api/catalog/{$id}.csv'
     | '/api/public/image-proxy'
     | '/api/webhooks/whatsapp'
   id:
@@ -970,6 +982,7 @@ export interface FileRouteTypes {
     | '/api/ai/agent'
     | '/api/ai/analyze-product'
     | '/api/ai/debug'
+    | '/api/catalog/{$id}.csv'
     | '/api/public/image-proxy'
     | '/api/webhooks/whatsapp'
   fileRoutesById: FileRoutesById
@@ -1003,6 +1016,7 @@ export interface RootRouteChildren {
   ApiAiAgentRoute: typeof ApiAiAgentRoute
   ApiAiAnalyzeProductRoute: typeof ApiAiAnalyzeProductRoute
   ApiAiDebugRoute: typeof ApiAiDebugRoute
+  ApiCatalogChar123idChar125DotcsvRoute: typeof ApiCatalogChar123idChar125DotcsvRoute
   ApiPublicImageProxyRoute: typeof ApiPublicImageProxyRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
 }
@@ -1506,6 +1520,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicImageProxyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/catalog/{$id}.csv': {
+      id: '/api/catalog/{$id}.csv'
+      path: '/api/catalog/{$id}.csv'
+      fullPath: '/api/catalog/{$id}.csv'
+      preLoaderRoute: typeof ApiCatalogChar123idChar125DotcsvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/ai/debug': {
       id: '/api/ai/debug'
       path: '/api/ai/debug'
@@ -1718,6 +1739,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiAgentRoute: ApiAiAgentRoute,
   ApiAiAnalyzeProductRoute: ApiAiAnalyzeProductRoute,
   ApiAiDebugRoute: ApiAiDebugRoute,
+  ApiCatalogChar123idChar125DotcsvRoute: ApiCatalogChar123idChar125DotcsvRoute,
   ApiPublicImageProxyRoute: ApiPublicImageProxyRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
 }
