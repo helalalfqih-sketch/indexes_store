@@ -25,6 +25,11 @@ import {
   type LegacyProductShape,
 } from "@/lib/data-adapter";
 import type { ProductDTO } from "@/lib/domain/product";
+import {
+  listShopifyProducts,
+  getShopifyProductBySlug,
+  getShopifyProductsByIds,
+} from "@/lib/shopify/catalog.functions";
 import { products as seedProducts } from "@/lib/store-data";
 
 // ---------- Input validation ----------
@@ -95,6 +100,16 @@ const dtoToLegacy = (rows: ProductDTO[]): LegacyProductShape[] =>
 export async function fetchProducts(input: ListProductsInput = {}): Promise<LegacyProductShape[]> {
   const data = listProductsInput.parse(input);
   try {
+    const shopify = await listShopifyProducts({ data: {
+      search: data.search,
+      limit: data.limit,
+      offset: data.offset,
+    } });
+    if (shopify.configured) return dtoToLegacy(shopify.items);
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn("[product.actions] Shopify catalog fallback:", err);
+  }
+  try {
     const rows = await listProducts({ data });
     if (rows.length === 0) {
       return fallbackProducts().map(toLegacyProduct).map(enrichLegacy);
@@ -108,6 +123,14 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
 
 export async function fetchProductBySlug(slug: string): Promise<LegacyProductShape | null> {
   const parsed = z.string().trim().min(1).parse(slug);
+  try {
+    const shopify = await getShopifyProductBySlug({ data: { slug: parsed } });
+    if (shopify.configured) {
+      return shopify.item ? enrichLegacy(toLegacyProduct(shopify.item)) : null;
+    }
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn("[product.actions] Shopify product fallback:", err);
+  }
   try {
     const dto = await getProductBySlugFn({ data: { slug: parsed } });
     if (dto) return enrichLegacy(toLegacyProduct(dto));
@@ -132,6 +155,12 @@ export async function fetchProductsByIds(ids: string[]): Promise<LegacyProductSh
   if (ids.length === 0) return [];
   const cleaned = [...new Set(ids.map((id) => id.trim()).filter(Boolean))].slice(0, 50);
   if (cleaned.length === 0) return [];
+  try {
+    const shopify = await getShopifyProductsByIds({ data: { ids: cleaned } });
+    if (shopify.configured) return dtoToLegacy(shopify.items);
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn("[product.actions] Shopify product IDs fallback:", err);
+  }
   try {
     const rows = await getProductsByIdsFn({ data: { ids: cleaned } });
     return dtoToLegacy(rows as import("@/lib/domain/product").ProductDTO[]);
