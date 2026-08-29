@@ -10,6 +10,7 @@ import {
   type LegacyCategoryShape,
 } from "@/lib/data-adapter";
 import type { CategoryWithMetaDTO } from "@/lib/repositories/categories.repo";
+import { listShopifyCategories } from "@/lib/shopify/catalog.functions";
 import { categories as seedCategories } from "@/lib/store-data";
 
 const seedByKey = new Map<string, (typeof seedCategories)[number]>();
@@ -29,6 +30,12 @@ const mapMany = (rows: CategoryWithMetaDTO[]): LegacyCategoryShape[] =>
   rows.map((r) => enrich(toLegacyCategory(r)));
 
 export async function fetchCategories(): Promise<LegacyCategoryShape[]> {
+  try {
+    const shopify = await listShopifyCategories();
+    if (shopify.configured) return shopify.items;
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn("[category.actions] Shopify collections fallback:", err);
+  }
   try {
     const rows = await listCategories({});
     if (rows.length === 0) return fallbackCategories().map(toLegacyCategory).map(enrich);
