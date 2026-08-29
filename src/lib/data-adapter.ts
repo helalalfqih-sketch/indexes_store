@@ -110,6 +110,7 @@ export type LegacyProductShape = {
   isDeal?: boolean;
   dealStart?: string | null;
   dealEnd?: string | null;
+  shopifyVariantId?: string | null;
 };
 
 const isMetadataTag = (tag: string): boolean =>
@@ -153,6 +154,7 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   isDeal: p.is_deal ?? false,
   dealStart: p.deal_start ?? null,
   dealEnd: p.deal_end ?? null,
+  shopifyVariantId: (p as ProductDTO & { shopify_variant_id?: string | null }).shopify_variant_id ?? null,
 });
 
 export type LegacyCategoryShape = {
