@@ -64,16 +64,17 @@ export async function diagnoseShopifyCatalog() {
   }
 
   try {
-    const result = await storefront<{ products: { nodes: Array<{ id: string }> } }>(
-      `query CatalogHealth { products(first: 1) { nodes { id } } }`,
-    );
+    const products = await fetchShopifyProductPages({ maxProducts: 1000 });
+    const mapped = products.map(mapProduct);
     return {
       healthy: true,
       source,
       domainPresent,
       tokenPresent,
       apiVersion: API_VERSION,
-      sampleProducts: result.products.nodes.length,
+      totalProducts: mapped.length,
+      productsWithPrice: mapped.filter((product) => product.price > 0).length,
+      productsWithImages: mapped.filter((product) => product.images.length > 0).length,
       error: null,
     };
   } catch (error) {
