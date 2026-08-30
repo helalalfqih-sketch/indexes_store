@@ -115,7 +115,7 @@ const PRODUCT_FIELDS = `
   collections(first: 1) { nodes { handle } }
   variants(first: 20) {
     nodes {
-      id sku barcode availableForSale quantityAvailable
+      id sku barcode availableForSale
       price { amount currencyCode }
       compareAtPrice { amount currencyCode }
     }
