@@ -80,7 +80,12 @@ import { Route as AdminAiMemoryRouteImport } from './routes/admin.ai-memory'
 import { Route as AdminAiDeveloperRouteImport } from './routes/admin.ai-developer'
 import { Route as AdminAiAgentRouteImport } from './routes/admin.ai-agent'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks.whatsapp'
+import { Route as ApiWebhooksShopifyRouteImport } from './routes/api/webhooks.shopify'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
+import { Route as ApiCustomerMeRouteImport } from './routes/api/customer.me'
+import { Route as ApiCustomerLogoutRouteImport } from './routes/api/customer.logout'
+import { Route as ApiCustomerLoginRouteImport } from './routes/api/customer.login'
+import { Route as ApiCustomerCallbackRouteImport } from './routes/api/customer.callback'
 import { Route as ApiCatalogChar123idChar125DotcsvRouteImport } from './routes/api/catalog.{$id}[.]csv'
 import { Route as ApiAiDebugRouteImport } from './routes/api/ai.debug'
 import { Route as ApiAiAnalyzeProductRouteImport } from './routes/api/ai.analyze-product'
@@ -446,9 +451,34 @@ const ApiWebhooksWhatsappRoute = ApiWebhooksWhatsappRouteImport.update({
   path: '/api/webhooks/whatsapp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksShopifyRoute = ApiWebhooksShopifyRouteImport.update({
+  id: '/api/webhooks/shopify',
+  path: '/api/webhooks/shopify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicImageProxyRoute = ApiPublicImageProxyRouteImport.update({
   id: '/api/public/image-proxy',
   path: '/api/public/image-proxy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCustomerMeRoute = ApiCustomerMeRouteImport.update({
+  id: '/api/customer/me',
+  path: '/api/customer/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCustomerLogoutRoute = ApiCustomerLogoutRouteImport.update({
+  id: '/api/customer/logout',
+  path: '/api/customer/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCustomerLoginRoute = ApiCustomerLoginRouteImport.update({
+  id: '/api/customer/login',
+  path: '/api/customer/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCustomerCallbackRoute = ApiCustomerCallbackRouteImport.update({
+  id: '/api/customer/callback',
+  path: '/api/customer/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCatalogChar123idChar125DotcsvRoute =
@@ -581,7 +611,12 @@ export interface FileRoutesByFullPath {
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/ai/debug': typeof ApiAiDebugRoute
   '/api/catalog/{$id}.csv': typeof ApiCatalogChar123idChar125DotcsvRoute
+  '/api/customer/callback': typeof ApiCustomerCallbackRoute
+  '/api/customer/login': typeof ApiCustomerLoginRoute
+  '/api/customer/logout': typeof ApiCustomerLogoutRoute
+  '/api/customer/me': typeof ApiCustomerMeRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
 export interface FileRoutesByTo {
@@ -662,7 +697,12 @@ export interface FileRoutesByTo {
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/ai/debug': typeof ApiAiDebugRoute
   '/api/catalog/{$id}.csv': typeof ApiCatalogChar123idChar125DotcsvRoute
+  '/api/customer/callback': typeof ApiCustomerCallbackRoute
+  '/api/customer/login': typeof ApiCustomerLoginRoute
+  '/api/customer/logout': typeof ApiCustomerLogoutRoute
+  '/api/customer/me': typeof ApiCustomerMeRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
 export interface FileRoutesById {
@@ -746,7 +786,12 @@ export interface FileRoutesById {
   '/api/ai/analyze-product': typeof ApiAiAnalyzeProductRoute
   '/api/ai/debug': typeof ApiAiDebugRoute
   '/api/catalog/{$id}.csv': typeof ApiCatalogChar123idChar125DotcsvRoute
+  '/api/customer/callback': typeof ApiCustomerCallbackRoute
+  '/api/customer/login': typeof ApiCustomerLoginRoute
+  '/api/customer/logout': typeof ApiCustomerLogoutRoute
+  '/api/customer/me': typeof ApiCustomerMeRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
 export interface FileRouteTypes {
@@ -831,7 +876,12 @@ export interface FileRouteTypes {
     | '/api/ai/analyze-product'
     | '/api/ai/debug'
     | '/api/catalog/{$id}.csv'
+    | '/api/customer/callback'
+    | '/api/customer/login'
+    | '/api/customer/logout'
+    | '/api/customer/me'
     | '/api/public/image-proxy'
+    | '/api/webhooks/shopify'
     | '/api/webhooks/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -912,7 +962,12 @@ export interface FileRouteTypes {
     | '/api/ai/analyze-product'
     | '/api/ai/debug'
     | '/api/catalog/{$id}.csv'
+    | '/api/customer/callback'
+    | '/api/customer/login'
+    | '/api/customer/logout'
+    | '/api/customer/me'
     | '/api/public/image-proxy'
+    | '/api/webhooks/shopify'
     | '/api/webhooks/whatsapp'
   id:
     | '__root__'
@@ -995,7 +1050,12 @@ export interface FileRouteTypes {
     | '/api/ai/analyze-product'
     | '/api/ai/debug'
     | '/api/catalog/{$id}.csv'
+    | '/api/customer/callback'
+    | '/api/customer/login'
+    | '/api/customer/logout'
+    | '/api/customer/me'
     | '/api/public/image-proxy'
+    | '/api/webhooks/shopify'
     | '/api/webhooks/whatsapp'
   fileRoutesById: FileRoutesById
 }
@@ -1030,7 +1090,12 @@ export interface RootRouteChildren {
   ApiAiAnalyzeProductRoute: typeof ApiAiAnalyzeProductRoute
   ApiAiDebugRoute: typeof ApiAiDebugRoute
   ApiCatalogChar123idChar125DotcsvRoute: typeof ApiCatalogChar123idChar125DotcsvRoute
+  ApiCustomerCallbackRoute: typeof ApiCustomerCallbackRoute
+  ApiCustomerLoginRoute: typeof ApiCustomerLoginRoute
+  ApiCustomerLogoutRoute: typeof ApiCustomerLogoutRoute
+  ApiCustomerMeRoute: typeof ApiCustomerMeRoute
   ApiPublicImageProxyRoute: typeof ApiPublicImageProxyRoute
+  ApiWebhooksShopifyRoute: typeof ApiWebhooksShopifyRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
 }
 
@@ -1533,11 +1598,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhooksWhatsappRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhooks/shopify': {
+      id: '/api/webhooks/shopify'
+      path: '/api/webhooks/shopify'
+      fullPath: '/api/webhooks/shopify'
+      preLoaderRoute: typeof ApiWebhooksShopifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/image-proxy': {
       id: '/api/public/image-proxy'
       path: '/api/public/image-proxy'
       fullPath: '/api/public/image-proxy'
       preLoaderRoute: typeof ApiPublicImageProxyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/customer/me': {
+      id: '/api/customer/me'
+      path: '/api/customer/me'
+      fullPath: '/api/customer/me'
+      preLoaderRoute: typeof ApiCustomerMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/customer/logout': {
+      id: '/api/customer/logout'
+      path: '/api/customer/logout'
+      fullPath: '/api/customer/logout'
+      preLoaderRoute: typeof ApiCustomerLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/customer/login': {
+      id: '/api/customer/login'
+      path: '/api/customer/login'
+      fullPath: '/api/customer/login'
+      preLoaderRoute: typeof ApiCustomerLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/customer/callback': {
+      id: '/api/customer/callback'
+      path: '/api/customer/callback'
+      fullPath: '/api/customer/callback'
+      preLoaderRoute: typeof ApiCustomerCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/catalog/{$id}.csv': {
@@ -1761,7 +1861,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiAnalyzeProductRoute: ApiAiAnalyzeProductRoute,
   ApiAiDebugRoute: ApiAiDebugRoute,
   ApiCatalogChar123idChar125DotcsvRoute: ApiCatalogChar123idChar125DotcsvRoute,
+  ApiCustomerCallbackRoute: ApiCustomerCallbackRoute,
+  ApiCustomerLoginRoute: ApiCustomerLoginRoute,
+  ApiCustomerLogoutRoute: ApiCustomerLogoutRoute,
+  ApiCustomerMeRoute: ApiCustomerMeRoute,
   ApiPublicImageProxyRoute: ApiPublicImageProxyRoute,
+  ApiWebhooksShopifyRoute: ApiWebhooksShopifyRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
 }
 export const routeTree = rootRouteImport
