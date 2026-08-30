@@ -483,7 +483,10 @@ export const removeShopifyCartLines = createServerFn({ method: "POST" })
     z
       .object({
         cartId: cartIdInput,
-        lineIds: z.array(z.string().startsWith("gid://shopify/CartLine/").max(2048)).min(1).max(100),
+        lineIds: z
+          .array(z.string().startsWith("gid://shopify/CartLine/").max(2048))
+          .min(1)
+          .max(100),
       })
       .parse(raw),
   )
