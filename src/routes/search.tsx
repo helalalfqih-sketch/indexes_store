@@ -17,7 +17,6 @@ import { ProductCard } from "@/components/product-card";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product } from "@/lib/store-data";
-import { categories as defaultCategories, products as defaultProducts } from "@/lib/store-data";
 import { z } from "zod";
 import { trackEvent } from "@/lib/analytics";
 import {
@@ -366,7 +365,7 @@ function SearchPage() {
                 className="w-full rounded-xl border border-border bg-background p-2 font-bold focus:outline-none"
               >
                 <option value="all">جميع التصنيفات</option>
-                {(categoriesList.length > 0 ? categoriesList : defaultCategories).map((c) => (
+                {categoriesList.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
@@ -487,7 +486,7 @@ function SearchPage() {
 
             {/* Quick Category Suggestions in Empty State */}
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-              {defaultCategories.slice(0, 6).map((cat) => (
+              {categoriesList.slice(0, 6).map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => {

@@ -29,6 +29,7 @@ import {
   listShopifyProducts,
   getShopifyProductBySlug,
   getShopifyProductsByIds,
+  diagnoseShopifyCatalog,
 } from "@/lib/shopify/catalog.functions";
 import { products as seedProducts } from "@/lib/store-data";
 
@@ -94,8 +95,15 @@ const dtoToLegacy = (rows: ProductDTO[]): LegacyProductShape[] =>
       // Inject the resolved price into a normalized DTO so `toLegacyProduct`
       // and downstream UI code always see a numeric `price` field.
       const normalized: ProductDTO = { ...entry.original, price: entry.resolvedPrice as number };
-      return enrichLegacy(toLegacyProduct(normalized));
+      return toLegacyProduct(normalized);
     });
+
+async function rethrowWhenShopifyIsRequired(error: unknown): Promise<void> {
+  const status = await diagnoseShopifyCatalog();
+  if (status.source === "shopify") {
+    throw error instanceof Error ? error : new Error("Shopify catalog request failed");
+  }
+}
 
 // ---------- Actions ----------
 
@@ -111,6 +119,7 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
     if (shopify.configured) return dtoToLegacy(shopify.items);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] Shopify catalog fallback:", err);
+    await rethrowWhenShopifyIsRequired(err);
   }
   try {
     const rows = await listProducts({ data });
@@ -128,13 +137,10 @@ export async function fetchProductBySlug(slug: string): Promise<LegacyProductSha
   const parsed = z.string().trim().min(1).parse(slug);
   try {
     const shopify = await getShopifyProductBySlug({ data: { slug: parsed } });
-    if (shopify.configured && shopify.item) {
-      return enrichLegacy(toLegacyProduct(shopify.item));
-    }
-    // A configured Shopify catalog can coexist with legacy Supabase products.
-    // If the handle is not in Shopify, continue to the Supabase lookup below.
+    if (shopify.configured) return shopify.item ? toLegacyProduct(shopify.item) : null;
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] Shopify product fallback:", err);
+    await rethrowWhenShopifyIsRequired(err);
   }
   try {
     const dto = await getProductBySlugFn({ data: { slug: parsed } });
@@ -165,6 +171,7 @@ export async function fetchProductsByIds(ids: string[]): Promise<LegacyProductSh
     if (shopify.configured) return dtoToLegacy(shopify.items);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] Shopify product IDs fallback:", err);
+    await rethrowWhenShopifyIsRequired(err);
   }
   try {
     const rows = await getProductsByIdsFn({ data: { ids: cleaned } });
