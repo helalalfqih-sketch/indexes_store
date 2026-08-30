@@ -27,7 +27,7 @@ export type ProductDTO = {
   created_at: string;
   updated_at: string;
   video_playback_id: string | null;
-  
+
   // Backwards compatibility fields
   old_price?: number | null;
   badge?: string | null;
