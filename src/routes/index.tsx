@@ -624,7 +624,7 @@ function HomePage() {
                     isLoading={isLoading}
                     onToggleFavorite={handleToggleFavorite}
                     onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                    onSelectProduct={(prod) => setSelectedProductModal(prod)}
+                    onSelectProduct={handleSelectProduct}
                     onViewAll={() => handleSelectCategoryWithLoading("all")}
                   />
                 );
@@ -635,7 +635,7 @@ function HomePage() {
                     key="ai_search"
                     products={products}
                     currency={currency}
-                    onSelectProduct={(prod) => setSelectedProductModal(prod)}
+                    onSelectProduct={handleSelectProduct}
                     onSearchQuerySubmit={(q) => {
                       setIsLoading(true);
                       setSearchQuery(q);
