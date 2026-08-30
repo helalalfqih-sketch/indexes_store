@@ -37,6 +37,36 @@ type ShopifyProductsPage = {
   };
 };
 
+export type ShopifyCart = {
+  id: string;
+  checkoutUrl: string;
+  totalQuantity: number;
+  cost: {
+    subtotalAmount: { amount: string; currencyCode: string };
+    totalAmount: { amount: string; currencyCode: string };
+  };
+  lines: {
+    nodes: Array<{
+      id: string;
+      quantity: number;
+      cost: { totalAmount: { amount: string; currencyCode: string } };
+      merchandise: {
+        id: string;
+        availableForSale: boolean;
+        quantityAvailable?: number | null;
+        product: { id: string; handle: string; title: string; featuredImage?: ShopifyImage | null };
+        price: { amount: string; currencyCode: string };
+      };
+    }>;
+  };
+};
+
+type CartPayload = {
+  cart: ShopifyCart | null;
+  userErrors: Array<{ field?: string[] | null; message: string; code?: string | null }>;
+  warnings: Array<{ code: string; message: string; target?: string | null }>;
+};
+
 const API_VERSION = process.env.SHOPIFY_STOREFRONT_API_VERSION || "2026-07";
 
 function config() {
@@ -89,7 +119,10 @@ export async function diagnoseShopifyCatalog() {
   }
 }
 
-async function storefront<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
+export async function storefront<T>(
+  query: string,
+  variables: Record<string, unknown> = {},
+): Promise<T> {
   const cfg = config();
   if (!cfg) throw new Error("Shopify catalog is not configured");
   const response = await fetch(`https://${cfg.domain}/api/${API_VERSION}/graphql.json`, {
@@ -121,6 +154,27 @@ const PRODUCT_FIELDS = `
   }
 `;
 
+const CART_FIELDS = `
+  id checkoutUrl totalQuantity
+  cost {
+    subtotalAmount { amount currencyCode }
+    totalAmount { amount currencyCode }
+  }
+  lines(first: 100) {
+    nodes {
+      id quantity
+      cost { totalAmount { amount currencyCode } }
+      merchandise {
+        ... on ProductVariant {
+          id availableForSale quantityAvailable
+          price { amount currencyCode }
+          product { id handle title featuredImage { url altText } }
+        }
+      }
+    }
+  }
+`;
+
 function toNumber(value: string | null | undefined): number | null {
   if (!value) return null;
   const number = Number(value);
@@ -136,7 +190,7 @@ function mapProduct(product: ShopifyProduct): ProductDTO {
   }
   const price = toNumber(variant?.price.amount) ?? 0;
   const compareAt = toNumber(variant?.compareAtPrice?.amount);
-  const dto: ProductDTO & { shopify_variant_id?: string | null } = {
+  const dto: ProductDTO = {
     id: product.id,
     slug: product.handle,
     name: product.title,
@@ -149,7 +203,9 @@ function mapProduct(product: ShopifyProduct): ProductDTO {
     videos: [],
     media: images.map((url) => ({ type: "image" as const, url })),
     model_url: null,
-    stock: variant?.quantityAvailable ?? (product.availableForSale ? 999 : 0),
+    // Never invent inventory. `availableForSale` remains the source for the
+    // availability label when the Storefront inventory scope hides quantity.
+    stock: variant?.quantityAvailable ?? 0,
     reserved_stock: 0,
     rating: 0,
     reviews_count: 0,
@@ -163,6 +219,7 @@ function mapProduct(product: ShopifyProduct): ProductDTO {
     compare_at_price: compareAt,
     availability: product.availableForSale ? "in stock" : "out of stock",
     source_url: null,
+    shopify_product_id: product.id,
     shopify_variant_id: variant?.id ?? null,
   };
   return dto;
@@ -201,6 +258,7 @@ async function fetchShopifyProductPages(
 const listInput = z
   .object({
     search: z.string().trim().max(120).optional(),
+    categoryId: z.string().trim().max(255).optional(),
     limit: z.number().int().min(1).max(100).optional(),
     offset: z.number().int().min(0).optional(),
   })
@@ -262,8 +320,12 @@ export const listShopifyProducts = createServerFn({ method: "GET" })
     if (!config()) return { configured: false as const, items: [] as ProductDTO[] };
     const offset = data.offset ?? 0;
     const requested = data.limit ? offset + data.limit : 1000;
+    const filters = [
+      data.search?.trim() || null,
+      data.categoryId && data.categoryId !== "all" ? `collection:${data.categoryId}` : null,
+    ].filter(Boolean);
     const products = await fetchShopifyProductPages({
-      query: data.search || null,
+      query: filters.length ? filters.join(" AND ") : null,
       maxProducts: requested,
     });
     const items = products.map(mapProduct);
@@ -320,3 +382,127 @@ export const listShopifyCategories = createServerFn({ method: "GET" }).handler(a
     })),
   };
 });
+
+const cartLineInput = z.object({
+  merchandiseId: z.string().startsWith("gid://shopify/ProductVariant/"),
+  quantity: z.number().int().min(1).max(250),
+});
+
+const cartIdInput = z.string().startsWith("gid://shopify/Cart/").max(2048);
+
+function assertCartPayload(payload: CartPayload): ShopifyCart {
+  if (payload.userErrors.length) {
+    throw new Error(payload.userErrors.map((error) => error.message).join("; "));
+  }
+  if (!payload.cart) throw new Error("Shopify cart was not returned");
+  return payload.cart;
+}
+
+export const createShopifyCart = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z.object({ lines: z.array(cartLineInput).min(1).max(100) }).parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const result = await storefront<{ cartCreate: CartPayload }>(
+      `mutation CartCreate($input: CartInput!) {
+        cartCreate(input: $input) {
+          cart { ${CART_FIELDS} }
+          userErrors { field message code }
+          warnings { code message target }
+        }
+      }`,
+      { input: { lines: data.lines } },
+    );
+    return { cart: assertCartPayload(result.cartCreate), warnings: result.cartCreate.warnings };
+  });
+
+export const getShopifyCart = createServerFn({ method: "GET" })
+  .inputValidator((raw: unknown) => z.object({ cartId: cartIdInput }).parse(raw))
+  .handler(async ({ data }) => {
+    const result = await storefront<{ cart: ShopifyCart | null }>(
+      `query Cart($id: ID!) { cart(id: $id) { ${CART_FIELDS} } }`,
+      { id: data.cartId },
+    );
+    return result.cart;
+  });
+
+export const addShopifyCartLines = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z.object({ cartId: cartIdInput, lines: z.array(cartLineInput).min(1).max(100) }).parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const result = await storefront<{ cartLinesAdd: CartPayload }>(
+      `mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+        cartLinesAdd(cartId: $cartId, lines: $lines) {
+          cart { ${CART_FIELDS} }
+          userErrors { field message code }
+          warnings { code message target }
+        }
+      }`,
+      data,
+    );
+    return { cart: assertCartPayload(result.cartLinesAdd), warnings: result.cartLinesAdd.warnings };
+  });
+
+export const updateShopifyCartLines = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z
+      .object({
+        cartId: cartIdInput,
+        lines: z
+          .array(
+            z.object({
+              id: z.string().startsWith("gid://shopify/CartLine/").max(2048),
+              quantity: z.number().int().min(0).max(250),
+            }),
+          )
+          .min(1)
+          .max(100),
+      })
+      .parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const result = await storefront<{ cartLinesUpdate: CartPayload }>(
+      `mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+        cartLinesUpdate(cartId: $cartId, lines: $lines) {
+          cart { ${CART_FIELDS} }
+          userErrors { field message code }
+          warnings { code message target }
+        }
+      }`,
+      data,
+    );
+    return {
+      cart: assertCartPayload(result.cartLinesUpdate),
+      warnings: result.cartLinesUpdate.warnings,
+    };
+  });
+
+export const removeShopifyCartLines = createServerFn({ method: "POST" })
+  .inputValidator((raw: unknown) =>
+    z
+      .object({
+        cartId: cartIdInput,
+        lineIds: z
+          .array(z.string().startsWith("gid://shopify/CartLine/").max(2048))
+          .min(1)
+          .max(100),
+      })
+      .parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const result = await storefront<{ cartLinesRemove: CartPayload }>(
+      `mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
+        cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
+          cart { ${CART_FIELDS} }
+          userErrors { field message code }
+          warnings { code message target }
+        }
+      }`,
+      data,
+    );
+    return {
+      cart: assertCartPayload(result.cartLinesRemove),
+      warnings: result.cartLinesRemove.warnings,
+    };
+  });

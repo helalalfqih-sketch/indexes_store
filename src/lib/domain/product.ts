@@ -27,7 +27,7 @@ export type ProductDTO = {
   created_at: string;
   updated_at: string;
   video_playback_id: string | null;
-  
+
   // Backwards compatibility fields
   old_price?: number | null;
   badge?: string | null;
@@ -60,6 +60,10 @@ export type ProductDTO = {
   is_deal?: boolean | null;
   deal_start?: string | null;
   deal_end?: string | null;
+
+  // Shopify commerce identity (present when Shopify is the catalog source)
+  shopify_product_id?: string | null;
+  shopify_variant_id?: string | null;
 };
 
 export type CategoryDTO = {

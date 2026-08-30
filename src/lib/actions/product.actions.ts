@@ -19,11 +19,7 @@ import {
   inferCategorySlug,
 } from "@/lib/catalog.functions";
 import { fetchCategories } from "@/lib/actions/category.actions";
-import {
-  fallbackProducts,
-  toLegacyProduct,
-  type LegacyProductShape,
-} from "@/lib/data-adapter";
+import { fallbackProducts, toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
 import type { ProductDTO } from "@/lib/domain/product";
 import {
   listShopifyProducts,
@@ -36,7 +32,9 @@ import { products as seedProducts } from "@/lib/store-data";
 
 export const listProductsInput = z
   .object({
-    categoryId: z.string().uuid().optional(),
+    // Shopify collection handles are stable string identifiers; legacy
+    // Supabase category UUIDs remain accepted during the migration window.
+    categoryId: z.string().trim().max(255).optional(),
     search: z.string().trim().max(120).optional(),
     limit: z.number().int().min(1).max(100).optional(),
     offset: z.number().int().min(0).optional(),
@@ -75,11 +73,11 @@ const dtoToLegacy = (rows: ProductDTO[]): LegacyProductShape[] =>
         resolvedPrice = r.price;
       } else if (typeof r.compare_at_price === "number" && r.compare_at_price > 0) {
         resolvedPrice = r.compare_at_price;
-      } else if (typeof (r as any).old_price === "number" && (r as any).old_price > 0) {
+      } else if (typeof r.old_price === "number" && r.old_price > 0) {
         // Some DTOs use old_price (snake_case) — accept it as fallback.
-        resolvedPrice = (r as any).old_price as number;
-      } else if (typeof (r as any).cost_price === "number" && (r as any).cost_price > 0) {
-        resolvedPrice = (r as any).cost_price as number;
+        resolvedPrice = r.old_price;
+      } else if (typeof r.cost_price === "number" && r.cost_price > 0) {
+        resolvedPrice = r.cost_price;
       } else {
         resolvedPrice = null;
       }
@@ -91,7 +89,10 @@ const dtoToLegacy = (rows: ProductDTO[]): LegacyProductShape[] =>
     .map((entry) => {
       // Inject the resolved price into a normalized DTO so `toLegacyProduct`
       // and downstream UI code always see a numeric `price` field.
-      const normalized: ProductDTO = { ...entry.original, price: entry.resolvedPrice as number };
+      const normalized: ProductDTO = {
+        ...entry.original,
+        price: entry.resolvedPrice as number,
+      };
       return enrichLegacy(toLegacyProduct(normalized));
     });
 
@@ -100,11 +101,14 @@ const dtoToLegacy = (rows: ProductDTO[]): LegacyProductShape[] =>
 export async function fetchProducts(input: ListProductsInput = {}): Promise<LegacyProductShape[]> {
   const data = listProductsInput.parse(input);
   try {
-    const shopify = await listShopifyProducts({ data: {
-      search: data.search,
-      limit: data.limit,
-      offset: data.offset,
-    } });
+    const shopify = await listShopifyProducts({
+      data: {
+        search: data.search,
+        categoryId: data.categoryId,
+        limit: data.limit,
+        offset: data.offset,
+      },
+    });
     if (shopify.configured) return dtoToLegacy(shopify.items);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] Shopify catalog fallback:", err);
@@ -182,22 +186,25 @@ export async function fetchProductsByCategory(
   const key = categoryIdOrSlug.trim();
   const cleanKey = key.toLowerCase().replace(/_/g, "-");
 
-  let categories: any[] = [];
+  let categories: Awaited<ReturnType<typeof fetchCategories>> = [];
   try {
     categories = await fetchCategories();
-  } catch (e) {
+  } catch {
     /* ignore */
   }
 
-  const matchedCat = categories.find(
-    (c) => c.id === key || c.slug === key || c.slug === cleanKey || c.id === cleanKey
-  );
-  const targetSlug = matchedCat ? matchedCat.slug : cleanKey;
-  const targetId = matchedCat ? matchedCat.id : key;
+  const matchedCat = categories.find((category) => {
+    const categoryKey = category.id.toLowerCase().replace(/_/g, "-");
+    return category.id === key || categoryKey === cleanKey;
+  });
+  const targetSlug = matchedCat?.id ?? cleanKey;
+  const targetId = matchedCat?.id ?? key;
 
   const all = await fetchProducts();
   return all.filter((p) => {
-    if (p.categoryId === targetId || p.categoryId === targetSlug || p.categoryId === cleanKey) return true;
+    if (p.categoryId === targetId || p.categoryId === targetSlug || p.categoryId === cleanKey) {
+      return true;
+    }
     const inferred = inferCategorySlug(p.name, [], p.description ?? "");
     return inferred === targetSlug || inferred === cleanKey;
   });
@@ -215,7 +222,8 @@ export async function fetchOffers(): Promise<LegacyProductShape[]> {
     (p) =>
       p.isDeal ||
       (typeof p.oldPrice === "number" && p.oldPrice > p.price) ||
-      (p.badge && (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
+      (p.badge &&
+        (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
   );
 
   if (explicitOffers.length > 0) {
