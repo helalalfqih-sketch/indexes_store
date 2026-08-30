@@ -125,9 +125,11 @@ export async function fetchProductBySlug(slug: string): Promise<LegacyProductSha
   const parsed = z.string().trim().min(1).parse(slug);
   try {
     const shopify = await getShopifyProductBySlug({ data: { slug: parsed } });
-    if (shopify.configured) {
-      return shopify.item ? enrichLegacy(toLegacyProduct(shopify.item)) : null;
+    if (shopify.configured && shopify.item) {
+      return enrichLegacy(toLegacyProduct(shopify.item));
     }
+    // A configured Shopify catalog can coexist with legacy Supabase products.
+    // If the handle is not in Shopify, continue to the Supabase lookup below.
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] Shopify product fallback:", err);
   }
