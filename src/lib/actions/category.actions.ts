@@ -4,11 +4,7 @@
  */
 import { z } from "zod";
 import { listCategories, getCategoryBySlug as getCategoryBySlugFn } from "@/lib/catalog.functions";
-import {
-  fallbackCategories,
-  toLegacyCategory,
-  type LegacyCategoryShape,
-} from "@/lib/data-adapter";
+import { fallbackCategories, toLegacyCategory, type LegacyCategoryShape } from "@/lib/data-adapter";
 import type { CategoryWithMetaDTO } from "@/lib/repositories/categories.repo";
 import { diagnoseShopifyCatalog, listShopifyCategories } from "@/lib/shopify/catalog.functions";
 import { categories as seedCategories } from "@/lib/store-data";
