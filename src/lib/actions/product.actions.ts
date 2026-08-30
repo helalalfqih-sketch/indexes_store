@@ -223,8 +223,7 @@ export async function fetchOffers(): Promise<LegacyProductShape[]> {
       p.isDeal ||
       (typeof p.oldPrice === "number" && p.oldPrice > p.price) ||
       (p.badge &&
-        (p.badge.includes("عرض") || p.badge.includes("خصم") ||
-          p.badge.includes("تخفيض"))),
+        (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
   );
 
   if (explicitOffers.length > 0) {
