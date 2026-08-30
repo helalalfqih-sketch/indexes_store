@@ -15,7 +15,7 @@ import {
 import { useEffect, useState, useRef } from "react";
 import { ProductCard } from "@/components/product-card";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
-import type { LegacyProductShape } from "@/lib/data-adapter";
+import type { LegacyCategoryShape, LegacyProductShape } from "@/lib/data-adapter";
 import type { Product } from "@/lib/store-data";
 import { z } from "zod";
 import { trackEvent } from "@/lib/analytics";
@@ -36,6 +36,8 @@ const searchParamsSchema = z.object({
   inStockOnly: z.boolean().optional(),
   sortBy: z.enum(["bestselling", "latest", "price_asc", "price_desc", "rating"]).optional(),
 });
+
+type SearchSort = "bestselling" | "latest" | "price_asc" | "price_desc" | "rating";
 
 export const Route = createFileRoute("/search")({
   head: () => ({
@@ -70,12 +72,11 @@ function SearchPage() {
   // Suggestions state
   const [suggestions, setSuggestions] = useState<SearchSuggestionItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [categoriesList, setCategoriesList] = useState<LegacyCategoryShape[]>([]);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
-
 
   // Fetch Categories for Filter
   useEffect(() => {
@@ -89,7 +90,7 @@ function SearchPage() {
     if (searchParams.q !== undefined && searchParams.q !== q) setQ(searchParams.q);
     if (searchParams.category) setSelectedCat(searchParams.category);
     if (searchParams.sortBy) setSortBy(searchParams.sortBy);
-  }, [searchParams]);
+  }, [q, searchParams]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -309,7 +310,7 @@ function SearchPage() {
             <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => setSortBy(e.target.value as SearchSort)}
               aria-label="ترتيب النتائج حسب"
               className="bg-transparent text-foreground font-bold outline-none text-xs"
             >
