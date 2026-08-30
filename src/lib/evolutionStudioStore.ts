@@ -10,6 +10,8 @@ import {
   MotionTokens
 } from '../types/evolutionStudio';
 
+export type { DraftConfig } from '../types/evolutionStudio';
+
 export const DEFAULT_DESIGN_TOKENS: DesignTokens = {
   colorPrimary: '#2F6BFF',
   colorSecondary: '#10B981',
