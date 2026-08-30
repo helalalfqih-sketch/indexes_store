@@ -202,11 +202,7 @@ export async function fetchProductsByCategory(
 
   const all = await fetchProducts();
   return all.filter((p) => {
-    if (
-      p.categoryId === targetId ||
-      p.categoryId === targetSlug ||
-      p.categoryId === cleanKey
-    ) {
+    if (p.categoryId === targetId || p.categoryId === targetSlug || p.categoryId === cleanKey) {
       return true;
     }
     const inferred = inferCategorySlug(p.name, [], p.description ?? "");
@@ -227,8 +223,7 @@ export async function fetchOffers(): Promise<LegacyProductShape[]> {
       p.isDeal ||
       (typeof p.oldPrice === "number" && p.oldPrice > p.price) ||
       (p.badge &&
-        (p.badge.includes("عرض") ||
-          p.badge.includes("خصم") ||
+        (p.badge.includes("عرض") || p.badge.includes("خصم") ||
           p.badge.includes("تخفيض"))),
   );
 
