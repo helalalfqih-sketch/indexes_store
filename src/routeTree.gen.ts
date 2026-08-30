@@ -80,6 +80,7 @@ import { Route as AdminAiMemoryRouteImport } from './routes/admin.ai-memory'
 import { Route as AdminAiDeveloperRouteImport } from './routes/admin.ai-developer'
 import { Route as AdminAiAgentRouteImport } from './routes/admin.ai-agent'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks.whatsapp'
+import { Route as ApiWebhooksShopifyRouteImport } from './routes/api/webhooks.shopify'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
 import { Route as ApiCatalogChar123idChar125DotcsvRouteImport } from './routes/api/catalog.{$id}[.]csv'
 import { Route as ApiAiDebugRouteImport } from './routes/api/ai.debug'
@@ -446,6 +447,11 @@ const ApiWebhooksWhatsappRoute = ApiWebhooksWhatsappRouteImport.update({
   path: '/api/webhooks/whatsapp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksShopifyRoute = ApiWebhooksShopifyRouteImport.update({
+  id: '/api/webhooks/shopify',
+  path: '/api/webhooks/shopify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicImageProxyRoute = ApiPublicImageProxyRouteImport.update({
   id: '/api/public/image-proxy',
   path: '/api/public/image-proxy',
@@ -582,6 +588,7 @@ export interface FileRoutesByFullPath {
   '/api/ai/debug': typeof ApiAiDebugRoute
   '/api/catalog/{$id}.csv': typeof ApiCatalogChar123idChar125DotcsvRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
 export interface FileRoutesByTo {
@@ -663,6 +670,7 @@ export interface FileRoutesByTo {
   '/api/ai/debug': typeof ApiAiDebugRoute
   '/api/catalog/{$id}.csv': typeof ApiCatalogChar123idChar125DotcsvRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
 export interface FileRoutesById {
@@ -747,6 +755,7 @@ export interface FileRoutesById {
   '/api/ai/debug': typeof ApiAiDebugRoute
   '/api/catalog/{$id}.csv': typeof ApiCatalogChar123idChar125DotcsvRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
 }
 export interface FileRouteTypes {
@@ -832,6 +841,7 @@ export interface FileRouteTypes {
     | '/api/ai/debug'
     | '/api/catalog/{$id}.csv'
     | '/api/public/image-proxy'
+    | '/api/webhooks/shopify'
     | '/api/webhooks/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -913,6 +923,7 @@ export interface FileRouteTypes {
     | '/api/ai/debug'
     | '/api/catalog/{$id}.csv'
     | '/api/public/image-proxy'
+    | '/api/webhooks/shopify'
     | '/api/webhooks/whatsapp'
   id:
     | '__root__'
@@ -996,6 +1007,7 @@ export interface FileRouteTypes {
     | '/api/ai/debug'
     | '/api/catalog/{$id}.csv'
     | '/api/public/image-proxy'
+    | '/api/webhooks/shopify'
     | '/api/webhooks/whatsapp'
   fileRoutesById: FileRoutesById
 }
@@ -1031,6 +1043,7 @@ export interface RootRouteChildren {
   ApiAiDebugRoute: typeof ApiAiDebugRoute
   ApiCatalogChar123idChar125DotcsvRoute: typeof ApiCatalogChar123idChar125DotcsvRoute
   ApiPublicImageProxyRoute: typeof ApiPublicImageProxyRoute
+  ApiWebhooksShopifyRoute: typeof ApiWebhooksShopifyRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
 }
 
@@ -1533,6 +1546,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhooksWhatsappRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhooks/shopify': {
+      id: '/api/webhooks/shopify'
+      path: '/api/webhooks/shopify'
+      fullPath: '/api/webhooks/shopify'
+      preLoaderRoute: typeof ApiWebhooksShopifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/image-proxy': {
       id: '/api/public/image-proxy'
       path: '/api/public/image-proxy'
@@ -1762,6 +1782,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiDebugRoute: ApiAiDebugRoute,
   ApiCatalogChar123idChar125DotcsvRoute: ApiCatalogChar123idChar125DotcsvRoute,
   ApiPublicImageProxyRoute: ApiPublicImageProxyRoute,
+  ApiWebhooksShopifyRoute: ApiWebhooksShopifyRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
 }
 export const routeTree = rootRouteImport
