@@ -11,6 +11,9 @@ import {
   TrendingUp,
   Palette,
   Settings2,
+  CheckCircle2,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAdmin } from "@/lib/admin-store";
@@ -38,6 +41,16 @@ export const Route = createFileRoute("/admin/")({
 
 type AdminProduct = Awaited<ReturnType<typeof listAdminProducts>>[number];
 
+type CatalogHealth = {
+  healthy: boolean;
+  source: string | null;
+  apiVersion: string;
+  totalProducts?: number;
+  productsWithPrice?: number;
+  productsWithImages?: number;
+  error: string | null;
+};
+
 function DashboardPage() {
   const { t, lang } = useI18n();
   const sessions = useAdmin((s) => s.sessions);
@@ -57,6 +70,17 @@ function DashboardPage() {
     refetchInterval: 60_000,
   });
   const s = statsQ.data as (AdminDashboardStats & { selectedRange: string }) | undefined;
+
+  const catalogHealthQ = useQuery<CatalogHealth>({
+    queryKey: ["shopify-catalog-health"],
+    queryFn: async () => {
+      const response = await fetch("/api/catalog-health", { cache: "no-store" });
+      if (!response.ok) throw new Error(`Catalog health failed: ${response.status}`);
+      return response.json() as Promise<CatalogHealth>;
+    },
+    refetchInterval: 60_000,
+  });
+  const catalogHealth = catalogHealthQ.data;
 
   const rangeSubtext =
     timeRange === "today"
@@ -236,6 +260,85 @@ function DashboardPage() {
                 </div>
               );
             })}
+      </section>
+
+      {/* Shopify catalog connection — aggregate health only; credentials are never exposed. */}
+      <section
+        className={`rounded-2xl border p-5 shadow-card ${
+          catalogHealth?.healthy
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : catalogHealthQ.isLoading
+              ? "border-border bg-surface"
+              : "border-destructive/30 bg-destructive/5"
+        }`}
+        aria-live="polite"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div
+              className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${
+                catalogHealth?.healthy
+                  ? "bg-emerald-500/15 text-emerald-600"
+                  : "bg-destructive/10 text-destructive"
+              }`}
+            >
+              {catalogHealth?.healthy ? (
+                <CheckCircle2 className="h-5 w-5" />
+              ) : (
+                <AlertTriangle className="h-5 w-5" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-base font-black">
+                {lang === "ar" ? "اتصال كتالوج Shopify" : "Shopify catalog connection"}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {catalogHealthQ.isLoading
+                  ? lang === "ar"
+                    ? "جارٍ فحص الاتصال…"
+                    : "Checking connection…"
+                  : catalogHealth?.healthy
+                    ? lang === "ar"
+                      ? `متصل ويعمل · Storefront API ${catalogHealth.apiVersion}`
+                      : `Connected · Storefront API ${catalogHealth.apiVersion}`
+                    : catalogHealth?.error || (lang === "ar" ? "تعذر فحص الاتصال" : "Connection check failed")}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => catalogHealthQ.refetch()}
+            disabled={catalogHealthQ.isFetching}
+            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-bold transition hover:bg-accent disabled:opacity-60"
+          >
+            <RefreshCw className={`h-4 w-4 ${catalogHealthQ.isFetching ? "animate-spin" : ""}`} />
+            {lang === "ar" ? "تحديث الحالة" : "Refresh status"}
+          </button>
+        </div>
+
+        {catalogHealth?.healthy && (
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {[
+              {
+                label: lang === "ar" ? "إجمالي المنتجات" : "Total products",
+                value: catalogHealth.totalProducts ?? 0,
+              },
+              {
+                label: lang === "ar" ? "منتجات بأسعار" : "Products with prices",
+                value: catalogHealth.productsWithPrice ?? 0,
+              },
+              {
+                label: lang === "ar" ? "منتجات بصور" : "Products with images",
+                value: catalogHealth.productsWithImages ?? 0,
+              },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl border border-border/60 bg-surface/80 p-3">
+                <div className="text-xs text-muted-foreground">{item.label}</div>
+                <div className="mt-1 text-xl font-black">{item.value.toLocaleString(lang === "ar" ? "ar-YE" : "en-US")}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Grid */}
