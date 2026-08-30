@@ -2,6 +2,7 @@ export type Currency = 'YER' | 'SAR' | 'USD';
 
 export interface Product {
   id: string;
+  slug?: string;
   name: string;
   subtitle: string;
   description: string;
