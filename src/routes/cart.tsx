@@ -4,10 +4,6 @@ import { useState, useId } from "react";
 import { useCart } from "@/lib/cart-store";
 import { formatPrice } from "@/lib/store-data";
 import { yemeniPhoneSchema } from "@/lib/validation/phone";
-import { buildOrderMessage, whatsappLink } from "@/lib/whatsapp";
-import { formatOrderNumber } from "@/lib/order-status";
-import { submitOrder } from "@/lib/actions/order.actions";
-import type { CreateOrderInput } from "@/lib/actions/order.actions";
 import { useAppearance } from "@/components/appearance-provider";
 import { OptimizedImage } from "@/components/optimized-image";
 import { computeShippingFee, amountToFreeShipping } from "@/lib/shipping";
@@ -32,7 +28,9 @@ function CartPage() {
   const itemCount = useCart((s) => s.count());
   const setQty = useCart((s) => s.setQty);
   const remove = useCart((s) => s.remove);
-  const clearCart = useCart((s) => s.clear);
+  const checkoutUrl = useCart((s) => s.checkoutUrl);
+  const syncing = useCart((s) => s.syncing);
+  const cartSyncError = useCart((s) => s.syncError);
   const { settings } = useAppearance();
 
   const discount = coupon ? Math.round(total * 0.1) : 0;
@@ -53,7 +51,6 @@ function CartPage() {
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderId, setOrderId] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [orderError, setOrderError] = useState<string | null>(null);
 
@@ -106,47 +103,8 @@ function CartPage() {
 
     setIsSubmitting(true);
     try {
-      // Generate idempotency key to prevent duplicate orders
-      const idempotencyKey = crypto.randomUUID();
-
-      const input: CreateOrderInput = {
-        items: items.map((it) => ({ productId: it.productId, quantity: it.qty })),
-        customerName: name.trim(),
-        customerPhone: yemeniPhoneSchema.parse(phone),
-        customerAddress: address.trim(),
-        notes: notes.trim() || undefined,
-        couponCode: coupon || undefined,
-        paymentProvider: "cod",
-        idempotencyKey,
-      };
-      const result = await submitOrder(input);
-      setOrderId(result.orderId);
-      clearCart();
-
-      // Human-friendly order number (matches DB orders.order_number) + tracking link.
-      const orderNumber = formatOrderNumber(result.orderId);
-      const trackUrl = `${window.location.origin}/track`;
-      const orderFooter = `\n🆔 رقم الطلب: ${orderNumber}\n📦 تتبع طلبك: ${trackUrl}`;
-
-      // Read template from cart config or use fallback
-      let orderMessage = "";
-      const template = settings.cart_config.whatsappOrderTemplate;
-      if (template) {
-        const prodList = items.map((it) => `- ${it.name} (${it.qty}x)`).join("\n");
-        orderMessage =
-          template
-            .replace("{products}", prodList)
-            .replace("{total}", formatPrice(finalTotal))
-            .replace("{name}", name || "غير محدد")
-            .replace("{address}", address || "غير محدد") + orderFooter;
-      } else {
-        orderMessage =
-          buildOrderMessage(items, finalTotal, { name, phone, address, notes }, coupon, discount) +
-          orderFooter;
-      }
-
-      const waPhone = settings.cart_config.whatsappPhone || "967771370740";
-      window.open(whatsappLink(orderMessage, waPhone), "_blank");
+      if (!checkoutUrl) throw new Error("سلة Shopify لم تكتمل مزامنتها بعد");
+      window.location.assign(checkoutUrl);
     } catch (err) {
       console.error("Order submission failed:", err);
       const message =
@@ -394,22 +352,17 @@ function CartPage() {
 
       <button
         onClick={handleSubmitOrder}
-        disabled={isSubmitting}
+        disabled={isSubmitting || syncing || !checkoutUrl}
         className="mb-2 flex items-center justify-center gap-2 rounded-2xl bg-success py-3.5 text-sm font-black text-success-foreground shadow-brand transition-colors hover:bg-success/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/40 disabled:opacity-60"
       >
         <MessageCircle className="h-5 w-5" />
-        {isSubmitting ? "جاري إنشاء الطلب..." : "إتمام الطلب عبر واتساب"}
+        {isSubmitting || syncing ? "جاري تجهيز دفع Shopify..." : "المتابعة إلى الدفع الآمن"}
       </button>
-      {orderId && (
-        <p className="pb-1 text-center text-xs text-success">
-          ✅ تم إنشاء الطلب رقم {formatOrderNumber(orderId)} —{" "}
-          <Link to="/track" className="font-bold underline underline-offset-2">
-            تتبع طلبك
-          </Link>
-        </p>
+      {cartSyncError && (
+        <p className="pb-1 text-center text-xs text-destructive">{cartSyncError}</p>
       )}
       <p className="pb-2 text-center text-[11px] text-muted-foreground">
-        الدفع عند الاستلام متاح • تأكيد الطلب مباشرة مع الإدارة
+        تتم مراجعة الشحن والدفع وإنشاء الطلب بأمان داخل Shopify Checkout
       </p>
     </div>
   );
