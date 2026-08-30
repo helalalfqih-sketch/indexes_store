@@ -447,7 +447,7 @@ function LivePreviewDevice({
               if (k === "sectionOrder") return false;
               const sec = local.sections[k as keyof Omit<SectionsConfig, "sectionOrder">];
               return sec && typeof sec === "object" && "enabled" in sec
-                ? (sec as any).enabled !== false
+                ? sec.enabled !== false
                 : true;
             })
             .map((key) => {
@@ -470,55 +470,62 @@ function LivePreviewDevice({
                       {(realProducts.length > 0
                         ? realProducts.slice(0, columns * 2)
                         : seedProducts.slice(0, columns * 2)
-                      ).map((prod: any) => (
-                        <div
-                          key={prod.id}
-                          className={`border border-[var(--border)] bg-[var(--surface)] p-2 flex flex-col justify-between transition relative overflow-hidden ${
-                            t.cardStyle === "glass" ? "backdrop-blur bg-opacity-70" : ""
-                          } ${
-                            t.borderRadius === "large"
-                              ? "rounded-xl"
-                              : t.borderRadius === "rounded"
-                                ? "rounded-md"
-                                : "rounded-none"
-                          }`}
-                        >
-                          {layout.showImage && (
-                            <div className="h-16 w-full rounded bg-primary/10 overflow-hidden flex items-center justify-center text-[10px] font-bold text-primary/40 mb-1.5">
-                              {prod.images?.[0] || prod.image ? (
-                                <img
-                                  src={prod.images?.[0] || prod.image}
-                                  alt={prod.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                "صورة المنتج"
+                      ).map((prod) => {
+                        const productImage = "images" in prod ? prod.images?.[0] : prod.image;
+                        const reviews = "reviews_count" in prod ? prod.reviews_count : prod.reviews;
+
+                        return (
+                          <div
+                            key={prod.id}
+                            className={`border border-[var(--border)] bg-[var(--surface)] p-2 flex flex-col justify-between transition relative overflow-hidden ${
+                              t.cardStyle === "glass" ? "backdrop-blur bg-opacity-70" : ""
+                            } ${
+                              t.borderRadius === "large"
+                                ? "rounded-xl"
+                                : t.borderRadius === "rounded"
+                                  ? "rounded-md"
+                                  : "rounded-none"
+                            }`}
+                          >
+                            {layout.showImage && (
+                              <div className="h-16 w-full rounded bg-primary/10 overflow-hidden flex items-center justify-center text-[10px] font-bold text-primary/40 mb-1.5">
+                                {productImage ? (
+                                  <img
+                                    src={productImage}
+                                    alt={prod.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  "صورة المنتج"
+                                )}
+                              </div>
+                            )}
+                            <div>
+                              <h4 className="text-[10px] font-bold truncate">{prod.name}</h4>
+                              {layout.showRating && (
+                                <span className="text-[8px] text-yellow-400">
+                                  ★ {prod.rating || 4.8} ({reviews || 12})
+                                </span>
                               )}
                             </div>
-                          )}
-                          <div>
-                            <h4 className="text-[10px] font-bold truncate">{prod.name}</h4>
-                            {layout.showRating && (
-                              <span className="text-[8px] text-yellow-400">★ {prod.rating || 4.8} ({prod.reviews || 12})</span>
-                            )}
+                            <div className="flex items-center justify-between mt-1">
+                              {layout.showPrice && (
+                                <span className="text-[9px] font-black text-primary">
+                                  {prod.price} ريال
+                                </span>
+                              )}
+                              {layout.showAddToCartButton && (
+                                <button
+                                  type="button"
+                                  className="text-[8px] bg-primary text-white font-bold p-1 rounded hover:opacity-90 shrink-0"
+                                >
+                                  {trans.addToCart}
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between mt-1">
-                            {layout.showPrice && (
-                              <span className="text-[9px] font-black text-primary">
-                                {prod.price} ريال
-                              </span>
-                            )}
-                            {layout.showAddToCartButton && (
-                              <button
-                                type="button"
-                                className="text-[8px] bg-primary text-white font-bold p-1 rounded hover:opacity-90 shrink-0"
-                              >
-                                {trans.addToCart}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -878,7 +885,9 @@ function HomepageTab({ hero, sections, onHeroChange, onSectionsChange }: Homepag
 
           {/* Globe Overlay Texts & Font Sizes */}
           <div className="space-y-3 pt-3 border-t border-border/40">
-            <h4 className="text-xs font-bold text-primary">نصوص وأحجام الخطوط فوق الكرة (Globe Overlay)</h4>
+            <h4 className="text-xs font-bold text-primary">
+              نصوص وأحجام الخطوط فوق الكرة (Globe Overlay)
+            </h4>
             <div className="grid grid-cols-2 gap-3">
               <Field label="نص الشارة فوق الكرة">
                 <input
@@ -1451,7 +1460,9 @@ function CatalogTab({ layout, page, onLayoutChange, onPageChange }: CatalogTabPr
 
         {/* Product Card Dimensions Manager */}
         <div className="space-y-3 pt-3 border-t border-border/40">
-          <h4 className="text-xs font-bold text-primary">التحكم الدقيق في أبعاد ومقاسات الكروت والخطوط (Card Dimensions)</h4>
+          <h4 className="text-xs font-bold text-primary">
+            التحكم الدقيق في أبعاد ومقاسات الكروت والخطوط (Card Dimensions)
+          </h4>
           <div className="grid grid-cols-2 gap-3">
             <Field label="عرض البطاقة للهواتف (px)">
               <input
@@ -1712,7 +1723,15 @@ function CheckoutTab({ cart, checkout, onCartChange, onCheckoutChange }: Checkou
             />
           </Field>
           <Field label="رسوم الشحن الأساسية">
-            <input type="number" min={0} value={cart.shippingFee} onChange={(e) => setCart("shippingFee", Number(e.target.value))} className={fieldCls} dir="ltr" placeholder="مثال: 3000" />
+            <input
+              type="number"
+              min={0}
+              value={cart.shippingFee}
+              onChange={(e) => setCart("shippingFee", Number(e.target.value))}
+              className={fieldCls}
+              dir="ltr"
+              placeholder="مثال: 3000"
+            />
           </Field>
         </div>
 
@@ -2443,7 +2462,10 @@ function StudioTab({ onOpenEvolutionStudio }: { onOpenEvolutionStudio?: () => vo
   return (
     <div className="space-y-4">
       {/* Visual Evolution Studio Launcher Banner */}
-      <SectionCard title="استوديو التطور البصري المباشر (3D Evolution Studio & AI Lab)" badge="Interactive 3D Engine">
+      <SectionCard
+        title="استوديو التطور البصري المباشر (3D Evolution Studio & AI Lab)"
+        badge="Interactive 3D Engine"
+      >
         <div className="bg-gradient-to-tr from-purple-950/40 via-indigo-950/30 to-cyan-950/40 p-5 rounded-2xl border border-purple-500/30 space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
@@ -2454,7 +2476,8 @@ function StudioTab({ onOpenEvolutionStudio }: { onOpenEvolutionStudio?: () => vo
                 </h4>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                تحكم فوري في عالم المنتجات ثلاثي الأبعاد (3D Universe)، محرر رموز التصميم والألوان الحية (Design Tokens)، محاكي الأجهزة والشاشات، والمدير الإبداعي بالذكاء الاصطناعي.
+                تحكم فوري في عالم المنتجات ثلاثي الأبعاد (3D Universe)، محرر رموز التصميم والألوان
+                الحية (Design Tokens)، محاكي الأجهزة والشاشات، والمدير الإبداعي بالذكاء الاصطناعي.
               </p>
             </div>
 
@@ -2470,20 +2493,28 @@ function StudioTab({ onOpenEvolutionStudio }: { onOpenEvolutionStudio?: () => vo
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-purple-500/20 text-center">
             <div className="bg-background/40 p-2.5 rounded-xl border border-white/5">
-              <span className="text-[10px] text-muted-foreground block font-bold">عالم المنتجات 3D</span>
+              <span className="text-[10px] text-muted-foreground block font-bold">
+                عالم المنتجات 3D
+              </span>
               <span className="text-xs font-black text-cyan-400 mt-0.5 block">Three.js Engine</span>
             </div>
             <div className="bg-background/40 p-2.5 rounded-xl border border-white/5">
-              <span className="text-[10px] text-muted-foreground block font-bold">رموز التصميم</span>
+              <span className="text-[10px] text-muted-foreground block font-bold">
+                رموز التصميم
+              </span>
               <span className="text-xs font-black text-purple-400 mt-0.5 block">Live Tokens</span>
             </div>
             <div className="bg-background/40 p-2.5 rounded-xl border border-white/5">
-              <span className="text-[10px] text-muted-foreground block font-bold">الذكاء الاصطناعي</span>
+              <span className="text-[10px] text-muted-foreground block font-bold">
+                الذكاء الاصطناعي
+              </span>
               <span className="text-xs font-black text-amber-400 mt-0.5 block">AI Director</span>
             </div>
             <div className="bg-background/40 p-2.5 rounded-xl border border-white/5">
               <span className="text-[10px] text-muted-foreground block font-bold">حارس الجودة</span>
-              <span className="text-xs font-black text-emerald-400 mt-0.5 block">Quality Guardian</span>
+              <span className="text-xs font-black text-emerald-400 mt-0.5 block">
+                Quality Guardian
+              </span>
             </div>
           </div>
         </div>
@@ -2989,7 +3020,22 @@ function StorefrontCMSPage() {
       {/* Evolution Studio 3D Interactive Modal */}
       {isEvolutionStudioOpen && (
         <IndexesEvolutionStudio
-          products={seedProducts as any}
+          products={seedProducts.map((product) => ({
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            subtitle: product.description,
+            description: product.description,
+            priceYER: product.price,
+            originalPriceYER: product.oldPrice ?? product.price,
+            rating: product.rating,
+            reviewsCount: product.reviews,
+            image: product.image,
+            category: product.categoryId,
+            inStock: product.stock > 0,
+            stockCount: product.stock,
+            discountBadge: product.badge,
+          }))}
           onClose={() => setIsEvolutionStudioOpen(false)}
           onApplyDraftToStore={handleApplyEvolutionStudioDraft}
         />
