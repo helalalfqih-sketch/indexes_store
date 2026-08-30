@@ -28,7 +28,12 @@ import { Header } from "@/components/storefront/Header";
 import { ShippingBanner } from "@/components/storefront/ShippingBanner";
 import { AISearchSection } from "@/components/storefront/AISearchSection";
 import { HeroCarousel } from "@/components/storefront/HeroCarousel";
-import { CategoryBar, type PriceRangePreset, STORE_BRANDS, RATING_OPTIONS } from "@/components/storefront/CategoryBar";
+import {
+  CategoryBar,
+  type PriceRangePreset,
+  STORE_BRANDS,
+  RATING_OPTIONS,
+} from "@/components/storefront/CategoryBar";
 import { DiscoveryStrip } from "@/components/storefront/DiscoveryStrip";
 import { BestOffersSection } from "@/components/storefront/BestOffersSection";
 import { ProductCard } from "@/components/storefront/ProductCard";
@@ -64,7 +69,10 @@ import { CustomerSupportHub } from "@/components/storefront/CustomerSupportHub";
 import type { SupportContext } from "@/components/storefront/CustomerSupportHub";
 import { PerformanceMonitor } from "@/components/storefront/PerformanceMonitor";
 import { supabase } from "@/integrations/supabase/client";
-import { AddToCartAnimationOverlay, type FlyingCartItem } from "@/components/storefront/AddToCartAnimation";
+import {
+  AddToCartAnimationOverlay,
+  type FlyingCartItem,
+} from "@/components/storefront/AddToCartAnimation";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -218,7 +226,7 @@ function HomePage() {
 
   // Admin navigation via TanStack router — the /admin route has its own AdminGate
   const navigate = useNavigate();
-  const handleOpenAdmin = useCallback(() => navigate({ to: '/admin' }), [navigate]);
+  const handleOpenAdmin = useCallback(() => navigate({ to: "/admin" }), [navigate]);
 
   // Admin role check: verify confirmed role 'admin' or 'owner' in Supabase user_roles
   const [isAdminUser, setIsAdminUser] = useState<boolean>(false);
@@ -320,7 +328,12 @@ function HomePage() {
 
   // AddToCart animation state
   const [activeFlyingItems, setActiveFlyingItems] = useState<FlyingCartItem[]>([]);
-  const [lastAddedProduct, setLastAddedProduct] = useState<{ product: DesignProduct; quantity: number; selectedColor?: string; timestamp: number } | null>(null);
+  const [lastAddedProduct, setLastAddedProduct] = useState<{
+    product: DesignProduct;
+    quantity: number;
+    selectedColor?: string;
+    timestamp: number;
+  } | null>(null);
   const flyingIdRef = useRef(0);
 
   const unreadNotificationsCount = useMemo(
@@ -355,7 +368,7 @@ function HomePage() {
           const brandObj = STORE_BRANDS.find((b) => b.id === brandId);
           if (!brandObj) return false;
           // If a real brand field exists on the product, check it directly
-          if (p.brand && typeof p.brand === 'string' && p.brand.trim().length > 0) {
+          if (p.brand && typeof p.brand === "string" && p.brand.trim().length > 0) {
             const pb = p.brand.trim().toLowerCase();
             return (
               pb === brandObj.id.toLowerCase() ||
@@ -390,7 +403,17 @@ function HomePage() {
       default:
         return list;
     }
-  }, [products, selectedCategory, searchQuery, sortBy, priceRange, customMinPrice, customMaxPrice, selectedBrands, selectedRatings]);
+  }, [
+    products,
+    selectedCategory,
+    searchQuery,
+    sortBy,
+    priceRange,
+    customMinPrice,
+    customMaxPrice,
+    selectedBrands,
+    selectedRatings,
+  ]);
 
   // Track recently viewed products (max 10) and open the full cinematic product route.
   // The modal remains as a safe fallback for legacy products that do not have a slug.
@@ -748,10 +771,7 @@ function HomePage() {
               case "trustBadges":
                 if (!mappedSettings.sections.trustBadges.enabled) return null;
                 return (
-                  <TrustBar
-                    key="trustBadges"
-                    trustBadges={mappedSettings.sections.trustBadges}
-                  />
+                  <TrustBar key="trustBadges" trustBadges={mappedSettings.sections.trustBadges} />
                 );
 
               case "loyalty":
@@ -854,7 +874,9 @@ function HomePage() {
           onClose={() => setIsCartShareOpen(false)}
           cartItems={cartItems}
           catalogProducts={products}
-          onApplyRecoveredCart={(items) => items.forEach(i => handleAddToCart(i.product, i.quantity))}
+          onApplyRecoveredCart={(items) =>
+            items.forEach((i) => handleAddToCart(i.product, i.quantity))
+          }
         />
 
         {/* Customer Support Hub */}
