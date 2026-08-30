@@ -2610,16 +2610,15 @@ function StorefrontCMSPage() {
         ...prev.theme,
         primaryColor: tokens.colorPrimary,
         secondaryColor: tokens.colorSecondary,
-        accentColor: tokens.colorAccent,
         backgroundColor: tokens.colorBackground,
         surfaceColor: tokens.colorSurface,
-        borderRadius: tokens.borderRadius,
+        borderRadius: tokens.borderRadius === "none" ? "sharp" : tokens.borderRadius,
       },
       hero: {
         ...prev.hero,
-        globeRadius: universe.planetSize,
-        globeShowParticles: universe.particleDensity > 0,
-        globeRotationSpeed: universe.orbitSpeed,
+        sphereRadius: universe.planetSize,
+        showParticles: universe.particleDensity > 0,
+        sphereRotationSpeed: universe.orbitSpeed,
       },
     }));
     dirty.current = true;
