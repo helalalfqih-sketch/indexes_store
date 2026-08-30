@@ -64,17 +64,16 @@ export async function diagnoseShopifyCatalog() {
   }
 
   try {
-    const products = await fetchShopifyProductPages({ maxProducts: 1000 });
-    const mapped = products.map(mapProduct);
+    const result = await storefront<{ products: { nodes: Array<{ id: string }> } }>(
+      `query CatalogHealth { products(first: 1) { nodes { id } } }`,
+    );
     return {
       healthy: true,
       source,
       domainPresent,
       tokenPresent,
       apiVersion: API_VERSION,
-      totalProducts: mapped.length,
-      productsWithPrice: mapped.filter((product) => product.price > 0).length,
-      productsWithImages: mapped.filter((product) => product.images.length > 0).length,
+      sampleProducts: result.products.nodes.length,
       error: null,
     };
   } catch (error) {
@@ -115,7 +114,7 @@ const PRODUCT_FIELDS = `
   collections(first: 1) { nodes { handle } }
   variants(first: 20) {
     nodes {
-      id sku barcode availableForSale
+      id sku barcode availableForSale quantityAvailable
       price { amount currencyCode }
       compareAtPrice { amount currencyCode }
     }
@@ -206,6 +205,56 @@ const listInput = z
     offset: z.number().int().min(0).optional(),
   })
   .partial();
+
+const adminListInput = z
+  .object({
+    search: z.string().trim().max(120).optional(),
+    categoryId: z.string().trim().max(255).optional(),
+    publishedOnly: z.boolean().optional(),
+    unpublishedOnly: z.boolean().optional(),
+    outOfStock: z.boolean().optional(),
+    page: z.number().int().min(1).optional(),
+    pageSize: z.number().int().min(1).max(100).optional(),
+  })
+  .partial();
+
+export const listShopifyAdminProducts = createServerFn({ method: "GET" })
+  .inputValidator((raw: unknown) => adminListInput.parse(raw ?? {}))
+  .handler(async ({ data }) => {
+    if (!config()) {
+      return {
+        configured: false as const,
+        items: [] as ProductDTO[],
+        total: 0,
+        productsWithPrice: 0,
+        productsWithImages: 0,
+      };
+    }
+
+    const products = await fetchShopifyProductPages({
+      query: data.search || null,
+      maxProducts: 1000,
+    });
+    let items = products.map(mapProduct);
+
+    if (data.categoryId) items = items.filter((product) => product.category_id === data.categoryId);
+    if (data.publishedOnly) items = items.filter((product) => product.is_published);
+    if (data.unpublishedOnly) items = items.filter((product) => !product.is_published);
+    if (data.outOfStock) items = items.filter((product) => product.stock <= 0);
+
+    const total = items.length;
+    const page = data.page ?? 1;
+    const pageSize = data.pageSize ?? 20;
+    const offset = (page - 1) * pageSize;
+
+    return {
+      configured: true as const,
+      items: items.slice(offset, offset + pageSize),
+      total,
+      productsWithPrice: items.filter((product) => product.price > 0).length,
+      productsWithImages: items.filter((product) => product.images.length > 0).length,
+    };
+  });
 
 export const listShopifyProducts = createServerFn({ method: "GET" })
   .inputValidator((raw: unknown) => listInput.parse(raw ?? {}))
