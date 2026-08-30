@@ -15,9 +15,11 @@ export default defineConfig({
     },
     plugins: [
       VitePWA({
+        outDir: ".output/public",
         registerType: "autoUpdate",
         manifest: false,
         workbox: {
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           cleanupOutdatedCaches: true,
           navigateFallbackDenylist: [
