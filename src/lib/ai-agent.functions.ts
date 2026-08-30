@@ -1461,6 +1461,14 @@ export const getCodebaseIndexFn = createServerFn({ method: "GET" })
     return scanProjectStructure();
   });
 
+/** Run the filesystem-based architecture audit on the server only. */
+export const getArchitectureAuditFn = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { auditProjectArchitecture } = await import("@/services/ai-agent/architecture.service");
+    return auditProjectArchitecture();
+  });
+
 /** Run Impact Analysis for target files */
 export const getImpactAnalysisFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

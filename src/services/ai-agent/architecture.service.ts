@@ -11,29 +11,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { scanProjectStructure } from "./code-intelligence.service";
-
-export interface ArchitectureViolation {
-  file: string;
-  severity: "critical" | "warning" | "info";
-  rule: "direct_db_in_ui" | "missing_tenant_filter" | "unprotected_server_fn" | "missing_rls_policy";
-  description: string;
-  suggestedFix: string;
-}
-
-export interface ArchitectureHealthReport {
-  score: number; // 0 - 100
-  violations: ArchitectureViolation[];
-  metrics: {
-    totalRoutes: number;
-    totalComponents: number;
-    totalServices: number;
-    totalDbTables: number;
-    tablesWithRlsCount: number;
-    rlsCoveragePercentage: number;
-    directDbBypassesCount: number;
-  };
-  scannedAt: string;
-}
+import type { ArchitectureHealthReport, ArchitectureViolation } from "./architecture.types";
 
 const PROJECT_ROOT = path.resolve(process.cwd());
 

@@ -7,7 +7,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Layers, Database, Shield, Zap, Cpu, Server, CheckCircle, ArrowRight, RefreshCw } from "lucide-react";
-import { auditProjectArchitecture, type ArchitectureHealthReport } from "@/services/ai-agent/architecture.service";
+import { getArchitectureAuditFn } from "@/lib/ai-agent.functions";
+import type { ArchitectureHealthReport } from "@/services/ai-agent/architecture.types";
 
 export function VisualArchitectureMap() {
   const [activeNode, setActiveNode] = useState<string | null>("ui");
@@ -17,7 +18,7 @@ export function VisualArchitectureMap() {
   const fetchAudit = async () => {
     setLoading(true);
     try {
-      const res = await auditProjectArchitecture();
+      const res = await getArchitectureAuditFn();
       setReport(res);
     } catch {
       // Ignore

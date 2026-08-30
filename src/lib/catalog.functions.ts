@@ -22,7 +22,6 @@ import { inventoryRepo } from "@/lib/repositories/inventory.repo";
 import { generateText } from "ai";
 import { createLovableGateway } from "@/lib/ai-gateway.server";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { createVertex } from "@ai-sdk/google-vertex";
 import {
   productInputBase,
   productUpdateBase,

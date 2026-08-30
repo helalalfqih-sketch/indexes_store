@@ -4,6 +4,7 @@ import type { Product } from "./store-data";
 import {
   addShopifyCartLines,
   createShopifyCart,
+  getShopifyCart,
   removeShopifyCartLines,
   updateShopifyCartLines,
   type ShopifyCart,
@@ -27,6 +28,7 @@ type CartState = {
   checkoutUrl: string | null;
   syncError: string | null;
   syncing: boolean;
+  restore: () => Promise<void>;
   add: (p: Product, qty?: number) => void;
   remove: (productId: string) => void;
   setQty: (productId: string, qty: number) => void;
@@ -83,6 +85,26 @@ export const useCart = create<CartState>()(
       checkoutUrl: null,
       syncError: null,
       syncing: false,
+      restore: async () => {
+        const cartId = get().cartId;
+        if (!cartId) return;
+        set({ syncing: true, syncError: null });
+        try {
+          const cart = await getShopifyCart({ data: { cartId } });
+          if (!cart) {
+            set({ items: [], cartId: null, checkoutUrl: null, syncing: false });
+            return;
+          }
+          applyRemoteCart(cart);
+        } catch (error) {
+          const invalidCartId = error instanceof Error && /cartId|gid:\/\/shopify\/Cart|invalid|expired/i.test(error.message);
+          if (invalidCartId) {
+            set({ items: [], cartId: null, checkoutUrl: null, syncing: false, syncError: null });
+            return;
+          }
+          failSync(error);
+        }
+      },
       add: (p: Product & { shopifyVariantId?: string | null }, qty = 1) => {
         const isPublished = (p as any).is_published !== false && (p as any).status !== "archived";
         if (!isPublished) return;
@@ -171,6 +193,9 @@ export const useCart = create<CartState>()(
         cartId: state.cartId,
         checkoutUrl: state.checkoutUrl,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.cartId) void state.restore();
+      },
     },
   ),
 );
