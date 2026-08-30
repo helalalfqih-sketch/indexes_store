@@ -30,6 +30,13 @@ type ShopifyProduct = {
   collections: { nodes: Array<{ handle: string }> };
 };
 
+type ShopifyProductsPage = {
+  products: {
+    nodes: ShopifyProduct[];
+    pageInfo: { hasNextPage: boolean; endCursor?: string | null };
+  };
+};
+
 const API_VERSION = process.env.SHOPIFY_STOREFRONT_API_VERSION || "2026-07";
 
 function config() {
@@ -78,7 +85,8 @@ function toNumber(value: string | null | undefined): number | null {
 }
 
 function mapProduct(product: ShopifyProduct): ProductDTO {
-  const variant = product.variants.nodes.find((v) => v.availableForSale) ?? product.variants.nodes[0];
+  const variant =
+    product.variants.nodes.find((v) => v.availableForSale) ?? product.variants.nodes[0];
   const images = product.images.nodes.map((image) => image.url).filter(Boolean);
   if (product.featuredImage?.url && !images.includes(product.featuredImage.url)) {
     images.unshift(product.featuredImage.url);
@@ -117,27 +125,59 @@ function mapProduct(product: ShopifyProduct): ProductDTO {
   return dto;
 }
 
-const listInput = z.object({
-  search: z.string().trim().max(120).optional(),
-  limit: z.number().int().min(1).max(100).optional(),
-  offset: z.number().int().min(0).optional(),
-}).partial();
+async function fetchShopifyProductPages(
+  options: {
+    query?: string | null;
+    maxProducts?: number;
+  } = {},
+): Promise<ShopifyProduct[]> {
+  const maxProducts = Math.max(1, Math.min(options.maxProducts ?? 1000, 1000));
+  const products: ShopifyProduct[] = [];
+  let cursor: string | null = null;
+
+  while (products.length < maxProducts) {
+    const first = Math.min(100, maxProducts - products.length);
+    const result: ShopifyProductsPage = await storefront<ShopifyProductsPage>(
+      `query Products($first: Int!, $after: String, $query: String) {
+        products(first: $first, after: $after, query: $query, sortKey: CREATED_AT, reverse: true) {
+          nodes { ${PRODUCT_FIELDS} }
+          pageInfo { hasNextPage endCursor }
+        }
+      }`,
+      { first, after: cursor, query: options.query || null },
+    );
+
+    products.push(...result.products.nodes);
+    if (!result.products.pageInfo.hasNextPage || !result.products.pageInfo.endCursor) break;
+    cursor = result.products.pageInfo.endCursor;
+  }
+
+  return products;
+}
+
+const listInput = z
+  .object({
+    search: z.string().trim().max(120).optional(),
+    limit: z.number().int().min(1).max(100).optional(),
+    offset: z.number().int().min(0).optional(),
+  })
+  .partial();
 
 export const listShopifyProducts = createServerFn({ method: "GET" })
   .inputValidator((raw: unknown) => listInput.parse(raw ?? {}))
   .handler(async ({ data }) => {
     if (!config()) return { configured: false as const, items: [] as ProductDTO[] };
-    const result = await storefront<{ products: { nodes: ShopifyProduct[] } }>(
-      `query Products($first: Int!, $query: String) {
-        products(first: $first, query: $query, sortKey: CREATED_AT, reverse: true) {
-          nodes { ${PRODUCT_FIELDS} }
-        }
-      }`,
-      { first: Math.min(100, (data.limit ?? 100) + (data.offset ?? 0)), query: data.search || null },
-    );
-    const items = result.products.nodes.map(mapProduct);
     const offset = data.offset ?? 0;
-    return { configured: true as const, items: items.slice(offset, data.limit ? offset + data.limit : undefined) };
+    const requested = data.limit ? offset + data.limit : 1000;
+    const products = await fetchShopifyProductPages({
+      query: data.search || null,
+      maxProducts: requested,
+    });
+    const items = products.map(mapProduct);
+    return {
+      configured: true as const,
+      items: items.slice(offset, data.limit ? offset + data.limit : undefined),
+    };
   });
 
 export const getShopifyProductBySlug = createServerFn({ method: "GET" })
@@ -152,17 +192,16 @@ export const getShopifyProductBySlug = createServerFn({ method: "GET" })
   });
 
 export const getShopifyProductsByIds = createServerFn({ method: "GET" })
-  .inputValidator((raw: unknown) => z.object({ ids: z.array(z.string().min(1)).max(50) }).parse(raw))
+  .inputValidator((raw: unknown) =>
+    z.object({ ids: z.array(z.string().min(1)).max(50) }).parse(raw),
+  )
   .handler(async ({ data }) => {
     if (!config()) return { configured: false as const, items: [] as ProductDTO[] };
-    const result = await storefront<{ products: { nodes: ShopifyProduct[] } }>(
-      `query Products($first: Int!) { products(first: $first) { nodes { ${PRODUCT_FIELDS} } } }`,
-      { first: 100 },
-    );
+    const products = await fetchShopifyProductPages();
     const wanted = new Set(data.ids.map((id) => id.toLowerCase()));
     return {
       configured: true as const,
-      items: result.products.nodes
+      items: products
         .filter((p) => wanted.has(p.id.toLowerCase()) || wanted.has(p.handle.toLowerCase()))
         .map(mapProduct),
     };
