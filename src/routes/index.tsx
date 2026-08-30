@@ -53,7 +53,6 @@ import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { CheckoutModal } from "@/components/storefront/CheckoutModal";
 import { OrderTrackerModal } from "@/components/storefront/OrderTrackerModal";
 import { NotificationsModal } from "@/components/storefront/NotificationsModal";
-import { AccountDrawer } from "@/components/storefront/AccountDrawer";
 import { WishlistDrawer } from "@/components/storefront/WishlistDrawer";
 import { ProductCompareModal } from "@/components/storefront/ProductCompareModal";
 import { ToastNotification } from "@/components/storefront/ToastNotification";
@@ -63,7 +62,6 @@ import { ProductUniverseModal } from "@/components/storefront/ProductUniverseMod
 import { CartShareModal } from "@/components/storefront/CartShareModal";
 import { CustomerSupportHub } from "@/components/storefront/CustomerSupportHub";
 import type { SupportContext } from "@/components/storefront/CustomerSupportHub";
-import { IndexesEvolutionStudio } from "@/components/storefront/evolution-studio/IndexesEvolutionStudio";
 import { PerformanceMonitor } from "@/components/storefront/PerformanceMonitor";
 import { supabase } from "@/integrations/supabase/client";
 import { AddToCartAnimationOverlay, type FlyingCartItem } from "@/components/storefront/AddToCartAnimation";
@@ -254,7 +252,7 @@ function HomePage() {
   // UI State
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [currency, setCurrency] = useState<Currency>("YER");
+  const currency: Currency = "YER";
   const [activeTab, setActiveTab] = useState<ActiveTab>("home");
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [priceRange, setPriceRange] = useState<PriceRangePreset>("all");
@@ -309,14 +307,12 @@ function HomePage() {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isTrackerModalOpen, setIsTrackerModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false);
   const [isWishlistDrawerOpen, setIsWishlistDrawerOpen] = useState(false);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [isProductStoryOpen, setIsProductStoryOpen] = useState(false);
   const [isProductUniverseOpen, setIsProductUniverseOpen] = useState(false);
   const [isCartShareOpen, setIsCartShareOpen] = useState(false);
   const [isSupportHubOpen, setIsSupportHubOpen] = useState(false);
-  const [isEvolutionStudioOpen, setIsEvolutionStudioOpen] = useState<boolean>(false);
   const [supportContext, setSupportContext] = useState<SupportContext>("home");
   const [recentlyViewed, setRecentlyViewed] = useState<DesignProduct[]>([]);
 
@@ -474,7 +470,7 @@ function HomePage() {
     if (tab === "cart") {
       setIsCartDrawerOpen(true);
     } else if (tab === "account") {
-      setIsAccountDrawerOpen(true);
+      navigate({ to: "/account" });
     } else if (tab === "search") {
       window.scrollTo({ top: 400, behavior: "smooth" });
     }
@@ -523,7 +519,7 @@ function HomePage() {
           onOpenNotifications={() => setIsNotificationsModalOpen(true)}
           onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
           onOpenCompare={() => setIsCompareModalOpen(true)}
-          onOpenMenu={() => setIsAccountDrawerOpen(true)}
+          onOpenMenu={() => navigate({ to: "/account" })}
           onOpenTracker={() => setIsTrackerModalOpen(true)}
           onOpenAdmin={handleOpenAdmin}
           isAdminUser={isAdminUser}
@@ -762,7 +758,7 @@ function HomePage() {
                 return (
                   <LoyaltyBanner
                     key="loyalty"
-                    onOpenLoyaltyModal={() => setIsAccountDrawerOpen(true)}
+                    onOpenLoyaltyModal={() => navigate({ to: "/account" })}
                   />
                 );
 
@@ -932,36 +928,6 @@ function HomePage() {
           notifications={notifications}
           onMarkAllAsRead={handleMarkAllNotificationsRead}
         />
-
-        <AccountDrawer
-          isOpen={isAccountDrawerOpen}
-          onClose={() => setIsAccountDrawerOpen(false)}
-          currency={currency}
-          onSelectCurrency={setCurrency}
-          favoritesCount={favorites.length}
-          onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
-          onOpenTrackerForOrder={() => setIsTrackerModalOpen(true)}
-          onOpenAdmin={handleOpenAdmin}
-          onOpenEvolutionStudio={() => setIsEvolutionStudioOpen(true)}
-          onOpenUniverse={() => setIsProductUniverseOpen(true)}
-          isAdminUser={isAdminUser}
-        />
-
-        {/* Indexes Evolution Studio AI Visual Editor Modal */}
-        {isEvolutionStudioOpen && (
-          <IndexesEvolutionStudio
-            products={products}
-            onClose={() => setIsEvolutionStudioOpen(false)}
-            onApplyDraftToStore={(draft) => {
-              if (draft.designTokens?.colorPrimary) {
-                document.documentElement.style.setProperty(
-                  "--color-primary",
-                  draft.designTokens.colorPrimary,
-                );
-              }
-            }}
-          />
-        )}
 
         <WishlistDrawer
           isOpen={isWishlistDrawerOpen}
