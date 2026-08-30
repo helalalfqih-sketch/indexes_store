@@ -46,6 +46,49 @@ function config() {
   return { domain, token };
 }
 
+export async function diagnoseShopifyCatalog() {
+  const source = process.env.CATALOG_SOURCE || null;
+  const domainPresent = Boolean(process.env.SHOPIFY_STORE_DOMAIN);
+  const tokenPresent = Boolean(process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN);
+  const cfg = config();
+
+  if (!cfg) {
+    return {
+      healthy: false,
+      source,
+      domainPresent,
+      tokenPresent,
+      apiVersion: API_VERSION,
+      error: "Shopify catalog is not configured",
+    };
+  }
+
+  try {
+    const result = await storefront<{ products: { nodes: Array<{ id: string }> } }>(
+      `query CatalogHealth { products(first: 1) { nodes { id } } }`,
+    );
+    return {
+      healthy: true,
+      source,
+      domainPresent,
+      tokenPresent,
+      apiVersion: API_VERSION,
+      sampleProducts: result.products.nodes.length,
+      error: null,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown Shopify error";
+    return {
+      healthy: false,
+      source,
+      domainPresent,
+      tokenPresent,
+      apiVersion: API_VERSION,
+      error: message.slice(0, 300),
+    };
+  }
+}
+
 async function storefront<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
   const cfg = config();
   if (!cfg) throw new Error("Shopify catalog is not configured");
