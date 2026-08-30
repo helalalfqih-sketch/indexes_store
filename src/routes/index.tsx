@@ -28,7 +28,12 @@ import { Header } from "@/components/storefront/Header";
 import { ShippingBanner } from "@/components/storefront/ShippingBanner";
 import { AISearchSection } from "@/components/storefront/AISearchSection";
 import { HeroCarousel } from "@/components/storefront/HeroCarousel";
-import { CategoryBar, type PriceRangePreset, STORE_BRANDS, RATING_OPTIONS } from "@/components/storefront/CategoryBar";
+import {
+  CategoryBar,
+  type PriceRangePreset,
+  STORE_BRANDS,
+  RATING_OPTIONS,
+} from "@/components/storefront/CategoryBar";
 import { DiscoveryStrip } from "@/components/storefront/DiscoveryStrip";
 import { BestOffersSection } from "@/components/storefront/BestOffersSection";
 import { ProductCard } from "@/components/storefront/ProductCard";
@@ -53,7 +58,6 @@ import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { CheckoutModal } from "@/components/storefront/CheckoutModal";
 import { OrderTrackerModal } from "@/components/storefront/OrderTrackerModal";
 import { NotificationsModal } from "@/components/storefront/NotificationsModal";
-import { AccountDrawer } from "@/components/storefront/AccountDrawer";
 import { WishlistDrawer } from "@/components/storefront/WishlistDrawer";
 import { ProductCompareModal } from "@/components/storefront/ProductCompareModal";
 import { ToastNotification } from "@/components/storefront/ToastNotification";
@@ -63,10 +67,12 @@ import { ProductUniverseModal } from "@/components/storefront/ProductUniverseMod
 import { CartShareModal } from "@/components/storefront/CartShareModal";
 import { CustomerSupportHub } from "@/components/storefront/CustomerSupportHub";
 import type { SupportContext } from "@/components/storefront/CustomerSupportHub";
-import { IndexesEvolutionStudio } from "@/components/storefront/evolution-studio/IndexesEvolutionStudio";
 import { PerformanceMonitor } from "@/components/storefront/PerformanceMonitor";
 import { supabase } from "@/integrations/supabase/client";
-import { AddToCartAnimationOverlay, type FlyingCartItem } from "@/components/storefront/AddToCartAnimation";
+import {
+  AddToCartAnimationOverlay,
+  type FlyingCartItem,
+} from "@/components/storefront/AddToCartAnimation";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -220,7 +226,7 @@ function HomePage() {
 
   // Admin navigation via TanStack router — the /admin route has its own AdminGate
   const navigate = useNavigate();
-  const handleOpenAdmin = useCallback(() => navigate({ to: '/admin' }), [navigate]);
+  const handleOpenAdmin = useCallback(() => navigate({ to: "/admin" }), [navigate]);
 
   // Admin role check: verify confirmed role 'admin' or 'owner' in Supabase user_roles
   const [isAdminUser, setIsAdminUser] = useState<boolean>(false);
@@ -254,7 +260,7 @@ function HomePage() {
   // UI State
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [currency, setCurrency] = useState<Currency>("YER");
+  const currency: Currency = "YER";
   const [activeTab, setActiveTab] = useState<ActiveTab>("home");
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [priceRange, setPriceRange] = useState<PriceRangePreset>("all");
@@ -309,14 +315,12 @@ function HomePage() {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isTrackerModalOpen, setIsTrackerModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false);
   const [isWishlistDrawerOpen, setIsWishlistDrawerOpen] = useState(false);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [isProductStoryOpen, setIsProductStoryOpen] = useState(false);
   const [isProductUniverseOpen, setIsProductUniverseOpen] = useState(false);
   const [isCartShareOpen, setIsCartShareOpen] = useState(false);
   const [isSupportHubOpen, setIsSupportHubOpen] = useState(false);
-  const [isEvolutionStudioOpen, setIsEvolutionStudioOpen] = useState<boolean>(false);
   const [supportContext, setSupportContext] = useState<SupportContext>("home");
   const [recentlyViewed, setRecentlyViewed] = useState<DesignProduct[]>([]);
 
@@ -324,7 +328,12 @@ function HomePage() {
 
   // AddToCart animation state
   const [activeFlyingItems, setActiveFlyingItems] = useState<FlyingCartItem[]>([]);
-  const [lastAddedProduct, setLastAddedProduct] = useState<{ product: DesignProduct; quantity: number; selectedColor?: string; timestamp: number } | null>(null);
+  const [lastAddedProduct, setLastAddedProduct] = useState<{
+    product: DesignProduct;
+    quantity: number;
+    selectedColor?: string;
+    timestamp: number;
+  } | null>(null);
   const flyingIdRef = useRef(0);
 
   const unreadNotificationsCount = useMemo(
@@ -359,7 +368,7 @@ function HomePage() {
           const brandObj = STORE_BRANDS.find((b) => b.id === brandId);
           if (!brandObj) return false;
           // If a real brand field exists on the product, check it directly
-          if (p.brand && typeof p.brand === 'string' && p.brand.trim().length > 0) {
+          if (p.brand && typeof p.brand === "string" && p.brand.trim().length > 0) {
             const pb = p.brand.trim().toLowerCase();
             return (
               pb === brandObj.id.toLowerCase() ||
@@ -394,7 +403,17 @@ function HomePage() {
       default:
         return list;
     }
-  }, [products, selectedCategory, searchQuery, sortBy, priceRange, customMinPrice, customMaxPrice, selectedBrands, selectedRatings]);
+  }, [
+    products,
+    selectedCategory,
+    searchQuery,
+    sortBy,
+    priceRange,
+    customMinPrice,
+    customMaxPrice,
+    selectedBrands,
+    selectedRatings,
+  ]);
 
   // Track recently viewed products (max 10) and open the full cinematic product route.
   // The modal remains as a safe fallback for legacy products that do not have a slug.
@@ -474,7 +493,7 @@ function HomePage() {
     if (tab === "cart") {
       setIsCartDrawerOpen(true);
     } else if (tab === "account") {
-      setIsAccountDrawerOpen(true);
+      navigate({ to: "/account" });
     } else if (tab === "search") {
       window.scrollTo({ top: 400, behavior: "smooth" });
     }
@@ -523,7 +542,7 @@ function HomePage() {
           onOpenNotifications={() => setIsNotificationsModalOpen(true)}
           onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
           onOpenCompare={() => setIsCompareModalOpen(true)}
-          onOpenMenu={() => setIsAccountDrawerOpen(true)}
+          onOpenMenu={() => navigate({ to: "/account" })}
           onOpenTracker={() => setIsTrackerModalOpen(true)}
           onOpenAdmin={handleOpenAdmin}
           isAdminUser={isAdminUser}
@@ -628,7 +647,7 @@ function HomePage() {
                     isLoading={isLoading}
                     onToggleFavorite={handleToggleFavorite}
                     onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                    onSelectProduct={(prod) => setSelectedProductModal(prod)}
+                    onSelectProduct={handleSelectProduct}
                     onViewAll={() => handleSelectCategoryWithLoading("all")}
                   />
                 );
@@ -639,7 +658,7 @@ function HomePage() {
                     key="ai_search"
                     products={products}
                     currency={currency}
-                    onSelectProduct={(prod) => setSelectedProductModal(prod)}
+                    onSelectProduct={handleSelectProduct}
                     onSearchQuerySubmit={(q) => {
                       setIsLoading(true);
                       setSearchQuery(q);
@@ -752,17 +771,14 @@ function HomePage() {
               case "trustBadges":
                 if (!mappedSettings.sections.trustBadges.enabled) return null;
                 return (
-                  <TrustBar
-                    key="trustBadges"
-                    trustBadges={mappedSettings.sections.trustBadges}
-                  />
+                  <TrustBar key="trustBadges" trustBadges={mappedSettings.sections.trustBadges} />
                 );
 
               case "loyalty":
                 return (
                   <LoyaltyBanner
                     key="loyalty"
-                    onOpenLoyaltyModal={() => setIsAccountDrawerOpen(true)}
+                    onOpenLoyaltyModal={() => navigate({ to: "/account" })}
                   />
                 );
 
@@ -858,7 +874,9 @@ function HomePage() {
           onClose={() => setIsCartShareOpen(false)}
           cartItems={cartItems}
           catalogProducts={products}
-          onApplyRecoveredCart={(items) => items.forEach(i => handleAddToCart(i.product, i.quantity))}
+          onApplyRecoveredCart={(items) =>
+            items.forEach((i) => handleAddToCart(i.product, i.quantity))
+          }
         />
 
         {/* Customer Support Hub */}
@@ -932,36 +950,6 @@ function HomePage() {
           notifications={notifications}
           onMarkAllAsRead={handleMarkAllNotificationsRead}
         />
-
-        <AccountDrawer
-          isOpen={isAccountDrawerOpen}
-          onClose={() => setIsAccountDrawerOpen(false)}
-          currency={currency}
-          onSelectCurrency={setCurrency}
-          favoritesCount={favorites.length}
-          onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
-          onOpenTrackerForOrder={() => setIsTrackerModalOpen(true)}
-          onOpenAdmin={handleOpenAdmin}
-          onOpenEvolutionStudio={() => setIsEvolutionStudioOpen(true)}
-          onOpenUniverse={() => setIsProductUniverseOpen(true)}
-          isAdminUser={isAdminUser}
-        />
-
-        {/* Indexes Evolution Studio AI Visual Editor Modal */}
-        {isEvolutionStudioOpen && (
-          <IndexesEvolutionStudio
-            products={products}
-            onClose={() => setIsEvolutionStudioOpen(false)}
-            onApplyDraftToStore={(draft) => {
-              if (draft.designTokens?.colorPrimary) {
-                document.documentElement.style.setProperty(
-                  "--color-primary",
-                  draft.designTokens.colorPrimary,
-                );
-              }
-            }}
-          />
-        )}
 
         <WishlistDrawer
           isOpen={isWishlistDrawerOpen}

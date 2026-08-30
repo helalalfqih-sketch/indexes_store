@@ -7,10 +7,12 @@ export function buildOrderMessage(
   customer?: { name?: string; phone?: string; address?: string; notes?: string },
   coupon?: string,
   discount?: number,
-  customTemplate?: string
+  customTemplate?: string,
 ) {
   const formattedProducts = items
-    .map((it, idx) => `${idx + 1}. ${it.name} (الكمية: ${it.qty}) — ${formatPrice(it.price * it.qty)}`)
+    .map(
+      (it, idx) => `${idx + 1}. ${it.name} (الكمية: ${it.qty}) — ${formatPrice(it.price * it.qty)}`,
+    )
     .join("\n");
 
   const formattedTotal = formatPrice(total);
@@ -58,8 +60,8 @@ export function whatsappLink(message: string, phone = STORE_CONTACT) {
   const normalized = cleanPhone.startsWith("+")
     ? cleanPhone.slice(1)
     : cleanPhone.startsWith("967")
-    ? cleanPhone
-    : `967${cleanPhone}`;
+      ? cleanPhone
+      : `967${cleanPhone}`;
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }
 
@@ -68,8 +70,13 @@ export function quickOrderLink(
   product: Pick<Product, "name" | "price" | "slug">,
   phone = STORE_CONTACT,
 ) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const productUrl = product.slug ? `${origin}/product/${product.slug}` : origin;
+  const origin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : (import.meta.env.VITE_PUBLIC_URL || "https://indexes-store.vercel.app").replace(/\/$/, "");
+  const productUrl = product.slug
+    ? `${origin}/product/${encodeURIComponent(product.slug)}`
+    : origin;
   const text = `السلام عليكم،\nأريد طلب:\n${product.name}\n\nالسعر:\n${formatPrice(product.price)}\n\nالرابط:\n${productUrl}`;
   return whatsappLink(text, phone);
 }
