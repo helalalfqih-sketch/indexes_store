@@ -36,7 +36,9 @@ import { products as seedProducts } from "@/lib/store-data";
 
 export const listProductsInput = z
   .object({
-    categoryId: z.string().uuid().optional(),
+    // Shopify collection handles are stable string identifiers; legacy
+    // Supabase category UUIDs remain accepted during the migration window.
+    categoryId: z.string().trim().max(255).optional(),
     search: z.string().trim().max(120).optional(),
     limit: z.number().int().min(1).max(100).optional(),
     offset: z.number().int().min(0).optional(),
@@ -102,6 +104,7 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
   try {
     const shopify = await listShopifyProducts({ data: {
       search: data.search,
+      categoryId: data.categoryId,
       limit: data.limit,
       offset: data.offset,
     } });

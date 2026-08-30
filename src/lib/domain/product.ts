@@ -60,6 +60,10 @@ export type ProductDTO = {
   is_deal?: boolean | null;
   deal_start?: string | null;
   deal_end?: string | null;
+
+  // Shopify commerce identity (present when Shopify is the catalog source)
+  shopify_product_id?: string | null;
+  shopify_variant_id?: string | null;
 };
 
 export type CategoryDTO = {
