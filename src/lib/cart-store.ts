@@ -21,6 +21,12 @@ export type CartLine = {
   shopifyLineId?: string | null;
 };
 
+type CartProduct = Product & {
+  shopifyVariantId?: string | null;
+  is_published?: boolean;
+  status?: string;
+};
+
 type CartState = {
   items: CartLine[];
   cartId: string | null;
@@ -64,8 +70,8 @@ export const useCart = create<CartState>()(
       };
 
       const createRemoteCart = async () => {
-        const lines = get().items
-          .filter((item) => item.variantId)
+        const lines = get()
+          .items.filter((item) => item.variantId)
           .map((item) => ({ merchandiseId: item.variantId as string, quantity: item.qty }));
         if (!lines.length) return;
         set({ syncing: true, syncError: null });
@@ -77,92 +83,93 @@ export const useCart = create<CartState>()(
         }
       };
 
-      return ({
-      items: [],
-      cartId: null,
-      checkoutUrl: null,
-      syncError: null,
-      syncing: false,
-      add: (p: Product & { shopifyVariantId?: string | null }, qty = 1) => {
-        const isPublished = (p as any).is_published !== false && (p as any).status !== "archived";
-        if (!isPublished) return;
+      return {
+        items: [],
+        cartId: null,
+        checkoutUrl: null,
+        syncError: null,
+        syncing: false,
+        add: (p: CartProduct, qty = 1) => {
+          const isPublished = p.is_published !== false && p.status !== "archived";
+          if (!isPublished) return;
 
-        trackEvent("add_to_cart", { productId: p.id, name: p.name, price: p.price, qty });
+          trackEvent("add_to_cart", { productId: p.id, name: p.name, price: p.price, qty });
 
-        set((s) => {
-          const existing = s.items.find((i) => i.productId === p.id);
-          if (existing) {
+          set((s) => {
+            const existing = s.items.find((i) => i.productId === p.id);
+            if (existing) {
+              return {
+                items: s.items.map((i) => (i.productId === p.id ? { ...i, qty: i.qty + qty } : i)),
+              };
+            }
             return {
-              items: s.items.map((i) =>
-                i.productId === p.id ? { ...i, qty: i.qty + qty } : i,
-              ),
+              items: [
+                ...s.items,
+                {
+                  productId: p.id,
+                  variantId: p.shopifyVariantId ?? null,
+                  name: p.name,
+                  price: p.price,
+                  image: p.image,
+                  qty,
+                },
+              ],
             };
-          }
-          return {
-            items: [
-              ...s.items,
-              {
-                productId: p.id,
-                variantId: p.shopifyVariantId ?? null,
-                name: p.name,
-                price: p.price,
-                image: p.image,
-                qty,
-              },
-            ],
-          };
-        });
+          });
 
-        const variantId = p.shopifyVariantId;
-        const cartId = get().cartId;
-        if (!variantId) {
-          set({ syncError: "معرّف Shopify variant غير متاح لهذا المنتج" });
-          return;
-        }
-        if (!cartId) {
-          void createRemoteCart();
-          return;
-        }
-        set({ syncing: true, syncError: null });
-        void addShopifyCartLines({ data: { cartId, lines: [{ merchandiseId: variantId, quantity: qty }] } })
-          .then((result) => applyRemoteCart(result.cart))
-          .catch(failSync);
-      },
-      remove: (productId) => {
-        const current = get().items.find((item) => item.productId === productId);
-        const cartId = get().cartId;
-        set((s) => ({ items: s.items.filter((i) => i.productId !== productId) }));
-        if (!cartId || !current?.shopifyLineId) return;
-        set({ syncing: true, syncError: null });
-        void removeShopifyCartLines({ data: { cartId, lineIds: [current.shopifyLineId] } })
-          .then((result) => applyRemoteCart(result.cart))
-          .catch(failSync);
-      },
-      setQty: (productId, qty) => {
-        const current = get().items.find((item) => item.productId === productId);
-        const cartId = get().cartId;
-        set((s) => ({
-          items: s.items
-            .map((i) => (i.productId === productId ? { ...i, qty } : i))
-            .filter((i) => i.qty > 0),
-        }));
-        if (!cartId || !current?.shopifyLineId) {
-          if (get().items.length) void createRemoteCart();
-          return;
-        }
-        set({ syncing: true, syncError: null });
-        const operation = qty <= 0
-          ? removeShopifyCartLines({ data: { cartId, lineIds: [current.shopifyLineId] } })
-          : updateShopifyCartLines({
-              data: { cartId, lines: [{ id: current.shopifyLineId, quantity: qty }] },
-            });
-        void operation.then((result) => applyRemoteCart(result.cart)).catch(failSync);
-      },
-      clear: () =>
-        set({ items: [], cartId: null, checkoutUrl: null, syncError: null, syncing: false }),
-      total: () => get().items.reduce((sum, i) => sum + i.price * i.qty, 0),
-      count: () => get().items.reduce((sum, i) => sum + i.qty, 0),
-    });
+          const variantId = p.shopifyVariantId;
+          const cartId = get().cartId;
+          if (!variantId) {
+            set({ syncError: "معرّف Shopify variant غير متاح لهذا المنتج" });
+            return;
+          }
+          if (!cartId) {
+            void createRemoteCart();
+            return;
+          }
+          set({ syncing: true, syncError: null });
+          void addShopifyCartLines({
+            data: { cartId, lines: [{ merchandiseId: variantId, quantity: qty }] },
+          })
+            .then((result) => applyRemoteCart(result.cart))
+            .catch(failSync);
+        },
+        remove: (productId) => {
+          const current = get().items.find((item) => item.productId === productId);
+          const cartId = get().cartId;
+          set((s) => ({ items: s.items.filter((i) => i.productId !== productId) }));
+          if (!cartId || !current?.shopifyLineId) return;
+          set({ syncing: true, syncError: null });
+          void removeShopifyCartLines({ data: { cartId, lineIds: [current.shopifyLineId] } })
+            .then((result) => applyRemoteCart(result.cart))
+            .catch(failSync);
+        },
+        setQty: (productId, qty) => {
+          const current = get().items.find((item) => item.productId === productId);
+          const cartId = get().cartId;
+          set((s) => ({
+            items: s.items
+              .map((i) => (i.productId === productId ? { ...i, qty } : i))
+              .filter((i) => i.qty > 0),
+          }));
+          if (!cartId || !current?.shopifyLineId) {
+            if (get().items.length) void createRemoteCart();
+            return;
+          }
+          set({ syncing: true, syncError: null });
+          const operation =
+            qty <= 0
+              ? removeShopifyCartLines({ data: { cartId, lineIds: [current.shopifyLineId] } })
+              : updateShopifyCartLines({
+                  data: { cartId, lines: [{ id: current.shopifyLineId, quantity: qty }] },
+                });
+          void operation.then((result) => applyRemoteCart(result.cart)).catch(failSync);
+        },
+        clear: () =>
+          set({ items: [], cartId: null, checkoutUrl: null, syncError: null, syncing: false }),
+        total: () => get().items.reduce((sum, i) => sum + i.price * i.qty, 0),
+        count: () => get().items.reduce((sum, i) => sum + i.qty, 0),
+      };
     },
     {
       name: "noqta-cart-v2",
