@@ -1,4 +1,5 @@
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { Link } from "@tanstack/react-router";
 import { Check, PackageCheck, RotateCcw, ShoppingBag, Truck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { formatPrice } from "@/lib/store-data";
@@ -210,14 +211,23 @@ export function DispatchProductExperience({
                     <p className="text-xl font-black">أصبح طلبك جاهزاً</p>
                     <p className="mt-1 text-sm text-white/55">تمت إضافته إلى السلة بنجاح</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={reset}
-                    className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold hover:bg-white/10"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    مشاهدة الحركة مجدداً
-                  </button>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <Link
+                      to="/cart"
+                      className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-xs font-black text-white shadow-[0_10px_30px_rgba(16,185,129,.28)] hover:bg-emerald-400"
+                    >
+                      <ShoppingBag className="h-4 w-4" />
+                      أكمل الطلب
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={reset}
+                      className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold hover:bg-white/10"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      مشاهدة الحركة مجدداً
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
