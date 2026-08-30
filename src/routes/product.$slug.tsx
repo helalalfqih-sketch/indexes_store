@@ -32,7 +32,6 @@ import { buildProductHead } from "@/lib/seo";
 import { ProductMediaGallery } from "@/components/product-media-gallery";
 import { ProductRecommendations } from "@/components/product-recommendations";
 import { trackEvent } from "@/lib/analytics";
-import { DispatchProductExperience } from "@/components/storefront/DispatchProductExperience";
 
 const DARK = "var(--showcase)";
 const LIGHT = "var(--showcase-foreground)";
@@ -219,22 +218,7 @@ function ProductPage() {
         </span>
       </nav>
 
-      <div ref={heroRef}>
-        <DispatchProductExperience
-          product={{
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            image: product.image,
-            price: product.price,
-            stock: product.stock,
-          }}
-          onBuy={handleAdd}
-        />
-      </div>
-
-      {/* Full product information remains below the cinematic purchase experience. */}
-      <div className="mx-auto max-w-7xl px-4 pt-12 lg:px-8">
+      <div ref={heroRef} className="mx-auto max-w-7xl px-4 pt-8 lg:px-8 lg:pt-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Right/Top Column: Interactive Gallery (7 columns on Desktop) */}
           <div className="lg:col-span-7 flex flex-col gap-4">
@@ -257,7 +241,10 @@ function ProductPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="rounded-md bg-primary/15 px-2.5 py-0.5 text-xs font-bold text-primary border border-primary/20">
-                  {product.categoryName || product.category_name || (product.categoryId ? undefined : null) || "عام"}
+                  {product.categoryName ||
+                    product.category_name ||
+                    (product.categoryId ? undefined : null) ||
+                    "عام"}
                 </span>
                 <span className="flex items-center gap-1 text-xs font-bold text-success">
                   <CheckCircle2 className="h-3.5 w-3.5" />
