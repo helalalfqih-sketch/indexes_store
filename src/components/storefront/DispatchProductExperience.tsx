@@ -27,10 +27,7 @@ const swatches = [
   { name: "ليموني", value: "#b8dc45" },
 ];
 
-export function DispatchProductExperience({
-  product,
-  onBuy,
-}: DispatchProductExperienceProps) {
+export function DispatchProductExperience({ product, onBuy }: DispatchProductExperienceProps) {
   const [stage, setStage] = useState<DispatchStage>("idle");
   const [accent, setAccent] = useState(swatches[2]);
   const timers = useRef<number[]>([]);
