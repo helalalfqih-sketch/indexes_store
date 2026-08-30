@@ -2602,25 +2602,24 @@ function StorefrontCMSPage() {
 
   const handleApplyEvolutionStudioDraft = useCallback((draft: DraftConfig) => {
     saveActiveDraft(draft);
-    const universe = draft.universe3d;
+    const universe = draft.universe3D;
     const tokens = draft.designTokens;
     setLocal((prev) => ({
       ...prev,
       theme: {
         ...prev.theme,
-        primaryColor: tokens.colors.primary,
-        secondaryColor: tokens.colors.secondary,
-        accentColor: tokens.colors.accent,
-        backgroundColor: tokens.colors.background,
-        surfaceColor: tokens.colors.surface,
-        borderRadius: `${tokens.geometry.radiusScale * 12}px`,
+        primaryColor: tokens.colorPrimary,
+        secondaryColor: tokens.colorSecondary,
+        accentColor: tokens.colorAccent,
+        backgroundColor: tokens.colorBackground,
+        surfaceColor: tokens.colorSurface,
+        borderRadius: tokens.borderRadius,
       },
       hero: {
         ...prev.hero,
-        globeRadius: universe.sphereRadius,
-        globeCardShape: universe.nodeCardShape,
-        globeShowParticles: universe.particleFieldEnabled,
-        globeRotationSpeed: universe.autoRotateSpeed,
+        globeRadius: universe.planetSize,
+        globeShowParticles: universe.particleDensity > 0,
+        globeRotationSpeed: universe.orbitSpeed,
       },
     }));
     dirty.current = true;
