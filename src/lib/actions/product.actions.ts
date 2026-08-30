@@ -193,11 +193,12 @@ export async function fetchProductsByCategory(
     /* ignore */
   }
 
-  const matchedCat = categories.find(
-    (c) => c.id === key || c.slug === key || c.slug === cleanKey || c.id === cleanKey,
-  );
-  const targetSlug = matchedCat ? matchedCat.slug : cleanKey;
-  const targetId = matchedCat ? matchedCat.id : key;
+  const matchedCat = categories.find((category) => {
+    const categoryKey = category.id.toLowerCase().replace(/_/g, "-");
+    return category.id === key || categoryKey === cleanKey;
+  });
+  const targetSlug = matchedCat?.id ?? cleanKey;
+  const targetId = matchedCat?.id ?? key;
 
   const all = await fetchProducts();
   return all.filter((p) => {
