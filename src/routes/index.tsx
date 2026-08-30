@@ -396,13 +396,20 @@ function HomePage() {
     }
   }, [products, selectedCategory, searchQuery, sortBy, priceRange, customMinPrice, customMaxPrice, selectedBrands, selectedRatings]);
 
-  // Track recently viewed products (max 10)
+  // Track recently viewed products (max 10) and open the full cinematic product route.
+  // The modal remains as a safe fallback for legacy products that do not have a slug.
   const handleSelectProduct = (product: DesignProduct) => {
-    setSelectedProductModal(product);
     setRecentlyViewed((prev) => {
       const filtered = prev.filter((p) => p.id !== product.id);
       return [product, ...filtered].slice(0, 10);
     });
+
+    if (product.slug) {
+      navigate({ to: "/product/$slug", params: { slug: product.slug } });
+      return;
+    }
+
+    setSelectedProductModal(product);
   };
 
   // Handlers using real production cart and favorites
@@ -520,7 +527,7 @@ function HomePage() {
           onOpenTracker={() => setIsTrackerModalOpen(true)}
           onOpenAdmin={handleOpenAdmin}
           isAdminUser={isAdminUser}
-          onSelectProduct={(p) => setSelectedProductModal(p)}
+          onSelectProduct={handleSelectProduct}
         />
 
         {/* 2. Top Shipping Announcement Banner */}
