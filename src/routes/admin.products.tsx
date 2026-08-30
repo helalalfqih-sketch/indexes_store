@@ -46,6 +46,7 @@ import {
 import { useCurrentTenant } from "@/components/tenant-provider";
 import { publishProductToFacebook } from "@/lib/facebook.functions";
 import { useServerFn } from "@tanstack/react-start";
+import { listShopifyCategories } from "@/lib/shopify/catalog.functions";
 
 export const Route = createFileRoute("/admin/products")({
   component: ProductsPage,
@@ -88,7 +89,10 @@ function ProductsPage() {
 
   const categoriesQ = useQuery({
     queryKey: ["admin-categories"],
-    queryFn: () => listAdminCategories(),
+    queryFn: async () => {
+      const shopify = await listShopifyCategories();
+      return shopify.configured ? shopify.items : listAdminCategories();
+    },
   });
 
   const invalidate = () => invalidateCatalogCache(qc);
@@ -276,7 +280,14 @@ function ProductsPage() {
   }, [products, filter]);
 
   // Total counts from response metadata
-  const metaData = productsQ.data as unknown as { total?: number; totalCount?: number };
+  const metaData = productsQ.data as unknown as {
+    total?: number;
+    totalCount?: number;
+    catalogSource?: "shopify" | "supabase";
+    productsWithPrice?: number;
+    productsWithImages?: number;
+  };
+  const isShopifyCatalog = metaData?.catalogSource === "shopify";
   const totalCount = Number(metaData?.total ?? metaData?.totalCount ?? products.length);
   const pageCount = Math.ceil(totalCount / pageSize) || 1;
   const syncedCount = products.filter((p) => p.meta_sync_status === "synced").length;
@@ -333,10 +344,12 @@ function ProductsPage() {
             🛍️ {t("products.title")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {productsQ.isLoading ? "جارٍ التحميل..." : `${products.length} منتج إجمالي`}
+            {productsQ.isLoading ? "جارٍ التحميل..." : `${totalCount} منتج إجمالي`}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {!isShopifyCatalog && (
+            <>
           <button
             onClick={() => {
               if (confirm("هل تريد توزيع وتصنيف جميع المنتجات تلقائياً حسب الفئات المناسبة؟")) {
@@ -400,8 +413,24 @@ function ProductsPage() {
             <Sparkles className="h-4 w-4" />
             {t("nav.studio")}
           </Link>
+            </>
+          )}
         </div>
       </div>
+
+      {isShopifyCatalog && (
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+            <div>
+              <p className="font-black text-foreground">كتالوج Shopify متصل</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                تعرض هذه الصفحة المنتجات الحقيقية من Shopify. التعديل والحذف والإخفاء يتم من لوحة Shopify لأن Storefront API الحالي للقراءة فقط.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Import Result Panel */}
       {importMut.isPending && (
@@ -513,6 +542,7 @@ function ProductsPage() {
       )}
 
       {/* Feed URL Card */}
+      {!isShopifyCatalog && (
       <div className="rounded-2xl border border-border/60 bg-surface/50 p-5 shadow-card">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -565,17 +595,30 @@ function ProductsPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+      <div className={`grid grid-cols-2 gap-3 ${isShopifyCatalog ? "sm:grid-cols-3" : "sm:grid-cols-4 lg:grid-cols-7"}`}>
         <div className="rounded-2xl border border-border bg-surface p-4">
           <p className="text-xs font-medium text-muted-foreground">إجمالي المنتجات</p>
           <p className="mt-1 text-2xl font-black text-foreground">{totalCount}</p>
         </div>
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
-          <p className="text-xs font-medium text-primary">الصور المستوردة</p>
-          <p className="mt-1 text-2xl font-black text-primary">{importedImagesCount}</p>
+          <p className="text-xs font-medium text-primary">
+            {isShopifyCatalog ? "منتجات بصور" : "الصور المستوردة"}
+          </p>
+          <p className="mt-1 text-2xl font-black text-primary">
+            {isShopifyCatalog ? (metaData.productsWithImages ?? 0) : importedImagesCount}
+          </p>
         </div>
+        {isShopifyCatalog && (
+          <div className="rounded-2xl border border-success/30 bg-success/10 p-4">
+            <p className="text-xs font-medium text-success">منتجات بأسعار</p>
+            <p className="mt-1 text-2xl font-black text-success">{metaData.productsWithPrice ?? 0}</p>
+          </div>
+        )}
+        {!isShopifyCatalog && (
+          <>
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
           <p className="text-xs font-medium text-primary">الفيديوهات المستوردة</p>
           <p className="mt-1 text-2xl font-black text-primary">{importedVideosCount}</p>
@@ -596,6 +639,8 @@ function ProductsPage() {
           <p className="text-xs font-medium text-muted-foreground">مخفية عن المتجر</p>
           <p className="mt-1 text-2xl font-black text-muted-foreground">{hiddenCount}</p>
         </div>
+          </>
+        )}
       </div>
 
       {/* Filters & Search */}
@@ -631,7 +676,10 @@ function ProductsPage() {
               { id: "out", label: "نفد" },
               { id: "synced", label: "متزامن" },
               { id: "failed", label: "فشل المزامنة" },
-            ] as const
+            ].filter((item) => !isShopifyCatalog || !["synced", "failed"].includes(item.id)) as Array<{
+              id: Filter;
+              label: string;
+            }>
           ).map((f) => (
             <button
               key={f.id}
@@ -701,7 +749,9 @@ function ProductsPage() {
                   {/* Sync Status Badge */}
                   <span
                     className={`absolute top-3 start-3 rounded-md px-2 py-0.5 text-[9px] font-bold text-primary-foreground shadow-sm transition ${
-                      isSynced
+                      isShopifyCatalog
+                        ? "bg-emerald-600/90"
+                        : isSynced
                         ? "bg-success/90"
                         : isSyncing
                           ? "bg-primary/90 animate-pulse"
@@ -710,7 +760,9 @@ function ProductsPage() {
                             : "bg-warning/90"
                     }`}
                   >
-                    {isSynced
+                    {isShopifyCatalog
+                      ? "✓ Shopify"
+                      : isSynced
                       ? "✓ متزامن"
                       : isSyncing
                         ? "⏳ جاري المزامنة"
@@ -743,7 +795,7 @@ function ProductsPage() {
                     </div>
 
                     {/* Action Dropdown Menu */}
-                    <DropdownMenu>
+                    {!isShopifyCatalog && <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
                           aria-label={`خيارات الإدارة للمنتج ${p.name}`}
@@ -804,12 +856,13 @@ function ProductsPage() {
                           <span>حذف</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
-                    </DropdownMenu>
+                    </DropdownMenu>}
                   </div>
 
                   <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground gap-2">
                     <select
                       value={p.category_id || ""}
+                      disabled={isShopifyCatalog}
                       onChange={(e) =>
                         changeProductCategoryMut.mutate({ id: p.id, category_id: e.target.value })
                       }
@@ -839,7 +892,7 @@ function ProductsPage() {
                   </div>
 
                   {/* Inline Primary Actions */}
-                  <div className="mt-3.5 flex gap-2">
+                  {!isShopifyCatalog && <div className="mt-3.5 flex gap-2">
                     <button
                       onClick={() =>
                         togglePublish.mutate({ id: p.id, is_published: !p.is_published })
@@ -874,7 +927,7 @@ function ProductsPage() {
                         <RefreshCw className="h-3.5 w-3.5" />
                       )}
                     </button>
-                  </div>
+                  </div>}
                 </div>
               </div>
             );

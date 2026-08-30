@@ -23,6 +23,7 @@ import {
   adminBulkAssignCategory,
 } from "@/lib/catalog.functions";
 import { adminImportCatalogFromUrl } from "@/lib/catalog-import.functions";
+import { listShopifyAdminProducts } from "@/lib/shopify/catalog.functions";
 import {
   productInputSchema,
   productUpdateSchema,
@@ -35,7 +36,7 @@ import {
 
 export const listAdminProductsInput = z.object({
   search: z.string().trim().max(120).optional(),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.string().trim().max(255).optional(),
   publishedOnly: z.boolean().optional(),
   unpublishedOnly: z.boolean().optional(),
   outOfStock: z.boolean().optional(),
@@ -47,10 +48,29 @@ export const listAdminProductsInput = z.object({
 export type ListAdminProductsInput = z.infer<typeof listAdminProductsInput>;
 
 export const listAdminProducts = async (input: ListAdminProductsInput = {}) => {
-  const res = await adminListProducts({ data: listAdminProductsInput.parse(input) });
+  const parsed = listAdminProductsInput.parse(input);
+  const shopify = await listShopifyAdminProducts({ data: parsed });
+  if (shopify.configured) {
+    const arr = shopify.items as any;
+    arr.total = shopify.total;
+    arr.totalCount = shopify.total;
+    arr.catalogSource = "shopify";
+    arr.productsWithPrice = shopify.productsWithPrice;
+    arr.productsWithImages = shopify.productsWithImages;
+    return arr as typeof shopify.items & {
+      total: number;
+      totalCount: number;
+      catalogSource: "shopify";
+      productsWithPrice: number;
+      productsWithImages: number;
+    };
+  }
+
+  const res = await adminListProducts({ data: parsed });
   const arr = res.items as any;
   arr.total = res.total;
   arr.totalCount = res.total;
+  arr.catalogSource = "supabase";
   return arr as (typeof res.items & { total: number; totalCount: number });
 };
 
