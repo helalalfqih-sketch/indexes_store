@@ -68,8 +68,13 @@ export function quickOrderLink(
   product: Pick<Product, "name" | "price" | "slug">,
   phone = STORE_CONTACT,
 ) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const productUrl = product.slug ? `${origin}/product/${product.slug}` : origin;
+  const origin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : (import.meta.env.VITE_PUBLIC_URL || "https://indexes-store.vercel.app").replace(/\/$/, "");
+  const productUrl = product.slug
+    ? `${origin}/product/${encodeURIComponent(product.slug)}`
+    : origin;
   const text = `السلام عليكم،\nأريد طلب:\n${product.name}\n\nالسعر:\n${formatPrice(product.price)}\n\nالرابط:\n${productUrl}`;
   return whatsappLink(text, phone);
 }
