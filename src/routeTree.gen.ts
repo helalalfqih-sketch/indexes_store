@@ -45,6 +45,7 @@ import { Route as GoogleShoppingXmlRouteImport } from './routes/google-shopping.
 import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
 import { Route as ApiOrdersRouteImport } from './routes/api/orders'
+import { Route as ApiCatalogHealthRouteImport } from './routes/api/catalog-health'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSystemHealthRouteImport } from './routes/admin.system-health'
 import { Route as AdminStudioRouteImport } from './routes/admin.studio'
@@ -268,6 +269,11 @@ const CategoryIdRoute = CategoryIdRouteImport.update({
 const ApiOrdersRoute = ApiOrdersRouteImport.update({
   id: '/api/orders',
   path: '/api/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCatalogHealthRoute = ApiCatalogHealthRouteImport.update({
+  id: '/api/catalog-health',
+  path: '/api/catalog-health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -544,6 +550,7 @@ export interface FileRoutesByFullPath {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/catalog-health': typeof ApiCatalogHealthRoute
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -624,6 +631,7 @@ export interface FileRoutesByTo {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/catalog-health': typeof ApiCatalogHealthRoute
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -707,6 +715,7 @@ export interface FileRoutesById {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/catalog-health': typeof ApiCatalogHealthRoute
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -791,6 +800,7 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/catalog-health'
     | '/api/orders'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -871,6 +881,7 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/catalog-health'
     | '/api/orders'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -953,6 +964,7 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/api/catalog-health'
     | '/api/orders'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -1003,6 +1015,7 @@ export interface RootRouteChildren {
   StoreRoute: typeof StoreRouteWithChildren
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
+  ApiCatalogHealthRoute: typeof ApiCatalogHealthRoute
   ApiOrdersRoute: typeof ApiOrdersRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
@@ -1273,6 +1286,13 @@ declare module '@tanstack/react-router' {
       path: '/api/orders'
       fullPath: '/api/orders'
       preLoaderRoute: typeof ApiOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/catalog-health': {
+      id: '/api/catalog-health'
+      path: '/api/catalog-health'
+      fullPath: '/api/catalog-health'
+      preLoaderRoute: typeof ApiCatalogHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -1726,6 +1746,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoreRoute: StoreRouteWithChildren,
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
+  ApiCatalogHealthRoute: ApiCatalogHealthRoute,
   ApiOrdersRoute: ApiOrdersRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
