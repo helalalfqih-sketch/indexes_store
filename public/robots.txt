@@ -1,0 +1,21 @@
+# Robots.txt — Indexes Store | اندكس ستور
+User-agent: *
+Allow: /
+Allow: /product/
+Allow: /category/
+Allow: /offers
+
+Disallow: /admin
+Disallow: /admin/
+Disallow: /account
+Disallow: /cart
+Disallow: /checkout
+Disallow: /auth
+Disallow: /onboarding
+Disallow: /api/
+Disallow: /immersive-store
+Disallow: /demo/
+
+Sitemap: https://indexes-store.vercel.app/sitemap.xml
+
+Crawl-delay: 1
