@@ -84,8 +84,14 @@ export const Route = createFileRoute("/")({
   errorComponent: () => (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center dir-rtl">
       <p className="text-lg font-bold text-rose-500">تعذر تحميل المنتجات مؤقتًا</p>
-      <p className="text-sm text-[var(--color-text-secondary)]">حاول تحديث الصفحة أو العودة لاحقًا.</p>
-      <button type="button" onClick={() => window.location.reload()} className="mt-2 rounded-xl bg-[#2F6BFF] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#2458D8]">
+      <p className="text-sm text-[var(--color-text-secondary)]">
+        حاول تحديث الصفحة أو العودة لاحقًا.
+      </p>
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        className="mt-2 rounded-xl bg-[#2F6BFF] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#2458D8]"
+      >
         إعادة المحاولة
       </button>
     </div>
@@ -113,9 +119,7 @@ function HomePage() {
     [rawAppearanceSettings],
   );
 
-  const { data: bestSellers = [], isLoading: bestSellersLoading } = useQuery(
-    bestSellersQuery(12),
-  );
+  const { data: bestSellers = [], isLoading: bestSellersLoading } = useQuery(bestSellersQuery(12));
   const { data: dailyDeals = [], isLoading: dailyDealsLoading } = useQuery(offersQuery(8));
   const catalogLoading = bestSellersLoading || dailyDealsLoading;
 
@@ -471,9 +475,7 @@ function HomePage() {
     } else if (tab === "search") {
       window.scrollTo({ top: 400, behavior: "smooth" });
     } else if (tab === ("categories" as ActiveTab)) {
-      document
-        .querySelector('[data-section="categories"]')
-        ?.scrollIntoView({ behavior: "smooth" });
+      document.querySelector('[data-section="categories"]')?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -555,23 +557,23 @@ function HomePage() {
                 return (
                   <div key="categories" data-section="categories">
                     <CategoryBar
-                    selectedCategoryId={selectedCategory}
-                    onSelectCategory={handleSelectCategoryWithLoading}
-                    selectedSort={sortBy}
-                    onSelectSort={(sortOption) => setSortBy(sortOption)}
-                    selectedPriceRange={priceRange}
-                    customMinPrice={customMinPrice}
-                    customMaxPrice={customMaxPrice}
-                    onSelectPriceRange={(range, min, max) => {
-                      setPriceRange(range);
-                      setCustomMinPrice(min);
-                      setCustomMaxPrice(max);
-                    }}
-                    selectedBrands={selectedBrands}
-                    onSelectBrands={setSelectedBrands}
-                    selectedRatings={selectedRatings}
-                    onSelectRatings={setSelectedRatings}
-                  />
+                      selectedCategoryId={selectedCategory}
+                      onSelectCategory={handleSelectCategoryWithLoading}
+                      selectedSort={sortBy}
+                      onSelectSort={(sortOption) => setSortBy(sortOption)}
+                      selectedPriceRange={priceRange}
+                      customMinPrice={customMinPrice}
+                      customMaxPrice={customMaxPrice}
+                      onSelectPriceRange={(range, min, max) => {
+                        setPriceRange(range);
+                        setCustomMinPrice(min);
+                        setCustomMaxPrice(max);
+                      }}
+                      selectedBrands={selectedBrands}
+                      onSelectBrands={setSelectedBrands}
+                      selectedRatings={selectedRatings}
+                      onSelectRatings={setSelectedRatings}
+                    />
                   </div>
                 );
 

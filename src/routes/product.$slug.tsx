@@ -45,6 +45,7 @@ export const Route = createFileRoute("/product/$slug")({
     </div>
   ),
   head: (ctx) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = ctx.loaderData as any;
     if (!data?.product) {
       return {
@@ -99,10 +100,16 @@ export const Route = createFileRoute("/product/$slug")({
     </div>
   ),
   errorComponent: () => (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center" dir="rtl">
+    <div
+      className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center"
+      dir="rtl"
+    >
       <p className="text-lg font-bold text-destructive">تعذر تحميل المنتج مؤقتًا</p>
       <p className="text-sm text-muted-foreground">حاول تحديث الصفحة أو العودة لاحقًا.</p>
-      <Link to="/" className="mt-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90">
+      <Link
+        to="/"
+        className="mt-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90"
+      >
         العودة للمتجر
       </Link>
     </div>
@@ -113,6 +120,7 @@ export const Route = createFileRoute("/product/$slug")({
 function ProductPage() {
   const { slug } = Route.useParams();
   const { data: productRaw } = useSuspenseQuery(productBySlugQueryOptions(slug));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const product = productRaw as any;
 
   if (!product) {
@@ -360,8 +368,14 @@ function ProductPage() {
                   disabled={!isAvailable || added}
                   className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black transition ${isAvailable && !added ? "bg-[#2F6BFF] text-white hover:bg-[#2458D8]" : added ? "bg-emerald-600 text-white" : "cursor-not-allowed bg-showcase-foreground/10 text-showcase-foreground/40"}`}
                 >
-                  {added ? <CheckCircle2 className="h-5 w-5" /> : <ShoppingCart className="h-5 w-5" />}
-                  <span>{added ? "تمت الإضافة للسلة ✓" : isAvailable ? "أضف للسلة" : "غير متوفر حالياً"}</span>
+                  {added ? (
+                    <CheckCircle2 className="h-5 w-5" />
+                  ) : (
+                    <ShoppingCart className="h-5 w-5" />
+                  )}
+                  <span>
+                    {added ? "تمت الإضافة للسلة ✓" : isAvailable ? "أضف للسلة" : "غير متوفر حالياً"}
+                  </span>
                 </button>
               )}
 
@@ -454,7 +468,11 @@ function ProductPage() {
               disabled={added}
               className="flex items-center gap-1.5 rounded-xl bg-[#2F6BFF] px-3 py-2 text-xs font-black text-white transition hover:bg-[#2458D8] disabled:bg-emerald-600"
             >
-              {added ? <CheckCircle2 className="h-3.5 w-3.5" /> : <ShoppingCart className="h-3.5 w-3.5" />}
+              {added ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <ShoppingCart className="h-3.5 w-3.5" />
+              )}
               {added ? "تمت ✓" : "أضف للسلة"}
             </button>
             {pageCfg.showWaBtn !== false && (
