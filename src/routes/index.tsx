@@ -773,7 +773,10 @@ function HomePage() {
         />
 
         {/* Floating WhatsApp Quick Contact Button */}
-        <FloatingWhatsAppButton isOpen={true} onToggle={() => {}} />
+        <FloatingWhatsAppButton
+          isOpen={isSupportHubOpen}
+          onToggle={() => setIsSupportHubOpen((open) => !open)}
+        />
 
         {/* Modals & Drawers */}
         <ProductDetailModal

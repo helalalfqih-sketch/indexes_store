@@ -52,10 +52,10 @@ function AccountPage() {
   if (!customer)
     return (
       <main
-        className="mx-auto grid min-h-[55vh] w-full max-w-xl place-items-center px-4 py-10"
+        className="mx-auto w-full max-w-xl px-4 py-6 sm:py-10"
         dir="rtl"
       >
-        <section className="w-full space-y-5 rounded-3xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-6 text-center shadow-[var(--shadow-md)]">
+        <section className="w-full space-y-5 rounded-3xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-5 text-center shadow-[var(--shadow-md)] sm:p-6">
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[var(--color-primary-ui-soft)] text-[var(--color-primary-ui)]">
             <User />
           </span>
