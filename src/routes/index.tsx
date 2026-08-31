@@ -20,6 +20,7 @@ import {
 import { mapProductionProductToDesignProduct } from "@/components/storefront/adapters";
 
 import { Header } from "@/components/storefront/Header";
+import { MobileReferenceHeader } from "@/components/storefront/MobileReferenceHeader";
 import { ShippingBanner } from "@/components/storefront/ShippingBanner";
 import { SalesHero } from "@/components/storefront/SalesHero";
 import { VisualCategoryCircles } from "@/components/storefront/VisualCategoryCircles";
@@ -497,40 +498,57 @@ function HomePage() {
 
       {/* Foreground Store Content */}
       <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Native PWA App Install Banner for Mobile/Desktop */}
-        <AppInstallBanner />
+        {/* Keep the install prompt and full desktop header off the reference mobile layout. */}
+        <div className="hidden md:block">
+          <AppInstallBanner />
+        </div>
 
-        {/* 1. Sticky Header */}
-        <Header
+        <div className="hidden md:block">
+          {/* 1. Sticky Header */}
+          <Header
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            cartCount={cartStoreCount}
+            unreadNotificationsCount={unreadNotificationsCount}
+            wishlistCount={favorites.length}
+            compareCount={compareList.length}
+            products={products}
+            currency={currency}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onOpenCart={() => setIsCartDrawerOpen(true)}
+            onOpenNotifications={() => setIsNotificationsModalOpen(true)}
+            onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
+            onOpenCompare={() => setIsCompareModalOpen(true)}
+            onOpenMenu={() => navigate({ to: "/account" })}
+            onOpenTracker={() => setIsTrackerModalOpen(true)}
+            onOpenAdmin={handleOpenAdmin}
+            isAdminUser={isAdminUser}
+            onSelectProduct={handleSelectProduct}
+            onOpenAppDownload={() => setIsAppDownloadModalOpen(true)}
+            selectedCategory={selectedCategory}
+            onSelectCategory={handleSelectCategoryWithLoading}
+          />
+        </div>
+
+        <MobileReferenceHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           cartCount={cartStoreCount}
           unreadNotificationsCount={unreadNotificationsCount}
-          wishlistCount={favorites.length}
-          compareCount={compareList.length}
-          products={products}
-          currency={currency}
-          theme={theme}
-          onToggleTheme={toggleTheme}
           onOpenCart={() => setIsCartDrawerOpen(true)}
           onOpenNotifications={() => setIsNotificationsModalOpen(true)}
-          onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
-          onOpenCompare={() => setIsCompareModalOpen(true)}
           onOpenMenu={() => navigate({ to: "/account" })}
-          onOpenTracker={() => setIsTrackerModalOpen(true)}
-          onOpenAdmin={handleOpenAdmin}
-          isAdminUser={isAdminUser}
-          onSelectProduct={handleSelectProduct}
-          onOpenAppDownload={() => setIsAppDownloadModalOpen(true)}
-          selectedCategory={selectedCategory}
           onSelectCategory={handleSelectCategoryWithLoading}
         />
 
         {/* 2. Top Shipping Announcement Banner */}
-        <ShippingBanner
-          onOpenShippingInfo={() => setIsTrackerModalOpen(true)}
-          shippingConfig={mappedSettings.shipping}
-        />
+        <div className="hidden md:block">
+          <ShippingBanner
+            onOpenShippingInfo={() => setIsTrackerModalOpen(true)}
+            shippingConfig={mappedSettings.shipping}
+          />
+        </div>
 
         {/* Main Container - Extended width for SHEIN high-density layout */}
         <main className="flex-grow w-full max-w-[1700px] mx-auto pb-28 sm:pb-32">
@@ -553,12 +571,72 @@ function HomePage() {
                       onSelectProduct={handleSelectProduct}
                     />
 
+                    {/* Mobile reference-style offer strip using real store products. */}
+                    <section
+                      className="mx-3 overflow-hidden rounded-xl border border-[#f6cbd3] bg-[#fff0f3] p-3 shadow-sm md:hidden"
+                      aria-label="عرض العملاء الجدد"
+                    >
+                      <div className="mb-2 flex items-center justify-between text-[13px] font-black text-[#e64a4a]">
+                        <span>للمستخدمين الجدد فقط</span>
+                        <span>شحن مجاني 🚚</span>
+                      </div>
+                      <div className="grid grid-cols-[1.05fr_0.95fr_0.95fr] items-center gap-2">
+                        <div className="rounded-lg bg-white/80 p-2 text-center">
+                          <span className="text-[10px] text-neutral-500">تطبق الشروط</span>
+                          <strong className="mt-1 block text-xl font-black text-[#4b9f3a]">
+                            5000
+                          </strong>
+                          <span className="text-[10px] text-neutral-500">رصيد ترحيبي</span>
+                        </div>
+                        {products.slice(0, 2).map((product) => (
+                          <button
+                            type="button"
+                            key={`new-user-${product.id}`}
+                            onClick={() => handleSelectProduct(product)}
+                            className="overflow-hidden rounded-lg bg-white shadow-sm"
+                          >
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              loading="lazy"
+                              className="h-20 w-full object-contain"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+
                     {/* SHEIN Visual Category Circles */}
                     <VisualCategoryCircles
                       selectedCategoryId={selectedCategory}
                       onSelectCategory={handleSelectCategoryWithLoading}
                       products={products}
                     />
+
+                    {/* Mobile reference-style product tabs. */}
+                    <div
+                      className="mx-3 mt-2 grid grid-cols-4 gap-1 rounded-lg bg-white p-1 text-[11px] font-black shadow-sm md:hidden"
+                      role="tablist"
+                      aria-label="تصفية المنتجات السريعة"
+                    >
+                      {["من أجلك", "مداخل جديدة", "تخفيضات", "الأكثر مبيعاً"].map(
+                        (label, index) => (
+                          <button
+                            type="button"
+                            key={label}
+                            onClick={() =>
+                              document
+                                .getElementById("store-products")
+                                ?.scrollIntoView({ behavior: "smooth" })
+                            }
+                            className={`rounded-md px-1 py-2 ${index === 0 ? "bg-black text-white" : "text-neutral-700"}`}
+                            role="tab"
+                          >
+                            {label}
+                          </button>
+                        ),
+                      )}
+                    </div>
 
                     {/* SHEIN Flash Deals Section with live countdown */}
                     <FlashDealsSection
@@ -693,7 +771,8 @@ function HomePage() {
                         <div className="space-y-6">
                           <div className="rounded-2xl border border-dashed border-[#F93A00]/40 bg-[#FFF1EB] dark:bg-neutral-900 p-5 text-center">
                             <p className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white">
-                              لا توجد منتجات مسجلة في هذا التصنيف حالياً، جلبنا لك هذه المنتجات المميزة والأكثر طلباً في المتجر:
+                              لا توجد منتجات مسجلة في هذا التصنيف حالياً، جلبنا لك هذه المنتجات
+                              المميزة والأكثر طلباً في المتجر:
                             </p>
                             <button
                               onClick={() => {
@@ -772,11 +851,13 @@ function HomePage() {
           cartCount={cartStoreCount}
         />
 
-        {/* Floating WhatsApp Quick Contact Button */}
-        <FloatingWhatsAppButton
-          isOpen={isSupportHubOpen}
-          onToggle={() => setIsSupportHubOpen((open) => !open)}
-        />
+        {/* Keep the reference mobile canvas clean; WhatsApp remains available in the footer and desktop support hub. */}
+        <div className="hidden md:block">
+          <FloatingWhatsAppButton
+            isOpen={isSupportHubOpen}
+            onToggle={() => setIsSupportHubOpen((open) => !open)}
+          />
+        </div>
 
         {/* Modals & Drawers */}
         <ProductDetailModal
