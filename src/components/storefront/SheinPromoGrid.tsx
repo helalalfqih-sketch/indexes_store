@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowLeft, Zap, Sparkles, Flame, Tag, ShoppingCart } from 'lucide-react';
 import { Product, Currency } from './types';
 import { formatPrice } from './currency';
+import { StoreLogo } from './StoreLogo';
 
 interface SheinPromoGridProps {
   products?: Product[];
@@ -154,7 +155,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                     />
                   ) : (
                     <div className="flex h-36 w-36 items-center justify-center rounded-3xl bg-neutral-900 p-4 text-white shadow-2xl border border-neutral-800">
-                      <img src="/favicon.ico" alt="INDEXES" className="h-16 w-16" />
+                      <StoreLogo variant="icon" className="h-20 w-20" />
                     </div>
                   )}
                   <div className="absolute -bottom-2 -right-2 bg-white dark:bg-neutral-800 rounded-xl px-3 py-1 shadow border border-neutral-200 dark:border-neutral-700 flex items-center gap-1.5">
@@ -166,9 +167,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
             </AnimatePresence>
           ) : (
             <div className="p-8 text-center flex flex-col items-center justify-center h-full">
-              <img src="/favicon.ico" alt="INDEXES" className="h-16 w-16 mb-3" />
-              <h3 className="text-2xl font-black text-neutral-900 dark:text-white">متجر إندكس ستور</h3>
-              <p className="text-xs text-neutral-500 mt-1">توصيل لجميع المحافظات وعروض حصرية</p>
+              <StoreLogo variant="full" className="mb-2" />
             </div>
           )}
 
