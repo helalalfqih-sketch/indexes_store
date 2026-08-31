@@ -247,7 +247,7 @@ function ProductPage() {
       <div ref={heroRef} className="mx-auto max-w-7xl px-4 pt-8 lg:px-8 lg:pt-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Right/Top Column: Interactive Gallery (7 columns on Desktop) */}
-          <div className="order-2 flex flex-col gap-4 lg:order-1 lg:col-span-7">
+          <div className="order-1 flex flex-col gap-4 lg:order-1 lg:col-span-7">
             <ProductMediaGallery
               product={{
                 id: product.id,
@@ -263,7 +263,7 @@ function ProductPage() {
           </div>
 
           {/* Left/Bottom Column: Product Details & Buy Box (5 columns on Desktop) */}
-          <div className="product-buy-box order-1 flex flex-col gap-5 lg:order-2 lg:col-span-5">
+          <div className="product-buy-box order-2 flex flex-col gap-5 lg:order-2 lg:col-span-5">
             {/* Title & Category */}
             <div>
               <div className="flex items-center gap-2 mb-2">

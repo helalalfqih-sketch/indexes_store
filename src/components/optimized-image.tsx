@@ -112,7 +112,7 @@ export function OptimizedImage({
           onError={handleError}
           className={cn(
             "h-full w-full object-cover transition-opacity duration-500 ease-in-out",
-            isLoaded || eager ? "opacity-100" : "absolute inset-0 opacity-0",
+            isLoaded || eager || size === "thumbnail" ? "opacity-100" : "absolute inset-0 opacity-0",
           )}
           loading={loadingAttr}
           decoding="async"
