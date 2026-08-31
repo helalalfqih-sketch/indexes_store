@@ -366,7 +366,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onOpenAppDownload}
             aria-label="تثبيت التطبيق"
             title="تثبيت تطبيق إندكس ستور واحصل على خصم 15%"
-            className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl bg-black text-white hover:bg-neutral-900 transition-all cursor-pointer shrink-0 shadow-sm border border-neutral-800"
+            className="hidden min-[420px]:flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl bg-black text-white hover:bg-neutral-900 transition-all cursor-pointer shrink-0 shadow-sm border border-neutral-800"
           >
             <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F93A00]" />
             <span className="text-[11px] sm:text-xs font-black hidden min-[380px]:inline">تثبيت التطبيق</span>
@@ -425,10 +425,10 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 9. SHEIN-Style Sub-Navigation Bar */}
       {onSelectCategory && (
-        <div className="w-full max-w-7xl mx-auto mt-2 pt-1 border-t border-[var(--color-border-subtle)] flex items-center justify-between overflow-x-auto no-scrollbar text-xs font-bold gap-4 sm:gap-6 text-[var(--color-text-secondary)] whitespace-nowrap px-1">
+        <div className="w-full max-w-7xl mx-auto mt-1 pt-0.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between overflow-x-auto no-scrollbar text-[11px] sm:text-xs font-bold gap-3 sm:gap-6 text-[var(--color-text-secondary)] whitespace-nowrap px-1">
           <button
             onClick={() => onSelectCategory('all')}
-            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'all' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -436,7 +436,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('smartwatches')}
-            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'smartwatches' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -444,7 +444,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('audio')}
-            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'audio' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -452,7 +452,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('accessories')}
-            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'accessories' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -460,7 +460,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('home_appliances')}
-            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'home_appliances' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -468,7 +468,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('perfumes')}
-            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'perfumes' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -476,7 +476,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('automotive')}
-            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'automotive' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -484,7 +484,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('all')}
-            className="py-1 text-[#F93A00] font-black flex items-center gap-1 hover:underline"
+            className="py-0.5 text-[#F93A00] font-black flex items-center gap-1 hover:underline"
           >
             <Flame className="w-3.5 h-3.5" />
             عروض اليوم

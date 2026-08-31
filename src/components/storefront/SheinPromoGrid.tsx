@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ArrowLeft, Zap, Sparkles, Flame, Tag, Shoppi
 import { Product, Currency } from './types';
 import { formatPrice } from './currency';
 import { StoreLogo } from './StoreLogo';
+import { OptimizedImage } from '@/components/optimized-image';
 
 interface SheinPromoGridProps {
   products?: Product[];
@@ -89,7 +90,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
         </div>
 
         {/* Center Main Promotional Hero */}
-        <div className="lg:col-span-8 xl:col-span-7 relative min-h-[280px] sm:min-h-[360px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm border border-neutral-200 dark:border-neutral-800 bg-gradient-to-r from-[#FFF1EB] via-white to-[#FDEEE9] dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-900">
+        <div className="lg:col-span-8 xl:col-span-7 relative min-h-[232px] sm:min-h-[320px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm border border-neutral-200 dark:border-neutral-800 bg-gradient-to-r from-[#FFF1EB] via-white to-[#FDEEE9] dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-900">
           {activeProduct ? (
             <AnimatePresence mode="wait">
               <motion.div
@@ -148,10 +149,12 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                 {/* Product Image Side */}
                 <div className="relative mt-4 md:mt-0 w-44 h-44 sm:w-60 sm:h-60 md:w-68 md:h-68 flex-shrink-0 flex items-center justify-center">
                   {activeProduct.image && !activeProduct.image.includes('data:image/svg') ? (
-                    <img
+                    <OptimizedImage
                       src={activeProduct.image}
                       alt={activeProduct.name}
-                      className="w-full h-full object-contain drop-shadow-xl transform md:rotate-1 hover:rotate-0 transition-transform duration-300"
+                      size="large"
+                      eager
+                      className="h-full w-full bg-transparent object-contain drop-shadow-xl transition-transform duration-300 hover:rotate-0 md:rotate-1"
                     />
                   ) : (
                     <div className="flex h-36 w-36 items-center justify-center rounded-3xl bg-neutral-900 p-4 text-white shadow-2xl border border-neutral-800">
@@ -166,8 +169,16 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
               </motion.div>
             </AnimatePresence>
           ) : (
-            <div className="p-8 text-center flex flex-col items-center justify-center h-full">
-              <StoreLogo variant="full" className="mb-2" />
+            <div className="flex h-full min-h-[232px] flex-col items-center justify-center p-6 text-center sm:min-h-[320px]">
+              <StoreLogo variant="full" className="mb-3" />
+              <p className="text-sm font-bold text-neutral-600 dark:text-neutral-300">عروض ومنتجات مختارة من اندكس ستور</p>
+              <button
+                type="button"
+                onClick={() => onShopNow()}
+                className="mt-3 rounded-xl bg-black px-5 py-2.5 text-xs font-black text-white transition hover:bg-neutral-800"
+              >
+                تصفح المنتجات
+              </button>
             </div>
           )}
 

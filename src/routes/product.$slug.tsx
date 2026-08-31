@@ -13,7 +13,7 @@ import {
   Home,
   ChevronLeft,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { motion } from "framer-motion";
 import { formatPrice } from "@/lib/store-data";
 import { buildShareUrls } from "@/lib/share-urls";
@@ -27,9 +27,17 @@ import { ProductMediaGallery } from "@/components/product-media-gallery";
 import { ProductRecommendations } from "@/components/product-recommendations";
 import { trackEvent } from "@/lib/analytics";
 
-const DARK = "var(--showcase)";
-const LIGHT = "var(--showcase-foreground)";
 const TAJAWAL = "Tajawal, system-ui, sans-serif";
+
+const PRODUCT_PAGE_STYLE = {
+  background: "var(--color-bg)",
+  color: "var(--color-text-primary)",
+  fontFamily: TAJAWAL,
+  "--showcase": "var(--color-bg)",
+  "--showcase-foreground": "var(--color-text-primary)",
+  "--showcase-muted": "var(--color-text-secondary)",
+  "--showcase-border": "var(--color-border-default)",
+} as CSSProperties;
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ context: { queryClient }, params }) => {
@@ -180,8 +188,9 @@ function ProductPage() {
   return (
     <div
       dir="rtl"
-      className="min-h-screen pb-28"
-      style={{ background: DARK, color: LIGHT, fontFamily: TAJAWAL }}
+      data-product-page
+      className="product-page min-h-screen pb-28"
+      style={PRODUCT_PAGE_STYLE}
     >
       {/* Top Header / Navigation Bar */}
       <nav
@@ -238,7 +247,7 @@ function ProductPage() {
       <div ref={heroRef} className="mx-auto max-w-7xl px-4 pt-8 lg:px-8 lg:pt-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Right/Top Column: Interactive Gallery (7 columns on Desktop) */}
-          <div className="lg:col-span-7 flex flex-col gap-4">
+          <div className="order-2 flex flex-col gap-4 lg:order-1 lg:col-span-7">
             <ProductMediaGallery
               product={{
                 id: product.id,
@@ -248,12 +257,13 @@ function ProductPage() {
                 videos: product.videos,
                 media: product.media,
                 videoPlaybackId: product.videoPlaybackId,
+                modelUrl: product.modelUrl ?? product.model_url ?? null,
               }}
             />
           </div>
 
           {/* Left/Bottom Column: Product Details & Buy Box (5 columns on Desktop) */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
+          <div className="product-buy-box order-1 flex flex-col gap-5 lg:order-2 lg:col-span-5">
             {/* Title & Category */}
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -325,13 +335,16 @@ function ProductPage() {
 
             {/* Description Summary */}
             {pageCfg.showDescription !== false && description && (
-              <div className="text-sm leading-relaxed text-showcase-foreground/80 border-t border-b border-showcase-border/60 py-4">
-                {description}
-              </div>
+              <details className="order-5 rounded-2xl border border-showcase-border/60 bg-showcase-foreground/5 px-4 py-3 text-sm leading-relaxed text-showcase-foreground/80">
+                <summary className="cursor-pointer list-none font-black text-showcase-foreground">
+                  تفاصيل المنتج
+                </summary>
+                <p className="mt-3 border-t border-showcase-border/50 pt-3">{description}</p>
+              </details>
             )}
 
             {/* Quantity Selector */}
-            <div className="flex items-center justify-between rounded-xl border border-showcase-border bg-showcase-foreground/5 p-3">
+            <div className="order-3 flex items-center justify-between rounded-xl border border-showcase-border bg-showcase-foreground/5 p-3">
               <span className="text-xs font-bold text-showcase-foreground">
                 الكمية المطلوب طلبها
               </span>
@@ -364,7 +377,7 @@ function ProductPage() {
             </div>
 
             {/* CTA Action Buttons — Cart is primary */}
-            <div className="flex flex-col gap-2.5">
+            <div className="order-4 flex flex-col gap-2.5">
               {pageCfg.showCartBtn !== false && (
                 <button
                   onClick={handleAdd}
@@ -406,7 +419,7 @@ function ProductPage() {
               )}
             </div>
 
-            <div className="space-y-3 pt-2">
+            <div className="order-6 space-y-3 pt-2">
               {/* Social Share Buttons */}
               <div className="flex items-center justify-between text-xs pt-1 border-t border-showcase-border/40">
                 <span className="text-showcase-foreground/60 font-bold">مشاركة المنتج:</span>

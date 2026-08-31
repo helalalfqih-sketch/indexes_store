@@ -353,6 +353,24 @@ function RootComponent() {
     cleanPath.startsWith("/auth/");
 
   useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    const registerServiceWorker = () => {
+      navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {
+        // PWA is an enhancement; never block storefront rendering when registration fails.
+      });
+    };
+
+    if (document.readyState === "complete") {
+      registerServiceWorker();
+    } else {
+      window.addEventListener("load", registerServiceWorker, { once: true });
+    }
+
+    return () => window.removeEventListener("load", registerServiceWorker);
+  }, []);
+
+  useEffect(() => {
     MonitoringService.init();
     let lastUserId: string | null | undefined;
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {

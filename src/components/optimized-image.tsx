@@ -14,6 +14,35 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   naturalHeight?: number;
 }
 
+/** Build the optimized proxy URL before the first render so eager images start immediately. */
+function getOptimizedUrl(url: string, targetSize: string): string {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url.trim());
+    if (parsed.protocol !== "https:") return url;
+
+    // Handle SVG/GIF bypass through the image proxy.
+    if (url.includes(".svg") || url.includes(".gif")) {
+      return `/api/public/image-proxy?url=${encodeURIComponent(url)}`;
+    }
+
+    let queryParams = "&format=webp";
+    if (targetSize === "thumbnail") {
+      queryParams += "&w=128&q=80";
+    } else if (targetSize === "card") {
+      queryParams += "&w=384&q=80";
+    } else if (targetSize === "large") {
+      queryParams += "&w=800&q=85";
+    } else if (targetSize === "blur") {
+      queryParams += "&w=16&q=15";
+    }
+
+    return `/api/public/image-proxy?url=${encodeURIComponent(url)}${queryParams}`;
+  } catch {
+    return url;
+  }
+}
+
 export function OptimizedImage({
   src,
   alt,
@@ -26,43 +55,12 @@ export function OptimizedImage({
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [blurSrc, setBlurSrc] = useState<string>("");
-  const [optimizedSrc, setOptimizedSrc] = useState<string>("");
+  const [optimizedSrc, setOptimizedSrc] = useState<string>(() => getOptimizedUrl(src, size));
   const [errorCount, setErrorCount] = useState(0);
 
-  // Build the optimized proxy URL based on requested size presets
-  const getOptimizedUrl = (url: string, targetSize: string): string => {
-    if (!url) return "";
-    try {
-      // Validate URL format
-      const parsed = new URL(url.trim());
-      if (parsed.protocol !== "https:") return url;
-
-      // Handle SVG/GIF bypass
-      if (url.includes(".svg") || url.includes(".gif")) {
-        return `/api/public/image-proxy?url=${encodeURIComponent(url)}`;
-      }
-
-      let queryParams = "&format=webp";
-      if (targetSize === "thumbnail") {
-        queryParams += "&w=128&q=80";
-      } else if (targetSize === "card") {
-        queryParams += "&w=384&q=80";
-      } else if (targetSize === "large") {
-        queryParams += "&w=800&q=85";
-      } else if (targetSize === "blur") {
-        queryParams += "&w=16&q=15"; // Tiny blur placeholder
-      }
-
-      return `/api/public/image-proxy?url=${encodeURIComponent(url)}${queryParams}`;
-    } catch {
-      return url; // Return original if not a valid absolute URL
-    }
-  };
-
   useEffect(() => {
-    // Set target optimized image URL (CSS background skeleton prevents layout shift)
     setOptimizedSrc(getOptimizedUrl(src, size));
-    setBlurSrc(""); // Skip extra blur network fetch to eliminate 50% overfetch calls
+    setBlurSrc("");
     setIsLoaded(false);
     setErrorCount(0);
   }, [src, size]);
@@ -70,12 +68,10 @@ export function OptimizedImage({
   const handleError = () => {
     setErrorCount((current) => {
       if (current === 0) {
-        // First retry: use original source directly bypassing proxy
         setOptimizedSrc(src);
         return 1;
       }
       if (current === 1) {
-        // Second failure: use local fallback placeholder
         setOptimizedSrc("/images/product-placeholder.webp");
         setBlurSrc("");
         return 2;
@@ -85,33 +81,29 @@ export function OptimizedImage({
   };
 
   const loadingAttr = eager ? "eager" : "lazy";
-  // fetchpriority is a non-standard attribute — use React's way
   const fetchPriority = eager ? "high" : "auto";
 
   return (
     <div
       className={cn("relative overflow-hidden bg-black/5", className)}
-      // Reserve layout space to prevent CLS when dimensions are known
       style={
         naturalWidth && naturalHeight
           ? { aspectRatio: `${naturalWidth} / ${naturalHeight}` }
           : undefined
       }
     >
-      {/* Blurry low-quality image placeholder */}
       {blurSrc && !isLoaded && !eager && (
         <img
           src={blurSrc}
           alt=""
           aria-hidden="true"
           onError={() => setBlurSrc("")}
-          className="absolute inset-0 h-full w-full object-cover filter blur-md scale-[1.05] transition-opacity duration-300 pointer-events-none"
+          className="absolute inset-0 h-full w-full scale-[1.05] object-cover blur-md transition-opacity duration-300 pointer-events-none"
           loading="eager"
           decoding="async"
         />
       )}
 
-      {/* Main optimized image */}
       {optimizedSrc && (
         <img
           src={optimizedSrc}
@@ -120,14 +112,32 @@ export function OptimizedImage({
           onError={handleError}
           className={cn(
             "h-full w-full object-cover transition-opacity duration-500 ease-in-out",
-            isLoaded || eager ? "opacity-100" : "opacity-0 absolute inset-0"
+            isLoaded || eager ? "opacity-100" : "absolute inset-0 opacity-0",
           )}
           loading={loadingAttr}
           decoding="async"
           // @ts-ignore — fetchpriority is valid HTML5 but not yet in TS types
           fetchpriority={fetchPriority}
-          width={naturalWidth ?? (size === "thumbnail" ? 128 : size === "card" ? 384 : size === "large" ? 800 : undefined)}
-          height={naturalHeight ?? (size === "thumbnail" ? 128 : size === "card" ? 384 : size === "large" ? 800 : undefined)}
+          width={
+            naturalWidth ??
+            (size === "thumbnail"
+              ? 128
+              : size === "card"
+                ? 384
+                : size === "large"
+                  ? 800
+                  : undefined)
+          }
+          height={
+            naturalHeight ??
+            (size === "thumbnail"
+              ? 128
+              : size === "card"
+                ? 384
+                : size === "large"
+                  ? 800
+                  : undefined)
+          }
           {...props}
         />
       )}

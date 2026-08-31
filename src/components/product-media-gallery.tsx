@@ -28,7 +28,7 @@ import {
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { OptimizedImage } from "@/components/optimized-image";
-import { Product3DTile, modelFor, useMounted } from "@/lib/model-viewer";
+import { Product3DTile } from "@/lib/model-viewer";
 import { requestProductVideo } from "@/lib/video-request.functions";
 
 /* ------------------------------------------------------------------ */
@@ -55,6 +55,7 @@ interface Props {
       playbackId?: string | null;
     }> | null;
     videoPlaybackId?: string | null;
+    modelUrl?: string | null;
   };
 }
 
@@ -98,7 +99,7 @@ function extractMuxId(url?: string | null): string | null {
   return null;
 }
 
-function buildMediaList(product: Props["product"], has3D: boolean): MediaItem[] {
+function buildMediaList(product: Props["product"], modelUrl?: string | null): MediaItem[] {
   const items: MediaItem[] = [];
   const seenUrls = new Set<string>();
 
@@ -188,8 +189,8 @@ function buildMediaList(product: Props["product"], has3D: boolean): MediaItem[] 
   }
 
   // 5. 3D model
-  if (has3D) {
-    items.push({ kind: "3d", modelSrc: modelFor(product.id)!, poster: defaultPoster });
+  if (modelUrl) {
+    items.push({ kind: "3d", modelSrc: modelUrl, poster: defaultPoster });
   }
 
   return items;
@@ -337,10 +338,8 @@ function VideoModal({
 /* ------------------------------------------------------------------ */
 
 export function ProductMediaGallery({ product }: Props) {
-  const mounted = useMounted();
-  const has3D = mounted && !!modelFor(product.id);
-
-  const mediaList = buildMediaList(product, has3D);
+  const modelUrl = product.modelUrl?.trim() || null;
+  const mediaList = buildMediaList(product, modelUrl);
   const imageItems = mediaList.filter((m) => m.kind === "image") as Extract<
     MediaItem,
     { kind: "image" }
@@ -388,7 +387,7 @@ export function ProductMediaGallery({ product }: Props) {
   return (
     <div className="flex flex-col gap-4">
       {/* ── Main Viewer ── */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-showcase-border bg-black/40 shadow-2xl">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-showcase-border bg-black/40 shadow-2xl sm:aspect-square">
         <AnimatePresence mode="wait">
           {activeItem?.kind === "3d" ? (
             <motion.div
@@ -550,7 +549,7 @@ export function ProductMediaGallery({ product }: Props) {
         <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
           {mediaList.map((item, idx) => {
             const isActive = idx === activeIndex;
-            const baseClass = `relative flex-shrink-0 h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-2xl border-2 transition-all cursor-pointer ${
+            const baseClass = `relative flex-shrink-0 h-14 w-14 sm:h-20 sm:w-20 overflow-hidden rounded-2xl border-2 transition-all cursor-pointer ${
               isActive
                 ? "border-primary ring-2 ring-primary/30 scale-105"
                 : "border-showcase-border/50 opacity-60 hover:opacity-90 hover:border-showcase-border"
@@ -623,7 +622,7 @@ export function ProductMediaGallery({ product }: Props) {
         <button
           onClick={handleRequestVideo}
           disabled={requesting || requestSent}
-          className={`flex w-full items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-bold transition ${
+          className={`hidden sm:flex w-full items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-bold transition ${
             requestSent
               ? "border-success/40 bg-success/10 text-success cursor-default"
               : "border-showcase-border/60 bg-showcase-foreground/5 text-showcase-foreground/80 hover:bg-showcase-foreground/10 hover:border-primary/40"
