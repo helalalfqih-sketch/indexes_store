@@ -1,16 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product as ProductionProduct } from "@/lib/store-data";
 import { useCart } from "@/lib/cart-store";
 import { useFavorites } from "@/lib/use-favorites";
-import {
-  categoriesQuery,
-  bestSellersQuery,
-  offersQuery,
-} from "@/lib/queries/catalog";
+import { bestSellersQuery, offersQuery } from "@/lib/queries/catalog";
 
 import {
   Product as DesignProduct,
@@ -85,13 +81,6 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  loader: async ({ context }) => {
-    await Promise.all([
-      context.queryClient.ensureQueryData(categoriesQuery()),
-      context.queryClient.ensureQueryData(bestSellersQuery(12)),
-      context.queryClient.ensureQueryData(offersQuery(8)),
-    ]);
-  },
   errorComponent: ({ error }) => (
     <div className="p-8 text-center text-rose-500 font-bold dir-rtl">حدث خطأ: {error.message}</div>
   ),
@@ -118,8 +107,11 @@ function HomePage() {
     [rawAppearanceSettings],
   );
 
-  const { data: bestSellers } = useSuspenseQuery(bestSellersQuery(12));
-  const { data: dailyDeals } = useSuspenseQuery(offersQuery(8));
+  const { data: bestSellers = [], isLoading: bestSellersLoading } = useQuery(
+    bestSellersQuery(12),
+  );
+  const { data: dailyDeals = [], isLoading: dailyDealsLoading } = useQuery(offersQuery(8));
+  const catalogLoading = bestSellersLoading || dailyDealsLoading;
 
   // Map production products to AI Studio design products
   const rawProductList = useMemo(() => {
@@ -585,7 +577,7 @@ function HomePage() {
                     }
                     currency={currency}
                     favorites={favorites}
-                    isLoading={isLoading}
+                    isLoading={isLoading || catalogLoading}
                     onToggleFavorite={handleToggleFavorite}
                     onAddToCart={(prod) => handleAddToCart(prod, 1)}
                     onSelectProduct={handleSelectProduct}
@@ -646,7 +638,7 @@ function HomePage() {
                         ) : null}
                       </div>
 
-                      {isLoading ? (
+                      {isLoading || catalogLoading ? (
                         <ProductGridSkeleton count={8} />
                       ) : filteredProducts.length === 0 ? (
                         <div className="rounded-3xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] py-16 text-center text-[var(--color-text-secondary)]">
