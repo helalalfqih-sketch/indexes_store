@@ -172,19 +172,11 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
             من نحن
           </Link>
           <span className="text-white/15">•</span>
-          <Link
-            to="/pages/$slug"
-            params={{ slug: "privacy-policy" }}
-            className="hover:text-purple-400 transition"
-          >
+          <Link to="/privacy-policy" className="hover:text-purple-400 transition">
             سياسة الخصوصية
           </Link>
           <span className="text-white/15">•</span>
-          <Link
-            to="/pages/$slug"
-            params={{ slug: "terms" }}
-            className="hover:text-purple-400 transition"
-          >
+          <Link to="/terms" className="hover:text-purple-400 transition">
             الشروط والأحكام
           </Link>
           <span className="text-white/15">•</span>

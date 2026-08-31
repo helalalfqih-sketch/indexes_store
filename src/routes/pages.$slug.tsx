@@ -1,9 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, ArrowRight, ShieldCheck, Home, Loader2 } from "lucide-react";
 import { getPublicCmsPage, sanitizeHtml } from "@/lib/pages.functions";
-import { AppShell } from "@/components/app-shell";
+
+const BUILT_IN_PAGE_ROUTES: Record<string, "/terms" | "/privacy-policy"> = {
+  terms: "/terms",
+  "privacy-policy": "/privacy-policy",
+};
 
 export const Route = createFileRoute("/pages/$slug")({
   head: ({ loaderData }: any) => {
@@ -24,6 +28,8 @@ export const Route = createFileRoute("/pages/$slug")({
     };
   },
   loader: async ({ params }) => {
+    const builtInRoute = BUILT_IN_PAGE_ROUTES[params.slug];
+    if (builtInRoute) throw redirect({ to: builtInRoute });
     try {
       const page = await getPublicCmsPage({ data: { slug: params.slug } });
       return { page };
@@ -45,68 +51,69 @@ function PublicCmsPageComponent() {
 
   if (isLoading) {
     return (
-      <AppShell>
-        <div className="flex min-h-[50vh] items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </AppShell>
+      <div className="flex min-h-[50vh] items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
 
   if (!page) {
     return (
-      <AppShell>
-        <div className="mx-auto max-w-3xl px-4 py-20 text-center" dir="rtl">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-muted">
-            <BookOpen className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h1 className="mt-4 text-2xl font-black">عذراً، الصفحة غير موجودة</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            الصفحة التي تبحث عنها غير متوفرة أو قد تم إزالتها.
-          </p>
-          <div className="mt-6">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand hover:bg-primary/90"
-            >
-              <Home className="h-4 w-4" /> العودة للرئيسية
-            </Link>
-          </div>
+      <div className="mx-auto max-w-3xl px-4 py-20 text-center" dir="rtl">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-muted">
+          <BookOpen className="h-8 w-8 text-muted-foreground" />
         </div>
-      </AppShell>
+        <h1 className="mt-4 text-2xl font-black">عذراً، الصفحة غير موجودة</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          الصفحة التي تبحث عنها غير متوفرة أو قد تم إزالتها.
+        </p>
+        <div className="mt-6">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand hover:bg-primary/90"
+          >
+            <Home className="h-4 w-4" /> العودة للرئيسية
+          </Link>
+        </div>
+      </div>
     );
   }
 
   const cleanContent = sanitizeHtml(page.content);
 
   return (
-    <AppShell>
-      <div className="mx-auto max-w-4xl px-4 py-10" dir="rtl" style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}>
-        {/* Breadcrumb */}
-        <nav className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
-          <Link to="/" className="hover:text-primary transition">الرئيسية</Link>
-          <span>/</span>
-          <span className="font-bold text-foreground">{page.title}</span>
-        </nav>
+    <div
+      className="mx-auto max-w-4xl px-4 py-10"
+      dir="rtl"
+      style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}
+    >
+      {/* Breadcrumb */}
+      <nav className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
+        <Link to="/" className="hover:text-primary transition">
+          الرئيسية
+        </Link>
+        <span>/</span>
+        <span className="font-bold text-foreground">{page.title}</span>
+      </nav>
 
-        {/* Article Container */}
-        <article className="rounded-3xl border border-border bg-surface p-6 sm:p-10 shadow-sm space-y-6">
-          <header className="border-b border-border/80 pb-6">
-            <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
-              {page.title}
-            </h1>
-            <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-success" /> صفحة توثيق رسمية في اندكس ستور · آخر تحديث: {new Date(page.updated_at).toLocaleDateString("ar-YE")}
-            </p>
-          </header>
+      {/* Article Container */}
+      <article className="rounded-3xl border border-border bg-surface p-6 sm:p-10 shadow-sm space-y-6">
+        <header className="border-b border-border/80 pb-6">
+          <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+            {page.title}
+          </h1>
+          <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
+            <ShieldCheck className="h-4 w-4 text-success" /> صفحة توثيق رسمية في اندكس ستور · آخر
+            تحديث: {new Date(page.updated_at).toLocaleDateString("ar-YE")}
+          </p>
+        </header>
 
-          {/* Rendered HTML content */}
-          <div
-            className="prose prose-sm max-w-none dark:prose-invert leading-relaxed text-foreground"
-            dangerouslySetInnerHTML={{ __html: cleanContent }}
-          />
-        </article>
-      </div>
-    </AppShell>
+        {/* Rendered HTML content */}
+        <div
+          className="prose prose-sm max-w-none dark:prose-invert leading-relaxed text-foreground"
+          dangerouslySetInnerHTML={{ __html: cleanContent }}
+        />
+      </article>
+    </div>
   );
 }

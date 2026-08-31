@@ -25,6 +25,16 @@ const enrich = (c: LegacyCategoryShape): LegacyCategoryShape => {
 const mapMany = (rows: CategoryWithMetaDTO[]): LegacyCategoryShape[] =>
   rows.map((r) => enrich(toLegacyCategory(r)));
 
+const CATEGORY_ALIASES: Record<string, string> = {
+  tools_hardware: "tools",
+  "tools-hardware": "tools",
+};
+
+export const normalizeCategorySlug = (slug: string): string => {
+  const normalized = slug.trim().toLowerCase().replace(/\s+/g, "-");
+  return CATEGORY_ALIASES[normalized] ?? normalized.replace(/_/g, "-");
+};
+
 export async function fetchCategories(): Promise<LegacyCategoryShape[]> {
   try {
     const shopify = await listShopifyCategories();
@@ -46,12 +56,26 @@ export async function fetchCategories(): Promise<LegacyCategoryShape[]> {
 
 export async function fetchCategoryBySlug(slug: string): Promise<LegacyCategoryShape | null> {
   const parsed = z.string().trim().min(1).parse(slug);
+  const normalized = normalizeCategorySlug(parsed);
   try {
-    const dto = await getCategoryBySlugFn({ data: { slug: parsed } });
+    const shopify = await listShopifyCategories();
+    if (shopify.configured) {
+      return (
+        shopify.items.find((category) => normalizeCategorySlug(category.id) === normalized) ?? null
+      );
+    }
+  } catch (err) {
+    if (import.meta.env.DEV)
+      console.warn("[category.actions] Shopify category lookup failed:", err);
+    const status = await diagnoseShopifyCatalog();
+    if (status.source === "shopify") throw err;
+  }
+  try {
+    const dto = await getCategoryBySlugFn({ data: { slug: normalized } });
     if (dto) return enrich(toLegacyCategory(dto));
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[category.actions] fetchCategoryBySlug fallback:", err);
   }
-  const seed = fallbackCategories().find((c) => c.slug === parsed);
+  const seed = fallbackCategories().find((c) => normalizeCategorySlug(c.slug) === normalized);
   return seed ? enrich(toLegacyCategory(seed)) : null;
 }
