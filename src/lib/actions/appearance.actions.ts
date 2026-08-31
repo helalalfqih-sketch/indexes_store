@@ -68,6 +68,29 @@ async function resolveCmsScope(
   return { allowed: false, scope: null };
 }
 
+const MAX_PUBLIC_DATA_URI_LENGTH = 64_000;
+
+/** Remove oversized inline images from public settings so SSR stays lightweight. */
+function stripOversizedPublicDataUris(value: unknown): unknown {
+  if (typeof value === "string") {
+    return value.startsWith("data:") && value.length > MAX_PUBLIC_DATA_URI_LENGTH ? undefined : value;
+  }
+  if (Array.isArray(value)) return value.map(stripOversizedPublicDataUris);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, nested]) => [
+        key,
+        stripOversizedPublicDataUris(nested),
+      ]),
+    );
+  }
+  return value;
+}
+
+function sanitizePublicSettings(settings: StorefrontSettingsShape): StorefrontSettingsShape {
+  return stripOversizedPublicDataUris(settings) as StorefrontSettingsShape;
+}
+
 /** Resolve the storefront tenant for PUBLIC reads from request headers. */
 async function resolvePublicCmsTenant(db: any): Promise<string | null> {
   try {
@@ -184,11 +207,11 @@ export const getPublishedStorefrontAppearance = createServerFn({ method: "GET" }
     try {
       const publicTenantId = await resolvePublicCmsTenant(supabase);
       const rows = await storefrontService.fetchPublishedRows(supabase, publicTenantId);
-      if (!rows || rows.length === 0) return DEFAULT_STOREFRONT_SETTINGS;
-      return rowsToSettings(rows, false);
+      if (!rows || rows.length === 0) return sanitizePublicSettings(DEFAULT_STOREFRONT_SETTINGS);
+      return sanitizePublicSettings(rowsToSettings(rows, false));
     } catch (err) {
       console.warn("[getPublishedStorefrontAppearance] Returning fallback defaults:", err);
-      return DEFAULT_STOREFRONT_SETTINGS;
+      return sanitizePublicSettings(DEFAULT_STOREFRONT_SETTINGS);
     }
   });
 
