@@ -79,6 +79,11 @@ export const Route = createFileRoute("/")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "impact-site-verification",
+        value: "7a93fca2-24d7-4478-b1c6-865114269bdf",
+        content: "7a93fca2-24d7-4478-b1c6-865114269bdf",
+      },
     ],
   }),
   errorComponent: () => (

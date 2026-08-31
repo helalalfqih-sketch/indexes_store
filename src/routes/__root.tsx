@@ -252,6 +252,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       metaTags.push({ name: "msvalidate.01", content: seo.bingVerificationCode });
     }
 
+    // Add Impact.com site verification
+    metaTags.push({
+      name: "impact-site-verification",
+      value: "7a93fca2-24d7-4478-b1c6-865114269bdf",
+      content: "7a93fca2-24d7-4478-b1c6-865114269bdf",
+    });
+
     const linkTags: Record<string, string>[] = [
       { rel: "stylesheet", href: appCss },
       {
@@ -315,6 +322,7 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="ar" dir="rtl">
       <head>
+        <meta name="impact-site-verification" value="7a93fca2-24d7-4478-b1c6-865114269bdf" />
         <HeadContent />
       </head>
       <body>
