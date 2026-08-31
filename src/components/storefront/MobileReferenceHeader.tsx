@@ -34,7 +34,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
 }) => {
   return (
     <header
-      className="sticky top-0 z-40 hidden border-b border-white/10 bg-black text-white shadow-[0_1px_5px_rgba(0,0,0,0.22)] md:hidden"
+      className="sticky top-0 z-40 border-b border-white/10 bg-black text-white shadow-[0_1px_5px_rgba(0,0,0,0.22)] md:hidden"
       dir="rtl"
     >
       <div className="flex h-12 items-center gap-1 px-2" dir="ltr">
