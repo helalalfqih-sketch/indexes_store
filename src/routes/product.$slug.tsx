@@ -98,9 +98,13 @@ export const Route = createFileRoute("/product/$slug")({
       </Link>
     </div>
   ),
-  errorComponent: ({ error }) => (
-    <div className="p-8 text-center text-destructive" dir="rtl">
-      حدث خطأ: {error.message}
+  errorComponent: () => (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center" dir="rtl">
+      <p className="text-lg font-bold text-destructive">تعذر تحميل المنتج مؤقتًا</p>
+      <p className="text-sm text-muted-foreground">حاول تحديث الصفحة أو العودة لاحقًا.</p>
+      <Link to="/" className="mt-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90">
+        العودة للمتجر
+      </Link>
     </div>
   ),
   component: ProductPage,
@@ -348,8 +352,19 @@ function ProductPage() {
               </div>
             </div>
 
-            {/* CTA Action Buttons */}
+            {/* CTA Action Buttons — Cart is primary */}
             <div className="flex flex-col gap-2.5">
+              {pageCfg.showCartBtn !== false && (
+                <button
+                  onClick={handleAdd}
+                  disabled={!isAvailable || added}
+                  className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black transition ${isAvailable && !added ? "bg-[#2F6BFF] text-white hover:bg-[#2458D8]" : added ? "bg-emerald-600 text-white" : "cursor-not-allowed bg-showcase-foreground/10 text-showcase-foreground/40"}`}
+                >
+                  {added ? <CheckCircle2 className="h-5 w-5" /> : <ShoppingCart className="h-5 w-5" />}
+                  <span>{added ? "تمت الإضافة للسلة ✓" : isAvailable ? "أضف للسلة" : "غير متوفر حالياً"}</span>
+                </button>
+              )}
+
               {pageCfg.showWaBtn !== false && (
                 <a
                   href={orderHref}
@@ -366,22 +381,11 @@ function ProductPage() {
                       productId: product.id,
                     });
                   }}
-                  className={`flex min-h-11 items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black transition ${isAvailable ? "bg-success text-success-foreground hover:bg-success/90" : "pointer-events-none bg-showcase-foreground/10 text-showcase-foreground/40"}`}
+                  className={`flex min-h-11 items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-black transition ${isAvailable ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15" : "pointer-events-none border-showcase-border bg-showcase-foreground/5 text-showcase-foreground/40"}`}
                 >
                   <MessageCircle className="h-5 w-5" />
-                  <span>اطلب فوراً عبر واتساب</span>
+                  <span>اطلب عبر واتساب</span>
                 </a>
-              )}
-
-              {pageCfg.showCartBtn !== false && (
-                <button
-                  onClick={handleAdd}
-                  disabled={!isAvailable}
-                  className="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-showcase-border bg-showcase-foreground/10 py-3 text-xs font-bold text-showcase-foreground transition hover:bg-showcase-foreground/20 disabled:cursor-not-allowed disabled:text-showcase-foreground/40"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  <span>{added ? "تمت الإضافة للسلة ✓" : "إضافة إلى سلة المشتريات"}</span>
-                </button>
               )}
             </div>
 
@@ -428,8 +432,8 @@ function ProductPage() {
         />
       </div>
 
-      {/* Sticky Conversion Bar when scrolling */}
-      {pageCfg.showWaBtn !== false && isAvailable && (
+      {/* Sticky Conversion Bar when scrolling — includes both Cart and WhatsApp */}
+      {isAvailable && (
         <motion.div
           initial={false}
           animate={{
@@ -440,20 +444,30 @@ function ProductPage() {
           className="fixed inset-x-0 bottom-16 z-40 mx-auto w-full max-w-md px-3"
           style={{ pointerEvents: showStickyBar ? "auto" : "none" }}
         >
-          <div className="flex items-center justify-between gap-3 rounded-2xl border border-showcase-border bg-showcase/90 p-3 shadow-2xl backdrop-blur-2xl">
+          <div className="flex items-center justify-between gap-2 rounded-2xl border border-showcase-border bg-showcase/90 p-2.5 shadow-2xl backdrop-blur-2xl">
             <div className="min-w-0 flex-1 ps-2">
               <p className="truncate text-xs font-bold text-showcase-foreground">{product.name}</p>
               <p className="text-xs font-black text-primary">{formatPrice(product.price)}</p>
             </div>
-            <a
-              href={orderHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-xl bg-success px-4 py-2 text-xs font-black text-success-foreground transition hover:bg-success/90"
+            <button
+              onClick={handleAdd}
+              disabled={added}
+              className="flex items-center gap-1.5 rounded-xl bg-[#2F6BFF] px-3 py-2 text-xs font-black text-white transition hover:bg-[#2458D8] disabled:bg-emerald-600"
             >
-              <MessageCircle className="h-3.5 w-3.5" />
-              اطلب عبر واتساب
-            </a>
+              {added ? <CheckCircle2 className="h-3.5 w-3.5" /> : <ShoppingCart className="h-3.5 w-3.5" />}
+              {added ? "تمت ✓" : "أضف للسلة"}
+            </button>
+            {pageCfg.showWaBtn !== false && (
+              <a
+                href={orderHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-500 transition hover:bg-emerald-500/15"
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                واتساب
+              </a>
+            )}
           </div>
         </motion.div>
       )}

@@ -105,10 +105,10 @@ export function ProductCard({
           </div>
           <button
             type="button"
-            disabled={!isAvailable}
+            disabled={!isAvailable || added}
             onClick={(event) => {
               event.stopPropagation();
-              if (!isAvailable) return;
+              if (!isAvailable || added) return;
               onAddToCart(product);
               setAdded(true);
               window.setTimeout(() => setAdded(false), 1400);
@@ -116,7 +116,7 @@ export function ProductCard({
             className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#2F6BFF] px-3 text-xs font-black text-white transition-colors hover:bg-[#2458D8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F6BFF] disabled:cursor-not-allowed disabled:bg-[var(--color-surface-3)] disabled:text-[var(--color-text-muted)]"
           >
             {added ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
-            {added ? "تمت الإضافة" : isAvailable ? "أضف للسلة" : "غير متوفر"}
+            {added ? "تمت الإضافة ✓" : isAvailable ? "أضف للسلة" : "غير متوفر"}
           </button>
           <button
             type="button"
