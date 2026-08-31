@@ -970,6 +970,18 @@ function HomePage() {
           cartItems={cartItems}
           onUpdateQuantity={handleUpdateCartQuantity}
           onRemoveItem={handleRemoveCartItem}
+          onOpenShareCart={() => setIsCartShareOpen(true)}
+          favorites={favorites}
+          catalogProducts={products}
+          onSaveForLater={(item) => {
+            toggleFavorite(item.product.id);
+            handleRemoveCartItem(item.product.id);
+            showToast(`تم حفظ ${item.product.name} لوقت لاحق`);
+          }}
+          onAddRecommended={(product) => {
+            handleAddToCart(product, 1);
+            showToast(`تمت إضافة ${product.name} إلى السلة`);
+          }}
           onCheckout={(discount) => {
             setAppliedCouponDiscount(discount);
             setIsCartDrawerOpen(false);
