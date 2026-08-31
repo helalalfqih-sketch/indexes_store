@@ -81,8 +81,20 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  errorComponent: ({ error }) => (
-    <div className="p-8 text-center text-rose-500 font-bold dir-rtl">حدث خطأ: {error.message}</div>
+  errorComponent: () => (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center dir-rtl">
+      <p className="text-lg font-bold text-rose-500">تعذر تحميل المنتجات مؤقتًا</p>
+      <p className="text-sm text-[var(--color-text-secondary)]">
+        حاول تحديث الصفحة أو العودة لاحقًا.
+      </p>
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        className="mt-2 rounded-xl bg-[#2F6BFF] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#2458D8]"
+      >
+        إعادة المحاولة
+      </button>
+    </div>
   ),
   pendingComponent: HomeSkeleton,
   component: HomePage,
@@ -107,9 +119,7 @@ function HomePage() {
     [rawAppearanceSettings],
   );
 
-  const { data: bestSellers = [], isLoading: bestSellersLoading } = useQuery(
-    bestSellersQuery(12),
-  );
+  const { data: bestSellers = [], isLoading: bestSellersLoading } = useQuery(bestSellersQuery(12));
   const { data: dailyDeals = [], isLoading: dailyDealsLoading } = useQuery(offersQuery(8));
   const catalogLoading = bestSellersLoading || dailyDealsLoading;
 
@@ -156,8 +166,8 @@ function HomePage() {
             description: item.name,
             priceYER: item.price,
             originalPriceYER: item.price,
-            rating: 4.8,
-            reviewsCount: 12,
+            rating: 0,
+            reviewsCount: 0,
             image: item.image,
             category: "all",
             inStock: true,
@@ -464,6 +474,8 @@ function HomePage() {
       navigate({ to: "/account" });
     } else if (tab === "search") {
       window.scrollTo({ top: 400, behavior: "smooth" });
+    } else if (tab === ("categories" as ActiveTab)) {
+      document.querySelector('[data-section="categories"]')?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -543,25 +555,26 @@ function HomePage() {
               case "categories":
                 if (!mappedSettings.sections.categories.enabled) return null;
                 return (
-                  <CategoryBar
-                    key="categories"
-                    selectedCategoryId={selectedCategory}
-                    onSelectCategory={handleSelectCategoryWithLoading}
-                    selectedSort={sortBy}
-                    onSelectSort={(sortOption) => setSortBy(sortOption)}
-                    selectedPriceRange={priceRange}
-                    customMinPrice={customMinPrice}
-                    customMaxPrice={customMaxPrice}
-                    onSelectPriceRange={(range, min, max) => {
-                      setPriceRange(range);
-                      setCustomMinPrice(min);
-                      setCustomMaxPrice(max);
-                    }}
-                    selectedBrands={selectedBrands}
-                    onSelectBrands={setSelectedBrands}
-                    selectedRatings={selectedRatings}
-                    onSelectRatings={setSelectedRatings}
-                  />
+                  <div key="categories" data-section="categories">
+                    <CategoryBar
+                      selectedCategoryId={selectedCategory}
+                      onSelectCategory={handleSelectCategoryWithLoading}
+                      selectedSort={sortBy}
+                      onSelectSort={(sortOption) => setSortBy(sortOption)}
+                      selectedPriceRange={priceRange}
+                      customMinPrice={customMinPrice}
+                      customMaxPrice={customMaxPrice}
+                      onSelectPriceRange={(range, min, max) => {
+                        setPriceRange(range);
+                        setCustomMinPrice(min);
+                        setCustomMaxPrice(max);
+                      }}
+                      selectedBrands={selectedBrands}
+                      onSelectBrands={setSelectedBrands}
+                      selectedRatings={selectedRatings}
+                      onSelectRatings={setSelectedRatings}
+                    />
+                  </div>
                 );
 
               case "deals":
