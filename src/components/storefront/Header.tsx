@@ -364,12 +364,12 @@ export const Header: React.FC<HeaderProps> = ({
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={onOpenAppDownload}
-            aria-label="تحميل التطبيق"
-            title="حمّل تطبيق إندكس ستور واحصل على خصم 15%"
-            className="hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-neutral-900 text-white hover:bg-black transition-all cursor-pointer shrink-0 shadow-sm border border-neutral-700/60"
+            aria-label="تثبيت التطبيق"
+            title="تثبيت تطبيق إندكس ستور واحصل على خصم 15%"
+            className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl bg-black text-white hover:bg-neutral-900 transition-all cursor-pointer shrink-0 shadow-sm border border-neutral-800"
           >
-            <Smartphone className="w-4 h-4 text-[#F93A00]" />
-            <span className="text-xs font-black">حمّل التطبيق</span>
+            <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F93A00]" />
+            <span className="text-[11px] sm:text-xs font-black hidden min-[380px]:inline">تثبيت التطبيق</span>
             <span className="bg-[#F93A00] text-white text-[9px] font-black px-1.5 py-0.5 rounded-md">
               -15%
             </span>

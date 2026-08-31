@@ -26,6 +26,7 @@ import { VisualCategoryCircles } from "@/components/storefront/VisualCategoryCir
 import { SheinPromoGrid } from "@/components/storefront/SheinPromoGrid";
 import { FlashDealsSection } from "@/components/storefront/FlashDealsSection";
 import { AppDownloadModal } from "@/components/storefront/AppDownloadModal";
+import { AppInstallBanner } from "@/components/app-install-banner";
 import {
   CategoryBar,
   type PriceRangePreset,
@@ -496,6 +497,9 @@ function HomePage() {
 
       {/* Foreground Store Content */}
       <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Native PWA App Install Banner for Mobile/Desktop */}
+        <AppInstallBanner />
+
         {/* 1. Sticky Header */}
         <Header
           searchQuery={searchQuery}
