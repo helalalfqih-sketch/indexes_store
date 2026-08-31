@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Plus, Search, Bell, ShoppingCart, X, Sparkles, ShieldCheck, Heart, Sun, Moon, History, MessageCircle } from 'lucide-react';
+import { Menu, Plus, Search, Bell, ShoppingCart, X, Sparkles, ShieldCheck, Heart, Sun, Moon, History, MessageCircle, Smartphone, Flame } from 'lucide-react';
 import { Product, Currency } from './types';
 import { formatPrice } from './currency';
 import { getRecentSearches, saveRecentSearch, removeRecentSearch, clearRecentSearches } from './searchHistory';
@@ -28,6 +28,9 @@ interface HeaderProps {
   onOpenAdmin?: () => void;
   onSelectProduct?: (product: Product) => void;
   isAdminUser?: boolean;
+  onOpenAppDownload?: () => void;
+  selectedCategory?: string;
+  onSelectCategory?: (categoryId: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -50,6 +53,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdmin,
   onSelectProduct,
   isAdminUser = false,
+  onOpenAppDownload,
+  selectedCategory = 'all',
+  onSelectCategory,
 }) => {
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -352,6 +358,24 @@ export const Header: React.FC<HeaderProps> = ({
           <LiteModeToggle variant="button" />
         </div>
 
+        {/* App Download Button (SHEIN style) */}
+        {onOpenAppDownload && (
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onOpenAppDownload}
+            aria-label="تحميل التطبيق"
+            title="حمّل تطبيق إندكس ستور واحصل على خصم 15%"
+            className="hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-neutral-900 text-white hover:bg-black transition-all cursor-pointer shrink-0 shadow-sm border border-neutral-700/60"
+          >
+            <Smartphone className="w-4 h-4 text-[#F93A00]" />
+            <span className="text-xs font-black">حمّل التطبيق</span>
+            <span className="bg-[#F93A00] text-white text-[9px] font-black px-1.5 py-0.5 rounded-md">
+              -15%
+            </span>
+          </motion.button>
+        )}
+
         {/* 6. Plus / Fast Tracker Button (Desktop / Tablet) */}
         <motion.button
           whileHover={{ scale: 1.03 }}
@@ -398,6 +422,75 @@ export const Header: React.FC<HeaderProps> = ({
           </motion.button>
         </div>
       </div>
+
+      {/* 9. SHEIN-Style Sub-Navigation Bar */}
+      {onSelectCategory && (
+        <div className="w-full max-w-7xl mx-auto mt-2 pt-1 border-t border-[var(--color-border-subtle)] flex items-center justify-between overflow-x-auto no-scrollbar text-xs font-bold gap-4 sm:gap-6 text-[var(--color-text-secondary)] whitespace-nowrap px-1">
+          <button
+            onClick={() => onSelectCategory('all')}
+            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+              selectedCategory === 'all' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
+            }`}
+          >
+            جميع الفئات
+          </button>
+          <button
+            onClick={() => onSelectCategory('smartwatches')}
+            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+              selectedCategory === 'smartwatches' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
+            }`}
+          >
+            ساعات ذكية
+          </button>
+          <button
+            onClick={() => onSelectCategory('audio')}
+            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+              selectedCategory === 'audio' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
+            }`}
+          >
+            سماعات وصوتيات
+          </button>
+          <button
+            onClick={() => onSelectCategory('accessories')}
+            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+              selectedCategory === 'accessories' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
+            }`}
+          >
+            شواحن وإكسسوارات
+          </button>
+          <button
+            onClick={() => onSelectCategory('home_appliances')}
+            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+              selectedCategory === 'home_appliances' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
+            }`}
+          >
+            أجهزة ومنزل
+          </button>
+          <button
+            onClick={() => onSelectCategory('perfumes')}
+            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+              selectedCategory === 'perfumes' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
+            }`}
+          >
+            عطور وبخور
+          </button>
+          <button
+            onClick={() => onSelectCategory('automotive')}
+            className={`py-1 transition-colors hover:text-black dark:hover:text-white ${
+              selectedCategory === 'automotive' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
+            }`}
+          >
+            مستلزمات السيارات
+          </button>
+          <button
+            onClick={() => onSelectCategory('all')}
+            className="py-1 text-[#F93A00] font-black flex items-center gap-1 hover:underline"
+          >
+            <Flame className="w-3.5 h-3.5" />
+            عروض اليوم
+          </button>
+        </div>
+      )}
     </header>
   );
 };

@@ -22,6 +22,10 @@ import { mapProductionProductToDesignProduct } from "@/components/storefront/ada
 import { Header } from "@/components/storefront/Header";
 import { ShippingBanner } from "@/components/storefront/ShippingBanner";
 import { SalesHero } from "@/components/storefront/SalesHero";
+import { VisualCategoryCircles } from "@/components/storefront/VisualCategoryCircles";
+import { SheinPromoGrid } from "@/components/storefront/SheinPromoGrid";
+import { FlashDealsSection } from "@/components/storefront/FlashDealsSection";
+import { AppDownloadModal } from "@/components/storefront/AppDownloadModal";
 import {
   CategoryBar,
   type PriceRangePreset,
@@ -304,6 +308,7 @@ function HomePage() {
   const [isProductUniverseOpen, setIsProductUniverseOpen] = useState(false);
   const [isCartShareOpen, setIsCartShareOpen] = useState(false);
   const [isSupportHubOpen, setIsSupportHubOpen] = useState(false);
+  const [isAppDownloadModalOpen, setIsAppDownloadModalOpen] = useState(false);
   const [supportContext, setSupportContext] = useState<SupportContext>("home");
   const [recentlyViewed, setRecentlyViewed] = useState<DesignProduct[]>([]);
 
@@ -512,6 +517,9 @@ function HomePage() {
           onOpenAdmin={handleOpenAdmin}
           isAdminUser={isAdminUser}
           onSelectProduct={handleSelectProduct}
+          onOpenAppDownload={() => setIsAppDownloadModalOpen(true)}
+          selectedCategory={selectedCategory}
+          onSelectCategory={handleSelectCategoryWithLoading}
         />
 
         {/* 2. Top Shipping Announcement Banner */}
@@ -520,26 +528,41 @@ function HomePage() {
           shippingConfig={mappedSettings.shipping}
         />
 
-        {/* Main Container */}
-        <main className="flex-grow w-full max-w-7xl mx-auto pb-28 sm:pb-32">
+        {/* Main Container - Extended width for SHEIN high-density layout */}
+        <main className="flex-grow w-full max-w-[1700px] mx-auto pb-28 sm:pb-32">
           {mappedSettings.sections.sectionOrder.map((sectionKey) => {
             switch (sectionKey) {
               case "hero":
                 if (!mappedSettings.hero.enabled) return null;
                 return (
-                  <SalesHero
-                    key="hero"
-                    onShopNow={() =>
-                      document
-                        .getElementById("store-products")
-                        ?.scrollIntoView({ behavior: "smooth" })
-                    }
-                    onFocusSearch={() =>
-                      document
-                        .querySelector<HTMLInputElement>('input[aria-label="بحث عن المنتجات"]')
-                        ?.focus()
-                    }
-                  />
+                  <div key="hero-shein-block" className="space-y-2">
+                    {/* SHEIN Campaign & Promotional Collage Grid */}
+                    <SheinPromoGrid
+                      onShopNow={() =>
+                        document
+                          .getElementById("store-products")
+                          ?.scrollIntoView({ behavior: "smooth" })
+                      }
+                      onSelectCategory={handleSelectCategoryWithLoading}
+                    />
+
+                    {/* SHEIN Visual Category Circles */}
+                    <VisualCategoryCircles
+                      selectedCategoryId={selectedCategory}
+                      onSelectCategory={handleSelectCategoryWithLoading}
+                    />
+
+                    {/* SHEIN Flash Deals Section with live countdown */}
+                    <FlashDealsSection
+                      products={bestOffers.length ? bestOffers : products}
+                      currency={currency}
+                      onSelectProduct={handleSelectProduct}
+                      onAddToCart={(prod) => {
+                        handleAddToCart(prod, 1);
+                        showToast(`تمت إضافة ${prod.name} إلى السلة ⚡`);
+                      }}
+                    />
+                  </div>
                 );
 
               case "discovery":
@@ -659,25 +682,36 @@ function HomePage() {
                       {isLoading || catalogLoading ? (
                         <ProductGridSkeleton count={8} />
                       ) : filteredProducts.length === 0 ? (
-                        <div className="rounded-3xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] py-16 text-center text-[var(--color-text-secondary)]">
-                          <span className="material-symbols-outlined mb-2 text-[64px] text-[var(--color-text-muted)]">
-                            search_off
-                          </span>
-                          <p className="text-lg font-bold text-[var(--color-text-primary)]">
-                            لم نتمكن من العثور على منتجات مطابقة
-                          </p>
-                          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-                            جرّب تغيير كلمة البحث أو قسم المنتجات.
-                          </p>
-                          <button
-                            onClick={() => {
-                              setSearchQuery("");
-                              handleSelectCategoryWithLoading("all");
-                            }}
-                            className="mt-4 cursor-pointer rounded-2xl bg-[#2F6BFF] px-6 py-2.5 text-sm font-bold text-white shadow-md hover:bg-[#2458D8]"
-                          >
-                            إعادة ضبط البحث
-                          </button>
+                        <div className="space-y-6">
+                          <div className="rounded-2xl border border-dashed border-[#F93A00]/40 bg-[#FFF1EB] dark:bg-neutral-900 p-5 text-center">
+                            <p className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white">
+                              لا توجد منتجات مسجلة في هذا التصنيف حالياً، جلبنا لك هذه المنتجات المميزة والأكثر طلباً في المتجر:
+                            </p>
+                            <button
+                              onClick={() => {
+                                setSearchQuery("");
+                                handleSelectCategoryWithLoading("all");
+                              }}
+                              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-black px-5 py-2 text-xs font-black text-white hover:bg-neutral-800 transition-colors shadow"
+                            >
+                              عرض جميع المنتجات المتوفرة
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+                            {(products.length > 0 ? products.slice(0, 8) : []).map((product) => (
+                              <ProductCard
+                                key={product.id}
+                                product={product}
+                                currency={currency}
+                                isFavorite={favorites.includes(product.id)}
+                                onToggleFavorite={handleToggleFavorite}
+                                onAddToCart={(prod) => handleAddToCart(prod, 1)}
+                                onSelectProduct={handleSelectProduct}
+                                variant="grid"
+                              />
+                            ))}
+                          </div>
                         </div>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
@@ -905,6 +939,12 @@ function HomePage() {
             handleAddToCart(p, qty);
             showToast(`تمت إضافة ${p.name} إلى السلة بنجاح 🛒`);
           }}
+        />
+
+        {/* App Download QR & Store Modal */}
+        <AppDownloadModal
+          isOpen={isAppDownloadModalOpen}
+          onClose={() => setIsAppDownloadModalOpen(false)}
         />
 
         {/* Flying Cart Item & Toast Overlay */}
