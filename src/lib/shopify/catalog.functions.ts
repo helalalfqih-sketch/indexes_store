@@ -9,7 +9,6 @@ type ShopifyVariant = {
   sku?: string | null;
   barcode?: string | null;
   availableForSale: boolean;
-  quantityAvailable?: number | null;
   price: { amount: string; currencyCode: string };
   compareAtPrice?: { amount: string; currencyCode: string } | null;
 };
@@ -147,7 +146,7 @@ const PRODUCT_FIELDS = `
   collections(first: 1) { nodes { handle } }
   variants(first: 20) {
     nodes {
-      id sku barcode availableForSale quantityAvailable
+      id sku barcode availableForSale
       price { amount currencyCode }
       compareAtPrice { amount currencyCode }
     }
@@ -166,7 +165,7 @@ const CART_FIELDS = `
       cost { totalAmount { amount currencyCode } }
       merchandise {
         ... on ProductVariant {
-          id availableForSale quantityAvailable
+          id availableForSale
           price { amount currencyCode }
           product { id handle title featuredImage { url altText } }
         }
@@ -203,9 +202,10 @@ function mapProduct(product: ShopifyProduct): ProductDTO {
     videos: [],
     media: images.map((url) => ({ type: "image" as const, url })),
     model_url: null,
-    // Never invent inventory. `availableForSale` remains the source for the
-    // availability label when the Storefront inventory scope hides quantity.
-    stock: variant?.quantityAvailable ?? 0,
+    // Storefront access does not always include exact inventory quantities.
+    // Use a one/zero availability sentinel and let Shopify Cart validate the
+    // requested quantity instead of taking down the storefront.
+    stock: variant?.availableForSale ? 1 : 0,
     reserved_stock: 0,
     rating: 0,
     reviews_count: 0,
