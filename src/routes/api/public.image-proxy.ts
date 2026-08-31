@@ -57,6 +57,7 @@ function isDomainAllowed(hostname: string): boolean {
     "image.mux.com",
     "cloudinary.com",
     "imgix.net",
+    "cdn.shopify.com",
   ];
 
   for (const domain of allowedSuffixes) {
