@@ -8,6 +8,7 @@ import {
   Plus,
   ShoppingCart,
   Search,
+  Share2,
   Star,
   Heart,
   MessageCircle,
@@ -216,6 +217,13 @@ function ProductPage() {
         <button
           type="button"
           aria-label="مشاركة المنتج"
+          className="grid h-9 w-9 place-items-center"
+        >
+          <Share2 className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          aria-label="المزيد من الخيارات"
           className="grid h-9 w-9 place-items-center text-lg font-black"
         >
           ⋮
