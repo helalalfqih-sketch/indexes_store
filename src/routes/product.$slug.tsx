@@ -7,7 +7,9 @@ import {
   Minus,
   Plus,
   ShoppingCart,
+  Search,
   Star,
+  Heart,
   MessageCircle,
   CheckCircle2,
   Home,
@@ -142,7 +144,7 @@ function ProductPage() {
   const add = useCart((s) => s.add);
   const [added, setAdded] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
-  const [showStickyBar, setShowStickyBar] = useState(false);
+  const [showStickyBar, setShowStickyBar] = useState(true);
   const availableStock = Number(product.stock);
   const isAvailable = Number.isFinite(availableStock) ? availableStock > 0 : product.stock !== 0;
   const description = String(product.description || "")
@@ -189,9 +191,37 @@ function ProductPage() {
     <div
       dir="rtl"
       data-product-page
-      className="product-page min-h-screen pb-28"
+      className="product-page min-h-screen bg-white pb-20 text-black md:bg-[var(--color-bg)] md:pb-28 md:text-[var(--color-text-primary)]"
       style={PRODUCT_PAGE_STYLE}
     >
+      {/* SHEIN-style compact mobile product header */}
+      <div
+        className="sticky top-0 z-40 flex h-12 items-center gap-2 border-b border-neutral-200 bg-white px-2 text-black md:hidden"
+        dir="rtl"
+      >
+        <Link
+          to="/"
+          aria-label="العودة للمتجر"
+          className="grid h-9 w-9 shrink-0 place-items-center"
+        >
+          <ArrowRight className="h-5 w-5" />
+        </Link>
+        <div className="flex h-9 min-w-0 flex-1 items-center border border-neutral-200 bg-[#f7f7f7]">
+          <span className="flex-1 px-2 text-right text-[12px] text-neutral-500">البحث</span>
+          <Search className="me-2 h-4 w-4" />
+        </div>
+        <Link to="/cart" aria-label="السلة" className="relative grid h-9 w-9 place-items-center">
+          <ShoppingCart className="h-5 w-5" />
+        </Link>
+        <button
+          type="button"
+          aria-label="مشاركة المنتج"
+          className="grid h-9 w-9 place-items-center text-lg font-black"
+        >
+          ⋮
+        </button>
+      </div>
+
       {/* Top Header / Navigation Bar */}
       <nav
         aria-label="التنقل الرئيسي"
@@ -213,7 +243,7 @@ function ProductPage() {
       {/* Visible Breadcrumbs (SEO + UX) */}
       <nav
         aria-label="مسار التنقل"
-        className="flex items-center gap-1.5 border-b border-showcase-border/30 px-4 py-2 text-[11px] text-showcase-foreground/50"
+        className="hidden items-center gap-1.5 border-b border-showcase-border/30 px-4 py-2 text-[11px] text-showcase-foreground/50 md:flex"
       >
         <Link
           to="/"
@@ -244,10 +274,10 @@ function ProductPage() {
         </span>
       </nav>
 
-      <div ref={heroRef} className="mx-auto max-w-7xl px-4 pt-8 lg:px-8 lg:pt-12">
+      <div ref={heroRef} className="mx-auto max-w-7xl px-0 pt-0 md:px-4 md:pt-8 lg:px-8 lg:pt-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Right/Top Column: Interactive Gallery (7 columns on Desktop) */}
-          <div className="order-1 flex flex-col gap-4 lg:order-1 lg:col-span-7">
+          <div className="order-1 flex flex-col gap-2 md:gap-4 lg:order-1 lg:col-span-7">
             <ProductMediaGallery
               product={{
                 id: product.id,
@@ -263,7 +293,7 @@ function ProductPage() {
           </div>
 
           {/* Left/Bottom Column: Product Details & Buy Box (5 columns on Desktop) */}
-          <div className="product-buy-box order-2 flex flex-col gap-5 lg:order-2 lg:col-span-5">
+          <div className="product-buy-box order-2 flex flex-col gap-3 px-3 pt-2 md:gap-5 md:px-0 md:pt-0 lg:order-2 lg:col-span-5">
             {/* Title & Category */}
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -382,7 +412,7 @@ function ProductPage() {
                 <button
                   onClick={handleAdd}
                   disabled={!isAvailable || added}
-                  className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black transition ${isAvailable && !added ? "bg-[#2F6BFF] text-white hover:bg-[#2458D8]" : added ? "bg-emerald-600 text-white" : "cursor-not-allowed bg-showcase-foreground/10 text-showcase-foreground/40"}`}
+                  className={`hidden min-h-12 items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black transition md:flex ${isAvailable && !added ? "bg-[#2F6BFF] text-white hover:bg-[#2458D8]" : added ? "bg-emerald-600 text-white" : "cursor-not-allowed bg-showcase-foreground/10 text-showcase-foreground/40"}`}
                 >
                   {added ? (
                     <CheckCircle2 className="h-5 w-5" />
@@ -411,7 +441,7 @@ function ProductPage() {
                       productId: product.id,
                     });
                   }}
-                  className={`flex min-h-11 items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-black transition ${isAvailable ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15" : "pointer-events-none border-showcase-border bg-showcase-foreground/5 text-showcase-foreground/40"}`}
+                  className={`hidden min-h-11 items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-black transition md:flex ${isAvailable ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15" : "pointer-events-none border-showcase-border bg-showcase-foreground/5 text-showcase-foreground/40"}`}
                 >
                   <MessageCircle className="h-5 w-5" />
                   <span>اطلب عبر واتساب</span>
@@ -471,32 +501,39 @@ function ProductPage() {
             opacity: showStickyBar ? 1 : 0,
           }}
           transition={{ duration: 0.3 }}
-          className="fixed inset-x-0 bottom-16 z-40 mx-auto w-full max-w-md px-3"
+          className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-none px-0 md:bottom-6 md:max-w-md md:px-3"
           style={{ pointerEvents: showStickyBar ? "auto" : "none" }}
         >
-          <div className="flex items-center justify-between gap-2 rounded-2xl border border-showcase-border bg-showcase/90 p-2.5 shadow-2xl backdrop-blur-2xl">
-            <div className="min-w-0 flex-1 ps-2">
+          <div className="flex items-center justify-between gap-2 border-t border-neutral-200 bg-white p-2 shadow-[0_-3px_12px_rgba(0,0,0,0.08)] md:rounded-2xl md:border md:border-showcase-border md:bg-showcase/90 md:p-2.5 md:shadow-2xl md:backdrop-blur-2xl">
+            <div className="hidden min-w-0 flex-1 ps-2 md:block">
               <p className="truncate text-xs font-bold text-showcase-foreground">{product.name}</p>
               <p className="text-xs font-black text-primary">{formatPrice(product.price)}</p>
             </div>
             <button
               onClick={handleAdd}
               disabled={added}
-              className="flex items-center gap-1.5 rounded-xl bg-[#2F6BFF] px-3 py-2 text-xs font-black text-white transition hover:bg-[#2458D8] disabled:bg-emerald-600"
+              className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-none bg-black px-3 py-2 md:flex-none md:rounded-xl md:bg-[#2F6BFF] text-xs font-black text-white transition hover:bg-[#2458D8] disabled:bg-emerald-600"
             >
               {added ? (
                 <CheckCircle2 className="h-3.5 w-3.5" />
               ) : (
                 <ShoppingCart className="h-3.5 w-3.5" />
               )}
-              {added ? "تمت ✓" : "أضف للسلة"}
+              {added ? "تمت الإضافة ✓" : "أضف إلى عربة التسوق"}
+            </button>
+            <button
+              type="button"
+              aria-label="إضافة إلى المفضلة"
+              className="grid h-11 w-12 shrink-0 place-items-center text-black md:hidden"
+            >
+              <Heart className="h-6 w-6" />
             </button>
             {pageCfg.showWaBtn !== false && (
               <a
                 href={orderHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-500 transition hover:bg-emerald-500/15"
+                className="hidden items-center gap-1.5 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-500 transition hover:bg-emerald-500/15 md:flex"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
                 واتساب

@@ -12,142 +12,62 @@ interface BottomNavProps {
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, cartCount }) => {
   const tabs: { key: ActiveTab; label: string; icon: React.ReactNode; ariaLabel: string }[] = [
+    { key: "account", label: "أنا", ariaLabel: "حسابي", icon: <User className="h-5 w-5" /> },
     {
-      key: "cart",
-      label: "السلة",
-      ariaLabel: "السلة",
-      icon: (
-        <div className="relative">
-          <ShoppingCart
-            className={`w-5 h-5 transition-all duration-200 ${
-              activeTab === "cart"
-                ? "text-[#2F6BFF] scale-110"
-                : "text-[var(--color-text-muted)] group-hover:text-[var(--color-text-primary)]"
-            }`}
-          />
-          {cartCount > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute -top-1.5 -right-2 bg-[#2F6BFF] text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center border border-[var(--color-bg)]"
-            >
-              {cartCount}
-            </motion.span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "search",
-      label: "البحث",
-      ariaLabel: "البحث",
-      icon: (
-        <Search
-          className={`w-5 h-5 transition-all duration-200 ${
-            activeTab === "search"
-              ? "text-[#2F6BFF] scale-110"
-              : "text-[var(--color-text-muted)] group-hover:text-[var(--color-text-primary)]"
-          }`}
-        />
-      ),
+      key: "categories" as ActiveTab,
+      label: "القنوات",
+      ariaLabel: "القنوات والتصنيفات",
+      icon: <LayoutGrid className="h-5 w-5" />,
     },
     {
       key: "home",
       label: "الرئيسية",
       ariaLabel: "الصفحة الرئيسية",
-      icon: null, // handled separately as elevated center button
+      icon: <Home className="h-5 w-5" />,
     },
+    { key: "search", label: "البحث", ariaLabel: "البحث", icon: <Search className="h-5 w-5" /> },
     {
-      key: "categories" as ActiveTab,
-      label: "التصنيفات",
-      ariaLabel: "التصنيفات",
-      icon: (
-        <LayoutGrid
-          className={`w-5 h-5 transition-all duration-200 ${
-            activeTab === ("categories" as ActiveTab)
-              ? "text-[#2F6BFF] scale-110"
-              : "text-[var(--color-text-muted)] group-hover:text-[var(--color-text-primary)]"
-          }`}
-        />
-      ),
-    },
-    {
-      key: "account",
-      label: "حسابي",
-      ariaLabel: "حسابي",
-      icon: (
-        <User
-          className={`w-5 h-5 transition-all duration-200 ${
-            activeTab === "account"
-              ? "text-[#2F6BFF] scale-110"
-              : "text-[var(--color-text-muted)] group-hover:text-[var(--color-text-primary)]"
-          }`}
-        />
-      ),
+      key: "cart",
+      label: "حقيبة التسوق",
+      ariaLabel: "حقيبة التسوق",
+      icon: <ShoppingCart className="h-5 w-5" />,
     },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-[var(--glass-bg)] backdrop-blur-2xl border-t border-[var(--color-border-default)] z-50 rounded-t-[28px] pb-[calc(8px+env(safe-area-inset-bottom,0px))] pt-2 px-4 shadow-[var(--shadow-lg)] transition-colors">
-      <div className="max-w-md mx-auto flex justify-between items-center relative dir-rtl">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-white pb-[calc(5px+env(safe-area-inset-bottom,0px))] text-black md:hidden"
+      aria-label="التنقل السفلي"
+      dir="rtl"
+    >
+      <div className="mx-auto grid h-[58px] max-w-md grid-cols-5 items-center px-1">
         {tabs.map((tab) => {
-          if (tab.key === "home") {
-            return (
-              <motion.button
-                key="home"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab("home")}
-                aria-label="الصفحة الرئيسية"
-                className="flex flex-col items-center justify-center -mt-6 relative z-10 cursor-pointer group"
-              >
-                <div
-                  className={`w-13 h-13 rounded-full p-0.5 bg-[#2F6BFF] shadow-md shadow-blue-500/30 transition-all duration-300 ${
-                    activeTab === "home" ? "ring-2 ring-blue-400/90" : ""
-                  }`}
-                >
-                  <div className="w-full h-full bg-[#2F6BFF] rounded-full flex items-center justify-center border border-white/20">
-                    <Home className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-                <span className="text-[11px] text-[var(--color-text-primary)] mt-1 font-black tracking-wide">
-                  الرئيسية
-                </span>
-              </motion.button>
-            );
-          }
-
+          const isActive = activeTab === tab.key;
           return (
             <motion.button
               key={tab.key}
-              whileTap={{ scale: 0.92 }}
+              type="button"
+              whileTap={{ scale: 0.94 }}
               onClick={() => setActiveTab(tab.key)}
               aria-label={tab.ariaLabel}
-              className="flex flex-col items-center justify-center min-w-[56px] py-1 transition-all cursor-pointer group"
+              className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${isActive ? "font-black text-black" : "text-neutral-500"}`}
             >
-              {tab.icon}
-              <span
-                className={`text-[11px] font-bold mt-1 transition-colors ${
-                  activeTab === tab.key
-                    ? "text-[var(--color-text-primary)]"
-                    : "text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)]"
-                }`}
-              >
-                {tab.label}
+              <span className="relative grid h-6 place-items-center">
+                {React.cloneElement(tab.icon as React.ReactElement<{ className?: string }>, {
+                  className: `h-5 w-5 ${isActive ? "stroke-[2.2]" : "stroke-[1.5]"}`,
+                })}
+                {tab.key === "cart" && cartCount > 0 && (
+                  <span className="absolute -right-2 -top-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-[#ff2442] px-0.5 text-[8px] font-black text-white">
+                    {cartCount}
+                  </span>
+                )}
               </span>
-              {activeTab === tab.key && (
-                <motion.span
-                  layoutId="activeDot"
-                  className="w-1.5 h-1.5 bg-[#2F6BFF] rounded-full mt-0.5"
-                />
-              )}
+              <span className="max-w-full truncate px-0.5">{tab.label}</span>
+              {isActive && <span className="absolute inset-x-4 bottom-0 h-[2px] bg-black" />}
             </motion.button>
           );
         })}
       </div>
-
-      {/* Bottom Home Indicator Bar */}
-      <div className="w-24 h-1 bg-[var(--color-border-subtle)] rounded-full mx-auto mt-2" />
     </nav>
   );
 };

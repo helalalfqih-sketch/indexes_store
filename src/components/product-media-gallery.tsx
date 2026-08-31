@@ -377,17 +377,19 @@ export function ProductMediaGallery({ product }: Props) {
       });
       setRequestSent(true);
       toast.success(res?.message || "تم إرسال طلب الفيديو ✨");
-    } catch (err: any) {
-      toast.error(err?.message || "تعذر إرسال طلب الفيديو لأن الخدمة غير مهيأة حالياً.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "تعذر إرسال طلب الفيديو لأن الخدمة غير مهيأة حالياً.";
+      toast.error(message);
     } finally {
       setRequesting(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2 bg-white md:gap-4 md:bg-transparent">
       {/* ── Main Viewer ── */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-showcase-border bg-black/40 shadow-2xl sm:aspect-square">
+      <div className="relative aspect-square w-full overflow-hidden bg-[#f7f7f7] md:rounded-3xl md:border md:border-showcase-border md:bg-black/40 md:shadow-2xl">
         <AnimatePresence mode="wait">
           {activeItem?.kind === "3d" ? (
             <motion.div
@@ -493,7 +495,7 @@ export function ProductMediaGallery({ product }: Props) {
                 src={(activeItem as Extract<MediaItem, { kind: "image" }>)?.url ?? product.image}
                 alt={product.name}
                 size="large"
-                className="h-full w-full object-contain p-4"
+                className="h-full w-full object-contain p-0 md:p-4"
                 eager={activeIndex === 0}
               />
             </motion.div>
@@ -505,14 +507,14 @@ export function ProductMediaGallery({ product }: Props) {
           <>
             <button
               onClick={goPrev}
-              className="absolute end-3 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md hover:bg-black/80 transition"
+              className="absolute end-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-black shadow-sm transition md:end-3 md:h-8 md:w-8 md:bg-black/50 md:text-white md:backdrop-blur-md"
               aria-label="السابق"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
             <button
               onClick={goNext}
-              className="absolute start-3 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md hover:bg-black/80 transition"
+              className="absolute start-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-black shadow-sm transition md:start-3 md:h-8 md:w-8 md:bg-black/50 md:text-white md:backdrop-blur-md"
               aria-label="التالي"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -521,7 +523,7 @@ export function ProductMediaGallery({ product }: Props) {
         )}
 
         {/* Mode Label Badge */}
-        <div className="absolute start-3 bottom-3 z-10 flex items-center gap-1.5">
+        <div className="absolute start-2 bottom-2 z-10 flex items-center gap-1.5">
           {activeItem?.kind === "3d" && (
             <span className="flex items-center gap-1 rounded-full border border-primary/40 bg-black/60 px-2.5 py-1 text-[10px] font-bold text-primary backdrop-blur-md">
               <Box className="h-3 w-3" />
@@ -535,7 +537,7 @@ export function ProductMediaGallery({ product }: Props) {
             </span>
           )}
           {activeItem?.kind === "image" && imageItems.length > 1 && (
-            <span className="flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-bold text-white/70 backdrop-blur-md">
+            <span className="flex items-center gap-1 bg-black/60 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md">
               <ImageIcon className="h-3 w-3" />
               {(activeItem as Extract<MediaItem, { kind: "image" }>).index + 1} /{" "}
               {imageItems.length}
@@ -549,7 +551,7 @@ export function ProductMediaGallery({ product }: Props) {
         <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
           {mediaList.map((item, idx) => {
             const isActive = idx === activeIndex;
-            const baseClass = `relative flex-shrink-0 h-14 w-14 sm:h-20 sm:w-20 overflow-hidden rounded-2xl border-2 transition-all cursor-pointer ${
+            const baseClass = `relative flex-shrink-0 h-12 w-12 overflow-hidden rounded-sm border sm:h-20 sm:w-20 transition-all cursor-pointer ${
               isActive
                 ? "border-primary ring-2 ring-primary/30 scale-105"
                 : "border-showcase-border/50 opacity-60 hover:opacity-90 hover:border-showcase-border"

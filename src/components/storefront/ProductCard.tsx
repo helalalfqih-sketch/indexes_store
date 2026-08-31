@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Check, Heart, ShoppingCart, Star } from "lucide-react";
+import { Check, Heart, Plus, Star } from "lucide-react";
 import type { Currency, Product } from "./types";
 import { formatPrice } from "./currency";
 
 const FALLBACK_IMAGE =
-  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%23181825"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="16">&#1604;&#1575; &#1578;&#1578;&#1608;&#1601;&#1585; &#1589;&#1608;&#1585;&#1577;</text></svg>';
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500"><rect width="400" height="500" fill="%23f5f5f5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="16">لا تتوفر صورة</text></svg>';
 
 interface ProductCardProps {
   product: Product;
@@ -25,6 +25,7 @@ export function ProductCard({
   onAddToCart,
   onSelectProduct,
   variant = "grid",
+  index = 0,
 }: ProductCardProps) {
   const [added, setAdded] = useState(false);
   const hasRealDiscount =
@@ -34,29 +35,31 @@ export function ProductCard({
     : null;
   const isAvailable = product.inStock !== false && product.stockCount !== 0;
   const widthClass =
-    variant === "horizontal" ? "w-[170px] shrink-0 snap-start sm:w-[200px]" : "w-full";
+    variant === "horizontal" ? "w-[148px] shrink-0 snap-start sm:w-[180px]" : "w-full";
 
   return (
     <article
-      className={`${widthClass} group flex h-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] shadow-sm transition-colors hover:border-[#2F6BFF]/45`}
+      className={`${widthClass} group min-w-0 cursor-pointer bg-white text-black`}
       onClick={() => onSelectProduct(product)}
+      dir="rtl"
     >
-      <div className="relative aspect-square overflow-hidden bg-[var(--color-surface-2)] p-2.5">
+      <div className="relative aspect-[3/4] overflow-hidden bg-[#f7f7f7]">
         <img
           src={product.image || FALLBACK_IMAGE}
           alt={product.name}
-          loading="lazy"
+          loading={index < 4 ? "eager" : "lazy"}
+          fetchPriority={index < 2 ? "high" : "auto"}
           decoding="async"
-          width={420}
-          height={420}
+          width={480}
+          height={640}
           onError={(event) => {
             event.currentTarget.src = FALLBACK_IMAGE;
           }}
-          className="h-full w-full object-contain"
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
         {discountPercent ? (
-          <span className="absolute right-2 top-2 rounded-full bg-rose-600 px-2 py-1 text-[10px] font-black text-white">
-            خصم {discountPercent}%
+          <span className="absolute right-1.5 top-1.5 bg-[#ff2442] px-1.5 py-0.5 text-[9px] font-black text-white">
+            -{discountPercent}%
           </span>
         ) : null}
         <button
@@ -66,42 +69,28 @@ export function ProductCard({
             event.stopPropagation();
             onToggleFavorite(product);
           }}
-          className="absolute left-2 top-2 flex min-h-11 min-w-11 items-center justify-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-surface-1)]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F6BFF]"
+          className="absolute left-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-black shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
         >
           <Heart
-            className={`h-4 w-4 ${isFavorite ? "fill-rose-500 text-rose-500" : "text-[var(--color-text-secondary)]"}`}
+            className={`h-4 w-4 ${isFavorite ? "fill-[#ff2442] text-[#ff2442]" : "text-black"}`}
           />
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col p-3 text-right" dir="rtl">
-        <h2 className="line-clamp-2 min-h-10 text-sm font-bold leading-5 text-[var(--color-text-primary)]">
+      <div className="px-1.5 pb-2 pt-1.5">
+        <h2 className="line-clamp-2 min-h-8 text-[11px] font-medium leading-4 text-black">
           {product.name}
         </h2>
-        <div className="mt-2 flex min-h-5 items-center justify-between gap-2 text-[11px]">
-          {product.rating > 0 && product.reviewsCount > 0 ? (
-            <span className="flex items-center gap-1 text-[var(--color-text-secondary)]">
-              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-              {product.rating.toFixed(1)} ({product.reviewsCount})
-            </span>
-          ) : (
-            <span className="text-[var(--color-text-muted)]">لا توجد تقييمات</span>
-          )}
-          <span className={isAvailable ? "font-bold text-emerald-500" : "font-bold text-rose-500"}>
-            {isAvailable ? "متوفر" : "نفد المخزون"}
-          </span>
-        </div>
-
-        <div className="mt-auto pt-3">
-          <div className="flex min-h-11 items-baseline justify-between gap-2 border-t border-[var(--color-border-subtle)] pt-3">
-            <strong className="text-sm text-[#2F6BFF] sm:text-base">
+        <div className="mt-1 flex items-center justify-between gap-1">
+          <div className="min-w-0">
+            <strong className="block truncate text-[13px] font-black text-black">
               {formatPrice(product.priceYER, currency)}
             </strong>
-            {hasRealDiscount ? (
-              <span className="text-[11px] text-[var(--color-text-muted)] line-through">
+            {hasRealDiscount && (
+              <span className="block truncate text-[10px] text-neutral-400 line-through">
                 {formatPrice(product.originalPriceYER, currency)}
               </span>
-            ) : null}
+            )}
           </div>
           <button
             type="button"
@@ -113,22 +102,18 @@ export function ProductCard({
               setAdded(true);
               window.setTimeout(() => setAdded(false), 1400);
             }}
-            className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#2F6BFF] px-3 text-xs font-black text-white transition-colors hover:bg-[#2458D8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F6BFF] disabled:cursor-not-allowed disabled:bg-[var(--color-surface-3)] disabled:text-[var(--color-text-muted)]"
+            aria-label={added ? "تمت الإضافة إلى السلة" : "إضافة إلى السلة"}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-black text-black transition-colors hover:bg-black hover:text-white disabled:border-neutral-200 disabled:text-neutral-300"
           >
-            {added ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
-            {added ? "تمت الإضافة ✓" : isAvailable ? "أضف للسلة" : "غير متوفر"}
-          </button>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onSelectProduct(product);
-            }}
-            className="mt-1 min-h-11 w-full rounded-xl text-xs font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F6BFF]"
-          >
-            التفاصيل
+            {added ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
           </button>
         </div>
+        {product.rating > 0 && product.reviewsCount > 0 ? (
+          <span className="mt-1 flex items-center gap-0.5 text-[9px] text-neutral-500">
+            <Star className="h-3 w-3 fill-black text-black" />
+            {product.rating.toFixed(1)} ({product.reviewsCount})
+          </span>
+        ) : null}
       </div>
     </article>
   );

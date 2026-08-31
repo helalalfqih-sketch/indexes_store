@@ -191,14 +191,17 @@ function HomePage() {
   }, [cartStoreItems, rawProductMap]);
 
   // Theme State
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    if (typeof window === "undefined") return "dark";
+  // Keep the first render deterministic on server and client; restore the saved theme after mount.
+  const [theme, setTheme] = useState<"dark" | "light">("light");
+
+  useEffect(() => {
     const saved = localStorage.getItem("indexes_store_theme");
-    if (saved === "dark" || saved === "light") return saved;
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches
-      ? "light"
-      : "dark";
-  });
+    if (saved === "dark" || saved === "light") {
+      setTheme(saved);
+    } else if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
+      setTheme("dark");
+    }
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -405,6 +408,21 @@ function HomePage() {
     selectedRatings,
   ]);
 
+  const [visibleProductCount, setVisibleProductCount] = useState(12);
+  useEffect(() => {
+    setVisibleProductCount(12);
+  }, [
+    selectedCategory,
+    searchQuery,
+    sortBy,
+    priceRange,
+    customMinPrice,
+    customMaxPrice,
+    selectedBrands,
+    selectedRatings,
+  ]);
+  const visibleProducts = filteredProducts.slice(0, visibleProductCount);
+
   // Track recently viewed products (max 10) and open the full cinematic product route.
   // The modal remains as a safe fallback for legacy products that do not have a slug.
   const handleSelectProduct = (product: DesignProduct) => {
@@ -492,7 +510,7 @@ function HomePage() {
   };
 
   return (
-    <div className="dir-rtl relative flex min-h-screen flex-col overflow-x-hidden bg-[var(--color-bg,#08090B)] pb-28 text-right font-sans text-[var(--color-text-primary,#F5F7FA)] transition-colors duration-200 selection:bg-[#2F6BFF] selection:text-white">
+    <div className="dir-rtl relative flex min-h-screen flex-col overflow-x-hidden bg-white pb-20 text-right font-sans text-black transition-colors duration-200 selection:bg-black selection:text-white md:bg-[var(--color-bg,#08090B)] md:pb-28 md:text-[var(--color-text-primary,#F5F7FA)]">
       {/* Global Toast Notifications */}
       <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
 
@@ -573,7 +591,7 @@ function HomePage() {
 
                     {/* Mobile reference-style offer strip using real store products. */}
                     <section
-                      className="mx-3 overflow-hidden rounded-xl border border-[#f6cbd3] bg-[#fff0f3] p-3 shadow-sm md:hidden"
+                      className="mx-2 overflow-hidden border-y border-[#f3d4d9] bg-[#fff6f7] p-2.5 shadow-none md:hidden"
                       aria-label="عرض العملاء الجدد"
                     >
                       <div className="mb-2 flex items-center justify-between text-[13px] font-black text-[#e64a4a]">
@@ -599,7 +617,7 @@ function HomePage() {
                               src={product.image}
                               alt={product.name}
                               loading="lazy"
-                              className="h-20 w-full object-contain"
+                              className="h-[76px] w-full object-contain"
                             />
                           </button>
                         ))}
@@ -615,7 +633,7 @@ function HomePage() {
 
                     {/* Mobile reference-style product tabs. */}
                     <div
-                      className="mx-3 mt-2 grid grid-cols-4 gap-1 rounded-lg bg-white p-1 text-[11px] font-black shadow-sm md:hidden"
+                      className="mx-2 mt-2 grid grid-cols-4 gap-0 border-y border-neutral-200 bg-white p-0 text-[11px] font-black md:hidden"
                       role="tablist"
                       aria-label="تصفية المنتجات السريعة"
                     >
@@ -639,15 +657,17 @@ function HomePage() {
                     </div>
 
                     {/* SHEIN Flash Deals Section with live countdown */}
-                    <FlashDealsSection
-                      products={bestOffers.length ? bestOffers : products}
-                      currency={currency}
-                      onSelectProduct={handleSelectProduct}
-                      onAddToCart={(prod) => {
-                        handleAddToCart(prod, 1);
-                        showToast(`تمت إضافة ${prod.name} إلى السلة ⚡`);
-                      }}
-                    />
+                    <div className="hidden md:block">
+                      <FlashDealsSection
+                        products={bestOffers.length ? bestOffers : products}
+                        currency={currency}
+                        onSelectProduct={handleSelectProduct}
+                        onAddToCart={(prod) => {
+                          handleAddToCart(prod, 1);
+                          showToast(`تمت إضافة ${prod.name} إلى السلة ⚡`);
+                        }}
+                      />
+                    </div>
                   </div>
                 );
 
@@ -669,7 +689,7 @@ function HomePage() {
               case "categories":
                 if (!mappedSettings.sections.categories.enabled) return null;
                 return (
-                  <div key="categories" data-section="categories">
+                  <div key="categories" data-section="categories" className="hidden md:block">
                     <CategoryBar
                       selectedCategoryId={selectedCategory}
                       onSelectCategory={handleSelectCategoryWithLoading}
@@ -695,21 +715,23 @@ function HomePage() {
                 if (!mappedSettings.sections.deals.enabled) return null;
                 if (selectedCategory !== "all" || searchQuery) return null;
                 return (
-                  <BestOffersSection
-                    key="deals"
-                    bestOffers={
-                      bestOffers.length
-                        ? bestOffers.slice(0, mappedSettings.sections.deals.limit)
-                        : products.slice(0, mappedSettings.sections.deals.limit)
-                    }
-                    currency={currency}
-                    favorites={favorites}
-                    isLoading={isLoading || catalogLoading}
-                    onToggleFavorite={handleToggleFavorite}
-                    onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                    onSelectProduct={handleSelectProduct}
-                    onViewAll={() => handleSelectCategoryWithLoading("all")}
-                  />
+                  <div key="deals" className="hidden md:block">
+                    <BestOffersSection
+                      key="deals"
+                      bestOffers={
+                        bestOffers.length
+                          ? bestOffers.slice(0, mappedSettings.sections.deals.limit)
+                          : products.slice(0, mappedSettings.sections.deals.limit)
+                      }
+                      currency={currency}
+                      favorites={favorites}
+                      isLoading={isLoading || catalogLoading}
+                      onToggleFavorite={handleToggleFavorite}
+                      onAddToCart={(prod) => handleAddToCart(prod, 1)}
+                      onSelectProduct={handleSelectProduct}
+                      onViewAll={() => handleSelectCategoryWithLoading("all")}
+                    />
+                  </div>
                 );
 
               case "ai_search":
@@ -723,8 +745,8 @@ function HomePage() {
                 return (
                   <div key="latest">
                     {/* Product Catalog Grid Section */}
-                    <section id="store-products" className="scroll-mt-24 px-4 py-6 sm:px-6">
-                      <div className="dir-rtl mb-6 flex flex-col justify-between gap-3 border-b border-[var(--color-border-default)] pb-4 sm:flex-row sm:items-center">
+                    <section id="store-products" className="scroll-mt-24 px-2 py-5 sm:px-6">
+                      <div className="dir-rtl mb-6 hidden flex-col justify-between gap-3 border-b border-[var(--color-border-default)] pb-4 sm:flex-row sm:items-center md:flex">
                         <div>
                           <h3 className="text-xl font-bold text-[var(--color-text-primary)] sm:text-2xl">
                             {selectedCategory === "all"
@@ -785,7 +807,7 @@ function HomePage() {
                             </button>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+                          <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
                             {(products.length > 0 ? products.slice(0, 8) : []).map((product) => (
                               <ProductCard
                                 key={product.id}
@@ -801,20 +823,32 @@ function HomePage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-                          {filteredProducts.map((product) => (
-                            <ProductCard
-                              key={product.id}
-                              product={product}
-                              currency={currency}
-                              isFavorite={favorites.includes(product.id)}
-                              onToggleFavorite={handleToggleFavorite}
-                              onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                              onSelectProduct={handleSelectProduct}
-                              variant="grid"
-                            />
-                          ))}
-                        </div>
+                        <>
+                          <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
+                            {visibleProducts.map((product, index) => (
+                              <ProductCard
+                                key={product.id}
+                                product={product}
+                                currency={currency}
+                                isFavorite={favorites.includes(product.id)}
+                                onToggleFavorite={handleToggleFavorite}
+                                onAddToCart={(prod) => handleAddToCart(prod, 1)}
+                                onSelectProduct={handleSelectProduct}
+                                variant="grid"
+                                index={index}
+                              />
+                            ))}
+                          </div>
+                          {visibleProducts.length < filteredProducts.length && (
+                            <button
+                              type="button"
+                              onClick={() => setVisibleProductCount((count) => count + 12)}
+                              className="mx-auto mt-5 block border border-black bg-white px-8 py-2.5 text-xs font-black text-black"
+                            >
+                              عرض المزيد من المنتجات
+                            </button>
+                          )}
+                        </>
                       )}
                     </section>
                   </div>

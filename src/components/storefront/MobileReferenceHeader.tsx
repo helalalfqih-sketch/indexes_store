@@ -1,6 +1,5 @@
 import React from "react";
-import { Bell, CalendarDays, Camera, Heart, Mail, Menu, Search, ShoppingCart } from "lucide-react";
-import type { Product } from "./types";
+import { Bell, Camera, ChevronDown, Mail, Search, ShoppingCart } from "lucide-react";
 
 interface MobileReferenceHeaderProps {
   searchQuery: string;
@@ -8,7 +7,6 @@ interface MobileReferenceHeaderProps {
   onSubmitSearch?: () => void;
   cartCount: number;
   unreadNotificationsCount: number;
-  products?: Product[];
   onOpenCart: () => void;
   onOpenNotifications: () => void;
   onOpenMenu: () => void;
@@ -17,10 +15,10 @@ interface MobileReferenceHeaderProps {
 
 const categories = [
   { id: "all", label: "كل" },
-  { id: "home_appliances", label: "أجهزة ومنزل" },
-  { id: "automotive", label: "مستلزمات السيارات" },
-  { id: "perfumes", label: "عطور وبخور" },
-  { id: "accessories", label: "إكسسوارات وهواتف" },
+  { id: "women", label: "نساء" },
+  { id: "home_appliances", label: "المنزل + الحيوانات الأليفة" },
+  { id: "men", label: "رجال" },
+  { id: "accessories", label: "مجوهرات وإكسسوارات" },
 ];
 
 export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
@@ -35,111 +33,108 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
   onSelectCategory,
 }) => {
   return (
-    <header className="md:hidden relative z-40 bg-[#7bb6dc] text-white shadow-sm" dir="rtl">
-      <div dir="ltr" className="flex items-center gap-2 px-3 pb-2 pt-3">
+    <header
+      className="md:hidden sticky top-0 z-40 border-b border-black/10 bg-white text-black shadow-[0_1px_5px_rgba(0,0,0,0.08)]"
+      dir="rtl"
+    >
+      <div className="flex h-12 items-center gap-1 px-2">
         <button
           type="button"
-          aria-label="المفضلة"
-          className="flex h-10 w-9 shrink-0 items-center justify-center"
-          title="المفضلة"
+          onClick={() => onSelectCategory?.("all")}
+          aria-label="فتح المتجر"
+          className="grid h-10 w-8 shrink-0 place-items-center text-[22px] font-black leading-none"
         >
-          <Heart className="h-7 w-7 stroke-[1.5]" />
+          S
         </button>
 
-        <div className="flex h-11 min-w-0 flex-1 items-center overflow-hidden rounded-lg bg-white text-neutral-700 shadow-sm">
-          <button
-            type="button"
-            onClick={onSubmitSearch}
-            aria-label="البحث"
-            className="flex h-full w-12 shrink-0 items-center justify-center bg-white text-[#6aa8d2]"
-          >
-            <Search className="h-7 w-7" />
-          </button>
+        <div
+          className="flex h-9 min-w-0 flex-1 items-center border border-neutral-200 bg-[#f7f7f7]"
+          dir="rtl"
+        >
           <input
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") onSubmitSearch?.();
             }}
-            placeholder="ابحث عن منتج، قسم أو علامة"
-            aria-label="ابحث عن منتج"
-            dir="rtl"
-            className="min-w-0 flex-1 bg-transparent px-1 text-right text-xs text-neutral-800 outline-none placeholder:text-neutral-400"
+            placeholder="البحث"
+            aria-label="البحث عن المنتجات"
+            className="min-w-0 flex-1 bg-transparent px-2 text-right text-[12px] font-medium text-black outline-none placeholder:text-neutral-500"
           />
           <button
             type="button"
-            aria-label="البحث بالكاميرا"
-            className="flex h-full w-10 shrink-0 items-center justify-center text-neutral-500"
+            onClick={onSubmitSearch}
+            aria-label="تنفيذ البحث"
+            className="grid h-9 w-9 shrink-0 place-items-center border-r border-neutral-200 text-black"
           >
-            <Camera className="h-6 w-6" />
+            <Search className="h-[18px] w-[18px] stroke-[2]" />
+          </button>
+          <button
+            type="button"
+            aria-label="البحث بالكاميرا"
+            className="grid h-9 w-8 shrink-0 place-items-center text-neutral-700"
+          >
+            <Camera className="h-[17px] w-[17px] stroke-[1.8]" />
           </button>
         </div>
 
         <button
           type="button"
-          aria-label="التقويم"
-          className="hidden h-10 w-9 shrink-0 items-center justify-center min-[360px]:flex"
+          onClick={onOpenCart}
+          aria-label="السلة"
+          className="relative grid h-10 w-9 shrink-0 place-items-center"
         >
-          <CalendarDays className="h-7 w-7 stroke-[1.5]" />
-        </button>
-        <button
-          type="button"
-          aria-label="الرسائل"
-          className="hidden h-10 w-9 shrink-0 items-center justify-center min-[420px]:flex"
-        >
-          <Mail className="h-7 w-7 stroke-[1.5]" />
-        </button>
-      </div>
-
-      <div className="flex items-center justify-between px-3 pb-2">
-        <button
-          type="button"
-          onClick={onOpenMenu}
-          aria-label="القائمة"
-          className="flex h-8 w-8 items-center justify-center"
-        >
-          <Menu className="h-6 w-6" />
+          <ShoppingCart className="h-[22px] w-[22px] stroke-[1.8]" />
+          {cartCount > 0 && (
+            <span className="absolute right-0 top-0 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-[#ff2442] px-0.5 text-[8px] font-black text-white">
+              {cartCount}
+            </span>
+          )}
         </button>
         <button
           type="button"
           onClick={onOpenNotifications}
           aria-label="الإشعارات"
-          className="relative flex h-8 w-8 items-center justify-center"
+          className="relative grid h-10 w-9 shrink-0 place-items-center"
         >
-          <Bell className="h-6 w-6" />
+          <Bell className="h-[21px] w-[21px] stroke-[1.8]" />
           {unreadNotificationsCount > 0 && (
-            <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full bg-red-500" />
+            <span className="absolute right-0.5 top-1 h-2 w-2 rounded-full bg-[#ff2442]" />
           )}
         </button>
         <button
           type="button"
-          onClick={onOpenCart}
-          aria-label="السلة"
-          className="relative flex h-8 w-8 items-center justify-center"
+          onClick={onOpenMenu}
+          aria-label="الرسائل والقائمة"
+          className="grid h-10 w-8 shrink-0 place-items-center"
         >
-          <ShoppingCart className="h-6 w-6" />
-          {cartCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black">
-              {cartCount}
-            </span>
-          )}
+          <Mail className="h-[20px] w-[20px] stroke-[1.8]" />
         </button>
       </div>
 
       <nav
-        className="flex gap-5 overflow-x-auto border-t border-white/25 px-4 py-2 text-[13px] font-bold whitespace-nowrap no-scrollbar"
-        aria-label="الأقسام السريعة"
+        className="flex h-9 items-end gap-5 overflow-x-auto border-t border-neutral-100 px-3 no-scrollbar"
+        aria-label="أقسام المتجر"
       >
-        {categories.map((category) => (
+        {categories.map((category, index) => (
           <button
             type="button"
             key={category.id}
             onClick={() => onSelectCategory?.(category.id)}
-            className={`relative shrink-0 pb-1 ${category.id === "all" ? "border-b-4 border-white" : ""}`}
+            className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${index === 0 ? "font-black" : "text-neutral-700"}`}
           >
             {category.label}
+            {index === 0 && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-black" />}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={onOpenMenu}
+          aria-label="عرض جميع الفئات"
+          className="grid h-9 shrink-0 place-items-center text-neutral-500"
+        >
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
       </nav>
     </header>
   );

@@ -128,19 +128,16 @@ export const VisualCategoryCircles: React.FC<VisualCategoryCirclesProps> = ({
 
   return (
     <section
-      className="relative bg-[var(--color-surface-1)] py-4 px-2 sm:bg-transparent sm:px-6 w-full max-w-[1700px] mx-auto select-none"
+      className="relative bg-white py-3 px-2 sm:bg-transparent sm:px-6 w-full max-w-[1700px] mx-auto select-none"
       aria-label="أقسام المتجر"
+      data-section="categories"
     >
       {/* Section Sub-header */}
-      <div className="flex items-center justify-between mb-3 px-2">
+      <div className="flex items-center justify-between mb-2 px-1">
         <div className="flex items-center gap-2">
-          <span className="h-4 w-1 rounded-full bg-[#F93A00]" />
-          <h2 className="text-sm sm:text-base font-black text-neutral-900 dark:text-white tracking-wide">
-            تصفح الأقسام
-          </h2>
-          <span className="rounded-full bg-[#FFF1EB] dark:bg-neutral-800 text-[#F93A00] text-[10px] font-black px-2 py-0.5">
-            منتجات المتجر المعتمدة
-          </span>
+          <span className="hidden" />
+          <h2 className="text-[13px] font-black text-black tracking-wide">تصفح الأقسام</h2>
+          <span className="hidden">منتجات المتجر المعتمدة</span>
         </div>
         <div className="hidden sm:flex items-center gap-1.5">
           <button
@@ -163,7 +160,7 @@ export const VisualCategoryCircles: React.FC<VisualCategoryCirclesProps> = ({
       {/* Horizontal Scroll Track */}
       <div
         ref={scrollRef}
-        className="grid grid-cols-5 items-start gap-x-1 gap-y-5 overflow-visible px-1 pb-1 sm:flex sm:gap-6 sm:overflow-x-auto sm:px-2 sm:pb-2"
+        className="grid grid-cols-5 items-start gap-x-1 gap-y-4 overflow-visible px-0 pb-1 sm:flex sm:gap-6 sm:overflow-x-auto sm:px-2 sm:pb-2"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {CATEGORIES_META.map((cat) => {
@@ -180,7 +177,7 @@ export const VisualCategoryCircles: React.FC<VisualCategoryCirclesProps> = ({
               {/* Circular Thumbnail Container */}
               <div className="relative">
                 <div
-                  className={`relative flex h-[68px] w-[68px] sm:h-20 sm:w-20 md:h-24 md:w-24 items-center justify-center rounded-full overflow-hidden transition-all duration-200 ${
+                  className={`relative flex h-[58px] w-[58px] sm:h-20 sm:w-20 md:h-24 md:w-24 items-center justify-center rounded-full overflow-hidden transition-all duration-200 ${
                     isSelected
                       ? "ring-2 ring-[#F93A00] ring-offset-2 ring-offset-white dark:ring-offset-neutral-900 scale-105 shadow-md shadow-[#F93A00]/20"
                       : "border-2 border-neutral-200 dark:border-neutral-800 group-hover:border-neutral-400 dark:group-hover:border-neutral-600 shadow-sm"
@@ -223,7 +220,7 @@ export const VisualCategoryCircles: React.FC<VisualCategoryCirclesProps> = ({
 
               {/* Title underneath */}
               <span
-                className={`mt-2.5 max-w-[68px] text-center text-[11px] font-bold leading-tight transition-colors line-clamp-2 sm:max-w-[95px] sm:text-xs ${
+                className={`mt-1.5 max-w-[66px] text-center text-[10px] font-medium leading-tight transition-colors line-clamp-2 sm:max-w-[95px] sm:text-xs ${
                   isSelected
                     ? "text-[#F93A00] font-black"
                     : "text-neutral-800 dark:text-neutral-200 group-hover:text-black dark:group-hover:text-white"
