@@ -170,6 +170,7 @@ function ProductPage() {
   );
 
   useEffect(() => {
+    if (window.matchMedia("(max-width: 767px)").matches) return;
     const el = heroRef.current;
     if (!el) return;
     const io = new IntersectionObserver(([entry]) => setShowStickyBar(!entry.isIntersecting), {
