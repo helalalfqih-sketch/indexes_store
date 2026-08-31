@@ -154,7 +154,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const themeColor =
       storeIdentity?.themeColor || seo?.themeColor || brandSettings?.primaryColor || "#1F5EFF";
     const faviconUrl =
-      storeIdentity?.faviconUrl || storeIdentity?.logoUrl || navigation?.logoUrl || "/favicon.ico";
+      storeIdentity?.faviconUrl || storeIdentity?.logoUrl || navigation?.logoUrl || "/store-icon.svg";
     const appleTouchIconUrl =
       storeIdentity?.appleTouchIconUrl ||
       storeIdentity?.logoUrl ||
@@ -264,7 +264,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "icon",
         href: faviconUrl,
-        type: faviconUrl.endsWith(".ico") ? "image/x-icon" : "image/png",
+        type: faviconUrl.endsWith(".svg")
+          ? "image/svg+xml"
+          : faviconUrl.endsWith(".ico")
+            ? "image/x-icon"
+            : "image/png",
       },
       { rel: "apple-touch-icon", sizes: "180x180", href: appleTouchIconUrl },
       ...(baseUrl

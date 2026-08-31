@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Smartphone, Download, Sparkles, CheckCircle2, Apple } from 'lucide-react';
+import { StoreLogo } from './StoreLogo';
 
 interface AppDownloadModalProps {
   isOpen: boolean;
@@ -41,8 +42,8 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
 
           {/* Top Promotional Header */}
           <div className="relative bg-gradient-to-r from-black via-neutral-900 to-black px-6 py-8 text-white text-center">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F93A00] text-white shadow-lg shadow-[#F93A00]/30">
-              <Smartphone className="h-7 w-7" />
+            <div className="mx-auto mb-3 flex items-center justify-center">
+              <StoreLogo variant="icon" className="h-16 w-16 shadow-2xl" />
             </div>
             <span className="inline-block rounded-full bg-[#F93A00] px-3 py-1 text-xs font-black tracking-wider text-white">
               عروض حصرية لمستخدمي التطبيق
