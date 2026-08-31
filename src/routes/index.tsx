@@ -10,7 +10,6 @@ import {
   categoriesQuery,
   bestSellersQuery,
   offersQuery,
-  globePoolQuery,
 } from "@/lib/queries/catalog";
 
 import {
@@ -89,9 +88,8 @@ export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(categoriesQuery()),
-      context.queryClient.ensureQueryData(bestSellersQuery(20)),
-      context.queryClient.ensureQueryData(offersQuery(20)),
-      context.queryClient.ensureQueryData(globePoolQuery(100)),
+      context.queryClient.ensureQueryData(bestSellersQuery(12)),
+      context.queryClient.ensureQueryData(offersQuery(8)),
     ]);
   },
   errorComponent: ({ error }) => (
@@ -120,14 +118,15 @@ function HomePage() {
     [rawAppearanceSettings],
   );
 
-  const { data: bestSellers } = useSuspenseQuery(bestSellersQuery(20));
-  const { data: dailyDeals } = useSuspenseQuery(offersQuery(20));
-  const { data: allProducts } = useSuspenseQuery(globePoolQuery(100));
+  const { data: bestSellers } = useSuspenseQuery(bestSellersQuery(12));
+  const { data: dailyDeals } = useSuspenseQuery(offersQuery(8));
 
   // Map production products to AI Studio design products
   const rawProductList = useMemo(() => {
-    return allProducts.length ? allProducts : dailyDeals.length ? dailyDeals : bestSellers;
-  }, [allProducts, dailyDeals, bestSellers]);
+    const unique = new Map<string, LegacyProductShape>();
+    [...dailyDeals, ...bestSellers].forEach((product) => unique.set(product.id, product));
+    return [...unique.values()];
+  }, [dailyDeals, bestSellers]);
 
   const rawProductMap = useMemo(() => {
     const map = new Map<string, LegacyProductShape>();
