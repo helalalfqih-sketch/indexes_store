@@ -192,6 +192,7 @@ export async function fetchProductsByCategory(
 ): Promise<LegacyProductShape[]> {
   const key = categoryIdOrSlug.trim();
   const cleanKey = key.toLowerCase().replace(/_/g, "-");
+  const aliasKey = cleanKey === "tools-hardware" ? "tools" : cleanKey;
 
   let categories: Awaited<ReturnType<typeof fetchCategories>> = [];
   try {
@@ -202,9 +203,9 @@ export async function fetchProductsByCategory(
 
   const matchedCat = categories.find((category) => {
     const categoryKey = category.id.toLowerCase().replace(/_/g, "-");
-    return category.id === key || categoryKey === cleanKey;
+    return category.id === key || categoryKey === aliasKey;
   });
-  const targetSlug = matchedCat?.id ?? cleanKey;
+  const targetSlug = matchedCat?.id ?? aliasKey;
   const targetId = matchedCat?.id ?? key;
 
   const all = await fetchProducts();

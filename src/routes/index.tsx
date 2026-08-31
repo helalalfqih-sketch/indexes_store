@@ -26,24 +26,19 @@ import { mapProductionProductToDesignProduct } from "@/components/storefront/ada
 
 import { Header } from "@/components/storefront/Header";
 import { ShippingBanner } from "@/components/storefront/ShippingBanner";
-import { AISearchSection } from "@/components/storefront/AISearchSection";
-import { HeroCarousel } from "@/components/storefront/HeroCarousel";
+import { SalesHero } from "@/components/storefront/SalesHero";
 import {
   CategoryBar,
   type PriceRangePreset,
   STORE_BRANDS,
   RATING_OPTIONS,
 } from "@/components/storefront/CategoryBar";
-import { DiscoveryStrip } from "@/components/storefront/DiscoveryStrip";
 import { BestOffersSection } from "@/components/storefront/BestOffersSection";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { TrustBar } from "@/components/storefront/TrustBar";
-import { LoyaltyBanner } from "@/components/storefront/LoyaltyBanner";
 import { StoreFooter } from "@/components/storefront/StoreFooter";
 import { BottomNav } from "@/components/storefront/BottomNav";
-import { AmbientBackground } from "@/components/storefront/AmbientBackground";
 import { FloatingWhatsAppButton } from "@/components/storefront/FloatingWhatsAppButton";
-import { CinematicStory } from "@/components/storefront/cinematic-story";
 import { useAppearance } from "@/components/appearance-provider";
 import { mapPublishedStorefrontSettings } from "@/lib/adapters/storefront-settings.adapter";
 import {
@@ -67,7 +62,6 @@ import { ProductUniverseModal } from "@/components/storefront/ProductUniverseMod
 import { CartShareModal } from "@/components/storefront/CartShareModal";
 import { CustomerSupportHub } from "@/components/storefront/CustomerSupportHub";
 import type { SupportContext } from "@/components/storefront/CustomerSupportHub";
-import { PerformanceMonitor } from "@/components/storefront/PerformanceMonitor";
 import { supabase } from "@/integrations/supabase/client";
 import {
   AddToCartAnimationOverlay,
@@ -148,22 +142,6 @@ function HomePage() {
       mapProductionProductToDesignProduct(p),
     );
   }, [rawProductList]);
-
-  // 3D Globe products pool based on published product source setting
-  const globeProducts = useMemo(() => {
-    const source = mappedSettings.hero.globe.productSource;
-    if (source === "offers" && dailyDeals.length > 0) {
-      return (dailyDeals as (LegacyProductShape | ProductionProduct)[]).map((p) =>
-        mapProductionProductToDesignProduct(p),
-      );
-    }
-    if (source === "bestsellers" && bestSellers.length > 0) {
-      return (bestSellers as (LegacyProductShape | ProductionProduct)[]).map((p) =>
-        mapProductionProductToDesignProduct(p),
-      );
-    }
-    return products;
-  }, [mappedSettings.hero.globe.productSource, dailyDeals, bestSellers, products]);
 
   // Real production cart & favorites hooks
   const cartStoreItems = useCart((s) => s.items);
@@ -266,7 +244,6 @@ function HomePage() {
   const [priceRange, setPriceRange] = useState<PriceRangePreset>("all");
   const [customMinPrice, setCustomMinPrice] = useState<number | undefined>();
   const [customMaxPrice, setCustomMaxPrice] = useState<number | undefined>();
-  const [discoveryFilter, setDiscoveryFilter] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
@@ -499,28 +476,8 @@ function HomePage() {
     }
   };
 
-  const handleSelectDiscoveryOption = (type: string) => {
-    setDiscoveryFilter(type);
-    if (type === "best-selling") {
-      setSortBy("best-selling");
-    } else if (type === "newest") {
-      setSortBy("newest");
-    } else if (type === "gift") {
-      setSelectedCategory("smartwatches");
-    } else if (type === "home") {
-      setSelectedCategory("home_appliances");
-    } else if (type === "budget") {
-      setSortBy("price-low");
-    } else if (type === "surprise" && products.length > 0) {
-      setSelectedProductModal(products[Math.floor(Math.random() * products.length)]);
-    }
-  };
-
   return (
     <div className="dir-rtl relative flex min-h-screen flex-col overflow-x-hidden bg-[var(--color-bg,#08090B)] pb-28 text-right font-sans text-[var(--color-text-primary,#F5F7FA)] transition-colors duration-200 selection:bg-[#2F6BFF] selection:text-white">
-      {/* High-Tech Ambient Background in Empty Spaces */}
-      <AmbientBackground />
-
       {/* Global Toast Notifications */}
       <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
 
@@ -562,38 +519,23 @@ function HomePage() {
               case "hero":
                 if (!mappedSettings.hero.enabled) return null;
                 return (
-                  <div key="hero">
-                    {isLoading ? (
-                      <HeroCarouselSkeleton />
-                    ) : (
-                      <HeroCarousel
-                        products={globeProducts}
-                        heroConfig={mappedSettings.hero}
-                        onSelectCategory={handleSelectCategoryWithLoading}
-                        onSelectProduct={handleSelectProduct}
-                        onOpenDeconstruction={() => setIsDeconstructionOpen(true)}
-                        onOpenUniverse={() => setIsProductUniverseOpen(true)}
-                      />
-                    )}
-                  </div>
+                  <SalesHero
+                    key="hero"
+                    onShopNow={() =>
+                      document
+                        .getElementById("store-products")
+                        ?.scrollIntoView({ behavior: "smooth" })
+                    }
+                    onFocusSearch={() =>
+                      document
+                        .querySelector<HTMLInputElement>('input[aria-label="بحث عن المنتجات"]')
+                        ?.focus()
+                    }
+                  />
                 );
 
               case "discovery":
-                return (
-                  <DiscoveryStrip
-                    key="discovery"
-                    onSelectDiscoveryOption={handleSelectDiscoveryOption}
-                    activeFilter={discoveryFilter}
-                    onResetFilter={() => {
-                      setDiscoveryFilter(null);
-                      setSortBy("default");
-                      setSelectedCategory("all");
-                      setPriceRange("all");
-                      setCustomMinPrice(undefined);
-                      setCustomMaxPrice(undefined);
-                    }}
-                  />
-                );
+                return null;
 
               case "recently_viewed":
                 if (recentlyViewed.length === 0) return null;
@@ -653,37 +595,17 @@ function HomePage() {
                 );
 
               case "ai_search":
-                return (
-                  <AISearchSection
-                    key="ai_search"
-                    products={products}
-                    currency={currency}
-                    onSelectProduct={handleSelectProduct}
-                    onSearchQuerySubmit={(q) => {
-                      setIsLoading(true);
-                      setSearchQuery(q);
-                      setTimeout(() => setIsLoading(false), 250);
-                    }}
-                  />
-                );
+                return null;
 
               case "cinematic":
-                if (!mappedSettings.sections.cinematic.enabled) return null;
-                return (
-                  <div key="cinematic" className="px-3 sm:px-6">
-                    <CinematicStory
-                      cinematicConfig={mappedSettings.sections.cinematic}
-                      whatsappNumber={mappedSettings.contact.whatsappPhone}
-                    />
-                  </div>
-                );
+                return null;
 
               case "latest":
                 if (!mappedSettings.sections.latest.enabled) return null;
                 return (
                   <div key="latest">
                     {/* Product Catalog Grid Section */}
-                    <section className="px-4 sm:px-6 py-6">
+                    <section id="store-products" className="scroll-mt-24 px-4 py-6 sm:px-6">
                       <div className="dir-rtl mb-6 flex flex-col justify-between gap-3 border-b border-[var(--color-border-default)] pb-4 sm:flex-row sm:items-center">
                         <div>
                           <h3 className="text-xl font-bold text-[var(--color-text-primary)] sm:text-2xl">
@@ -694,7 +616,7 @@ function HomePage() {
                               : "منتجات القسم المختار"}
                           </h3>
                           <p className="mt-1 text-xs text-[var(--color-text-secondary)] sm:text-sm">
-                            عرض {filteredProducts.length} منتجات أصلية مع ضمان متجر إندكس
+                            عرض {filteredProducts.length} منتجًا بالسعر والتوفر المسجلين في المتجر
                           </p>
                         </div>
                         {sortBy !== "default" ? (
@@ -775,12 +697,7 @@ function HomePage() {
                 );
 
               case "loyalty":
-                return (
-                  <LoyaltyBanner
-                    key="loyalty"
-                    onOpenLoyaltyModal={() => navigate({ to: "/account" })}
-                  />
-                );
+                return null;
 
               default:
                 return null;
@@ -806,9 +723,6 @@ function HomePage() {
 
         {/* Floating WhatsApp Quick Contact Button */}
         <FloatingWhatsAppButton isOpen={true} onToggle={() => {}} />
-
-        {/* Live Performance & FPS Monitor */}
-        <PerformanceMonitor />
 
         {/* Modals & Drawers */}
         <ProductDetailModal

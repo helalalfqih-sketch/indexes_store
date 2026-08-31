@@ -9,12 +9,6 @@ import {
   ShoppingCart,
   Star,
   MessageCircle,
-  Shield,
-  Truck,
-  RefreshCcw,
-  Package,
-  Sparkles,
-  Zap,
   CheckCircle2,
   Home,
   ChevronLeft,
@@ -32,7 +26,6 @@ import { buildProductHead } from "@/lib/seo";
 import { ProductMediaGallery } from "@/components/product-media-gallery";
 import { ProductRecommendations } from "@/components/product-recommendations";
 import { trackEvent } from "@/lib/analytics";
-import { DispatchProductExperience } from "@/components/storefront/DispatchProductExperience";
 
 const DARK = "var(--showcase)";
 const LIGHT = "var(--showcase-foreground)";
@@ -130,6 +123,13 @@ function ProductPage() {
   const [added, setAdded] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const availableStock = Number(product.stock);
+  const isAvailable = Number.isFinite(availableStock) ? availableStock > 0 : product.stock !== 0;
+  const description = String(product.description || "")
+    .replace(/#{1,6}\s+/g, "")
+    .replace(/\*\*|__|`/g, "")
+    .replace(/^[-*+]\s+/gm, "")
+    .trim();
 
   useModelViewer();
 
@@ -154,6 +154,7 @@ function ProductPage() {
   }, []);
 
   const handleAdd = () => {
+    if (!isAvailable) return;
     add(product, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
@@ -219,22 +220,7 @@ function ProductPage() {
         </span>
       </nav>
 
-      <div ref={heroRef}>
-        <DispatchProductExperience
-          product={{
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            image: product.image,
-            price: product.price,
-            stock: product.stock,
-          }}
-          onBuy={handleAdd}
-        />
-      </div>
-
-      {/* Full product information remains below the cinematic purchase experience. */}
-      <div className="mx-auto max-w-7xl px-4 pt-12 lg:px-8">
+      <div ref={heroRef} className="mx-auto max-w-7xl px-4 pt-8 lg:px-8 lg:pt-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Right/Top Column: Interactive Gallery (7 columns on Desktop) */}
           <div className="lg:col-span-7 flex flex-col gap-4">
@@ -257,11 +243,16 @@ function ProductPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="rounded-md bg-primary/15 px-2.5 py-0.5 text-xs font-bold text-primary border border-primary/20">
-                  {product.categoryName || product.category_name || (product.categoryId ? undefined : null) || "عام"}
+                  {product.categoryName ||
+                    product.category_name ||
+                    (product.categoryId ? undefined : null) ||
+                    "عام"}
                 </span>
-                <span className="flex items-center gap-1 text-xs font-bold text-success">
+                <span
+                  className={`flex items-center gap-1 text-xs font-bold ${isAvailable ? "text-success" : "text-destructive"}`}
+                >
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  متوفر في المتجر
+                  {isAvailable ? "متوفر في المتجر" : "نفد المخزون"}
                 </span>
               </div>
 
@@ -318,9 +309,9 @@ function ProductPage() {
             </div>
 
             {/* Description Summary */}
-            {pageCfg.showDescription !== false && (
+            {pageCfg.showDescription !== false && description && (
               <div className="text-sm leading-relaxed text-showcase-foreground/80 border-t border-b border-showcase-border/60 py-4">
-                {product.description}
+                {description}
               </div>
             )}
 
@@ -342,7 +333,14 @@ function ProductPage() {
                 <button
                   type="button"
                   aria-label={`زيادة كمية ${product.name}`}
-                  onClick={() => setQty(qty + 1)}
+                  onClick={() =>
+                    setQty(
+                      Number.isFinite(availableStock) ? Math.min(availableStock, qty + 1) : qty + 1,
+                    )
+                  }
+                  disabled={
+                    !isAvailable || (Number.isFinite(availableStock) && qty >= availableStock)
+                  }
                   className="grid h-11 w-11 place-items-center rounded-md border border-input bg-primary text-primary-foreground font-bold hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring transition"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -357,10 +355,18 @@ function ProductPage() {
                   href={orderHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() =>
-                    trackEvent("click_whatsapp", { source: "product_page", productId: product.id })
-                  }
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-success py-3.5 text-sm font-black text-success-foreground shadow-brand hover:bg-success/90 transition"
+                  aria-disabled={!isAvailable}
+                  onClick={(event) => {
+                    if (!isAvailable) {
+                      event.preventDefault();
+                      return;
+                    }
+                    trackEvent("click_whatsapp", {
+                      source: "product_page",
+                      productId: product.id,
+                    });
+                  }}
+                  className={`flex min-h-11 items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black transition ${isAvailable ? "bg-success text-success-foreground hover:bg-success/90" : "pointer-events-none bg-showcase-foreground/10 text-showcase-foreground/40"}`}
                 >
                   <MessageCircle className="h-5 w-5" />
                   <span>اطلب فوراً عبر واتساب</span>
@@ -370,7 +376,8 @@ function ProductPage() {
               {pageCfg.showCartBtn !== false && (
                 <button
                   onClick={handleAdd}
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-showcase-border bg-showcase-foreground/10 py-3 text-xs font-bold text-showcase-foreground hover:bg-showcase-foreground/20 transition"
+                  disabled={!isAvailable}
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-showcase-border bg-showcase-foreground/10 py-3 text-xs font-bold text-showcase-foreground transition hover:bg-showcase-foreground/20 disabled:cursor-not-allowed disabled:text-showcase-foreground/40"
                 >
                   <ShoppingCart className="h-4 w-4" />
                   <span>{added ? "تمت الإضافة للسلة ✓" : "إضافة إلى سلة المشتريات"}</span>
@@ -378,29 +385,7 @@ function ProductPage() {
               )}
             </div>
 
-            {/* Trust Badges & Delivery Estimate */}
             <div className="space-y-3 pt-2">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="flex flex-col items-center gap-1.5 rounded-xl border border-showcase-border/60 p-3 text-center">
-                  <Truck className="h-4 w-4 text-primary" />
-                  <span className="text-[11px] font-bold">شحن سريع</span>
-                </div>
-                <div className="flex flex-col items-center gap-1.5 rounded-xl border border-showcase-border/60 p-3 text-center">
-                  <Shield className="h-4 w-4 text-primary" />
-                  <span className="text-[11px] font-bold">ضمان الجودة</span>
-                </div>
-                <div className="flex flex-col items-center gap-1.5 rounded-xl border border-showcase-border/60 p-3 text-center">
-                  <RefreshCcw className="h-4 w-4 text-primary" />
-                  <span className="text-[11px] font-bold">إرجاع سهل</span>
-                </div>
-              </div>
-
-              {/* Delivery Time Estimate Banner */}
-              <div className="flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 p-3 text-xs text-primary font-bold">
-                <Truck className="h-4 w-4 shrink-0" />
-                <span>توصيل متوقع خلال 24 - 48 ساعة إلى كافة المحافظات 🚚</span>
-              </div>
-
               {/* Social Share Buttons */}
               <div className="flex items-center justify-between text-xs pt-1 border-t border-showcase-border/40">
                 <span className="text-showcase-foreground/60 font-bold">مشاركة المنتج:</span>
@@ -435,48 +420,6 @@ function ProductPage() {
           </div>
         </div>
 
-        {/* Feature Highlights Grid (Compact Spacing) */}
-        <div className="mt-16 border-t border-showcase-border/60 pt-12">
-          <h3 className="text-xl font-black mb-6 text-showcase-foreground">
-            مميزات ومواصفات المنتج
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                tag: "الأداء",
-                title: "أداء يفوق التوقعات",
-                body: "تقنية متطورة وتصميم دقيق يضمن لك سرعة، سلاسة، وموثوقية عالية في كل استخدام.",
-                icon: Zap,
-              },
-              {
-                tag: "التصميم",
-                title: "جماليات فاخرة",
-                body: "خطوط أنيقة وخامات متينة مختارة بعناية لمنحك تجربة استخدام راقية تستحق الاقتناء.",
-                icon: Sparkles,
-              },
-              {
-                tag: "الجودة والضمان",
-                title: "مضمون مع خدمة ممتازة",
-                body: "فحوصات دقيقة وضمان شامل مع دعم متواصل لراحة بالك الكاملة.",
-                icon: Shield,
-              },
-            ].map((f) => (
-              <div
-                key={f.tag}
-                className="flex flex-col gap-3 rounded-2xl border border-showcase-border bg-showcase-foreground/5 p-5 shadow-card"
-              >
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary border border-primary/20">
-                  <f.icon className="h-5 w-5" />
-                </div>
-                <span className="text-[10px] font-bold tracking-[0.3em] text-primary">{f.tag}</span>
-                <h4 className="text-lg font-bold text-showcase-foreground">{f.title}</h4>
-                <p className="text-xs leading-relaxed text-showcase-foreground/75">{f.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Product Recommendations ("قد يعجبك أيضاً") */}
         <ProductRecommendations
           currentProductId={product.id}
@@ -486,7 +429,7 @@ function ProductPage() {
       </div>
 
       {/* Sticky Conversion Bar when scrolling */}
-      {pageCfg.showWaBtn !== false && (
+      {pageCfg.showWaBtn !== false && isAvailable && (
         <motion.div
           initial={false}
           animate={{
