@@ -1,5 +1,5 @@
 import React from "react";
-import { Bell, Camera, ChevronDown, Mail, Search, ShoppingCart } from "lucide-react";
+import { Bell, Camera, ChevronDown, Heart, Mail, Search, ShoppingCart } from "lucide-react";
 
 interface MobileReferenceHeaderProps {
   searchQuery: string;
@@ -34,21 +34,21 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
 }) => {
   return (
     <header
-      className="md:hidden sticky top-0 z-40 border-b border-black/10 bg-white text-black shadow-[0_1px_5px_rgba(0,0,0,0.08)]"
+      className="sticky top-0 z-40 hidden border-b border-white/10 bg-black text-white shadow-[0_1px_5px_rgba(0,0,0,0.22)] md:hidden"
       dir="rtl"
     >
-      <div className="flex h-12 items-center gap-1 px-2">
+      <div className="flex h-12 items-center gap-1 px-2" dir="ltr">
         <button
           type="button"
-          onClick={() => onSelectCategory?.("all")}
-          aria-label="فتح المتجر"
-          className="grid h-10 w-8 shrink-0 place-items-center text-[22px] font-black leading-none"
+          onClick={onOpenMenu}
+          aria-label="المفضلة"
+          className="grid h-10 w-9 shrink-0 place-items-center text-white"
         >
-          S
+          <Heart className="h-[21px] w-[21px] stroke-[1.8]" />
         </button>
 
         <div
-          className="flex h-9 min-w-0 flex-1 items-center border border-neutral-200 bg-[#f7f7f7]"
+          className="flex h-9 min-w-0 flex-1 items-center border border-white bg-white"
           dir="rtl"
         >
           <input
@@ -72,7 +72,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           <button
             type="button"
             aria-label="البحث بالكاميرا"
-            className="grid h-9 w-8 shrink-0 place-items-center text-neutral-700"
+            className="grid h-9 w-8 shrink-0 place-items-center text-black"
           >
             <Camera className="h-[17px] w-[17px] stroke-[1.8]" />
           </button>
@@ -82,7 +82,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           type="button"
           onClick={onOpenCart}
           aria-label="السلة"
-          className="relative grid h-10 w-9 shrink-0 place-items-center"
+          className="relative grid h-10 w-9 shrink-0 place-items-center text-white"
         >
           <ShoppingCart className="h-[22px] w-[22px] stroke-[1.8]" />
           {cartCount > 0 && (
@@ -95,7 +95,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           type="button"
           onClick={onOpenNotifications}
           aria-label="الإشعارات"
-          className="relative grid h-10 w-9 shrink-0 place-items-center"
+          className="relative grid h-10 w-9 shrink-0 place-items-center text-white"
         >
           <Bell className="h-[21px] w-[21px] stroke-[1.8]" />
           {unreadNotificationsCount > 0 && (
@@ -106,14 +106,14 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           type="button"
           onClick={onOpenMenu}
           aria-label="الرسائل والقائمة"
-          className="grid h-10 w-8 shrink-0 place-items-center"
+          className="grid h-10 w-8 shrink-0 place-items-center text-white"
         >
           <Mail className="h-[20px] w-[20px] stroke-[1.8]" />
         </button>
       </div>
 
       <nav
-        className="flex h-9 items-end gap-5 overflow-x-auto border-t border-neutral-100 px-3 no-scrollbar"
+        className="flex h-9 items-end gap-5 overflow-x-auto border-t border-white/10 px-3 no-scrollbar"
         aria-label="أقسام المتجر"
       >
         {categories.map((category, index) => (
@@ -121,17 +121,17 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
             type="button"
             key={category.id}
             onClick={() => onSelectCategory?.(category.id)}
-            className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${index === 0 ? "font-black" : "text-neutral-700"}`}
+            className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${index === 0 ? "font-black text-white" : "text-white/75"}`}
           >
             {category.label}
-            {index === 0 && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-black" />}
+            {index === 0 && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-white" />}
           </button>
         ))}
         <button
           type="button"
           onClick={onOpenMenu}
           aria-label="عرض جميع الفئات"
-          className="grid h-9 shrink-0 place-items-center text-neutral-500"
+          className="grid h-9 shrink-0 place-items-center text-white/80"
         >
           <ChevronDown className="h-3.5 w-3.5" />
         </button>
