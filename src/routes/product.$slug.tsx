@@ -195,7 +195,7 @@ function ProductPage() {
       {/* Top Header / Navigation Bar */}
       <nav
         aria-label="التنقل الرئيسي"
-        className="sticky top-0 z-30 flex items-center justify-between border-b border-showcase-border bg-showcase/80 px-4 py-3 backdrop-blur-xl"
+        className="hidden sticky top-0 z-30 items-center justify-between border-b border-showcase-border bg-showcase/80 px-4 py-3 backdrop-blur-xl md:flex"
       >
         <Link
           to="/"
@@ -213,7 +213,7 @@ function ProductPage() {
       {/* Visible Breadcrumbs (SEO + UX) */}
       <nav
         aria-label="مسار التنقل"
-        className="flex items-center gap-1.5 px-4 py-2 text-[11px] text-showcase-foreground/50 border-b border-showcase-border/30"
+        className="flex items-center gap-1.5 border-b border-showcase-border/30 px-4 py-2 text-[11px] text-showcase-foreground/50"
       >
         <Link
           to="/"

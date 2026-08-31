@@ -5,6 +5,7 @@ import type { Product } from "./types";
 interface MobileReferenceHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onSubmitSearch?: () => void;
   cartCount: number;
   unreadNotificationsCount: number;
   products?: Product[];
@@ -16,15 +17,16 @@ interface MobileReferenceHeaderProps {
 
 const categories = [
   { id: "all", label: "كل" },
-  { id: "home_appliances", label: "المنزل + الحيوانات الأليفة" },
-  { id: "automotive", label: "رجال" },
-  { id: "health_fitness", label: "الجمال والصحة" },
-  { id: "perfumes", label: "مجوهرات وإكسسوارات" },
+  { id: "home_appliances", label: "أجهزة ومنزل" },
+  { id: "automotive", label: "مستلزمات السيارات" },
+  { id: "perfumes", label: "عطور وبخور" },
+  { id: "accessories", label: "إكسسوارات وهواتف" },
 ];
 
 export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
   searchQuery,
   onSearchChange,
+  onSubmitSearch,
   cartCount,
   unreadNotificationsCount,
   onOpenCart,
@@ -34,7 +36,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
 }) => {
   return (
     <header className="md:hidden relative z-40 bg-[#7bb6dc] text-white shadow-sm" dir="rtl">
-      <div className="flex items-center gap-2 px-3 pb-2 pt-3">
+      <div dir="ltr" className="flex items-center gap-2 px-3 pb-2 pt-3">
         <button
           type="button"
           aria-label="المفضلة"
@@ -47,6 +49,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
         <div className="flex h-11 min-w-0 flex-1 items-center overflow-hidden rounded-lg bg-white text-neutral-700 shadow-sm">
           <button
             type="button"
+            onClick={onSubmitSearch}
             aria-label="البحث"
             className="flex h-full w-12 shrink-0 items-center justify-center bg-white text-[#6aa8d2]"
           >
@@ -55,8 +58,12 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           <input
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") onSubmitSearch?.();
+            }}
             placeholder="ابحث عن منتج، قسم أو علامة"
             aria-label="ابحث عن منتج"
+            dir="rtl"
             className="min-w-0 flex-1 bg-transparent px-1 text-right text-xs text-neutral-800 outline-none placeholder:text-neutral-400"
           />
           <button

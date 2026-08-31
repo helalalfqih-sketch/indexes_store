@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   motion,
   useMotionTemplate,
@@ -9,25 +9,30 @@ import {
 } from "framer-motion";
 import {
   Bell,
-  Home,
+  Grid2X2,
   Menu,
-  MessageCircle,
   ScanLine,
   Search,
+  ShoppingBag,
   ShoppingCart,
+  Sparkles,
+  Store,
   User,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useCart } from "@/lib/cart-store";
 import { MainMenu } from "@/components/main-menu";
+import { MobileReferenceHeader } from "@/components/storefront/MobileReferenceHeader";
 import { SiteFooter } from "@/components/site-footer";
-import { whatsappLink } from "@/lib/whatsapp";
 import { SCROLL_SPRING } from "@/components/motion/motion-tokens";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div dir="rtl" className="min-h-screen bg-ink text-ink-text">
-      <TopBar />
+      <div className="hidden md:block">
+        <TopBar />
+      </div>
+      <MobileShellHeader />
       <main
         className="mx-auto w-full max-w-md lg:max-w-[1024px]"
         style={{ paddingBottom: "calc(104px + env(safe-area-inset-bottom))" }}
@@ -117,77 +122,79 @@ function TopBar() {
   );
 }
 
+function MobileShellHeader() {
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const count = useCartCount();
+
+  return (
+    <div className="md:hidden">
+      <MobileReferenceHeader
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSubmitSearch={() => navigate({ to: "/search", search: { q: searchQuery } })}
+        cartCount={count}
+        unreadNotificationsCount={0}
+        onOpenCart={() => navigate({ to: "/cart" })}
+        onOpenNotifications={() => navigate({ to: "/account" })}
+        onOpenMenu={() => setMenuOpen(true)}
+        onSelectCategory={(categoryId) => {
+          if (categoryId === "all") {
+            navigate({ to: "/search", search: { q: "" } });
+          } else {
+            navigate({ to: "/category/$id", params: { id: categoryId } });
+          }
+        }}
+      />
+      <MainMenu open={menuOpen} onOpenChange={setMenuOpen} />
+    </div>
+  );
+}
+
 function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const reduced = useReducedMotion();
   const count = useCartCount();
 
   const tabs = [
-    { to: "/cart", label: "السلة", icon: ShoppingCart, badge: count },
-    { to: "/search", label: "بحث", icon: Search },
-    { to: "/", label: "الرئيسية", icon: Home, center: true },
-    { to: null, label: "واتساب", icon: MessageCircle, dot: true },
-    { to: "/account", label: "حسابي", icon: User },
+    { to: "/", label: "المتجر", icon: Store },
+    { to: "/search", label: "الفئات", icon: Grid2X2 },
+    { to: "/offers", label: "ترندات", icon: Sparkles },
+    { to: "/cart", label: "حقيبة التسوق", icon: ShoppingBag, badge: count },
+    { to: "/account", label: "أنا", icon: User },
   ] as const;
 
   return (
     <nav
       aria-label="التنقل الرئيسي"
-      className="fixed inset-x-3.5 z-40 mx-auto h-[70px] w-auto max-w-[398px] rounded-[28px] border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-lg)] backdrop-blur-xl md:hidden"
-      style={{ bottom: "calc(10px + env(safe-area-inset-bottom))" }}
+      className="fixed inset-x-0 z-40 mx-auto h-[76px] w-full max-w-[430px] border-t border-[#e5e7eb] bg-white shadow-[0_-6px_24px_rgba(15,23,42,0.10)] md:hidden"
+      style={{ bottom: "env(safe-area-inset-bottom)" }}
     >
-      <ul className="grid h-full grid-cols-5 items-center px-2">
+      <ul className="grid h-full grid-cols-5 items-center px-2 pb-[env(safe-area-inset-bottom)]">
         {tabs.map((t) => {
           const active = t.to !== null && pathname === t.to;
           const Icon = t.icon;
-          const inner =
-            "center" in t && t.center ? (
-              <div className="flex flex-col items-center gap-1">
-                <div className="grid h-14 w-14 -translate-y-4 place-items-center rounded-full border border-[var(--color-primary-border)] bg-[var(--color-primary-ui)] text-white shadow-[var(--shadow-md)]">
-                  <Icon className="h-[22px] w-[22px]" />
-                </div>
-                <span className="-mt-3 text-[10px] font-bold text-[var(--color-primary-ui)]">
-                  {t.label}
-                </span>
+          const inner = (
+            <div className="flex min-h-12 min-w-12 flex-col items-center justify-center gap-1.5">
+              <div
+                className={`relative grid h-8 w-8 place-items-center rounded-md ${active ? "bg-[#0b0b0d] text-white" : "bg-transparent text-[#69707d]"}`}
+              >
+                <Icon className="h-[21px] w-[21px]" strokeWidth={active ? 2.4 : 1.8} />
+                {"badge" in t && t.badge ? (
+                  <span className="absolute -end-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-[#ef4b23] px-1 text-[9px] font-black text-white">
+                    {t.badge}
+                  </span>
+                ) : null}
               </div>
-            ) : (
-              <div className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1">
-                <div className="relative">
-                  <Icon
-                    className={`h-5 w-5 ${active ? "text-[var(--color-primary-ui)]" : "text-[var(--color-text-muted)]"}`}
-                  />
-                  {"badge" in t && t.badge ? (
-                    <span className="absolute -end-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--color-primary-ui)] px-1 text-[9px] font-bold text-white">
-                      {t.badge}
-                    </span>
-                  ) : null}
-                  {"dot" in t && t.dot ? (
-                    <span className="absolute -end-1 -top-1 h-2 w-2 rounded-full bg-[var(--color-success)]" />
-                  ) : null}
-                </div>
-                <span
-                  className={`text-[10px] font-semibold ${active ? "text-[var(--color-primary-ui)]" : "text-[var(--color-text-muted)]"}`}
-                >
-                  {t.label}
-                </span>
-              </div>
-            );
+              <span
+                className={`whitespace-nowrap text-[10px] font-semibold ${active ? "text-[#111827]" : "text-[#69707d]"}`}
+              >
+                {t.label}
+              </span>
+            </div>
+          );
 
-          if (t.to === null) {
-            return (
-              <li key={t.label}>
-                <a
-                  href={whatsappLink("مرحباً، أريد الاستفسار عن منتج")}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="التواصل عبر واتساب"
-                  className="press flex flex-col items-center"
-                >
-                  {inner}
-                </a>
-              </li>
-            );
-          }
           return (
             <li key={t.label}>
               <Link
