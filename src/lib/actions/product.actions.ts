@@ -224,8 +224,11 @@ export async function searchProducts(q: string): Promise<LegacyProductShape[]> {
   return fetchProducts({ search: query });
 }
 
-export async function fetchOffers(): Promise<LegacyProductShape[]> {
-  const all = await fetchProducts();
+export async function fetchOffers(limit = 20): Promise<LegacyProductShape[]> {
+  const requested = Math.max(1, Math.min(limit, 100));
+  // Offer badges and compare-at prices are already present in the newest catalog rows.
+  // Do not download the entire Shopify catalog just to render a small storefront section.
+  const all = await fetchProducts({ limit: Math.min(100, Math.max(requested * 2, 16)) });
   const explicitOffers = all.filter(
     (p) =>
       p.isDeal ||
@@ -235,11 +238,11 @@ export async function fetchOffers(): Promise<LegacyProductShape[]> {
   );
 
   if (explicitOffers.length > 0) {
-    return explicitOffers;
+    return explicitOffers.slice(0, requested);
   }
 
   // Fallback: pick products and compute deal pricing so offers page & home deals section are vibrant
-  return all.slice(0, 8).map((p) => ({
+  return all.slice(0, Math.min(requested, 8)).map((p) => ({
     ...p,
     oldPrice: p.oldPrice || Math.round(p.price * 1.25),
     badge: p.badge || "عرض خاص 🔥",
@@ -247,6 +250,7 @@ export async function fetchOffers(): Promise<LegacyProductShape[]> {
 }
 
 export async function fetchBestSellers(limit = 20): Promise<LegacyProductShape[]> {
-  const all = await fetchProducts({ limit: 100 });
+  const requested = Math.max(1, Math.min(limit, 100));
+  const all = await fetchProducts({ limit: Math.min(100, Math.max(requested * 2, 16)) });
   return [...all].sort((a, b) => b.rating * b.reviews - a.rating * a.reviews).slice(0, limit);
 }

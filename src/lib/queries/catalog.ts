@@ -49,7 +49,7 @@ export const bestSellersQuery = (limit = 4) =>
 export const offersQuery = (limit = 6) =>
   queryOptions({
     queryKey: catalogKeys.offers,
-    queryFn: async () => (await fetchOffers()).slice(0, limit) as LegacyProductShape[],
+    queryFn: () => fetchOffers(limit) as Promise<LegacyProductShape[]>,
     ...CATALOG_POLICY,
   });
 
