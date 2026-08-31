@@ -145,15 +145,18 @@ function ProductPage() {
 
   useModelViewer();
 
-  useEffect(() => {
-    if (product?.id) {
-      trackEvent("view_product", {
-        productId: product.id,
-        name: product.name,
-        price: product.price,
-      });
-    }
-  }, [product?.id]);
+  useEffect(
+    () => {
+      if (product?.id) {
+        trackEvent("view_product", {
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+        });
+      }
+    }, // eslint-disable-next-line react-hooks/exhaustive-deps
+    [product?.id],
+  );
 
   useEffect(() => {
     const el = heroRef.current;
