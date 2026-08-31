@@ -1,82 +1,93 @@
 import React, { useRef } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Grid, Watch, Headphones, Smartphone, Home, Sparkles, Dumbbell, Car, Wrench, Baby } from 'lucide-react';
+import { Product } from './types';
 
-export interface VisualCategory {
+export interface CategoryMeta {
   id: string;
   name: string;
-  image: string;
+  icon: React.ElementType<{ className?: string }>;
   badge?: string;
-  isPopular?: boolean;
+  gradient: string;
 }
 
-export const VISUAL_CATEGORIES: VisualCategory[] = [
+export const CATEGORIES_META: CategoryMeta[] = [
   {
     id: 'all',
     name: 'الكل',
-    image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=160&auto=format&fit=crop&q=80',
+    icon: Grid,
     badge: 'الكل',
+    gradient: 'from-black to-neutral-800 text-white',
   },
   {
     id: 'smartwatches',
     name: 'ساعات ذكية',
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=160&auto=format&fit=crop&q=80',
+    icon: Watch,
     badge: 'خصم 40%',
-    isPopular: true,
+    gradient: 'from-blue-600 to-indigo-700 text-white',
   },
   {
     id: 'audio',
     name: 'سماعات وصوتيات',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=160&auto=format&fit=crop&q=80',
+    icon: Headphones,
     badge: 'الأكثر طلباً',
-    isPopular: true,
+    gradient: 'from-purple-600 to-violet-800 text-white',
   },
   {
     id: 'accessories',
     name: 'شواحن وإكسسوارات',
-    image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=160&auto=format&fit=crop&q=80',
+    icon: Smartphone,
+    gradient: 'from-emerald-600 to-teal-700 text-white',
   },
   {
     id: 'home_appliances',
     name: 'أجهزة ومنزل',
-    image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=160&auto=format&fit=crop&q=80',
+    icon: Home,
     badge: 'جديد',
+    gradient: 'from-amber-600 to-orange-700 text-white',
   },
   {
     id: 'perfumes',
     name: 'عطور وبخور',
-    image: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=160&auto=format&fit=crop&q=80',
+    icon: Sparkles,
     badge: 'فاخر',
+    gradient: 'from-rose-600 to-pink-700 text-white',
   },
   {
     id: 'health_fitness',
     name: 'الصحة واللياقة',
-    image: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=160&auto=format&fit=crop&q=80',
+    icon: Dumbbell,
+    gradient: 'from-cyan-600 to-blue-700 text-white',
   },
   {
     id: 'automotive',
     name: 'مستلزمات سيارات',
-    image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=160&auto=format&fit=crop&q=80',
+    icon: Car,
+    gradient: 'from-red-600 to-rose-700 text-white',
   },
   {
     id: 'tools',
     name: 'أدوات ومعدات',
-    image: 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=160&auto=format&fit=crop&q=80',
+    icon: Wrench,
+    gradient: 'from-slate-700 to-zinc-900 text-white',
   },
   {
     id: 'baby_kids',
     name: 'مستلزمات الأطفال',
-    image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=160&auto=format&fit=crop&q=80',
+    icon: Baby,
+    gradient: 'from-yellow-500 to-amber-600 text-white',
   },
 ];
 
 interface VisualCategoryCirclesProps {
   selectedCategoryId: string;
   onSelectCategory: (categoryId: string) => void;
+  products?: Product[];
 }
 
 export const VisualCategoryCircles: React.FC<VisualCategoryCirclesProps> = ({
   selectedCategoryId,
   onSelectCategory,
+  products = [],
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -86,17 +97,32 @@ export const VisualCategoryCircles: React.FC<VisualCategoryCirclesProps> = ({
     scrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
   };
 
+  // Find real product images from store catalog for each category
+  const getCategoryImage = (categoryId: string): string | null => {
+    if (categoryId === 'all') {
+      const featured = products.find((p) => p.image && !p.image.includes('data:image/svg'));
+      return featured?.image || null;
+    }
+    const match = products.find(
+      (p) =>
+        (p.category === categoryId || p.category.toLowerCase().includes(categoryId.toLowerCase())) &&
+        p.image &&
+        !p.image.includes('data:image/svg')
+    );
+    return match?.image || null;
+  };
+
   return (
-    <section className="relative py-4 px-2 sm:px-6 w-full max-w-[1700px] mx-auto select-none" aria-label="أقسام المتجر المصورة">
+    <section className="relative py-4 px-2 sm:px-6 w-full max-w-[1700px] mx-auto select-none" aria-label="أقسام المتجر">
       {/* Section Sub-header */}
       <div className="flex items-center justify-between mb-3 px-2">
         <div className="flex items-center gap-2">
           <span className="h-4 w-1 rounded-full bg-[#F93A00]" />
           <h2 className="text-sm sm:text-base font-black text-neutral-900 dark:text-white tracking-wide">
-            تصفح الأقسام بالصور
+            تصفح الأقسام
           </h2>
           <span className="rounded-full bg-[#FFF1EB] dark:bg-neutral-800 text-[#F93A00] text-[10px] font-black px-2 py-0.5">
-            توصيات اليوم
+            منتجات المتجر المعتمدة
           </span>
         </div>
         <div className="hidden sm:flex items-center gap-1.5">
@@ -123,8 +149,10 @@ export const VisualCategoryCircles: React.FC<VisualCategoryCirclesProps> = ({
         className="flex items-start gap-4 sm:gap-6 overflow-x-auto no-scrollbar scroll-smooth px-2 pb-2"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {VISUAL_CATEGORIES.map((cat) => {
+        {CATEGORIES_META.map((cat) => {
           const isSelected = selectedCategoryId === cat.id;
+          const realImage = getCategoryImage(cat.id);
+          const IconComponent = cat.icon;
 
           return (
             <button
@@ -138,21 +166,27 @@ export const VisualCategoryCircles: React.FC<VisualCategoryCirclesProps> = ({
                   className={`relative flex h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 items-center justify-center rounded-full overflow-hidden transition-all duration-200 ${
                     isSelected
                       ? 'ring-2 ring-[#F93A00] ring-offset-2 ring-offset-white dark:ring-offset-neutral-900 scale-105 shadow-md shadow-[#F93A00]/20'
-                      : 'border-2 border-neutral-100 dark:border-neutral-800 group-hover:border-neutral-300 dark:group-hover:border-neutral-700 shadow-sm'
+                      : 'border-2 border-neutral-200 dark:border-neutral-800 group-hover:border-neutral-400 dark:group-hover:border-neutral-600 shadow-sm'
                   }`}
                 >
-                  <img
-                    src={cat.image}
-                    alt={cat.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110 bg-neutral-100 dark:bg-neutral-800"
-                  />
+                  {realImage ? (
+                    <img
+                      src={realImage}
+                      alt={cat.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110 bg-white dark:bg-neutral-900"
+                    />
+                  ) : (
+                    <div className={`h-full w-full bg-gradient-to-br ${cat.gradient} flex items-center justify-center p-3 shadow-inner`}>
+                      <IconComponent className="h-7 w-7 sm:h-8 sm:w-8 transition-transform group-hover:scale-110 drop-shadow" />
+                    </div>
+                  )}
 
                   {/* Dark subtle overlay on hover */}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                 </div>
 
-                {/* Badge if any (e.g. خصم 40%, جديد, الأكثر طلباً) */}
+                {/* Badge if any */}
                 {cat.badge && (
                   <span
                     className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-black leading-none text-white shadow-sm ${

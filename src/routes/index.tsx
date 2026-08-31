@@ -538,18 +538,22 @@ function HomePage() {
                   <div key="hero-shein-block" className="space-y-2">
                     {/* SHEIN Campaign & Promotional Collage Grid */}
                     <SheinPromoGrid
+                      products={products}
+                      currency={currency}
                       onShopNow={() =>
                         document
                           .getElementById("store-products")
                           ?.scrollIntoView({ behavior: "smooth" })
                       }
                       onSelectCategory={handleSelectCategoryWithLoading}
+                      onSelectProduct={handleSelectProduct}
                     />
 
                     {/* SHEIN Visual Category Circles */}
                     <VisualCategoryCircles
                       selectedCategoryId={selectedCategory}
                       onSelectCategory={handleSelectCategoryWithLoading}
+                      products={products}
                     />
 
                     {/* SHEIN Flash Deals Section with live countdown */}
