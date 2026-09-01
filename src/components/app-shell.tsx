@@ -30,29 +30,31 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isProductPage = pathname.startsWith("/product/");
   const isHomePage = pathname === "/";
+  const isCheckoutFlow = pathname === "/cart";
   const ownsStorefrontChrome = isHomePage;
+  const hideStorefrontChrome = ownsStorefrontChrome || isCheckoutFlow;
 
   return (
     <div dir="rtl" className="min-h-screen bg-ink text-ink-text">
-      {!ownsStorefrontChrome && (
+      {!hideStorefrontChrome && (
         <div className="hidden md:block">
           <TopBar />
         </div>
       )}
-      {!isProductPage && !ownsStorefrontChrome && <MobileShellHeader />}
+      {!isProductPage && !hideStorefrontChrome && <MobileShellHeader />}
       <main
-        className={ownsStorefrontChrome ? "w-full" : "mx-auto w-full max-w-md lg:max-w-[1024px]"}
+        className={hideStorefrontChrome ? "w-full" : "mx-auto w-full max-w-md lg:max-w-[1024px]"}
         style={{
           paddingBottom:
-            isProductPage || ownsStorefrontChrome
+            isProductPage || hideStorefrontChrome
               ? 0
               : "calc(104px + env(safe-area-inset-bottom))",
         }}
       >
         {children}
-        {!ownsStorefrontChrome && <SiteFooter />}
+        {!hideStorefrontChrome && <SiteFooter />}
       </main>
-      {!isProductPage && !ownsStorefrontChrome && <BottomNav />}
+      {!isProductPage && !hideStorefrontChrome && <BottomNav />}
     </div>
   );
 }
