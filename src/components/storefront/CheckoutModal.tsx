@@ -15,16 +15,10 @@ interface CheckoutModalProps {
 /**
  * Legacy compatibility adapter.
  *
- * The storefront now has one canonical editable cart: CartDrawer.
- * This component intentionally renders no second checkout UI. When legacy
- * callers request checkout, it forwards the customer to the internal order
- * completion route while preserving the coupon that was applied in the cart.
+ * CartDrawer is the only cart UI. This adapter renders nothing and only
+ * forwards legacy checkout calls to the internal delivery/order step.
  */
-export function CheckoutModal({
-  isOpen,
-  onClose,
-  couponDiscountPercent,
-}: CheckoutModalProps) {
+export function CheckoutModal({ isOpen, onClose, couponDiscountPercent }: CheckoutModalProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,7 +33,7 @@ export function CheckoutModal({
 
     onClose();
     void navigate({
-      to: "/cart",
+      to: "/order-completion",
       search: coupon ? { coupon } : {},
     });
   }, [couponDiscountPercent, isOpen, navigate, onClose]);
