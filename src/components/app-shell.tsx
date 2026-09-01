@@ -29,21 +29,30 @@ import { SCROLL_SPRING } from "@/components/motion/motion-tokens";
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isProductPage = pathname.startsWith("/product/");
+  const isHomePage = pathname === "/";
+  const ownsStorefrontChrome = isHomePage;
 
   return (
     <div dir="rtl" className="min-h-screen bg-ink text-ink-text">
-      <div className="hidden md:block">
-        <TopBar />
-      </div>
-      {!isProductPage && <MobileShellHeader />}
+      {!ownsStorefrontChrome && (
+        <div className="hidden md:block">
+          <TopBar />
+        </div>
+      )}
+      {!isProductPage && !ownsStorefrontChrome && <MobileShellHeader />}
       <main
-        className="mx-auto w-full max-w-md lg:max-w-[1024px]"
-        style={{ paddingBottom: isProductPage ? 0 : "calc(104px + env(safe-area-inset-bottom))" }}
+        className={ownsStorefrontChrome ? "w-full" : "mx-auto w-full max-w-md lg:max-w-[1024px]"}
+        style={{
+          paddingBottom:
+            isProductPage || ownsStorefrontChrome
+              ? 0
+              : "calc(104px + env(safe-area-inset-bottom))",
+        }}
       >
         {children}
-        <SiteFooter />
+        {!ownsStorefrontChrome && <SiteFooter />}
       </main>
-      {!isProductPage && <BottomNav />}
+      {!isProductPage && !ownsStorefrontChrome && <BottomNav />}
     </div>
   );
 }
