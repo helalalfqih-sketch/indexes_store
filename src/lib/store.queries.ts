@@ -5,14 +5,13 @@ import {
   fetchOffers,
   fetchProducts,
   fetchProductBySlug,
-  fetchProductsByCategory,
 } from "./actions/product.actions";
 
 const CACHE_CONFIG = {
-  staleTime: 1000 * 60 * 15, // 15 minutes
-  gcTime: 1000 * 60 * 60 * 2,  // 2 hours
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
+  staleTime: 1000 * 60 * 5,
+  gcTime: 1000 * 60 * 30,
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
 };
 
 /**
@@ -52,18 +51,18 @@ export const offersQueryOptions = () =>
     queryKey: ["offers"],
     queryFn: async () => {
       perfLog("PRODUCT_QUERY_NETWORK_FETCH", "offers");
-      return fetchOffers();
+      return fetchOffers(16);
     },
     ...CACHE_CONFIG,
   });
 
 export const allProductsQueryOptions = () =>
   queryOptions({
-    queryKey: ["allProducts"],
+    queryKey: ["allProducts", 24],
     queryFn: async () => {
       perfLog("PRODUCT_QUERY_START", "allProducts");
       perfLog("PRODUCT_QUERY_NETWORK_FETCH", "allProducts");
-      return fetchProducts();
+      return fetchProducts({ limit: 24 });
     },
     ...CACHE_CONFIG,
   });
@@ -88,9 +87,10 @@ export const categoryBySlugQueryOptions = (id: string) =>
 
 export const productsByCategoryQueryOptions = (id: string) =>
   queryOptions({
-    queryKey: ["productsByCategory", id],
+    queryKey: ["productsByCategory", id, 24],
     queryFn: async () => {
-      return fetchProductsByCategory(id);
+      perfLog("PRODUCT_QUERY_NETWORK_FETCH", `category:${id}`);
+      return fetchProducts({ categoryId: id, limit: 24 });
     },
     ...CACHE_CONFIG,
   });
