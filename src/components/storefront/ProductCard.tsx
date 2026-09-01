@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, Heart, Plus, Star } from "lucide-react";
 import type { Currency, Product } from "./types";
 import { formatPrice } from "./currency";
+import { OptimizedImage } from "@/components/optimized-image";
 
 const FALLBACK_IMAGE =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500"><rect width="400" height="500" fill="%23f5f5f5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="16">لا تتوفر صورة</text></svg>';
@@ -44,18 +45,13 @@ export function ProductCard({
       dir="rtl"
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f7f7f7]">
-        <img
+        <OptimizedImage
           src={product.image || FALLBACK_IMAGE}
           alt={product.name}
-          loading={index < 4 ? "eager" : "lazy"}
-          fetchPriority={index < 2 ? "high" : "auto"}
-          decoding="async"
-          width={480}
-          height={640}
-          onError={(event) => {
-            event.currentTarget.src = FALLBACK_IMAGE;
-          }}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          size="card"
+          eager={index < 4}
+          draggable={false}
+          className="h-full w-full bg-[#f7f7f7]"
         />
         {discountPercent ? (
           <span className="absolute right-1.5 top-1.5 bg-[#ff2442] px-1.5 py-0.5 text-[9px] font-black text-white">
