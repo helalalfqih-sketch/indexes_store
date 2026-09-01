@@ -34,6 +34,16 @@ export interface StoreFooterProps {
   };
 }
 
+function validExternalUrl(value?: string): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 export const StoreFooter: React.FC<StoreFooterProps> = ({
   onOpenTracker,
   onOpenSupport,
@@ -84,13 +94,13 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
   const copyright =
     footerConfig?.copyrightText ||
     `جميع الحقوق محفوظة © ${new Date().getFullYear()} متجر إندكس - INDEXES STORE`;
-  const facebookUrl = footerConfig?.socialLinks?.facebook || "#";
-  const instagramUrl = footerConfig?.socialLinks?.instagram || "#";
+  const facebookUrl = validExternalUrl(footerConfig?.socialLinks?.facebook);
+  const instagramUrl = validExternalUrl(footerConfig?.socialLinks?.instagram);
 
   return (
     <>
       {pathname === "/" ? (
-        <section className="px-2 pb-4 sm:px-6" aria-label="جميع منتجات المتجر">
+        <section className="px-2 pb-3 sm:px-6" aria-label="جميع منتجات المتجر">
           <InfiniteStorefrontCatalog
             selectedCategoryId="all"
             searchQuery=""
@@ -113,121 +123,127 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
       ) : null}
 
       <motion.footer
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        className="border-t border-[var(--color-border-default)] bg-[var(--color-surface-1)]/80 px-4 pt-8 pb-[calc(88px+env(safe-area-inset-bottom))] backdrop-blur-md sm:px-6 md:pb-8"
+        transition={{ duration: 0.3 }}
+        className="border-t border-[var(--color-border-default)] bg-[var(--color-surface-1)]/90 px-3 pt-5 pb-[calc(84px+env(safe-area-inset-bottom))] backdrop-blur-md sm:px-6 sm:pt-8 md:pb-8"
       >
-        <div className="bg-[var(--color-surface-2)]/80 backdrop-blur-md border border-[var(--color-border-default)] rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex-1 flex flex-col gap-3.5 text-right w-full">
+        <div className="mx-auto flex max-w-4xl flex-col gap-5 rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)]/80 p-4 backdrop-blur-md sm:rounded-3xl sm:p-6 md:flex-row md:items-center md:justify-between md:gap-8">
+          <div className="flex w-full flex-1 flex-col gap-3 text-right">
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-end gap-2.5 text-[var(--color-text-secondary)] text-xs sm:text-sm hover:text-[var(--color-primary)] transition-colors cursor-pointer group"
+              className="flex items-center justify-end gap-2.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary)] sm:text-sm"
             >
               <span>
                 للطلب والاستفسار (واتساب):{" "}
-                <strong className="text-[var(--color-text-primary)] dir-ltr inline-block group-hover:text-emerald-500 transition-colors">
-                  {waNumber}
-                </strong>
+                <strong className="dir-ltr inline-block text-[var(--color-text-primary)]">{waNumber}</strong>
               </span>
-              <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-500 shrink-0 group-hover:scale-110 transition-transform">
-                <MessageCircle className="w-4 h-4 fill-emerald-500/20" />
-              </div>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-emerald-500/40 bg-emerald-500/20 text-emerald-500">
+                <MessageCircle className="h-4 w-4" />
+              </span>
             </a>
 
-            <div className="flex items-center justify-end gap-2.5 text-[var(--color-text-secondary)] text-xs sm:text-sm">
+            <div className="flex items-center justify-end gap-2.5 text-xs text-[var(--color-text-secondary)] sm:text-sm">
               <span>
                 العنوان: <strong className="text-[var(--color-text-primary)]">{storeAddress}</strong>
               </span>
-              <div className="w-8 h-8 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shrink-0">
-                <MapPin className="w-4 h-4" />
-              </div>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-purple-500/40 bg-purple-500/20 text-purple-400">
+                <MapPin className="h-4 w-4" />
+              </span>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 text-[var(--color-text-secondary)] text-xs sm:text-sm">
+            <div className="flex items-center justify-end gap-2.5 text-xs text-[var(--color-text-secondary)] sm:text-sm">
               <span>{deliveryInfo}</span>
-              <div className="w-8 h-8 rounded-full bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-sky-400 shrink-0">
-                <Truck className="w-4 h-4" />
-              </div>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-sky-500/40 bg-sky-500/20 text-sky-400">
+                <Truck className="h-4 w-4" />
+              </span>
             </div>
 
-            <div
+            <button
+              type="button"
               onClick={onOpenTracker}
-              className="flex items-center justify-end gap-2.5 text-[var(--color-text-secondary)] text-xs sm:text-sm cursor-pointer group"
+              className="flex w-full items-center justify-end gap-2.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] sm:text-sm"
             >
               <span>
-                <strong className="text-[var(--color-text-primary)] underline decoration-[#2F6BFF] group-hover:text-[#2F6BFF] transition-colors">
-                  تتبع طلبك
-                </strong>{" "}
+                <strong className="underline decoration-[#2F6BFF]">تتبع طلبك</strong>{" "}
                 - برقم الطلب وآخر 4 أرقام من هاتفك
               </span>
-              <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-500 shrink-0 group-hover:scale-110 transition-transform">
-                <Package className="w-4 h-4" />
-              </div>
-            </div>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-blue-500/40 bg-blue-500/20 text-blue-500">
+                <Package className="h-4 w-4" />
+              </span>
+            </button>
 
-            <div className="flex flex-wrap items-center justify-end gap-3 mt-2">
+            <div className="mt-1 flex flex-wrap items-center justify-end gap-2.5">
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-white bg-gradient-to-r from-emerald-600 to-emerald-500 border border-emerald-400/50 px-4 py-2 rounded-full text-xs font-bold hover:shadow-[0_0_15px_rgba(37,211,102,0.4)] hover:scale-105 transition-all cursor-pointer"
+                className="flex min-h-11 items-center gap-2 rounded-full border border-emerald-400/50 bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 text-xs font-bold text-white"
               >
-                <MessageCircle className="w-4 h-4 fill-white/20" />
-                <span>تواصل عبر واتساب المباشر</span>
+                <MessageCircle className="h-4 w-4" />
+                <span>تواصل عبر واتساب</span>
               </a>
 
               <div className="flex items-center gap-2">
-                <a
-                  href={facebookUrl}
-                  aria-label="فيسبوك"
-                  className="w-9 h-9 rounded-full border border-[var(--color-border-default)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-primary)] bg-[var(--color-surface-1)] transition-all"
-                >
-                  <Facebook className="w-4 h-4" />
-                </a>
+                {facebookUrl ? (
+                  <a
+                    href={facebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="فيسبوك"
+                    className="grid h-10 w-10 place-items-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-text-primary)]"
+                  >
+                    <Facebook className="h-4 w-4" />
+                  </a>
+                ) : null}
 
-                <a
-                  href={instagramUrl}
-                  aria-label="انستغرام"
-                  className="w-9 h-9 rounded-full border border-[var(--color-border-default)] flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-pink-500 bg-[var(--color-surface-1)] transition-all"
-                >
-                  <Instagram className="w-4 h-4" />
-                </a>
+                {instagramUrl ? (
+                  <a
+                    href={instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="انستغرام"
+                    className="grid h-10 w-10 place-items-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-secondary)] transition hover:border-pink-500 hover:text-[var(--color-text-primary)]"
+                  >
+                    <Instagram className="h-4 w-4" />
+                  </a>
+                ) : null}
 
                 <a
                   href={`tel:${waNumber}`}
                   aria-label="اتصال مباشر"
-                  className="w-9 h-9 rounded-full border border-[var(--color-border-default)] flex items-center justify-center text-emerald-500 hover:border-emerald-500 bg-[var(--color-surface-1)] transition-all"
+                  className="grid h-10 w-10 place-items-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-emerald-500 transition hover:border-emerald-500"
                 >
-                  <PhoneCall className="w-4 h-4" />
+                  <PhoneCall className="h-4 w-4" />
                 </a>
               </div>
             </div>
           </div>
 
-          <div className="shrink-0 flex justify-center">
+          <div className="hidden shrink-0 justify-center md:flex">
             <StoreLogo
               variant="full"
-              className="p-4 bg-[var(--color-surface-2)]/60 border border-[var(--color-border-default)] rounded-3xl shadow-xl backdrop-blur-md"
+              className="rounded-3xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)]/60 p-4 shadow-xl"
             />
           </div>
         </div>
 
-        {onOpenSupport && (
-          <div className="mt-6 flex justify-center text-xs">
+        {onOpenSupport ? (
+          <div className="mt-4 flex justify-center text-xs">
             <button
+              type="button"
               onClick={onOpenSupport}
-              className="flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 font-bold text-blue-300 transition-all hover:bg-blue-500/20"
+              className="min-h-10 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 font-bold text-blue-300 transition hover:bg-blue-500/20"
             >
-              <span>فتح مركز المساعدة</span>
+              فتح مركز المساعدة
             </button>
           </div>
-        )}
+        ) : null}
 
-        <div className="mt-4 text-center text-gray-500 text-xs">{copyright}</div>
+        <div className="mt-3 text-center text-[11px] text-gray-500">{copyright}</div>
       </motion.footer>
     </>
   );
