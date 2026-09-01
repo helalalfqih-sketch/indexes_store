@@ -40,6 +40,7 @@ export function ProductCard({
 
   return (
     <article
+      data-storefront-product-id={product.id}
       className={`${widthClass} group min-w-0 cursor-pointer bg-white text-black`}
       onClick={() => onSelectProduct(product)}
       dir="rtl"
