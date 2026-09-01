@@ -30,6 +30,32 @@ const CATEGORY_ALIASES: Record<string, string> = {
   "tools-hardware": "tools",
 };
 
+/**
+ * Canonical customer-facing Shopify collections.
+ *
+ * Shopify Product Category (taxonomy) remains untouched on each product for
+ * Meta / WhatsApp / channel feeds. These collections are only the merchant
+ * storefront navigation layer and are backed by smart collection TYPE rules.
+ */
+const CANONICAL_SHOPIFY_COLLECTION_HANDLES = new Set([
+  "الأدوات-والمعدات",
+  "الأزياء-والحقائب",
+  "الألعاب-والأطفال",
+  "الإلكترونيات-والهواتف",
+  "الرياضة-واللياقة",
+  "السيارات-وملحقاتها",
+  "الصحة-والجمال",
+  "الكاميرات-والأمن",
+  "المكتب-والقرطاسية",
+  "المنزل-والمطبخ",
+  "الهدايا-والهوايات",
+]);
+
+const filterCanonicalShopifyCategories = (
+  items: LegacyCategoryShape[],
+): LegacyCategoryShape[] =>
+  items.filter((category) => CANONICAL_SHOPIFY_COLLECTION_HANDLES.has(category.id));
+
 export const normalizeCategorySlug = (slug: string): string => {
   const normalized = slug.trim().toLowerCase().replace(/\s+/g, "-");
   return CATEGORY_ALIASES[normalized] ?? normalized.replace(/_/g, "-");
@@ -38,7 +64,7 @@ export const normalizeCategorySlug = (slug: string): string => {
 export async function fetchCategories(): Promise<LegacyCategoryShape[]> {
   try {
     const shopify = await listShopifyCategories();
-    if (shopify.configured) return shopify.items;
+    if (shopify.configured) return filterCanonicalShopifyCategories(shopify.items);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[category.actions] Shopify collections fallback:", err);
     const status = await diagnoseShopifyCatalog();
@@ -61,7 +87,9 @@ export async function fetchCategoryBySlug(slug: string): Promise<LegacyCategoryS
     const shopify = await listShopifyCategories();
     if (shopify.configured) {
       return (
-        shopify.items.find((category) => normalizeCategorySlug(category.id) === normalized) ?? null
+        filterCanonicalShopifyCategories(shopify.items).find(
+          (category) => normalizeCategorySlug(category.id) === normalized,
+        ) ?? null
       );
     }
   } catch (err) {
