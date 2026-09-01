@@ -12,16 +12,19 @@ import {
 import type { Currency, Product, SortOption } from "@/components/storefront/types";
 
 const PAGE_SIZE = 24;
+type InfiniteSort = SortOption | "rating";
 
 type InfiniteStorefrontCatalogProps = {
   selectedCategoryId: string;
   searchQuery: string;
-  sortBy: SortOption;
+  sortBy: InfiniteSort;
   priceRange: PriceRangePreset;
   customMinPrice?: number;
   customMaxPrice?: number;
   selectedBrands: string[];
   selectedRatings: string[];
+  dealsOnly?: boolean;
+  inStockOnly?: boolean;
   currency: Currency;
   favorites: string[];
   excludeIds?: string[];
@@ -39,6 +42,8 @@ export function InfiniteStorefrontCatalog({
   customMaxPrice,
   selectedBrands,
   selectedRatings,
+  dealsOnly = false,
+  inStockOnly = false,
   currency,
   favorites,
   excludeIds = [],
@@ -113,7 +118,15 @@ export function InfiniteStorefrontCatalog({
           return option ? product.rating >= option.minRating : false;
         });
 
-      return matchPrice && matchBrand && matchRating;
+      const matchDeals =
+        !dealsOnly ||
+        product.isBestOffer ||
+        Boolean(product.discountBadge) ||
+        product.originalPriceYER > product.priceYER;
+
+      const matchStock = !inStockOnly || product.inStock !== false;
+
+      return matchPrice && matchBrand && matchRating && matchDeals && matchStock;
     });
 
     switch (sortBy) {
@@ -124,7 +137,11 @@ export function InfiniteStorefrontCatalog({
       case "best-selling":
         return [...list].sort((a, b) => b.reviewsCount - a.reviewsCount);
       case "newest":
-        return [...list].sort((a, b) => Number(Boolean(b.isNewArrival)) - Number(Boolean(a.isNewArrival)));
+        return [...list].sort(
+          (a, b) => Number(Boolean(b.isNewArrival)) - Number(Boolean(a.isNewArrival)),
+        );
+      case "rating":
+        return [...list].sort((a, b) => b.rating - a.rating);
       default:
         return list;
     }
@@ -137,6 +154,8 @@ export function InfiniteStorefrontCatalog({
     customMaxPrice,
     selectedBrands,
     selectedRatings,
+    dealsOnly,
+    inStockOnly,
   ]);
 
   useEffect(() => {
