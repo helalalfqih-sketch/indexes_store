@@ -24,6 +24,7 @@ type InfiniteStorefrontCatalogProps = {
   selectedRatings: string[];
   currency: Currency;
   favorites: string[];
+  excludeIds?: string[];
   onToggleFavorite: (product: Product) => void;
   onAddToCart: (product: Product) => void;
   onSelectProduct: (product: Product) => void;
@@ -40,6 +41,7 @@ export function InfiniteStorefrontCatalog({
   selectedRatings,
   currency,
   favorites,
+  excludeIds = [],
   onToggleFavorite,
   onAddToCart,
   onSelectProduct,
@@ -72,8 +74,12 @@ export function InfiniteStorefrontCatalog({
     [query.data],
   );
 
+  const excluded = useMemo(() => new Set(excludeIds), [excludeIds]);
+
   const filteredProducts = useMemo(() => {
     const list = products.filter((product) => {
+      if (excluded.has(product.id)) return false;
+
       const matchPrice =
         priceRange === "all" ||
         (priceRange === "under-20k" && product.priceYER < 20_000) ||
@@ -124,6 +130,7 @@ export function InfiniteStorefrontCatalog({
     }
   }, [
     products,
+    excluded,
     sortBy,
     priceRange,
     customMinPrice,
