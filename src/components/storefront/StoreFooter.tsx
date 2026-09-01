@@ -36,9 +36,7 @@ export interface StoreFooterProps {
 
 export const StoreFooter: React.FC<StoreFooterProps> = ({
   onOpenTracker,
-  onOpenAdmin,
   onOpenSupport,
-  isAdminUser,
   footerConfig,
 }) => {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -119,7 +117,7 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="px-4 sm:px-6 py-8 mb-24 border-t border-[var(--color-border-default)] bg-[var(--color-surface-1)]/80 backdrop-blur-md"
+        className="border-t border-[var(--color-border-default)] bg-[var(--color-surface-1)]/80 px-4 pt-8 pb-[calc(88px+env(safe-area-inset-bottom))] backdrop-blur-md sm:px-6 md:pb-8"
       >
         <div className="bg-[var(--color-surface-2)]/80 backdrop-blur-md border border-[var(--color-border-default)] rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex-1 flex flex-col gap-3.5 text-right w-full">
@@ -218,24 +216,16 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs">
-          {isAdminUser && onOpenAdmin && (
-            <button
-              onClick={onOpenAdmin}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 font-bold transition-all cursor-pointer"
-            >
-              <span>بوابة لوحة التحكم والإدارة 🛡️</span>
-            </button>
-          )}
-          {onOpenSupport && (
+        {onOpenSupport && (
+          <div className="mt-6 flex justify-center text-xs">
             <button
               onClick={onOpenSupport}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 font-bold transition-all cursor-pointer"
+              className="flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 font-bold text-blue-300 transition-all hover:bg-blue-500/20"
             >
               <span>فتح مركز المساعدة</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="mt-4 text-center text-gray-500 text-xs">{copyright}</div>
       </motion.footer>
