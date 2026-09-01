@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, MessageCircle, ShoppingBag } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { CheckCircle2, ChevronDown, ChevronUp, ShoppingBag } from "lucide-react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useAppearance } from "@/components/appearance-provider";
+import { submitOrder } from "@/lib/actions/order.actions";
 import { useCart } from "@/lib/cart-store";
 import { computeShippingFee } from "@/lib/shipping";
 import { formatPrice } from "@/lib/store-data";
@@ -27,17 +28,23 @@ function getCouponPercent(coupon?: string): number {
   return 0;
 }
 
+function createIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `order-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function CartPage() {
   const { coupon } = Route.useSearch();
   const items = useCart((s) => s.items);
   const total = useCart((s) => s.total());
   const itemCount = useCart((s) => s.count());
-  const checkoutUrl = useCart((s) => s.checkoutUrl);
-  const syncing = useCart((s) => s.syncing);
-  const cartSyncError = useCart((s) => s.syncError);
+  const clearCart = useCart((s) => s.clear);
   const { settings } = useAppearance();
 
   const couponPercent = getCouponPercent(coupon);
+  const normalizedCoupon = couponPercent > 0 ? coupon?.trim().toUpperCase() : undefined;
   const discount = Math.round((total * couponPercent) / 100);
   const subtotalAfterDiscount = total - discount;
   const shippingFee = computeShippingFee(
@@ -55,9 +62,37 @@ function CartPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const idempotencyKeyRef = useRef<string | null>(null);
   const formId = useId();
 
   const previewItems = useMemo(() => items.slice(0, 3), [items]);
+
+  if (createdOrderId) {
+    return (
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center" dir="rtl">
+        <div className="grid h-20 w-20 place-items-center rounded-full bg-success/15 text-success">
+          <CheckCircle2 className="h-10 w-10" />
+        </div>
+        <div>
+          <h1 className="text-xl font-black">تم إنشاء طلبك بنجاح</h1>
+          <p className="mt-2 text-sm text-muted-foreground">تم حفظ الطلب داخل نظام Indexes Store.</p>
+        </div>
+        <div className="rounded-2xl border border-showcase-border/50 bg-white/5 px-4 py-3">
+          <span className="text-xs text-muted-foreground">رقم الطلب</span>
+          <p className="mt-1 break-all font-mono text-sm font-black text-primary">{createdOrderId}</p>
+        </div>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Link to="/" className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground">
+            العودة للمتجر
+          </Link>
+          <Link to="/track" className="rounded-xl border border-showcase-border/50 px-5 py-2.5 text-sm font-bold">
+            تتبع الطلب
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -95,13 +130,29 @@ function CartPage() {
   }
 
   const handleSubmitOrder = async () => {
+    if (isSubmitting) return;
     setOrderError(null);
     if (settings.cart_config.deliveryFormEnabled !== false && !validateForm()) return;
 
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = createIdempotencyKey();
+    }
+
     setIsSubmitting(true);
     try {
-      if (!checkoutUrl) throw new Error("سلة Shopify لم تكتمل مزامنتها بعد");
-      window.location.assign(checkoutUrl);
+      const result = await submitOrder({
+        items: items.map((item) => ({ productId: item.productId, quantity: item.qty })),
+        customerName: name.trim(),
+        customerPhone: phone.trim(),
+        customerAddress: address.trim(),
+        notes: notes.trim() || undefined,
+        couponCode: normalizedCoupon,
+        paymentProvider: "cash",
+        idempotencyKey: idempotencyKeyRef.current,
+      });
+
+      setCreatedOrderId(result.orderId);
+      clearCart();
     } catch (err) {
       console.error("Order submission failed:", err);
       setOrderError(
@@ -132,7 +183,7 @@ function CartPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-black">ملخص الطلب</h2>
-            <p className="mt-1 text-[11px] text-muted-foreground">راجع الإجمالي قبل الدفع</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">راجع الطلب قبل التأكيد</p>
           </div>
           <div className="flex -space-x-2 space-x-reverse">
             {previewItems.map((item) => (
@@ -231,7 +282,7 @@ function CartPage() {
       <section className="rounded-3xl glass-float p-4" aria-live="polite">
         <SummaryRow label="المجموع الفرعي" value={formatPrice(total)} />
         {couponPercent > 0 && (
-          <SummaryRow label={`خصم الكوبون (${coupon?.toUpperCase()})`} value={`-${formatPrice(discount)}`} emphasis="success" />
+          <SummaryRow label={`خصم الكوبون (${normalizedCoupon})`} value={`-${formatPrice(discount)}`} emphasis="success" />
         )}
         <SummaryRow
           label="الشحن"
@@ -242,21 +293,23 @@ function CartPage() {
           <span className="text-sm font-bold">الإجمالي</span>
           <span className="text-lg font-black text-primary">{formatPrice(finalTotal)}</span>
         </div>
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          المبلغ المعروض للتوضيح، ويعاد التحقق من الأسعار والخصم والشحن على الخادم قبل إنشاء الطلب.
+        </p>
       </section>
 
       <button
         type="button"
         onClick={handleSubmitOrder}
-        disabled={isSubmitting || syncing || !checkoutUrl}
+        disabled={isSubmitting}
         className="mb-2 flex items-center justify-center gap-2 rounded-2xl bg-success py-3.5 text-sm font-black text-success-foreground shadow-brand transition-colors hover:bg-success/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/40 disabled:opacity-60"
       >
-        <MessageCircle className="h-5 w-5" />
-        {isSubmitting || syncing ? "جاري تجهيز دفع Shopify..." : "المتابعة إلى الدفع الآمن"}
+        <CheckCircle2 className="h-5 w-5" />
+        {isSubmitting ? "جاري إنشاء الطلب..." : "تأكيد الطلب"}
       </button>
 
-      {cartSyncError && <p className="pb-1 text-center text-xs text-destructive">{cartSyncError}</p>}
       <p className="pb-2 text-center text-[11px] text-muted-foreground">
-        تتم مراجعة الشحن والدفع وإنشاء الطلب بأمان داخل Shopify Checkout
+        يتم إنشاء الطلب وحفظه داخل Indexes Store، بدون Shopify Checkout.
       </p>
     </div>
   );
