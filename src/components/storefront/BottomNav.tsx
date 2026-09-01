@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "@tanstack/react-router";
 import { ActiveTab } from "./types";
 import { ShoppingCart, Search, Home, LayoutGrid, User } from "lucide-react";
 
@@ -11,12 +12,14 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, cartCount }) => {
+  const navigate = useNavigate();
+
   const tabs: { key: ActiveTab; label: string; icon: React.ReactNode; ariaLabel: string }[] = [
     { key: "account", label: "أنا", ariaLabel: "حسابي", icon: <User className="h-5 w-5" /> },
     {
       key: "categories" as ActiveTab,
-      label: "القنوات",
-      ariaLabel: "القنوات والتصنيفات",
+      label: "الفئات",
+      ariaLabel: "الفئات والتصنيفات",
       icon: <LayoutGrid className="h-5 w-5" />,
     },
     {
@@ -34,6 +37,24 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
     },
   ];
 
+  const activate = (tab: ActiveTab) => {
+    if (tab === "cart") {
+      setActiveTab(tab);
+      return;
+    }
+    if (tab === "account") {
+      void navigate({ to: "/account" });
+      return;
+    }
+    if (tab === "search" || tab === ("categories" as ActiveTab)) {
+      void navigate({ to: "/search", search: { q: "" } });
+      return;
+    }
+    if (tab === "home") {
+      void navigate({ to: "/" });
+    }
+  };
+
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-white pb-[calc(5px+env(safe-area-inset-bottom,0px))] text-black md:hidden"
@@ -48,7 +69,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
               key={tab.key}
               type="button"
               whileTap={{ scale: 0.94 }}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => activate(tab.key)}
               aria-label={tab.ariaLabel}
               className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${isActive ? "font-black text-black" : "text-neutral-500"}`}
             >
