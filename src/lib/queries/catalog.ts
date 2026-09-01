@@ -15,21 +15,36 @@ import {
 } from "@/lib/actions/product.actions";
 import type { LegacyProductShape, LegacyCategoryShape } from "@/lib/data-adapter";
 
+/**
+ * Product availability changes in Shopify must reach the storefront quickly.
+ * Catalog queries are still cached briefly for performance, but unlike the
+ * previous policy they always revalidate on mount/reconnect/focus so deleted,
+ * archived, or newly-published Shopify products do not remain visible from a
+ * persisted IndexedDB snapshot.
+ */
 const CATALOG_POLICY = {
-  staleTime: 5 * 60_000,
-  gcTime: 30 * 60_000,
-  refetchOnWindowFocus: false,
-  refetchOnMount: false,
-  refetchOnReconnect: false,
+  staleTime: 60_000,
+  gcTime: 10 * 60_000,
+  refetchOnWindowFocus: true,
+  refetchOnMount: "always" as const,
+  refetchOnReconnect: true,
 } as const;
+
+/**
+ * Increment when catalog persistence semantics change. This deliberately
+ * invalidates old persisted React Query catalog snapshots after deployment.
+ */
+const CATALOG_CACHE_VERSION = "v2" as const;
 
 /** Stable, primitive-only query keys */
 export const catalogKeys = {
-  categories: ["catalog", "categories"] as const,
-  bestSellers: (limit: number) => ["catalog", "best-sellers", limit] as const,
-  offers: ["catalog", "offers"] as const,
-  products: (limit: number) => ["catalog", "products", limit] as const,
-  globePool: (perPage: number) => ["catalog", "globe-pool", perPage] as const,
+  categories: ["catalog", CATALOG_CACHE_VERSION, "categories"] as const,
+  bestSellers: (limit: number) =>
+    ["catalog", CATALOG_CACHE_VERSION, "best-sellers", limit] as const,
+  offers: ["catalog", CATALOG_CACHE_VERSION, "offers"] as const,
+  products: (limit: number) => ["catalog", CATALOG_CACHE_VERSION, "products", limit] as const,
+  globePool: (perPage: number) =>
+    ["catalog", CATALOG_CACHE_VERSION, "globe-pool", perPage] as const,
 };
 
 export const categoriesQuery = () =>
