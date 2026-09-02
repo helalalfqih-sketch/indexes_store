@@ -34,6 +34,31 @@ function merchantPrice(price: number): string {
   return `${price.toFixed(2)} ${STORE_CURRENCY}`;
 }
 
+/**
+ * Canonical storefront/Meta product types.
+ * Shopify catalog filtering uses collection handles internally, while Meta/WhatsApp
+ * needs stable human-readable product_type values for Product Sets.
+ */
+const CANONICAL_PRODUCT_TYPES: Record<string, string> = {
+  "الأدوات-والمعدات": "الأدوات والمعدات",
+  "الأزياء-والحقائب": "الأزياء والحقائب",
+  "الألعاب-والأطفال": "الألعاب والأطفال",
+  "الإلكترونيات-والهواتف": "الإلكترونيات والهواتف",
+  "الرياضة-واللياقة": "الرياضة واللياقة",
+  "السيارات-وملحقاتها": "السيارات وملحقاتها",
+  "الصحة-والجمال": "الصحة والجمال",
+  "الكاميرات-والأمن": "الكاميرات والأمن",
+  "المكتب-والقرطاسية": "المكتب والقرطاسية",
+  "المنزل-والمطبخ": "المنزل والمطبخ",
+  "الهدايا-والهوايات": "الهدايا والهوايات",
+};
+
+function canonicalProductType(categoryId: string | null | undefined): string {
+  const key = (categoryId || "").trim();
+  if (!key) return "عام";
+  return CANONICAL_PRODUCT_TYPES[key] || key;
+}
+
 /** Build a single <item> block for the Google feed */
 function buildProductItem(p: any, baseUrl: string): string {
   const productUrl = `${baseUrl}/product/${xmlEscape(p.slug)}`;
@@ -44,7 +69,8 @@ function buildProductItem(p: any, baseUrl: string): string {
 
   const sku = xmlEscape(p.sku || p.id);
   const mpn = xmlEscape(p.mpn || p.sku || p.id);
-  
+  const productType = canonicalProductType(p.categoryId);
+
   // GTIN resolution (explicit fields take priority over barcode, no fallback to id)
   const gtinValue = p.gtin14 || p.gtin13 || p.gtin12 || p.gtin8 || p.barcode || null;
   const gtinField = gtinValue ? `    <g:gtin>${xmlEscape(gtinValue)}</g:gtin>\n` : "";
@@ -69,7 +95,7 @@ ${extraImages ? extraImages + "\n" : ""}    <g:availability>${availability}</g:a
     <g:brand>${xmlEscape(p.brand || SITE_NAME)}</g:brand>
     <g:sku>${sku}</g:sku>
     <g:mpn>${mpn}</g:mpn>
-${gtinField}    <g:product_type>${xmlEscape(p.categoryId || "عام")}</g:product_type>
+${gtinField}    <g:product_type>${xmlEscape(productType)}</g:product_type>
     <g:shipping>
       <g:country>${STORE_COUNTRY}</g:country>
       <g:service>Standard</g:service>
