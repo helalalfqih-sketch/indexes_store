@@ -25,9 +25,34 @@ const enrich = (c: LegacyCategoryShape): LegacyCategoryShape => {
 const mapMany = (rows: CategoryWithMetaDTO[]): LegacyCategoryShape[] =>
   rows.map((r) => enrich(toLegacyCategory(r)));
 
+/**
+ * Legacy storefront category slugs that were already indexed by Google.
+ * Keep them resolving to the canonical Shopify collections so old search
+ * results remain useful while search engines migrate to the new URLs.
+ */
 const CATEGORY_ALIASES: Record<string, string> = {
-  tools_hardware: "tools",
-  "tools-hardware": "tools",
+  tools_hardware: "الأدوات-والمعدات",
+  "tools-hardware": "الأدوات-والمعدات",
+  tools: "الأدوات-والمعدات",
+  electronics: "الإلكترونيات-والهواتف",
+  "beauty-care": "الصحة-والجمال",
+  "health-massage": "الصحة-والجمال",
+  kitchen: "المنزل-والمطبخ",
+  "storage-organization": "المنزل-والمطبخ",
+  "sports-fitness": "الرياضة-واللياقة",
+  sports: "الرياضة-واللياقة",
+  automotive: "السيارات-وملحقاتها",
+  auto: "السيارات-وملحقاتها",
+  "kids-toys": "الألعاب-والأطفال",
+  toys: "الألعاب-والأطفال",
+  fashion: "الأزياء-والحقائب",
+  "fashion-bags": "الأزياء-والحقائب",
+  cameras: "الكاميرات-والأمن",
+  "cameras-security": "الكاميرات-والأمن",
+  office: "المكتب-والقرطاسية",
+  "office-stationery": "المكتب-والقرطاسية",
+  gifts: "الهدايا-والهوايات",
+  "gifts-hobbies": "الهدايا-والهوايات",
 };
 
 /**
