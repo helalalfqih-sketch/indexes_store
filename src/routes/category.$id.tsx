@@ -13,7 +13,13 @@ export const Route = createFileRoute("/category/$id")({
   loader: async ({ context: { queryClient }, params }) => {
     const cat = await queryClient.ensureQueryData(categoryBySlugQueryOptions(params.id));
     if (!cat) throw notFound();
-    return { id: params.id };
+    return {
+      id: params.id,
+      category: {
+        name: cat.name,
+        imageUrl: cat.imageUrl ?? null,
+      },
+    };
   },
   pendingComponent: () => (
     <div className="flex min-h-screen flex-col gap-4 px-4 pt-4">
@@ -25,7 +31,58 @@ export const Route = createFileRoute("/category/$id")({
       </div>
     </div>
   ),
-  head: () => ({ meta: [{ title: "تصنيف — اندكس ستور" }] }),
+  head: (ctx) => {
+    const data = ctx.loaderData as
+      | { id: string; category: { name: string; imageUrl?: string | null } }
+      | undefined;
+
+    if (!data?.category?.name) {
+      return {
+        meta: [
+          { title: "التصنيف غير موجود — اندكس ستور" },
+          { name: "robots", content: "noindex, nofollow" },
+        ],
+      };
+    }
+
+    const categoryName = data.category.name.trim();
+    const title = `${categoryName} — اندكس ستور`;
+    const description = `تسوق منتجات ${categoryName} في اندكس ستور. اكتشف تشكيلة مختارة مع خدمة التوصيل إلى جميع محافظات اليمن.`;
+    const baseUrl = (
+      process.env.SITE_URL ||
+      import.meta.env.VITE_PUBLIC_URL ||
+      "https://indexes-store.vercel.app"
+    ).replace(/\/$/, "");
+    const canonicalUrl = `${baseUrl}/category/${encodeURIComponent(data.id)}`;
+
+    const meta: Record<string, string>[] = [
+      { title },
+      { name: "description", content: description },
+      { name: "robots", content: "index, follow, max-image-preview:large" },
+      { property: "og:type", content: "website" },
+      { property: "og:locale", content: "ar_YE" },
+      { property: "og:site_name", content: "اندكس ستور" },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:url", content: canonicalUrl },
+      { name: "twitter:card", content: data.category.imageUrl ? "summary_large_image" : "summary" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: description },
+    ];
+
+    if (data.category.imageUrl) {
+      meta.push(
+        { property: "og:image", content: data.category.imageUrl },
+        { property: "og:image:alt", content: categoryName },
+        { name: "twitter:image", content: data.category.imageUrl },
+      );
+    }
+
+    return {
+      meta,
+      links: [{ rel: "canonical", href: canonicalUrl }],
+    };
+  },
   errorComponent: ({ error }) => (
     <div className="p-8 text-center text-destructive">حدث خطأ: {error.message}</div>
   ),
