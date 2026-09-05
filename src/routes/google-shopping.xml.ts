@@ -112,8 +112,8 @@ export const Route = createFileRoute("/google-shopping/xml")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const origin = new URL(request.url).origin;
-        const baseUrl = process.env.SITE_URL || (origin !== "null" ? origin : "");
+        const configuredSiteUrl = process.env.PUBLIC_SITE_URL || process.env.SITE_URL || "https://indexes-store.vercel.app";
+        const baseUrl = configuredSiteUrl.replace(/\/$/, "");
 
         let products: any[] = [];
         try {
