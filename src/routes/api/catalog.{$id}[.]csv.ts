@@ -106,7 +106,8 @@ async function catalogResponse(request: Request, tenantId: string): Promise<Resp
 
   try {
     const products = await listProducts({ data: { tenantId: parsedTenantId.data } });
-    const baseUrl = new URL(request.url).origin;
+    const configuredSiteUrl = process.env.PUBLIC_SITE_URL || process.env.SITE_URL || "https://indexes-store.vercel.app";
+    const baseUrl = configuredSiteUrl.replace(/\/$/, "");
     const csv = buildCatalogCsv(products, baseUrl);
 
     return new Response(csv, {
