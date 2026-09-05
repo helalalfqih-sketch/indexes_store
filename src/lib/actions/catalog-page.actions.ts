@@ -1,5 +1,6 @@
 import { listShopifyProductsPage } from "@/lib/shopify/catalog.functions";
 import { toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
+import { normalizeCategorySlug } from "@/lib/actions/category.actions";
 
 export type CatalogPage = {
   items: LegacyProductShape[];
@@ -13,10 +14,12 @@ export async function fetchCatalogPage(input: {
   first?: number;
   after?: string | null;
 } = {}): Promise<CatalogPage> {
+  const categoryId = input.categoryId ? normalizeCategorySlug(input.categoryId) : undefined;
+
   const page = await listShopifyProductsPage({
     data: {
       search: input.search,
-      categoryId: input.categoryId,
+      categoryId,
       first: input.first ?? 24,
       after: input.after ?? null,
     },
