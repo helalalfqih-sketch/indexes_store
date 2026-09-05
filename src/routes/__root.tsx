@@ -297,6 +297,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { type: "application/ld+json", children: JSON.stringify(orgLd) },
         { type: "application/ld+json", children: JSON.stringify(localBizLd) },
         { type: "application/ld+json", children: JSON.stringify(websiteLd) },
+        {
+          children: `(function(){if(window.__metricoolLoaded)return;window.__metricoolLoaded=true;var h=document.getElementsByTagName("head")[0],s=document.createElement("script");s.type="text/javascript";s.src="https://tracker.metricool.com/resources/be.js";s.onload=function(){if(window.beTracker){window.beTracker.t({hash:"3d0d5e64c4f07f690a6a01e20e34af6e"});}};h.appendChild(s);}());`,
+        },
       ],
     };
   },
