@@ -1,6 +1,6 @@
 # Indexes Store Audit History
 
-Last updated: 2026-09-07 17:57 UTC (20:57 Asia/Aden)
+Last updated: 2026-09-07 18:13 UTC (21:13 Asia/Aden)
 
 ## Issue Register
 
@@ -17,9 +17,20 @@ Last updated: 2026-09-07 17:57 UTC (20:57 Asia/Aden)
 - Verified: `src/lib/order.functions.ts` resolves only published products for the current tenant from Supabase and rejects missing product IDs before inserting an order.
 - Confirmed findings: no P0; `CHECKOUT-001` is P1 and OPEN; no P2 confirmed.
 - Fixed: none.
-- Branches and pull requests: documentation branch `docs/agent-audit-history-20260907`; pull request pending creation.
+- Branches and pull requests: `docs/agent-audit-history-20260907`; PR #83.
 - Tests and validation: PASS - production catalog output matched fallback data; PASS - default-branch checkout contract trace completed. No production POST was attempted.
 - Failed or inaccessible: direct GET of `/api/catalog-health`, `/checkout`, `/order-completion`, and `/`; the web client rejected non-root routes or timed out, and direct HTTP returned `403 CONNECT tunnel failed`. Catalog-health JSON and the production deployment SHA remain unverified.
-- Current blockers: direct production runtime access is unavailable; remediation requires explicit authorization.
+- Current blockers: direct production runtime access is unavailable; `CHECKOUT-001` remediation requires explicit authorization; this record remains on PR #83 until reviewed and merged.
 - Current production status: storefront is indexed and displaying products, but its displayed fallback catalog is incompatible with authoritative order creation. No active P0 was confirmed.
 - Next highest-priority action: authorize a dedicated remediation branch and pull request that enforces one source-compatible checkout contract and adds fallback, Supabase, and Shopify checkout contract tests.
+
+## 2026-09-07 18:13 UTC - Progress Tracking Established
+
+- Repository inspected: `main` at `796a97cc73016839291dd8d0bd0703c429ac8573`.
+- Verified: `docs/agent/audit-history.md` did not exist on `main`.
+- Fixed: created this concise cumulative record.
+- Branches and pull requests: `docs/agent-audit-history-20260907`; PR #83.
+- Tests and validation: PASS - file creation and branch commit succeeded; no application code or production state changed.
+- Current blockers: PR #83 must be reviewed and merged before this record is present on `main`.
+- Current production status: unchanged from the preceding verification.
+- Next highest-priority action: authorize a dedicated remediation branch and pull request for `CHECKOUT-001`.
