@@ -105,15 +105,21 @@ export function mapProductionProductToDesignProduct(p: LegacyProductShape): Desi
     const vMedia = p.media.find((m) => m.type === "video" && m.url);
     if (vMedia?.url) videoUrl = vMedia.url;
   }
-  const pAny = p as any;
+  const pAny = p as LegacyProductShape & {
+    source_url?: string;
+    videoPlaybackId?: string;
+    video_playback_id?: string;
+    brand_id?: string;
+  };
   if (!videoUrl && pAny.source_url && isVideoUrl(pAny.source_url)) {
     videoUrl = pAny.source_url;
   }
   if (!videoUrl && (pAny.videoPlaybackId || pAny.video_playback_id)) {
     const playbackId = pAny.videoPlaybackId || pAny.video_playback_id;
-    videoUrl = typeof playbackId === "string" && playbackId.startsWith("http")
-      ? playbackId
-      : `https://stream.mux.com/${playbackId}.m3u8`;
+    videoUrl =
+      typeof playbackId === "string" && playbackId.startsWith("http")
+        ? playbackId
+        : `https://stream.mux.com/${playbackId}.m3u8`;
   }
 
   return {
@@ -133,13 +139,15 @@ export function mapProductionProductToDesignProduct(p: LegacyProductShape): Desi
     priceYER,
     originalPriceYER,
     discountBadge,
-    rating: typeof p.rating === "number" && !isNaN(p.rating) && p.rating > 0 ? p.rating : 0,
-    reviewsCount: typeof p.reviews === "number" && !isNaN(p.reviews) && p.reviews > 0 ? p.reviews : 0,
+    rating:
+      typeof p.rating === "number" && !isNaN(p.rating) && p.rating > 0 ? p.rating : 0,
+    reviewsCount:
+      typeof p.reviews === "number" && !isNaN(p.reviews) && p.reviews > 0 ? p.reviews : 0,
     image: mainImage,
     gallery,
     videoUrl,
     category: p.categoryId || "all",
-    brand: p.brand || (p as any).brand_id || undefined,
+    brand: p.brand || pAny.brand_id || undefined,
     inStock: p.stock > 0,
     isBestOffer: p.isDeal || Boolean(rawOldPrice && rawOldPrice > priceYER),
     isNewArrival: p.featured || false,
