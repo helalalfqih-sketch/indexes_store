@@ -4,6 +4,7 @@ import { CartDrawer } from "@/components/storefront/CartDrawer";
 import type { CartItem, Product as DesignProduct } from "@/components/storefront/types";
 import { useCart } from "@/lib/cart-store";
 import { useFavorites } from "@/lib/use-favorites";
+import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -28,6 +29,13 @@ function CartRoutePage() {
         product: {
           id: item.productId,
           slug: item.productId,
+          checkoutProductRef:
+            item.checkoutProductRef ??
+            checkoutProductRefFromCatalogProduct({
+              id: item.productId,
+              shopify_variant_id: item.variantId,
+            }),
+          shopifyVariantId: item.variantId ?? null,
           name: item.name,
           subtitle: item.name,
           description: item.name,
