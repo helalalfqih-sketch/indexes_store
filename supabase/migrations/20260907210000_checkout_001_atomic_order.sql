@@ -1,5 +1,17 @@
 -- CHECKOUT-001: validate products and create the complete order atomically.
 -- Each function call is one transaction. Any exception rolls back the order.
+-- Keep this migration self-contained because some deployed environments have
+-- legacy orders columns even when later repository migrations exist.
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS subtotal numeric(12, 2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS shipping_fee numeric(12, 2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS idempotency_key uuid;
+
+CREATE UNIQUE INDEX IF NOT EXISTS orders_tenant_idempotency_key_unique
+  ON public.orders (tenant_id, idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
+
 CREATE OR REPLACE FUNCTION public.create_checkout_order_v2(
   _tenant_id uuid,
   _user_id uuid,
