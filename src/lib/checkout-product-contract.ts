@@ -1,9 +1,7 @@
 import { z } from "zod";
 
 const uuidSchema = z.string().uuid();
-const shopifyGidSchema = z
-  .string()
-  .regex(/^gid:\/\/shopify\/(?:Product|ProductVariant)\/[^/]+$/);
+const shopifyGidSchema = z.string().regex(/^gid:\/\/shopify\/(?:Product|ProductVariant)\/[^/]+$/);
 
 export const checkoutProductRefSchema = z.discriminatedUnion("source", [
   z.object({ source: z.literal("supabase"), id: uuidSchema }),
@@ -13,8 +11,7 @@ export const checkoutProductRefSchema = z.discriminatedUnion("source", [
 
 export type CheckoutProductRef = z.infer<typeof checkoutProductRefSchema>;
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SHOPIFY_GID_PATTERN = /^gid:\/\/shopify\/(?:Product|ProductVariant)\/[^/]+$/;
 
 export function checkoutProductRefFromCatalogProduct(product: {
@@ -61,9 +58,7 @@ export function validateTenantCheckoutProducts(
 ): void {
   const productIds = requireSupabaseCheckoutProductIds(refs);
   const available = new Set(
-    rows
-      .filter((row) => row.tenant_id === tenantId && row.is_published)
-      .map((row) => row.id),
+    rows.filter((row) => row.tenant_id === tenantId && row.is_published).map((row) => row.id),
   );
   if (productIds.some((id) => !available.has(id))) {
     throw new Error("Some products are unavailable or no longer published.");
