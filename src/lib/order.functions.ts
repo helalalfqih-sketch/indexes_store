@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveCurrentTenant } from "@/lib/saas/tenant-resolver";
 import { computeShippingFee, normalizeYemeniPhone } from "@/lib/shipping";
+import { discountAmountForCoupon } from "@/lib/checkout-pricing";
 import {
   getMyOrders as getMyOrdersFromDb,
   getMyOrderDetails as getMyOrderDetailsFromDb,
@@ -277,10 +278,7 @@ export const createOrder = createServerFn({ method: "POST" })
     }
 
     // Compute the advertised storefront coupons server-side.
-    const normalizedCoupon = data.couponCode?.trim().toUpperCase();
-    const discountPercent =
-      normalizedCoupon === "INDEXES20" ? 20 : normalizedCoupon === "INDEXES10" ? 10 : 0;
-    const validatedDiscount = Math.round((subtotal * discountPercent) / 100);
+    const validatedDiscount = discountAmountForCoupon(subtotal, data.couponCode);
 
     const shippingSettings = await loadShippingSettings(tenantId, supabaseAdmin);
     const shippingFee = computeShippingFee(
