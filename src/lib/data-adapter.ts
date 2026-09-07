@@ -159,7 +159,7 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   isDeal: p.is_deal ?? false,
   dealStart: p.deal_start ?? null,
   dealEnd: p.deal_end ?? null,
-  shopifyVariantId: (p as ProductDTO & { shopify_variant_id?: string | null }).shopify_variant_id ?? null,
+  shopifyVariantId:\n    (p as ProductDTO & { shopify_variant_id?: string | null }).shopify_variant_id ?? null,
   checkoutProductRef: checkoutProductRefFromCatalogProduct(p),
 });
 
