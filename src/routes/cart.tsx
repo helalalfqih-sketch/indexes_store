@@ -8,10 +8,7 @@ import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-con
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
-    meta: [
-      { title: "سلة التسوق — اندكس ستور" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ title: "سلة التسوق — اندكس ستور" }, { name: "robots", content: "noindex, nofollow" }],
   }),
   component: CartRoutePage,
 });
@@ -67,7 +64,12 @@ function CartRoutePage() {
         remove(item.product.id);
       }}
       onCheckout={(discountPercent) => {
-        const coupon = discountPercent === 20 ? "INDEXES20" : discountPercent === 10 ? "INDEXES10" : undefined;
+        const coupon =
+          discountPercent === 20
+            ? "INDEXES20"
+            : discountPercent === 10
+              ? "INDEXES10"
+              : undefined;
         navigate({
           to: "/order-completion",
           search: coupon ? { coupon } : undefined,
