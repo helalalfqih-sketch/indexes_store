@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Loader2,
-  MapPin,
-  Phone,
-  User,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, MapPin, Phone, User } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CartDrawer } from "./CartDrawer";
 import type { CartItem, Currency, Product } from "./types";
@@ -34,10 +27,7 @@ interface UnifiedCartFlowProps {
 type FlowStep = "cart" | "delivery" | "success";
 
 function makeIdempotencyKey() {
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.randomUUID === "function"
-  ) {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
   return `order-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -68,32 +58,22 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
   }, [props.isOpen]);
 
   const subtotal = useMemo(
-    () =>
-      props.cartItems.reduce(
-        (sum, item) => sum + item.product.priceYER * item.quantity,
-        0,
-      ),
+    () => props.cartItems.reduce((sum, item) => sum + item.product.priceYER * item.quantity, 0),
     [props.cartItems],
   );
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const afterDiscount = subtotal - discountAmount;
-  const shipping =
-    afterDiscount >= STORE_INFO.freeShippingThresholdYER ? 0 : 3000;
+  const shipping = afterDiscount >= STORE_INFO.freeShippingThresholdYER ? 0 : 3000;
   const total = afterDiscount + shipping;
   const couponCode =
-    discountPercent >= 20
-      ? "INDEXES20"
-      : discountPercent >= 10
-        ? "INDEXES10"
-        : undefined;
+    discountPercent >= 20 ? "INDEXES20" : discountPercent >= 10 ? "INDEXES10" : undefined;
 
   const validate = () => {
     const next: Record<string, string> = {};
     if (name.trim().length < 2) next.name = "أدخل الاسم الكامل.";
     const phoneResult = yemeniPhoneSchema.safeParse(phone);
     if (!phoneResult.success)
-      next.phone =
-        phoneResult.error.issues[0]?.message || "أدخل رقم هاتف صحيح.";
+      next.phone = phoneResult.error.issues[0]?.message || "أدخل رقم هاتف صحيح.";
     if (address.trim().length < 3) next.address = "أدخل عنوان التسليم.";
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -123,11 +103,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
       setOrderId(result.orderId);
       setStep("success");
     } catch (error) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "تعذر إنشاء الطلب. حاول مرة أخرى.",
-      );
+      setSubmitError(error instanceof Error ? error.message : "تعذر إنشاء الطلب. حاول مرة أخرى.");
     } finally {
       setSubmitting(false);
     }
@@ -176,9 +152,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                 </p>
                 {orderId && (
                   <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-4 py-3">
-                    <span className="text-[11px] text-[var(--color-text-muted)]">
-                      رقم الطلب
-                    </span>
+                    <span className="text-[11px] text-[var(--color-text-muted)]">رقم الطلب</span>
                     <p className="mt-1 break-all font-mono text-sm font-black text-[#2F6BFF]">
                       {orderId}
                     </p>
@@ -241,8 +215,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                       autoComplete="street-address"
                     />
                     <label className="block text-xs font-bold text-[var(--color-text-secondary)]">
-                      ملاحظات إضافية{" "}
-                      <span className="font-normal">(اختياري)</span>
+                      ملاحظات إضافية <span className="font-normal">(اختياري)</span>
                       <textarea
                         value={notes}
                         onChange={(event) => setNotes(event.target.value)}
@@ -253,10 +226,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                   </div>
 
                   <div className="mt-5 rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] p-4 text-xs">
-                    <Summary
-                      label="المجموع الفرعي"
-                      value={formatPrice(subtotal, props.currency)}
-                    />
+                    <Summary label="المجموع الفرعي" value={formatPrice(subtotal, props.currency)} />
                     {discountPercent > 0 && (
                       <Summary
                         label={`الخصم (${discountPercent}%)`}
@@ -266,18 +236,12 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                     )}
                     <Summary
                       label="الشحن"
-                      value={
-                        shipping === 0
-                          ? "مجاني 🚚"
-                          : formatPrice(shipping, props.currency)
-                      }
+                      value={shipping === 0 ? "مجاني 🚚" : formatPrice(shipping, props.currency)}
                       success={shipping === 0}
                     />
                     <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border-default)] pt-3 text-base font-black">
                       <span>الإجمالي</span>
-                      <span className="text-[#2F6BFF]">
-                        {formatPrice(total, props.currency)}
-                      </span>
+                      <span className="text-[#2F6BFF]">{formatPrice(total, props.currency)}</span>
                     </div>
                   </div>
 
@@ -343,11 +307,7 @@ function Field({
         inputMode={inputMode}
         className={`mt-1.5 w-full rounded-2xl border bg-[var(--color-surface-2)] px-3 py-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-[#2F6BFF] ${error ? "border-rose-500" : "border-[var(--color-border-default)]"}`}
       />
-      {error && (
-        <span className="mt-1 block text-[11px] font-semibold text-rose-500">
-          {error}
-        </span>
-      )}
+      {error && <span className="mt-1 block text-[11px] font-semibold text-rose-500">{error}</span>}
     </label>
   );
 }
