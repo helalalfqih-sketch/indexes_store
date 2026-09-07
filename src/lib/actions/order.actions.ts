@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createOrder, type CreateOrderPayload } from "@/lib/order.functions";
+import type { CheckoutProductRef } from "@/lib/checkout-product-contract";
 
 /**
  * Order Actions — Real execution layer for user orders and checkout.
@@ -7,7 +8,7 @@ import { createOrder, type CreateOrderPayload } from "@/lib/order.functions";
 export const ORDERS_MODULE_STATUS = "active" as const;
 
 export interface CreateOrderInput {
-  items: { productId: string; quantity: number }[];
+  items: { productRef: CheckoutProductRef; quantity: number }[];
   customerName: string;
   customerPhone: string;
   customerAddress: string;
@@ -35,7 +36,7 @@ export async function submitOrder(input: CreateOrderInput): Promise<{ orderId: s
   // recomputed from the database. The client never sets user_id, prices, or discountAmount.
   const payload: CreateOrderPayload = {
     items: input.items.map((it) => ({
-      productId: it.productId,
+      productRef: it.productRef,
       quantity: it.quantity,
     })),
     customerName: input.customerName,
