@@ -8,11 +8,7 @@
  */
 import { queryOptions } from "@tanstack/react-query";
 import { fetchCategories } from "@/lib/actions/category.actions";
-import {
-  fetchBestSellers,
-  fetchOffers,
-  fetchProducts,
-} from "@/lib/actions/product.actions";
+import { fetchBestSellers, fetchOffers, fetchProducts } from "@/lib/actions/product.actions";
 import {
   fallbackProducts,
   toLegacyProduct,
@@ -57,9 +53,7 @@ const seededCatalog = (): LegacyProductShape[] => {
 };
 
 const seededBestSellers = (limit: number): LegacyProductShape[] =>
-  [...seededCatalog()]
-    .sort((a, b) => b.rating * b.reviews - a.rating * a.reviews)
-    .slice(0, limit);
+  [...seededCatalog()].sort((a, b) => b.rating * b.reviews - a.rating * a.reviews).slice(0, limit);
 
 const seededOffers = (limit: number): LegacyProductShape[] => {
   const seeded = seededCatalog();
