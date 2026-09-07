@@ -65,11 +65,7 @@ function CartRoutePage() {
       }}
       onCheckout={(discountPercent) => {
         const coupon =
-          discountPercent === 20
-            ? "INDEXES20"
-            : discountPercent === 10
-              ? "INDEXES10"
-              : undefined;
+          discountPercent === 20 ? "INDEXES20" : discountPercent === 10 ? "INDEXES10" : undefined;
         navigate({
           to: "/order-completion",
           search: coupon ? { coupon } : undefined,
