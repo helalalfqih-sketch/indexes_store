@@ -32,6 +32,32 @@ export function checkoutProductRefFromCatalogProduct(product: {
   return { source: "fallback", id: product.id };
 }
 
+export type CheckoutMode = "supabase" | "shopify";
+
+export function checkoutModeForRefs(refs: CheckoutProductRef[]): CheckoutMode {
+  if (refs.length === 0) throw new Error("Checkout requires at least one product.");
+  const sources = new Set(refs.map((ref) => ref.source));
+  if (sources.has("fallback")) {
+    throw new Error("Demo catalog products are not available for checkout.");
+  }
+  if (sources.size !== 1) {
+    throw new Error("Products from different checkout sources cannot be combined.");
+  }
+  return refs[0].source as CheckoutMode;
+}
+
+export function shopifyCartLinesForCheckout(
+  items: Array<{ productRef: CheckoutProductRef; quantity: number }>,
+): Array<{ merchandiseId: string; quantity: number }> {
+  if (checkoutModeForRefs(items.map((item) => item.productRef)) !== "shopify") {
+    throw new Error("Shopify checkout requires Shopify products.");
+  }
+  return items.map((item) => ({
+    merchandiseId: item.productRef.id,
+    quantity: item.quantity,
+  }));
+}
+
 export function requireSupabaseCheckoutProductIds(refs: CheckoutProductRef[]): string[] {
   return refs.map((ref) => {
     if (ref.source !== "supabase") {
