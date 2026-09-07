@@ -47,11 +47,7 @@ const createOrderInput = z.object({
     )
     .min(1)
     .max(100),
-  customerName: z
-    .string()
-    .trim()
-    .min(2, "الاسم مطلوب (حرفان على الأقل)")
-    .max(200),
+  customerName: z.string().trim().min(2, "الاسم مطلوب (حرفان على الأقل)").max(200),
   customerPhone: yemeniPhoneSchema,
   customerAddress: z.string().trim().min(3, "العنوان مطلوب").max(500),
   customerEmail: z.preprocess(
@@ -83,9 +79,7 @@ export interface CreateOrderResult {
  */
 async function getOptionalUserId(admin: {
   auth: {
-    getUser: (
-      jwt: string,
-    ) => Promise<{ data: { user: { id: string } | null }; error: unknown }>;
+    getUser: (jwt: string) => Promise<{ data: { user: { id: string } | null }; error: unknown }>;
   };
 }): Promise<string | null> {
   try {
@@ -108,13 +102,8 @@ async function loadShippingSettings(
 ): Promise<{ freeShippingThreshold: number; defaultShippingFee: number }> {
   try {
     const selectSetting = async (scopedTenantId: string | null) => {
-      let query = db
-        .from("storefront_settings")
-        .select("value")
-        .eq("key", "cart_config");
-      query = scopedTenantId
-        ? query.eq("tenant_id", scopedTenantId)
-        : query.is("tenant_id", null);
+      let query = db.from("storefront_settings").select("value").eq("key", "cart_config");
+      query = scopedTenantId ? query.eq("tenant_id", scopedTenantId) : query.is("tenant_id", null);
       return query.maybeSingle();
     };
 
@@ -131,14 +120,10 @@ async function loadShippingSettings(
     const freeShippingThreshold = Number(
       val.freeShippingThreshold ?? val.free_shipping_threshold ?? 30000,
     );
-    const defaultShippingFee = Number(
-      val.defaultShippingFee ?? val.default_shipping_fee ?? 3000,
-    );
+    const defaultShippingFee = Number(val.defaultShippingFee ?? val.default_shipping_fee ?? 3000);
 
     return {
-      freeShippingThreshold: isNaN(freeShippingThreshold)
-        ? 30000
-        : freeShippingThreshold,
+      freeShippingThreshold: isNaN(freeShippingThreshold) ? 30000 : freeShippingThreshold,
       defaultShippingFee: isNaN(defaultShippingFee) ? 3000 : defaultShippingFee,
     };
   } catch {
@@ -157,8 +142,7 @@ async function loadShippingSettings(
 export const createOrder = createServerFn({ method: "POST" })
   .inputValidator((raw: unknown) => createOrderInput.parse(raw))
   .handler(async ({ data }): Promise<CreateOrderResult> => {
-    const { getSupabaseAdmin } =
-      await import("@/integrations/supabase/client.server");
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
     const supabaseAdmin = getSupabaseAdmin();
 
     // 0. Idempotency — if the client sent a key and an order with this key
@@ -213,9 +197,7 @@ export const createOrder = createServerFn({ method: "POST" })
     const productIds = Array.from(new Set(data.items.map((i) => i.productId)));
     const productResult = await supabaseAdmin
       .from("products")
-      .select(
-        "id, name, price, currency, sku, is_published, tenant_id, vendor_id, stock",
-      )
+      .select("id, name, price, currency, sku, is_published, tenant_id, vendor_id, stock")
       .in("id", productIds)
       .eq("tenant_id", tenantId)
       .eq("is_published", true);
@@ -243,9 +225,7 @@ export const createOrder = createServerFn({ method: "POST" })
 
     const missing = productIds.filter((id) => !byId.has(id));
     if (missing.length > 0) {
-      throw new Error(
-        "بعض المنتجات غير متوفرة أو لم تعد منشورة. حدّث السلة وحاول مرة أخرى.",
-      );
+      throw new Error("بعض المنتجات غير متوفرة أو لم تعد منشورة. حدّث السلة وحاول مرة أخرى.");
     }
 
     // 4. Build line items + totals from DB values.
@@ -269,9 +249,7 @@ export const createOrder = createServerFn({ method: "POST" })
 
       // P0: reject price <= 0
       if (unitPrice <= 0) {
-        throw new Error(
-          `المنتج "${p.name}" سعره غير صالح. يرجى التواصل مع الإدارة.`,
-        );
+        throw new Error(`المنتج "${p.name}" سعره غير صالح. يرجى التواصل مع الإدارة.`);
       }
 
       const lineTotal = unitPrice * i.quantity;
@@ -304,15 +282,9 @@ export const createOrder = createServerFn({ method: "POST" })
     }
 
     // Compute the advertised storefront coupons server-side.
-    const validatedDiscount = discountAmountForCoupon(
-      subtotal,
-      data.couponCode,
-    );
+    const validatedDiscount = discountAmountForCoupon(subtotal, data.couponCode);
 
-    const shippingSettings = await loadShippingSettings(
-      tenantId,
-      supabaseAdmin,
-    );
+    const shippingSettings = await loadShippingSettings(tenantId, supabaseAdmin);
     const shippingFee = computeShippingFee(
       subtotal - validatedDiscount,
       shippingSettings.freeShippingThreshold,
@@ -323,13 +295,8 @@ export const createOrder = createServerFn({ method: "POST" })
 
     // Never create an order if the authoritative server total differs from what
     // the customer confirmed in the checkout UI.
-    if (
-      data.expectedTotal != null &&
-      Math.abs(data.expectedTotal - total) > 0.01
-    ) {
-      throw new Error(
-        "تغيّر سعر الطلب أو رسوم الشحن. حدّث السلة وراجع الإجمالي ثم حاول مرة أخرى.",
-      );
+    if (data.expectedTotal != null && Math.abs(data.expectedTotal - total) > 0.01) {
+      throw new Error("تغيّر سعر الطلب أو رسوم الشحن. حدّث السلة وراجع الإجمالي ثم حاول مرة أخرى.");
     }
 
     // Build notes with restock request flag if stock is 0
@@ -415,8 +382,7 @@ export const createOrder = createServerFn({ method: "POST" })
     if (orderErr || !order) {
       console.error("[createOrder] Order Insert Failure:", orderErr);
       if (
-        (orderErr?.code === "23505" ||
-          orderErr?.message?.includes("idempotency")) &&
+        (orderErr?.code === "23505" || orderErr?.message?.includes("idempotency")) &&
         data.idempotencyKey
       ) {
         const { data: existing } = await supabaseAdmin
@@ -434,17 +400,13 @@ export const createOrder = createServerFn({ method: "POST" })
           };
         }
       }
-      throw new Error(
-        `تعذّر إنشاء الطلب: ${orderErr?.message || "خطأ في قاعدة البيانات"}`,
-      );
+      throw new Error(`تعذّر إنشاء الطلب: ${orderErr?.message || "خطأ في قاعدة البيانات"}`);
     }
 
     // 6. Insert order items.
     let { data: insertedItems, error: itemsErr } = await supabaseAdmin
       .from("order_items")
-      .insert(
-        itemRows.map(({ vendor_id, ...r }) => ({ ...r, order_id: order.id })),
-      )
+      .insert(itemRows.map(({ vendor_id, ...r }) => ({ ...r, order_id: order.id })))
       .select("id, order_id, product_id, quantity, unit_price, total_price");
 
     // Fallback: if cart contains mock/legacy product IDs violating FK constraint
@@ -473,9 +435,7 @@ export const createOrder = createServerFn({ method: "POST" })
           const fkRetryRes = await supabaseAdmin
             .from("order_items")
             .insert(safeFkRows)
-            .select(
-              "id, order_id, product_id, quantity, unit_price, total_price",
-            );
+            .select("id, order_id, product_id, quantity, unit_price, total_price");
 
           insertedItems = fkRetryRes.data;
           itemsErr = fkRetryRes.error;
@@ -492,12 +452,9 @@ export const createOrder = createServerFn({ method: "POST" })
 
     // 6b. Multi-Vendor Sub-Orders splitting (best-effort)
     try {
-      const { splitOrderIntoVendorOrders } =
-        await import("@/lib/services/vendor-order.service");
+      const { splitOrderIntoVendorOrders } = await import("@/lib/services/vendor-order.service");
       const orderItemsWithVendor = (insertedItems ?? []).map((item) => {
-        const matchingRow = itemRows.find(
-          (r) => r.product_id === item.product_id,
-        );
+        const matchingRow = itemRows.find((r) => r.product_id === item.product_id);
         return {
           ...item,
           vendor_id: matchingRow?.vendor_id ?? null,
@@ -515,20 +472,17 @@ export const createOrder = createServerFn({ method: "POST" })
 
     // 7. Initial audit entry (Task 4) — best-effort: never fails the order.
     try {
-      const { error: histErr } = await supabaseAdmin
-        .from("order_status_history")
-        .insert({
-          order_id: order.id,
-          tenant_id: tenantId,
-          from_status: null,
-          to_status: "pending",
-          changed_by: userId,
-          note: hasRestockNeededItem
-            ? "Order created — يحتوي على طلب توفير كمية (المخزون 0)"
-            : "Order created via checkout",
-        });
-      if (histErr)
-        console.warn("[createOrder] status history notice:", histErr.message);
+      const { error: histErr } = await supabaseAdmin.from("order_status_history").insert({
+        order_id: order.id,
+        tenant_id: tenantId,
+        from_status: null,
+        to_status: "pending",
+        changed_by: userId,
+        note: hasRestockNeededItem
+          ? "Order created — يحتوي على طلب توفير كمية (المخزون 0)"
+          : "Order created via checkout",
+      });
+      if (histErr) console.warn("[createOrder] status history notice:", histErr.message);
     } catch (histEx) {
       console.warn("[createOrder] status history skipped:", histEx);
     }
@@ -554,9 +508,7 @@ export const getMyOrders = createServerFn({ method: "GET" })
  */
 export const getMyOrderDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((raw: unknown) =>
-    z.object({ orderId: z.string().uuid() }).parse(raw),
-  )
+  .inputValidator((raw: unknown) => z.object({ orderId: z.string().uuid() }).parse(raw))
   .handler(async ({ data, context }): Promise<MyOrderDetails | null> => {
     const { supabase, userId } = context as unknown as {
       supabase: SupabaseClient<Database>;
@@ -586,8 +538,7 @@ export const getTrackedOrder = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<MyOrderDetails | null> => {
     const normalized = normalizeOrderNumber(data.orderNumber);
     if (!normalized) return null;
-    const { getSupabaseAdmin } =
-      await import("@/integrations/supabase/client.server");
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
     const supabaseAdmin = getSupabaseAdmin();
     return trackOrderFromDb(supabaseAdmin, normalized, data.phoneLast4);
   });
