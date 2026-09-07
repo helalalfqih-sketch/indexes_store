@@ -56,6 +56,7 @@ const createOrderInput = z.object({
   notes: z.string().trim().max(1000).optional(),
   couponCode: z.string().trim().max(60).optional(),
   // discountAmount is NEVER accepted from the client — computed server-side.
+  expectedTotal: z.number().nonnegative().optional(),
   paymentProvider: z.string().trim().max(60).optional(),
   /** Client-generated UUID to prevent duplicate order creation. */
   idempotencyKey: z.string().uuid().optional(),
@@ -193,19 +194,14 @@ export const createOrder = createServerFn({ method: "POST" })
       .from("products")
       .select("id, name, price, currency, sku, is_published, tenant_id, vendor_id, stock")
       .in("id", productIds)
-      .eq("tenant_id", tenantId);
+      .eq("tenant_id", tenantId)
+      .eq("is_published", true);
     let products = productResult.data;
     const prodErr = productResult.error;
 
-    if (prodErr || !products || products.length < productIds.length) {
-      // Fallback: load products by ID regardless of tenant_id filter (backward compatibility)
-      const { data: fallbackProducts } = await supabaseAdmin
-        .from("products")
-        .select("id, name, price, currency, sku, is_published, tenant_id, vendor_id, stock")
-        .in("id", productIds);
-      if (fallbackProducts && fallbackProducts.length > 0) {
-        products = fallbackProducts;
-      }
+    if (prodErr) {
+      console.error("[createOrder] Product lookup failed:", prodErr);
+      throw new Error("تعذّر التحقق من المنتجات. حاول مرة أخرى.");
     }
 
     const byId = new Map(
@@ -224,39 +220,7 @@ export const createOrder = createServerFn({ method: "POST" })
 
     const missing = productIds.filter((id) => !byId.has(id));
     if (missing.length > 0) {
-      // 1. Try querying published products from DB
-      const { data: publishedProds } = await supabaseAdmin
-        .from("products")
-        .select("id, name, price, currency, sku, vendor_id, stock")
-        .limit(20);
-
-      let idx = 0;
-      for (const mId of missing) {
-        if (publishedProds && publishedProds.length > 0) {
-          const match = publishedProds[idx % publishedProds.length];
-          byId.set(mId, {
-            id: match.id,
-            name: match.name,
-            price: Number(match.price ?? 8000),
-            currency: match.currency ?? "YER",
-            sku: match.sku ?? "INDEX-PROD",
-            vendor_id: match.vendor_id ?? null,
-            stock: match.stock ?? 100,
-          });
-        } else {
-          // 2. Fail-safe synthetic product mapping
-          byId.set(mId, {
-            id: crypto.randomUUID(),
-            name: "منتج اندكس ستور",
-            price: 8000,
-            currency: "YER",
-            sku: "INDEX-PROD",
-            vendor_id: null,
-            stock: 100,
-          });
-        }
-        idx++;
-      }
+      throw new Error("بعض المنتجات غير متوفرة أو لم تعد منشورة. حدّث السلة وحاول مرة أخرى.");
     }
 
     // 4. Build line items + totals from DB values.
@@ -312,8 +276,11 @@ export const createOrder = createServerFn({ method: "POST" })
       throw new Error(stockErrors.join("\n"));
     }
 
-    // P0: Compute discount server-side (currently 0 — coupon validation TBD).
-    const validatedDiscount = 0;
+    // Compute the advertised storefront coupons server-side.
+    const normalizedCoupon = data.couponCode?.trim().toUpperCase();
+    const discountPercent =
+      normalizedCoupon === "INDEXES20" ? 20 : normalizedCoupon === "INDEXES10" ? 10 : 0;
+    const validatedDiscount = Math.round((subtotal * discountPercent) / 100);
 
     const shippingSettings = await loadShippingSettings(tenantId, supabaseAdmin);
     const shippingFee = computeShippingFee(
@@ -323,6 +290,12 @@ export const createOrder = createServerFn({ method: "POST" })
     );
 
     const total = Math.max(0, subtotal - validatedDiscount + shippingFee);
+
+    // Never create an order if the authoritative server total differs from what
+    // the customer confirmed in the checkout UI.
+    if (data.expectedTotal != null && Math.abs(data.expectedTotal - total) > 0.01) {
+      throw new Error("تغيّر سعر الطلب أو رسوم الشحن. حدّث السلة وراجع الإجمالي ثم حاول مرة أخرى.");
+    }
 
     // Build notes with restock request flag if stock is 0
     let finalNotes = data.notes ?? "";
