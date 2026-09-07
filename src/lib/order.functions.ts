@@ -3,8 +3,13 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveCurrentTenant } from "@/lib/saas/tenant-resolver";
-import { computeShippingFee, normalizeYemeniPhone } from "@/lib/shipping";
-import { discountAmountForCoupon } from "@/lib/checkout-pricing";
+import { normalizeYemeniPhone } from "@/lib/shipping";
+import {
+  assertCheckoutCommit,
+  checkoutProductRefSchema,
+  requireSupabaseCheckoutProductIds,
+  validateTenantCheckoutProducts,
+} from "@/lib/checkout-product-contract";
 import {
   getMyOrders as getMyOrdersFromDb,
   getMyOrderDetails as getMyOrderDetailsFromDb,
@@ -41,7 +46,7 @@ const createOrderInput = z.object({
   items: z
     .array(
       z.object({
-        productId: z.string().min(1),
+        productRef: checkoutProductRefSchema,
         quantity: z.number().int().min(1).max(999),
       }),
     )
@@ -96,44 +101,6 @@ async function getOptionalUserId(admin: {
   }
 }
 
-async function loadShippingSettings(
-  tenantId: string,
-  db: SupabaseAdminClient,
-): Promise<{ freeShippingThreshold: number; defaultShippingFee: number }> {
-  try {
-    const selectSetting = async (scopedTenantId: string | null) => {
-      let query = db.from("storefront_settings").select("value").eq("key", "cart_config");
-      query = scopedTenantId ? query.eq("tenant_id", scopedTenantId) : query.is("tenant_id", null);
-      return query.maybeSingle();
-    };
-
-    let { data } = await selectSetting(tenantId);
-    if (!data) ({ data } = await selectSetting(null));
-
-    const val =
-      (data?.value as {
-        freeShippingThreshold?: unknown;
-        free_shipping_threshold?: unknown;
-        defaultShippingFee?: unknown;
-        default_shipping_fee?: unknown;
-      }) || {};
-    const freeShippingThreshold = Number(
-      val.freeShippingThreshold ?? val.free_shipping_threshold ?? 30000,
-    );
-    const defaultShippingFee = Number(val.defaultShippingFee ?? val.default_shipping_fee ?? 3000);
-
-    return {
-      freeShippingThreshold: isNaN(freeShippingThreshold) ? 30000 : freeShippingThreshold,
-      defaultShippingFee: isNaN(defaultShippingFee) ? 3000 : defaultShippingFee,
-    };
-  } catch {
-    return {
-      freeShippingThreshold: 30000,
-      defaultShippingFee: 3000,
-    };
-  }
-}
-
 // ---------- server functions ----------
 
 /**
@@ -145,349 +112,94 @@ export const createOrder = createServerFn({ method: "POST" })
     const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
     const supabaseAdmin = getSupabaseAdmin();
 
-    // 0. Idempotency — if the client sent a key and an order with this key
-    //    already exists, return the existing order instead of creating a duplicate.
-    if (data.idempotencyKey) {
-      const { data: existing } = await supabaseAdmin
-        .from("orders")
-        .select("id, total, currency")
-        .eq("idempotency_key", data.idempotencyKey)
-        .maybeSingle();
-      if (existing) {
-        return {
-          orderId: existing.id,
-          total: existing.total ?? 0,
-          currency: existing.currency ?? "YER",
-          itemsCount: data.items.length,
-        };
-      }
-    }
-
-    // 0b. Normalize the Yemeni phone number to 967XXXXXXXXX.
     const normalizedPhone = normalizeYemeniPhone(data.customerPhone);
     const customerPhone = normalizedPhone ?? data.customerPhone;
-
-    // 1. Verified user id from the token (or null → guest). Never from the client.
     const userId = await getOptionalUserId(supabaseAdmin);
+    const tenantId = await resolveCurrentTenant(supabaseAdmin, { userId });
 
-    // 2. Resolve the storefront tenant server-side.
-    let tenantId = await resolveCurrentTenant(supabaseAdmin, { userId });
-
-    const { data: tenant } = await supabaseAdmin
+    const { data: tenant, error: tenantError } = await supabaseAdmin
       .from("tenants")
       .select("id, status")
       .eq("id", tenantId)
       .maybeSingle();
 
-    if (!tenant || tenant.status !== "active") {
-      // Fallback: pick any active tenant from database or proceed with default
-      const { data: activeTenant } = await supabaseAdmin
-        .from("tenants")
-        .select("id")
-        .eq("status", "active")
-        .limit(1)
-        .maybeSingle();
-      if (activeTenant) {
-        tenantId = activeTenant.id;
-      }
+    if (tenantError || !tenant || tenant.status !== "active") {
+      throw new Error("The storefront tenant is unavailable.");
     }
 
-    // 3. Load the requested products for THIS tenant, published only. Price is
-    //    authoritative from the DB — the client never sets prices.
-    const productIds = Array.from(new Set(data.items.map((i) => i.productId)));
-    const productResult = await supabaseAdmin
+    const productIds = requireSupabaseCheckoutProductIds(
+      data.items.map((item) => item.productRef),
+    );
+    const { data: catalogRows, error: catalogError } = await supabaseAdmin
       .from("products")
-      .select("id, name, price, currency, sku, is_published, tenant_id, vendor_id, stock")
-      .in("id", productIds)
+      .select("id, tenant_id, is_published, vendor_id")
+      .in("id", Array.from(new Set(productIds)))
       .eq("tenant_id", tenantId)
       .eq("is_published", true);
-    const products = productResult.data;
-    const prodErr = productResult.error;
 
-    if (prodErr) {
-      console.error("[createOrder] Product lookup failed:", prodErr);
-      throw new Error("تعذّر التحقق من المنتجات. حاول مرة أخرى.");
+    if (catalogError) {
+      console.error("[createOrder] Tenant product validation failed:", catalogError);
+      throw new Error("Unable to validate the checkout products.");
     }
 
-    const byId = new Map(
-      (
-        (products ?? []) as Array<{
-          id: string;
-          name: string;
-          price: number;
-          currency: string | null;
-          sku: string | null;
-          vendor_id: string | null;
-          stock: number | null;
-        }>
-      ).map((p) => [p.id, p]),
+    validateTenantCheckoutProducts(
+      tenantId,
+      data.items.map((item) => item.productRef),
+      catalogRows ?? [],
     );
 
-    const missing = productIds.filter((id) => !byId.has(id));
-    if (missing.length > 0) {
-      throw new Error("بعض المنتجات غير متوفرة أو لم تعد منشورة. حدّث السلة وحاول مرة أخرى.");
-    }
+    const rpcItems = data.items.map((item) => ({
+      source: item.productRef.source,
+      id: item.productRef.id,
+      quantity: item.quantity,
+    }));
 
-    // 4. Build line items + totals from DB values.
-    let currency = "YER";
-    let subtotal = 0;
-    let hasRestockNeededItem = false;
-    const stockErrors: string[] = [];
-
-    const itemRows = data.items.map((i) => {
-      const p = byId.get(i.productId) ?? {
-        id: "00000000-0000-0000-0000-000000000000",
-        name: "منتج اندكس ستور",
-        price: 8000,
-        currency: "YER",
-        sku: "INDEX-PROD",
-        vendor_id: null,
-        stock: 100,
-      };
-      currency = p.currency ?? currency;
-      const unitPrice = Number(p.price ?? 0);
-
-      // P0: reject price <= 0
-      if (unitPrice <= 0) {
-        throw new Error(`المنتج "${p.name}" سعره غير صالح. يرجى التواصل مع الإدارة.`);
-      }
-
-      const lineTotal = unitPrice * i.quantity;
-      subtotal += lineTotal;
-
-      const availableStock = p.stock ?? 0;
-      if (availableStock <= 0) {
-        hasRestockNeededItem = true;
-      } else if (i.quantity > availableStock) {
-        stockErrors.push(
-          `الكمية المطلوبة من "${p.name}" (${i.quantity}) أكبر من المخزون المتاح (${availableStock}).`,
-        );
-      }
-
-      return {
-        tenant_id: tenantId,
-        product_id: p.id,
-        quantity: i.quantity,
-        unit_price: unitPrice,
-        total_price: lineTotal,
-        product_name_snapshot: p.name,
-        product_sku_snapshot: p.sku ?? null,
-        vendor_id: p.vendor_id ?? null,
-      };
-    });
-
-    // P0: reject if any item exceeds available stock (unless stock is 0 → restock request)
-    if (stockErrors.length > 0) {
-      throw new Error(stockErrors.join("\n"));
-    }
-
-    // Compute the advertised storefront coupons server-side.
-    const validatedDiscount = discountAmountForCoupon(subtotal, data.couponCode);
-
-    const shippingSettings = await loadShippingSettings(tenantId, supabaseAdmin);
-    const shippingFee = computeShippingFee(
-      subtotal - validatedDiscount,
-      shippingSettings.freeShippingThreshold,
-      shippingSettings.defaultShippingFee,
+    const { data: committed, error: commitError } = await supabaseAdmin.rpc(
+      "create_checkout_order_v2",
+      {
+        _tenant_id: tenantId,
+        _user_id: userId,
+        _customer_name: data.customerName,
+        _customer_phone: customerPhone,
+        _customer_address: data.customerAddress,
+        _customer_email: data.customerEmail ?? null,
+        _notes: data.notes ?? null,
+        _coupon_code: data.couponCode ?? null,
+        _expected_total: data.expectedTotal ?? null,
+        _payment_provider: data.paymentProvider ?? null,
+        _idempotency_key: data.idempotencyKey ?? null,
+        _items: rpcItems,
+      },
     );
 
-    const total = Math.max(0, subtotal - validatedDiscount + shippingFee);
-
-    // Never create an order if the authoritative server total differs from what
-    // the customer confirmed in the checkout UI.
-    if (data.expectedTotal != null && Math.abs(data.expectedTotal - total) > 0.01) {
-      throw new Error("تغيّر سعر الطلب أو رسوم الشحن. حدّث السلة وراجع الإجمالي ثم حاول مرة أخرى.");
+    if (commitError) {
+      console.error("[createOrder] Atomic checkout failed:", commitError);
     }
+    const result = assertCheckoutCommit(committed, commitError, data.items.length);
 
-    // Build notes with restock request flag if stock is 0
-    let finalNotes = data.notes ?? "";
-    if (hasRestockNeededItem) {
-      finalNotes = finalNotes
-        ? `${finalNotes} | [طلب توفير كمية - المخزون 0]`
-        : "[طلب توفير كمية - المخزون 0]";
-    }
-
-    // 5. Insert the order (service role). user_id is our verified value or null.
-    const orderInsert: Database["public"]["Tables"]["orders"]["Insert"] = {
-      tenant_id: tenantId,
-      user_id: userId,
-      customer_name: data.customerName ?? null,
-      customer_phone: customerPhone,
-      customer_address: data.customerAddress ?? null,
-      customer_email: data.customerEmail ?? null,
-      notes: finalNotes || null,
-      status: "pending",
-      payment_status: "pending",
-      payment_provider: data.paymentProvider ?? null,
-      subtotal,
-      shipping_fee: shippingFee,
-      total,
-      currency,
-      coupon_code: data.couponCode ?? null,
-      discount_amount: validatedDiscount,
-    };
-
-    // Attach idempotency key if provided.
-    if (data.idempotencyKey) {
-      orderInsert.idempotency_key = data.idempotencyKey;
-    }
-
-    let { data: order, error: orderErr } = await supabaseAdmin
-      .from("orders")
-      .insert(orderInsert)
-      .select("id")
-      .single();
-
-    // Fallback: if live DB table does not have new schema columns yet, retry with guaranteed legacy schema
-    if (orderErr || !order) {
-      if (
-        orderErr?.message?.includes("schema cache") ||
-        orderErr?.message?.includes("idempotency") ||
-        orderErr?.message?.includes("column") ||
-        orderErr?.message?.includes("shipping_fee") ||
-        orderErr?.message?.includes("subtotal") ||
-        orderErr?.code === "PGRST204"
-      ) {
-        console.warn(
-          "[createOrder] Live DB orders table schema discrepancy, retrying with guaranteed legacy columns:",
-          orderErr.message,
-        );
-        const legacyInsert = {
-          tenant_id: tenantId,
-          customer_name: data.customerName ?? null,
-          customer_phone: customerPhone,
-          customer_address: data.customerAddress ?? null,
-          customer_email: data.customerEmail ?? null,
-          notes: finalNotes || null,
-          status: "pending",
-          payment_status: "pending",
-          payment_provider: data.paymentProvider ?? null,
-          total,
-          currency,
-          coupon_code: data.couponCode ?? null,
-          discount_amount: validatedDiscount,
-        };
-        // Legacy production schema support until all migrations are applied.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const retryRes = await (supabaseAdmin as any)
-          .from("orders")
-          .insert(legacyInsert)
-          .select("id")
-          .single();
-        order = retryRes.data;
-        orderErr = retryRes.error;
-      }
-    }
-
-    if (orderErr || !order) {
-      console.error("[createOrder] Order Insert Failure:", orderErr);
-      if (
-        (orderErr?.code === "23505" || orderErr?.message?.includes("idempotency")) &&
-        data.idempotencyKey
-      ) {
-        const { data: existing } = await supabaseAdmin
-          .from("orders")
-          .select("id, total, currency")
-          .eq("idempotency_key", data.idempotencyKey)
-          .maybeSingle();
-
-        if (existing) {
-          return {
-            orderId: existing.id,
-            total: existing.total ?? total,
-            currency: existing.currency ?? currency,
-            itemsCount: data.items.length,
-          };
-        }
-      }
-      throw new Error(`تعذّر إنشاء الطلب: ${orderErr?.message || "خطأ في قاعدة البيانات"}`);
-    }
-
-    // 6. Insert order items.
-    let { data: insertedItems, error: itemsErr } = await supabaseAdmin
-      .from("order_items")
-      .insert(itemRows.map(({ vendor_id, ...r }) => ({ ...r, order_id: order.id })))
-      .select("id, order_id, product_id, quantity, unit_price, total_price");
-
-    // Fallback: if cart contains mock/legacy product IDs violating FK constraint
-    if (itemsErr || !insertedItems) {
-      if (
-        itemsErr?.message?.includes("foreign key") ||
-        itemsErr?.message?.includes("violates") ||
-        itemsErr?.code === "23503"
-      ) {
-        console.warn(
-          "[createOrder] Foreign key constraint on order_items product_id, resolving with real DB product:",
-          itemsErr.message,
-        );
-        const { data: realProd } = await supabaseAdmin
-          .from("products")
-          .select("id")
-          .limit(1)
-          .maybeSingle();
-
-        if (realProd?.id) {
-          const safeFkRows = itemRows.map(({ vendor_id, ...r }) => ({
-            ...r,
-            order_id: order.id,
-            product_id: realProd.id,
-          }));
-          const fkRetryRes = await supabaseAdmin
-            .from("order_items")
-            .insert(safeFkRows)
-            .select("id, order_id, product_id, quantity, unit_price, total_price");
-
-          insertedItems = fkRetryRes.data;
-          itemsErr = fkRetryRes.error;
-        }
-      }
-    }
-
-    if (itemsErr || !insertedItems) {
-      console.warn(
-        "[createOrder] Order Items Insert Notice (proceeding with main order):",
-        itemsErr?.message,
-      );
-    }
-
-    // 6b. Multi-Vendor Sub-Orders splitting (best-effort)
     try {
+      const { data: insertedItems } = await supabaseAdmin
+        .from("order_items")
+        .select("id, order_id, product_id, quantity, unit_price, total_price")
+        .eq("order_id", result.orderId)
+        .eq("tenant_id", tenantId);
+      const vendorByProduct = new Map(
+        (catalogRows ?? []).map((row) => [row.id, row.vendor_id ?? null]),
+      );
       const { splitOrderIntoVendorOrders } = await import("@/lib/services/vendor-order.service");
-      const orderItemsWithVendor = (insertedItems ?? []).map((item) => {
-        const matchingRow = itemRows.find((r) => r.product_id === item.product_id);
-        return {
-          ...item,
-          vendor_id: matchingRow?.vendor_id ?? null,
-        };
-      });
-
       await splitOrderIntoVendorOrders(supabaseAdmin, {
         tenantId,
-        orderId: order.id,
-        items: orderItemsWithVendor,
+        orderId: result.orderId,
+        items: (insertedItems ?? []).map((item) => ({
+          ...item,
+          vendor_id: vendorByProduct.get(item.product_id) ?? null,
+        })),
       });
-    } catch (splitEx) {
-      console.warn("[createOrder] multi-vendor order split notice:", splitEx);
+    } catch (splitError) {
+      console.warn("[createOrder] multi-vendor order split notice:", splitError);
     }
 
-    // 7. Initial audit entry (Task 4) — best-effort: never fails the order.
-    try {
-      const { error: histErr } = await supabaseAdmin.from("order_status_history").insert({
-        order_id: order.id,
-        tenant_id: tenantId,
-        from_status: null,
-        to_status: "pending",
-        changed_by: userId,
-        note: hasRestockNeededItem
-          ? "Order created — يحتوي على طلب توفير كمية (المخزون 0)"
-          : "Order created via checkout",
-      });
-      if (histErr) console.warn("[createOrder] status history notice:", histErr.message);
-    } catch (histEx) {
-      console.warn("[createOrder] status history skipped:", histEx);
-    }
-
-    return { orderId: order.id, total, currency, itemsCount: itemRows.length };
+    return result;
   });
 
 /**
