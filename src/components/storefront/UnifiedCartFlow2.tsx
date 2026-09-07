@@ -8,6 +8,7 @@ import { STORE_INFO } from "./constants";
 import { submitOrder } from "@/lib/actions/order.actions";
 import { useCart } from "@/lib/cart-store";
 import { yemeniPhoneSchema } from "@/lib/validation/phone";
+import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
 
 interface UnifiedCartFlowProps {
   isOpen: boolean;
@@ -87,7 +88,12 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
     try {
       const result = await submitOrder({
         items: props.cartItems.map((item) => ({
-          productId: item.product.id,
+          productRef:
+            item.product.checkoutProductRef ??
+            checkoutProductRefFromCatalogProduct({
+              id: item.product.id,
+              shopifyVariantId: item.product.shopifyVariantId,
+            }),
           quantity: item.quantity,
         })),
         customerName: name.trim(),
