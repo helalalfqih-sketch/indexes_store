@@ -29,12 +29,17 @@ export interface UserAddress {
   is_default: boolean;
 }
 
-export async function submitOrder(input: CreateOrderInput): Promise<{ orderId: string }> {
+export async function submitOrder(
+  input: CreateOrderInput,
+): Promise<{ orderId: string }> {
   // Delegates to the secure `createOrder` server function. user_id is derived
   // server-side from the verified session (guests → null); prices and totals are
   // recomputed from the database. The client never sets user_id, prices, or discountAmount.
   const payload: CreateOrderPayload = {
-    items: input.items.map((it) => ({ productId: it.productId, quantity: it.quantity })),
+    items: input.items.map((it) => ({
+      productId: it.productId,
+      quantity: it.quantity,
+    })),
     customerName: input.customerName,
     customerPhone: input.customerPhone,
     customerAddress: input.customerAddress,
@@ -55,6 +60,8 @@ export async function getUserAddresses(): Promise<UserAddress[]> {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) return [];
 
+    // user_addresses is not yet represented in the generated Database type.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("user_addresses")
       .select("id, user_id, title, city, address_line, phone, is_default")
@@ -68,7 +75,9 @@ export async function getUserAddresses(): Promise<UserAddress[]> {
   }
 }
 
-export async function saveUserAddress(addr: Omit<UserAddress, "id" | "user_id"> & { id?: string }): Promise<boolean> {
+export async function saveUserAddress(
+  addr: Omit<UserAddress, "id" | "user_id"> & { id?: string },
+): Promise<boolean> {
   try {
     if (!supabase) return false;
     const { data: userData } = await supabase.auth.getUser();
@@ -80,6 +89,8 @@ export async function saveUserAddress(addr: Omit<UserAddress, "id" | "user_id"> 
       updated_at: new Date().toISOString(),
     };
 
+    // user_addresses is not yet represented in the generated Database type.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("user_addresses")
       .upsert(payload);
@@ -94,6 +105,8 @@ export async function saveUserAddress(addr: Omit<UserAddress, "id" | "user_id"> 
 export async function deleteUserAddress(id: string): Promise<boolean> {
   try {
     if (!supabase) return false;
+    // user_addresses is not yet represented in the generated Database type.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("user_addresses")
       .delete()
