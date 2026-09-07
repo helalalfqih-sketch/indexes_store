@@ -78,8 +78,7 @@ export const useCart = create<CartState>()(
               {
                 productId: p.id,
                 variantId: p.shopifyVariantId ?? null,
-                checkoutProductRef:
-                  p.checkoutProductRef ?? checkoutProductRefFromCatalogProduct(p),
+                checkoutProductRef: p.checkoutProductRef ?? checkoutProductRefFromCatalogProduct(p),
                 name: p.name,
                 price: p.price,
                 image: p.image,
