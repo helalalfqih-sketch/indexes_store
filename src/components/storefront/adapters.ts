@@ -139,8 +139,7 @@ export function mapProductionProductToDesignProduct(p: LegacyProductShape): Desi
     priceYER,
     originalPriceYER,
     discountBadge,
-    rating:
-      typeof p.rating === "number" && !isNaN(p.rating) && p.rating > 0 ? p.rating : 0,
+    rating: typeof p.rating === "number" && !isNaN(p.rating) && p.rating > 0 ? p.rating : 0,
     reviewsCount:
       typeof p.reviews === "number" && !isNaN(p.reviews) && p.reviews > 0 ? p.reviews : 0,
     image: mainImage,
