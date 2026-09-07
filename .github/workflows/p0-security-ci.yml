@@ -30,15 +30,18 @@ jobs:
       - name: 1. Install Dependencies
         run: npm ci
 
+      - name: 2. Audit Production Dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       # TanStack Router generates src/routeTree.gen.ts during the Vite build.
       # Generate it before tsc so newly added file routes are type-safe in CI.
-      - name: 2. Build and Generate Route Tree
+      - name: 3. Build and Generate Route Tree
         run: npm run build
 
-      - name: 3. Typecheck
+      - name: 4. Typecheck
         run: npm run typecheck
 
-      - name: 4. Lint Changed Files
+      - name: 5. Lint Changed Files
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -56,23 +59,23 @@ jobs:
           printf 'Linting changed file: %s\n' "${changed_files[@]}"
           npx eslint --max-warnings=0 "${changed_files[@]}"
 
-      - name: 5. Unit Tests
+      - name: 6. Unit Tests
         run: npm run test:unit
 
-      - name: 6. Integration Tests
+      - name: 7. Integration Tests
         run: npm run test:integration
 
-      - name: 7. Security Tests
+      - name: 8. Security Tests
         run: npm run test:security
 
-      - name: 8. Test Coverage
+      - name: 9. Test Coverage
         run: npm run test:coverage
 
       - name: Install Playwright Browsers
         run: npx playwright install chromium
 
-      - name: 9. E2E Tests
+      - name: 10. E2E Tests
         run: npm run test:e2e
 
-      - name: 10. Accessibility Tests
+      - name: 11. Accessibility Tests
         run: npm run test:accessibility
