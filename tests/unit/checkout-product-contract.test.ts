@@ -19,9 +19,11 @@ describe("checkout product ID contract", () => {
     expect(checkoutProductRefSchema.parse(ref)).toEqual(ref);
     expect(requireSupabaseCheckoutProductIds([ref])).toEqual([PRODUCT_ID]);
     expect(() =>
-      validateTenantCheckoutProducts(TENANT_A, [ref], [
-        { id: PRODUCT_ID, tenant_id: TENANT_A, is_published: true },
-      ]),
+      validateTenantCheckoutProducts(
+        TENANT_A,
+        [ref],
+        [{ id: PRODUCT_ID, tenant_id: TENANT_A, is_published: true }],
+      ),
     ).not.toThrow();
   });
 
@@ -47,9 +49,11 @@ describe("checkout product ID contract", () => {
   it("rejects products outside the resolved tenant", () => {
     const ref = { source: "supabase" as const, id: PRODUCT_ID };
     expect(() =>
-      validateTenantCheckoutProducts(TENANT_A, [ref], [
-        { id: PRODUCT_ID, tenant_id: TENANT_B, is_published: true },
-      ]),
+      validateTenantCheckoutProducts(
+        TENANT_A,
+        [ref],
+        [{ id: PRODUCT_ID, tenant_id: TENANT_B, is_published: true }],
+      ),
     ).toThrow(/unavailable/);
   });
 
@@ -57,9 +61,11 @@ describe("checkout product ID contract", () => {
     const ref = { source: "supabase" as const, id: PRODUCT_ID };
     expect(() => validateTenantCheckoutProducts(TENANT_A, [ref], [])).toThrow(/unavailable/);
     expect(() =>
-      validateTenantCheckoutProducts(TENANT_A, [ref], [
-        { id: PRODUCT_ID, tenant_id: TENANT_A, is_published: false },
-      ]),
+      validateTenantCheckoutProducts(
+        TENANT_A,
+        [ref],
+        [{ id: PRODUCT_ID, tenant_id: TENANT_A, is_published: false }],
+      ),
     ).toThrow(/unavailable/);
   });
 
@@ -71,9 +77,9 @@ describe("checkout product ID contract", () => {
         2,
       ),
     ).toThrow(/every line item/);
-    expect(() =>
-      assertCheckoutCommit(null, { message: "line item insert failed" }, 2),
-    ).toThrow(/transaction failed/);
+    expect(() => assertCheckoutCommit(null, { message: "line item insert failed" }, 2)).toThrow(
+      /transaction failed/,
+    );
   });
 
   it("accepts success only when the complete item count commits", () => {
