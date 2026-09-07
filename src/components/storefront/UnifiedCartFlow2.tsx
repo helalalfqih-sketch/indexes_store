@@ -102,9 +102,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
           }),
         quantity: item.quantity,
       }));
-      const checkoutMode = checkoutModeForRefs(
-        checkoutItems.map((item) => item.productRef),
-      );
+      const checkoutMode = checkoutModeForRefs(checkoutItems.map((item) => item.productRef));
 
       if (checkoutMode === "shopify") {
         const result = await createShopifyCartFn({
