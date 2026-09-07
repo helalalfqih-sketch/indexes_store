@@ -29,9 +29,7 @@ export interface UserAddress {
   is_default: boolean;
 }
 
-export async function submitOrder(
-  input: CreateOrderInput,
-): Promise<{ orderId: string }> {
+export async function submitOrder(input: CreateOrderInput): Promise<{ orderId: string }> {
   // Delegates to the secure `createOrder` server function. user_id is derived
   // server-side from the verified session (guests → null); prices and totals are
   // recomputed from the database. The client never sets user_id, prices, or discountAmount.
@@ -91,9 +89,7 @@ export async function saveUserAddress(
 
     // user_addresses is not yet represented in the generated Database type.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("user_addresses")
-      .upsert(payload);
+    const { error } = await (supabase as any).from("user_addresses").upsert(payload);
 
     return !error;
   } catch (err) {
@@ -107,10 +103,7 @@ export async function deleteUserAddress(id: string): Promise<boolean> {
     if (!supabase) return false;
     // user_addresses is not yet represented in the generated Database type.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("user_addresses")
-      .delete()
-      .eq("id", id);
+    const { error } = await (supabase as any).from("user_addresses").delete().eq("id", id);
     return !error;
   } catch {
     return false;
