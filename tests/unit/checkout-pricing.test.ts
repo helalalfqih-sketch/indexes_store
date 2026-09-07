@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  discountAmountForCoupon,
-  discountPercentForCoupon,
-} from "@/lib/checkout-pricing";
+import { discountAmountForCoupon, discountPercentForCoupon } from "@/lib/checkout-pricing";
 
 describe("checkout pricing", () => {
   it("applies only advertised coupon codes", () => {
