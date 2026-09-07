@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   assertCheckoutCommit,
+  checkoutModeForRefs,
   checkoutProductRefFromCatalogProduct,
   checkoutProductRefSchema,
   requireSupabaseCheckoutProductIds,
+  shopifyCartLinesForCheckout,
   validateTenantCheckoutProducts,
 } from "@/lib/checkout-product-contract";
 
@@ -44,6 +46,28 @@ describe("checkout product ID contract", () => {
     expect(checkoutProductRefSchema.parse(ref)).toEqual(ref);
     expect(() => checkoutProductRefSchema.parse({ source: "supabase", id: gid })).toThrow();
     expect(() => requireSupabaseCheckoutProductIds([ref])).toThrow(/Shopify products/);
+  });
+
+  it("routes valid Shopify variants to authoritative Shopify checkout", () => {
+    const ref = {
+      source: "shopify" as const,
+      id: "gid://shopify/ProductVariant/123456789",
+    };
+    expect(checkoutModeForRefs([ref])).toBe("shopify");
+    expect(shopifyCartLinesForCheckout([{ productRef: ref, quantity: 2 }])).toEqual([
+      { merchandiseId: ref.id, quantity: 2 },
+    ]);
+  });
+
+  it("rejects demo fallback and mixed-source carts", () => {
+    const supabaseRef = { source: "supabase" as const, id: PRODUCT_ID };
+    const fallbackRef = { source: "fallback" as const, id: "p1" };
+    const shopifyRef = {
+      source: "shopify" as const,
+      id: "gid://shopify/ProductVariant/123456789",
+    };
+    expect(() => checkoutModeForRefs([fallbackRef])).toThrow(/Demo catalog/);
+    expect(() => checkoutModeForRefs([supabaseRef, shopifyRef])).toThrow(/different checkout/);
   });
 
   it("rejects products outside the resolved tenant", () => {
