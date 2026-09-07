@@ -13,6 +13,7 @@ export interface CreateOrderInput {
   customerAddress: string;
   notes?: string;
   couponCode?: string;
+  expectedTotal?: number;
   paymentProvider?: string;
   /** Client-generated UUID to prevent duplicate order creation. */
   idempotencyKey?: string;
@@ -33,12 +34,16 @@ export async function submitOrder(input: CreateOrderInput): Promise<{ orderId: s
   // server-side from the verified session (guests → null); prices and totals are
   // recomputed from the database. The client never sets user_id, prices, or discountAmount.
   const payload: CreateOrderPayload = {
-    items: input.items.map((it) => ({ productId: it.productId, quantity: it.quantity })),
+    items: input.items.map((it) => ({
+      productId: it.productId,
+      quantity: it.quantity,
+    })),
     customerName: input.customerName,
     customerPhone: input.customerPhone,
     customerAddress: input.customerAddress,
     notes: input.notes,
     couponCode: input.couponCode,
+    expectedTotal: input.expectedTotal,
     // discountAmount is never sent from the client — computed server-side.
     paymentProvider: input.paymentProvider,
     idempotencyKey: input.idempotencyKey,
@@ -53,6 +58,8 @@ export async function getUserAddresses(): Promise<UserAddress[]> {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) return [];
 
+    // user_addresses is not yet represented in the generated Database type.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("user_addresses")
       .select("id, user_id, title, city, address_line, phone, is_default")
@@ -66,7 +73,9 @@ export async function getUserAddresses(): Promise<UserAddress[]> {
   }
 }
 
-export async function saveUserAddress(addr: Omit<UserAddress, "id" | "user_id"> & { id?: string }): Promise<boolean> {
+export async function saveUserAddress(
+  addr: Omit<UserAddress, "id" | "user_id"> & { id?: string },
+): Promise<boolean> {
   try {
     if (!supabase) return false;
     const { data: userData } = await supabase.auth.getUser();
@@ -78,9 +87,9 @@ export async function saveUserAddress(addr: Omit<UserAddress, "id" | "user_id"> 
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await (supabase as any)
-      .from("user_addresses")
-      .upsert(payload);
+    // user_addresses is not yet represented in the generated Database type.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from("user_addresses").upsert(payload);
 
     return !error;
   } catch (err) {
@@ -92,10 +101,9 @@ export async function saveUserAddress(addr: Omit<UserAddress, "id" | "user_id"> 
 export async function deleteUserAddress(id: string): Promise<boolean> {
   try {
     if (!supabase) return false;
-    const { error } = await (supabase as any)
-      .from("user_addresses")
-      .delete()
-      .eq("id", id);
+    // user_addresses is not yet represented in the generated Database type.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from("user_addresses").delete().eq("id", id);
     return !error;
   } catch {
     return false;

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveCurrentTenant } from "@/lib/saas/tenant-resolver";
 import { computeShippingFee, normalizeYemeniPhone } from "@/lib/shipping";
+import { discountAmountForCoupon } from "@/lib/checkout-pricing";
 import {
   getMyOrders as getMyOrdersFromDb,
   getMyOrderDetails as getMyOrderDetailsFromDb,
@@ -56,6 +57,7 @@ const createOrderInput = z.object({
   notes: z.string().trim().max(1000).optional(),
   couponCode: z.string().trim().max(60).optional(),
   // discountAmount is NEVER accepted from the client — computed server-side.
+  expectedTotal: z.number().nonnegative().optional(),
   paymentProvider: z.string().trim().max(60).optional(),
   /** Client-generated UUID to prevent duplicate order creation. */
   idempotencyKey: z.string().uuid().optional(),
@@ -108,13 +110,17 @@ async function loadShippingSettings(
     let { data } = await selectSetting(tenantId);
     if (!data) ({ data } = await selectSetting(null));
 
-    const val = (data?.value as Record<string, any>) || {};
+    const val =
+      (data?.value as {
+        freeShippingThreshold?: unknown;
+        free_shipping_threshold?: unknown;
+        defaultShippingFee?: unknown;
+        default_shipping_fee?: unknown;
+      }) || {};
     const freeShippingThreshold = Number(
       val.freeShippingThreshold ?? val.free_shipping_threshold ?? 30000,
     );
-    const defaultShippingFee = Number(
-      val.defaultShippingFee ?? val.default_shipping_fee ?? 3000,
-    );
+    const defaultShippingFee = Number(val.defaultShippingFee ?? val.default_shipping_fee ?? 3000);
 
     return {
       freeShippingThreshold: isNaN(freeShippingThreshold) ? 30000 : freeShippingThreshold,
@@ -193,19 +199,14 @@ export const createOrder = createServerFn({ method: "POST" })
       .from("products")
       .select("id, name, price, currency, sku, is_published, tenant_id, vendor_id, stock")
       .in("id", productIds)
-      .eq("tenant_id", tenantId);
-    let products = productResult.data;
+      .eq("tenant_id", tenantId)
+      .eq("is_published", true);
+    const products = productResult.data;
     const prodErr = productResult.error;
 
-    if (prodErr || !products || products.length < productIds.length) {
-      // Fallback: load products by ID regardless of tenant_id filter (backward compatibility)
-      const { data: fallbackProducts } = await supabaseAdmin
-        .from("products")
-        .select("id, name, price, currency, sku, is_published, tenant_id, vendor_id, stock")
-        .in("id", productIds);
-      if (fallbackProducts && fallbackProducts.length > 0) {
-        products = fallbackProducts;
-      }
+    if (prodErr) {
+      console.error("[createOrder] Product lookup failed:", prodErr);
+      throw new Error("تعذّر التحقق من المنتجات. حاول مرة أخرى.");
     }
 
     const byId = new Map(
@@ -224,39 +225,7 @@ export const createOrder = createServerFn({ method: "POST" })
 
     const missing = productIds.filter((id) => !byId.has(id));
     if (missing.length > 0) {
-      // 1. Try querying published products from DB
-      const { data: publishedProds } = await supabaseAdmin
-        .from("products")
-        .select("id, name, price, currency, sku, vendor_id, stock")
-        .limit(20);
-
-      let idx = 0;
-      for (const mId of missing) {
-        if (publishedProds && publishedProds.length > 0) {
-          const match = publishedProds[idx % publishedProds.length];
-          byId.set(mId, {
-            id: match.id,
-            name: match.name,
-            price: Number(match.price ?? 8000),
-            currency: match.currency ?? "YER",
-            sku: match.sku ?? "INDEX-PROD",
-            vendor_id: match.vendor_id ?? null,
-            stock: match.stock ?? 100,
-          });
-        } else {
-          // 2. Fail-safe synthetic product mapping
-          byId.set(mId, {
-            id: crypto.randomUUID(),
-            name: "منتج اندكس ستور",
-            price: 8000,
-            currency: "YER",
-            sku: "INDEX-PROD",
-            vendor_id: null,
-            stock: 100,
-          });
-        }
-        idx++;
-      }
+      throw new Error("بعض المنتجات غير متوفرة أو لم تعد منشورة. حدّث السلة وحاول مرة أخرى.");
     }
 
     // 4. Build line items + totals from DB values.
@@ -312,8 +281,8 @@ export const createOrder = createServerFn({ method: "POST" })
       throw new Error(stockErrors.join("\n"));
     }
 
-    // P0: Compute discount server-side (currently 0 — coupon validation TBD).
-    const validatedDiscount = 0;
+    // Compute the advertised storefront coupons server-side.
+    const validatedDiscount = discountAmountForCoupon(subtotal, data.couponCode);
 
     const shippingSettings = await loadShippingSettings(tenantId, supabaseAdmin);
     const shippingFee = computeShippingFee(
@@ -323,6 +292,12 @@ export const createOrder = createServerFn({ method: "POST" })
     );
 
     const total = Math.max(0, subtotal - validatedDiscount + shippingFee);
+
+    // Never create an order if the authoritative server total differs from what
+    // the customer confirmed in the checkout UI.
+    if (data.expectedTotal != null && Math.abs(data.expectedTotal - total) > 0.01) {
+      throw new Error("تغيّر سعر الطلب أو رسوم الشحن. حدّث السلة وراجع الإجمالي ثم حاول مرة أخرى.");
+    }
 
     // Build notes with restock request flag if stock is 0
     let finalNotes = data.notes ?? "";
@@ -392,6 +367,8 @@ export const createOrder = createServerFn({ method: "POST" })
           coupon_code: data.couponCode ?? null,
           discount_amount: validatedDiscount,
         };
+        // Legacy production schema support until all migrations are applied.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const retryRes = await (supabaseAdmin as any)
           .from("orders")
           .insert(legacyInsert)
@@ -467,7 +444,10 @@ export const createOrder = createServerFn({ method: "POST" })
     }
 
     if (itemsErr || !insertedItems) {
-      console.warn("[createOrder] Order Items Insert Notice (proceeding with main order):", itemsErr?.message);
+      console.warn(
+        "[createOrder] Order Items Insert Notice (proceeding with main order):",
+        itemsErr?.message,
+      );
     }
 
     // 6b. Multi-Vendor Sub-Orders splitting (best-effort)
