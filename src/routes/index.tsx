@@ -7,6 +7,7 @@ import type { Product as ProductionProduct } from "@/lib/store-data";
 import { useCart } from "@/lib/cart-store";
 import { useFavorites } from "@/lib/use-favorites";
 import { bestSellersQuery, offersQuery } from "@/lib/queries/catalog";
+import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
 
 import {
   Product as DesignProduct,
@@ -172,6 +173,13 @@ function HomePage() {
         ? mapProductionProductToDesignProduct(foundRaw)
         : {
             id: item.productId,
+            checkoutProductRef:
+              item.checkoutProductRef ??
+              checkoutProductRefFromCatalogProduct({
+                id: item.productId,
+                shopify_variant_id: item.variantId,
+              }),
+            shopifyVariantId: item.variantId ?? null,
             name: item.name,
             subtitle: item.name,
             description: item.name,
@@ -455,6 +463,9 @@ function HomePage() {
     const raw = rawProductMap.get(product.id) || {
       id: product.id,
       slug: product.id,
+      checkoutProductRef:
+        product.checkoutProductRef ?? checkoutProductRefFromCatalogProduct(product),
+      shopifyVariantId: product.shopifyVariantId ?? null,
       name: product.name,
       description: product.description,
       price: product.priceYER,
