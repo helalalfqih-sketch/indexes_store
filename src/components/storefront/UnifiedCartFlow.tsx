@@ -90,7 +90,8 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
         customerAddress: address.trim(),
         notes: notes.trim() || undefined,
         couponCode,
-        paymentProvider: "cash",
+        expectedTotal: total,
+        paymentProvider: "cod",
         idempotencyKey: idempotencyKeyRef.current,
       });
       clearCart();
