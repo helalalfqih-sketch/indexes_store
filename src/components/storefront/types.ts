@@ -1,8 +1,12 @@
+import type { CheckoutProductRef } from "@/lib/checkout-product-contract";
+
 export type Currency = 'YER' | 'SAR' | 'USD';
 
 export interface Product {
   id: string;
   slug?: string;
+  checkoutProductRef?: CheckoutProductRef;
+  shopifyVariantId?: string | null;
   name: string;
   subtitle: string;
   description: string;
