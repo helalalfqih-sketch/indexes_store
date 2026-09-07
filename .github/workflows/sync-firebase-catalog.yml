@@ -1,15 +1,19 @@
-name: Sync Firebase Catalog to Supabase
+name: Legacy Firebase Catalog Sync (Manual)
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "17 * * * *"
+    inputs:
+      confirm_legacy_sync:
+        description: 'Type "SYNC_LEGACY_FIREBASE" to run the retired Firebase import manually'
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   sync:
+    if: github.event.inputs.confirm_legacy_sync == 'SYNC_LEGACY_FIREBASE'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
