@@ -127,9 +127,7 @@ export const createOrder = createServerFn({ method: "POST" })
       throw new Error("The storefront tenant is unavailable.");
     }
 
-    const productIds = requireSupabaseCheckoutProductIds(
-      data.items.map((item) => item.productRef),
-    );
+    const productIds = requireSupabaseCheckoutProductIds(data.items.map((item) => item.productRef));
     const { data: catalogRows, error: catalogError } = await supabaseAdmin
       .from("products")
       .select("id, tenant_id, is_published, vendor_id")
