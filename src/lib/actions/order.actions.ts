@@ -13,6 +13,7 @@ export interface CreateOrderInput {
   customerAddress: string;
   notes?: string;
   couponCode?: string;
+  expectedTotal?: number;
   paymentProvider?: string;
   /** Client-generated UUID to prevent duplicate order creation. */
   idempotencyKey?: string;
@@ -39,6 +40,7 @@ export async function submitOrder(input: CreateOrderInput): Promise<{ orderId: s
     customerAddress: input.customerAddress,
     notes: input.notes,
     couponCode: input.couponCode,
+    expectedTotal: input.expectedTotal,
     // discountAmount is never sent from the client — computed server-side.
     paymentProvider: input.paymentProvider,
     idempotencyKey: input.idempotencyKey,
