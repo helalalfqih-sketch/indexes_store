@@ -2,6 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Product } from "./store-data";
 import { trackEvent } from "./analytics";
+import {
+  checkoutProductRefFromCatalogProduct,
+  type CheckoutProductRef,
+} from "./checkout-product-contract";
 
 export type CartLine = {
   productId: string;
@@ -11,10 +15,12 @@ export type CartLine = {
   qty: number;
   variantId?: string | null;
   shopifyLineId?: string | null;
+  checkoutProductRef?: CheckoutProductRef;
 };
 
 type CartProduct = Product & {
   shopifyVariantId?: string | null;
+  checkoutProductRef?: CheckoutProductRef;
   is_published?: boolean;
   status?: string;
 };
@@ -72,6 +78,8 @@ export const useCart = create<CartState>()(
               {
                 productId: p.id,
                 variantId: p.shopifyVariantId ?? null,
+                checkoutProductRef:
+                  p.checkoutProductRef ?? checkoutProductRefFromCatalogProduct(p),
                 name: p.name,
                 price: p.price,
                 image: p.image,
