@@ -282,7 +282,7 @@ export const Route = createFileRoute("/api/public/image-proxy")({
               "cache-control": "public, max-age=31536000, immutable",
             },
           });
-        } catch (err: any) {
+        } catch (err: unknown) {
           if (err instanceof DOMException && err.name === "AbortError") {
             console.warn(
               `[ImageProxy] Upstream request timed out for host: ${parsedUrl.hostname} (hash: ${pathHash})`,
@@ -297,14 +297,17 @@ export const Route = createFileRoute("/api/public/image-proxy")({
             `[ImageProxy] Processing error for host: ${parsedUrl.hostname} (hash: ${pathHash})`,
           );
 
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          const errorStack = err instanceof Error ? err.stack || errorMessage : errorMessage;
+
           // ── Real error capture ───────────────────────────────────────────
           logServerError({
             errorName: `[ImageProxy] Processing Error`,
             errorType: "Server Function",
             level: "error",
             location: "/api/public/image-proxy",
-            cause: `Processing failed for host ${parsedUrl.hostname}: ${(err as any)?.message || String(err)}`,
-            stackTrace: (err as any)?.stack || String(err),
+            cause: `Processing failed for host ${parsedUrl.hostname}: ${errorMessage}`,
+            stackTrace: errorStack,
             context: {
               method: "GET",
               status: 502,
