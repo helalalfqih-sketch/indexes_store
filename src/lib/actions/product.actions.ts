@@ -65,7 +65,7 @@ const dtoToLegacy = (rows: ProductDTO[]): LegacyProductShape[] =>
 
 const developmentFallbackProducts = (): LegacyProductShape[] => {
   if (!shouldUseDemoCatalog(import.meta.env.DEV)) return [];
-  return developmentFallbackProducts();
+  return fallbackProducts().map(toLegacyProduct).map(enrichLegacy);
 };
 
 async function rethrowWhenShopifyIsRequired(error: unknown): Promise<void> {
@@ -101,7 +101,7 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
     return dtoToLegacy(rows);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] fetchProducts fallback:", err);
-    return fallbackProducts().map(toLegacyProduct).map(enrichLegacy);
+    return developmentFallbackProducts();
   }
 }
 
@@ -109,14 +109,18 @@ export async function fetchProductBySlug(slug: string): Promise<LegacyProductSha
   const parsed = z.string().trim().min(1).parse(slug);
   try {
     const shopify = await getShopifyProductBySlug({ data: { slug: parsed } });
-    if (shopify.configured) return shopify.item ? toLegacyProduct(shopify.item) : null;
+    if (shopify.configured) {
+      return shopify.item && isCatalogProductReady(shopify.item)
+        ? toLegacyProduct(shopify.item)
+        : null;
+    }
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] Shopify product fallback:", err);
     await rethrowWhenShopifyIsRequired(err);
   }
   try {
     const dto = await getProductBySlugFn({ data: { slug: parsed } });
-    if (dto) return enrichLegacy(toLegacyProduct(dto));
+    if (dto && isCatalogProductReady(dto)) return enrichLegacy(toLegacyProduct(dto));
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] fetchProductBySlug fallback:", err);
   }
