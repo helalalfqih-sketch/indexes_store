@@ -2,10 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import sharp from "sharp";
 import crypto from "crypto";
 import { logServerError } from "@/services/live-logs.service";
+import { isProxyableRasterContentType } from "@/lib/security/image-proxy-content-type";
 
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
   "cross-origin-resource-policy": "cross-origin",
+  "x-content-type-options": "nosniff",
 };
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB limit
@@ -164,7 +166,7 @@ export const Route = createFileRoute("/api/public/image-proxy")({
           const upstream = await fetch(source, {
             signal: controller.signal,
             redirect: "error", // Reject unverified redirects to prevent SSRF bypass
-            headers: { accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8" },
+            headers: { accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8" },
           });
 
           if (!upstream.ok) {
@@ -185,9 +187,12 @@ export const Route = createFileRoute("/api/public/image-proxy")({
             return new Response("Image exceeds maximum allowed size (10MB)", { status: 413, headers: CORS_HEADERS });
           }
 
-          const contentType = upstream.headers.get("content-type") || "image/jpeg";
-          if (!contentType.startsWith("image/")) {
-            return new Response("Unsupported media type", { status: 415, headers: CORS_HEADERS });
+          const contentType = upstream.headers.get("content-type");
+          if (!isProxyableRasterContentType(contentType)) {
+            return new Response("Unsupported raster media type", {
+              status: 415,
+              headers: CORS_HEADERS,
+            });
           }
 
           const arrayBuffer = await upstream.arrayBuffer();
@@ -197,8 +202,8 @@ export const Route = createFileRoute("/api/public/image-proxy")({
 
           const buffer = Buffer.from(arrayBuffer);
 
-          // Skip sharp processing for SVGs/GIFs
-          if (contentType.includes("svg") || contentType.includes("gif")) {
+          // Animated GIF is raster content and can be forwarded without SVG active content risk.
+          if (contentType?.includes("gif")) {
             return new Response(buffer, {
               status: 200,
               headers: {
