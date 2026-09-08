@@ -16,15 +16,11 @@
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { DEFAULT_MARKET } from "./markets";
-
 export const SITE_NAME = "اندكس ستور";
 export const SITE_NAME_EN = "Indexes Store";
 export const DEFAULT_BASE_URL = process.env.SITE_URL || "";
-export const STORE_COUNTRY = DEFAULT_MARKET.countryCode;
-export const STORE_CURRENCY = DEFAULT_MARKET.currency;
-export const STORE_LOCALE = DEFAULT_MARKET.defaultLocale;
-export const STORE_OG_LOCALE = DEFAULT_MARKET.openGraphLocale;
+export const STORE_COUNTRY = "YE";   // ISO 3166-1 alpha-2 for Yemen
+export const STORE_CURRENCY = "YER"; // ISO 4217 for Yemeni Rial
 export const STORE_PHONE = "+967771370740";
 export const STORE_EMAIL = "support@indexes-store.com";
 export const STORE_ADDRESS = {
@@ -163,7 +159,7 @@ export function generateOpenGraph(input: {
   const tags: Record<string, string>[] = [
     { property: "og:type", content: input.type || "website" },
     { property: "og:site_name", content: input.siteName || SITE_NAME },
-    { property: "og:locale", content: input.locale || STORE_OG_LOCALE },
+    { property: "og:locale", content: input.locale || "ar_YE" },
     { property: "og:title", content: input.title },
     { property: "og:description", content: input.description },
     { property: "og:url", content: input.url },
