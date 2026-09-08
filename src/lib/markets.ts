@@ -67,10 +67,7 @@ export function canCheckoutInMarket(market: StoreMarket): boolean {
   return isActiveMarket(market);
 }
 
-export function marketHreflangEntries(
-  baseUrl: string,
-  pathname = "",
-): Array<[string, string]> {
+export function marketHreflangEntries(baseUrl: string, pathname = ""): Array<[string, string]> {
   const origin = baseUrl.replace(/\/$/, "");
   const suffix = pathname.startsWith("/") ? pathname : `/${pathname}`;
   const entries = Object.values(MARKETS)
@@ -78,12 +75,15 @@ export function marketHreflangEntries(
     .flatMap((market) =>
       market.supportedLocales.map(
         (locale) =>
-          [locale.toLowerCase(), `${origin}${market.pathPrefix}${suffix === "/" ? "" : suffix}`] as [
-            string,
-            string,
-          ],
+          [
+            locale.toLowerCase(),
+            `${origin}${market.pathPrefix}${suffix === "/" ? "" : suffix}`,
+          ] as [string, string],
       ),
     );
 
-  return [...entries, ["x-default", `${origin}${DEFAULT_MARKET.pathPrefix}${suffix === "/" ? "" : suffix}`]];
+  return [
+    ...entries,
+    ["x-default", `${origin}${DEFAULT_MARKET.pathPrefix}${suffix === "/" ? "" : suffix}`],
+  ];
 }
