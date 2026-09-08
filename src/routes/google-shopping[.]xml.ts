@@ -53,7 +53,10 @@ function merchantPrice(price: number): string {
 function buildProductItem(product: MerchantProduct, baseUrl: string): string {
   const productUrl = `${baseUrl}/product/${xmlEscape(product.slug)}`;
   const imageUrl = xmlEscape(product.image || product.images?.[0] || "");
-  const availability = merchantAvailability(\n    product.stock ?? 0,\n    product.availability ?? undefined,\n  );
+  const availability = merchantAvailability(
+    product.stock ?? 0,
+    product.availability ?? undefined,
+  );
   const condition = merchantCondition(product.condition ?? undefined);
   const sku = xmlEscape(product.sku || product.id);
   const mpn = xmlEscape(product.mpn || product.sku || product.id);
@@ -99,7 +102,10 @@ export const Route = createFileRoute("/google-shopping.xml")({
         } catch {
           products = [];
         }
-        const items = products.filter(isMerchantEligible).map((product) => buildProductItem(product, baseUrl)).join("\n");
+        const items = products
+          .filter(isMerchantEligible)
+          .map((product) => buildProductItem(product, baseUrl))
+          .join("\n");
         const feed = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
