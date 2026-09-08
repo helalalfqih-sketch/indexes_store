@@ -1,0 +1,39 @@
+name: Checkout Database Contract
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "tests/database/**"
+      - ".github/workflows/checkout-database-ci.yml"
+  workflow_dispatch: {}
+
+jobs:
+  checkout-database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create isolated checkout schema fixture
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/database/checkout-schema-fixture.sql
+      - name: Apply checkout migration twice
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260907210000_checkout_001_atomic_order.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260907210000_checkout_001_atomic_order.sql
+      - name: Verify transactional and tenant checkout contract
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/database/checkout-database-contract.sql
