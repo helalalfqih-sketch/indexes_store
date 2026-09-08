@@ -53,7 +53,7 @@ function merchantPrice(price: number): string {
 function buildProductItem(product: MerchantProduct, baseUrl: string): string {
   const productUrl = `${baseUrl}/product/${xmlEscape(product.slug)}`;
   const imageUrl = xmlEscape(product.image || product.images?.[0] || "");
-  const availability = merchantAvailability(product.stock ?? 0, product.availability ?? undefined);
+  const availability = merchantAvailability(\n    product.stock ?? 0,\n    product.availability ?? undefined,\n  );
   const condition = merchantCondition(product.condition ?? undefined);
   const sku = xmlEscape(product.sku || product.id);
   const mpn = xmlEscape(product.mpn || product.sku || product.id);
