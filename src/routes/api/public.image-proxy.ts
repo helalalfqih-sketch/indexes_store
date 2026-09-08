@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import sharp from "sharp";
 import crypto from "crypto";
 import { logServerError } from "@/services/live-logs.service";
-import { isProxyableRasterContentType } from "@/lib/security/image-proxy-content-type";
+import {
+  isProxyableRasterContentType,
+  normalizedMediaType,
+} from "@/lib/security/image-proxy-content-type";
 
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
@@ -187,14 +190,15 @@ export const Route = createFileRoute("/api/public/image-proxy")({
             return new Response("Image exceeds maximum allowed size (10MB)", { status: 413, headers: CORS_HEADERS });
           }
 
-          const contentType = upstream.headers.get("content-type");
-          if (!isProxyableRasterContentType(contentType)) {
+          const upstreamContentType = upstream.headers.get("content-type");
+          if (!isProxyableRasterContentType(upstreamContentType)) {
             return new Response("Unsupported raster media type", {
               status: 415,
               headers: CORS_HEADERS,
             });
           }
 
+          const contentType = normalizedMediaType(upstreamContentType);
           const arrayBuffer = await upstream.arrayBuffer();
           if (arrayBuffer.byteLength > MAX_IMAGE_BYTES) {
             return new Response("Image exceeds maximum allowed size (10MB)", { status: 413, headers: CORS_HEADERS });
@@ -203,7 +207,7 @@ export const Route = createFileRoute("/api/public/image-proxy")({
           const buffer = Buffer.from(arrayBuffer);
 
           // Animated GIF is raster content and can be forwarded without SVG active content risk.
-          if (contentType?.includes("gif")) {
+          if (contentType.includes("gif")) {
             return new Response(buffer, {
               status: 200,
               headers: {
