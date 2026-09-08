@@ -53,14 +53,12 @@ function merchantPrice(price: number): string {
 function buildProductItem(product: MerchantProduct, baseUrl: string): string {
   const productUrl = `${baseUrl}/product/${xmlEscape(product.slug)}`;
   const imageUrl = xmlEscape(product.image || product.images?.[0] || "");
-  const availability = merchantAvailability(
-    product.stock ?? 0,
-    product.availability ?? undefined,
-  );
+  const availability = merchantAvailability(product.stock ?? 0, product.availability ?? undefined);
   const condition = merchantCondition(product.condition ?? undefined);
   const sku = xmlEscape(product.sku || product.id);
   const mpn = xmlEscape(product.mpn || product.sku || product.id);
-  const gtin = product.gtin14 || product.gtin13 || product.gtin12 || product.gtin8 || product.barcode;
+  const gtin =
+    product.gtin14 || product.gtin13 || product.gtin12 || product.gtin8 || product.barcode;
   const extraImages = (product.images || [])
     .slice(1, 11)
     .filter((image) => /^https?:\/\//i.test(image))
