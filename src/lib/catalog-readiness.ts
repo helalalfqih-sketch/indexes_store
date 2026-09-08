@@ -12,7 +12,9 @@ export function isCatalogProductReady(product: ProductDTO): boolean {
     !product.shopify_product_id ||
     Boolean(product.shopify_variant_id && SHOPIFY_VARIANT_GID.test(product.shopify_variant_id));
 
-  return product.is_published !== false && hasIdentity && hasPrice && hasImage && hasCheckoutIdentity;
+  return (
+    product.is_published !== false && hasIdentity && hasPrice && hasImage && hasCheckoutIdentity
+  );
 }
 
 export function shouldUseDemoCatalog(isDevelopment: boolean): boolean {
