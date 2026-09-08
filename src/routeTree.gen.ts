@@ -14,6 +14,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StoreRouteImport } from './routes/store'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as OrderCompletionRouteImport } from './routes/order-completion'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OffersRouteImport } from './routes/offers'
 import { Route as ImmersiveStoreRouteImport } from './routes/immersive-store'
@@ -119,6 +120,11 @@ const SearchRoute = SearchRouteImport.update({
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderCompletionRoute = OrderCompletionRouteImport.update({
+  id: '/order-completion',
+  path: '/order-completion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -542,6 +548,7 @@ export interface FileRoutesByFullPath {
   '/immersive-store': typeof ImmersiveStoreRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
+  '/order-completion': typeof OrderCompletionRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/search': typeof SearchRoute
   '/store': typeof StoreRouteWithChildren
@@ -629,6 +636,7 @@ export interface FileRoutesByTo {
   '/immersive-store': typeof ImmersiveStoreRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
+  '/order-completion': typeof OrderCompletionRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/search': typeof SearchRoute
   '/terms': typeof TermsRoute
@@ -717,6 +725,7 @@ export interface FileRoutesById {
   '/immersive-store': typeof ImmersiveStoreRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
+  '/order-completion': typeof OrderCompletionRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/search': typeof SearchRoute
   '/store': typeof StoreRouteWithChildren
@@ -807,6 +816,7 @@ export interface FileRouteTypes {
     | '/immersive-store'
     | '/offers'
     | '/onboarding'
+    | '/order-completion'
     | '/privacy-policy'
     | '/search'
     | '/store'
@@ -894,6 +904,7 @@ export interface FileRouteTypes {
     | '/immersive-store'
     | '/offers'
     | '/onboarding'
+    | '/order-completion'
     | '/privacy-policy'
     | '/search'
     | '/terms'
@@ -981,6 +992,7 @@ export interface FileRouteTypes {
     | '/immersive-store'
     | '/offers'
     | '/onboarding'
+    | '/order-completion'
     | '/privacy-policy'
     | '/search'
     | '/store'
@@ -1070,6 +1082,7 @@ export interface RootRouteChildren {
   ImmersiveStoreRoute: typeof ImmersiveStoreRoute
   OffersRoute: typeof OffersRoute
   OnboardingRoute: typeof OnboardingRoute
+  OrderCompletionRoute: typeof OrderCompletionRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   SearchRoute: typeof SearchRoute
   StoreRoute: typeof StoreRouteWithChildren
@@ -1134,6 +1147,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/privacy-policy'
       preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order-completion': {
+      id: '/order-completion'
+      path: '/order-completion'
+      fullPath: '/order-completion'
+      preLoaderRoute: typeof OrderCompletionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -1841,6 +1861,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImmersiveStoreRoute: ImmersiveStoreRoute,
   OffersRoute: OffersRoute,
   OnboardingRoute: OnboardingRoute,
+  OrderCompletionRoute: OrderCompletionRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   SearchRoute: SearchRoute,
   StoreRoute: StoreRouteWithChildren,
