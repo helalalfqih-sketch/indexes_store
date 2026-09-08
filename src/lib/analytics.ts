@@ -5,31 +5,47 @@ export type AnalyticsEvent =
   | "click_whatsapp"
   | "click_install_app"
   | "add_to_cart"
-  | "view_product";
+  | "view_product"
+  | "begin_checkout"
+  | "purchase"
+  | "checkout_error";
 
-export function trackEvent(event: AnalyticsEvent, payload?: Record<string, any>) {
+type AnalyticsPayload = Record<string, unknown>;
+
+type AnalyticsWindow = Window & {
+  dataLayer?: AnalyticsPayload[];
+  gtag?: (command: "event", event: string, payload: AnalyticsPayload) => void;
+  fbq?: (command: "track" | "trackCustom", event: string, payload: AnalyticsPayload) => void;
+};
+
+const META_EVENTS: Partial<Record<AnalyticsEvent, string>> = {
+  add_to_cart: "AddToCart",
+  view_product: "ViewContent",
+  click_search: "Search",
+  begin_checkout: "InitiateCheckout",
+  purchase: "Purchase",
+};
+
+export function trackEvent(event: AnalyticsEvent, payload: AnalyticsPayload = {}) {
   if (typeof window === "undefined") return;
 
   try {
-    // Console audit log for analytics
-    console.log(`[Analytics Event] ${event}:`, payload || {});
+    const analyticsWindow = window as AnalyticsWindow;
+
+    // Vendor-neutral event stream. A tag manager or first-party consumer can
+    // subscribe without requiring a vendor SDK in the application bundle.
+    analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+    analyticsWindow.dataLayer.push({ event, ...payload });
 
     // Google Analytics / GTag
-    if ((window as any).gtag) {
-      (window as any).gtag("event", event, payload);
+    if (analyticsWindow.gtag) {
+      analyticsWindow.gtag("event", event, payload);
     }
 
     // Meta / Facebook Pixel
-    if ((window as any).fbq) {
-      if (event === "add_to_cart") {
-        (window as any).fbq("track", "AddToCart", payload);
-      } else if (event === "view_product") {
-        (window as any).fbq("track", "ViewContent", payload);
-      } else if (event === "click_search") {
-        (window as any).fbq("track", "Search", payload);
-      } else {
-        (window as any).fbq("trackCustom", event, payload);
-      }
+    if (analyticsWindow.fbq) {
+      const metaEvent = META_EVENTS[event];
+      analyticsWindow.fbq(metaEvent ? "track" : "trackCustom", metaEvent || event, payload);
     }
   } catch (err) {
     console.warn("Soft failure tracking analytics event:", err);

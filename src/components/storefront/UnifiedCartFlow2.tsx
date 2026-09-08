@@ -15,6 +15,7 @@ import {
   shopifyCartLinesForCheckout,
 } from "@/lib/checkout-product-contract";
 import { createShopifyCart } from "@/lib/shopify/catalog.functions";
+import { trackEvent } from "@/lib/analytics";
 
 interface UnifiedCartFlowProps {
   isOpen: boolean;
@@ -92,6 +93,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
     setSubmitError(null);
     idempotencyKeyRef.current ??= makeIdempotencyKey();
     setSubmitting(true);
+    let checkoutSource: "supabase" | "shopify" | "unknown" = "unknown";
     try {
       const checkoutItems = props.cartItems.map((item) => ({
         productRef:
@@ -103,6 +105,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
         quantity: item.quantity,
       }));
       const checkoutMode = checkoutModeForRefs(checkoutItems.map((item) => item.productRef));
+      checkoutSource = checkoutMode;
 
       if (checkoutMode === "shopify") {
         const result = await createShopifyCartFn({
@@ -125,9 +128,20 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
         idempotencyKey: idempotencyKeyRef.current,
       });
       clearCart();
+      trackEvent("purchase", {
+        transaction_id: result.orderId,
+        currency: props.currency,
+        value: total,
+        checkout_source: "supabase_cod",
+        item_count: props.cartItems.reduce((sum, item) => sum + item.quantity, 0),
+      });
       setOrderId(result.orderId);
       setStep("success");
     } catch (error) {
+      trackEvent("checkout_error", {
+        checkout_source: checkoutSource,
+        error_type: error instanceof Error ? error.name : "UnknownError",
+      });
       setSubmitError(error instanceof Error ? error.message : "تعذر إنشاء الطلب. حاول مرة أخرى.");
     } finally {
       setSubmitting(false);
@@ -139,6 +153,12 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
       <CartDrawerBase
         {...props}
         onCheckout={(discount) => {
+          trackEvent("begin_checkout", {
+            currency: props.currency,
+            value: subtotal,
+            item_count: props.cartItems.reduce((sum, item) => sum + item.quantity, 0),
+            coupon_discount_percent: discount,
+          });
           setDiscountPercent(discount);
           setStep("delivery");
         }}
