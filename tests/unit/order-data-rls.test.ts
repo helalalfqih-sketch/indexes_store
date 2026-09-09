@@ -34,15 +34,17 @@ describe("P0 order data RLS remediation", () => {
     );
   });
 
-  it("binds customer reads to the verified auth uid", () => {
-    expect(sql).toContain("user_id = (SELECT auth.uid())");
-    expect(sql).toContain("customer_order.user_id = (SELECT auth.uid())");
+  it("keeps customer and guest retrieval server-mediated", () => {
+    expect(sql).not.toContain('CREATE POLICY "Customers view own orders"');
+    expect(sql).not.toContain('CREATE POLICY "Customers view own order items"');
+    expect(sql).not.toContain('CREATE POLICY "Customers view own order status history"');
+    expect(sql).not.toMatch(/\buser_id\b/);
     expect(sql).not.toMatch(/CREATE POLICY[\s\S]+?FOR SELECT[\s\S]+?USING \(true\)/);
   });
 
   it("binds staff access to tenant permissions", () => {
-    expect(sql.match(/public\.has_tenant_permission/g)).toHaveLength(6);
-    expect(sql.match(/'staff'::public\.tenant_role/g)).toHaveLength(6);
+    expect(sql.match(/public\.has_tenant_permission/g)).toHaveLength(5);
+    expect(sql.match(/'staff'::public\.tenant_role/g)).toHaveLength(5);
   });
 
   it("limits staff order updates to operational columns", () => {
