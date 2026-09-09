@@ -1,0 +1,82 @@
+name: Staging Read-Only Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Protected preview or staging URL (no trailing slash)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  http-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: ${{ inputs.base_url }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Verify read-only storefront HTTP boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          base="${BASE_URL%/}"
+          request_headers=()
+          if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+            echo "::add-mask::${VERCEL_AUTOMATION_BYPASS_SECRET}"
+            request_headers=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
+          fi
+
+          smoke_dir="$(mktemp -d)"
+          trap 'rm -rf "$smoke_dir"' EXIT
+
+          get() {
+            local path="$1"
+            local expected_status="$2"
+            local expected_type="$3"
+            local name="$4"
+            local status
+            local content_type
+
+            status="$(curl --fail-with-body --location --silent --show-error \
+              --connect-timeout 10 --max-time 30 \
+              "${request_headers[@]}" \
+              --dump-header "$smoke_dir/$name.headers" \
+              --output "$smoke_dir/$name.body" \
+              --write-out "%{http_code}" \
+              "$base$path" || true)"
+
+            content_type="$(awk 'BEGIN { IGNORECASE=1 } /^content-type:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); gsub(/\r/, "", value); print value }' "$smoke_dir/$name.headers")"
+
+            if [[ "$status" != "$expected_status" ]]; then
+              echo "::error::$path returned HTTP $status; expected $expected_status"
+              exit 1
+            fi
+            if [[ "$content_type" != "$expected_type"* ]]; then
+              echo "::error::$path returned Content-Type '$content_type'; expected '$expected_type'"
+              exit 1
+            fi
+          }
+
+          get "/" "200" "text/html" "root"
+          grep -Eiq '<html|<!doctype html' "$smoke_dir/root.body"
+
+          get "/api/catalog-health" "200" "application/json" "catalog-health"
+          node -e 'const fs=require("fs"); const value=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if (!value || typeof value !== "object" || Array.isArray(value)) process.exit(1)' "$smoke_dir/catalog-health.body"
+
+          get "/robots.txt" "200" "text/plain" "robots"
+          grep -Eiq '^user-agent:' "$smoke_dir/robots.body"
+
+          get "/sitemap.xml" "200" "application/xml" "sitemap"
+          grep -Eq '<urlset|<sitemapindex' "$smoke_dir/sitemap.body"
+
+          get "/google-shopping.xml" "200" "application/rss+xml" "shopping"
+          grep -Eq '<rss|<feed' "$smoke_dir/shopping.body"
+
+          get "/__release-smoke-not-found__" "404" "text/html" "not-found"
+
+          echo "Read-only staging HTTP contract passed."
