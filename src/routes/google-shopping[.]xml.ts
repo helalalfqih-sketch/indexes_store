@@ -90,7 +90,7 @@ export const Route = createFileRoute("/google-shopping.xml")({
         const baseUrl = process.env.SITE_URL || (origin !== "null" ? origin : "");
         let products: MerchantProduct[] = [];
         try {
-          products = (await fetchProducts({ limit: 500 })) as unknown as MerchantProduct[];
+          products = (await fetchProducts({ limit: 100 })) as unknown as MerchantProduct[];
         } catch {
           products = [];
         }
