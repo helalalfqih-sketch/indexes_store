@@ -1,6 +1,6 @@
 -- P0: production drift restored public read/write policies on customer orders.
 -- Fail closed at both the table-grant and RLS layers. Guest/customer order
--- retrieval remains server-mediated because orders has no authenticated user_id.
+-- retrieval remains server-mediated because orders has no authenticated owner column.
 
 BEGIN;
 
