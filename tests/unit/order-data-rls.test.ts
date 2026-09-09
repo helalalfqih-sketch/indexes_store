@@ -43,8 +43,8 @@ describe("P0 order data RLS remediation", () => {
   });
 
   it("binds staff access to tenant permissions", () => {
-    expect(sql.match(/public\.has_tenant_permission/g)).toHaveLength(5);
-    expect(sql.match(/'staff'::public\.tenant_role/g)).toHaveLength(5);
+    expect(sql.match(/public\.has_tenant_permission/g)).toHaveLength(6);
+    expect(sql.match(/'staff'::public\.tenant_role/g)).toHaveLength(6);
   });
 
   it("limits staff order updates to operational columns", () => {
