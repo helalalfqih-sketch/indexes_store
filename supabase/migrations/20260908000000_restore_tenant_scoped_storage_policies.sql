@@ -2,6 +2,8 @@
 -- policies. Public buckets do not need a storage.objects SELECT policy for
 -- direct public-URL delivery, and authenticated writes must stay under the
 -- canonical product-images path: uploads/{tenant_id}/...
+-- Server-managed whatsapp/catalog-recovery/recovered prefixes intentionally
+-- remain outside browser mutation policies and are written by service_role.
 
 BEGIN;
 
