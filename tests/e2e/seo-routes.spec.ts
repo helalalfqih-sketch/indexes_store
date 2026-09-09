@@ -1,40 +1,27 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-test.describe("E2E — SEO Routes & Public Endpoint Standards", () => {
-  test("robots.txt endpoint serves valid disallow rules without private route leaks", async ({ request }) => {
-    try {
-      const res = await request.get("/robots.txt");
-      if (res.ok()) {
-        expect(res.status()).toBe(200);
-        const body = await res.text();
-        expect(body).toContain("User-agent: *");
-        expect(body).toContain("Disallow: /admin");
-      }
-    } catch (err: any) {
-      if (err?.message?.includes("ECONNREFUSED")) {
-        console.log("Web server not active on port 3000; verified E2E route handler structure.");
-        expect(true).toBe(true);
-      } else {
-        throw err;
-      }
-    }
-  });
+const seoRoutes = [
+  { path: "/robots.txt", contentType: "text/plain", marker: "User-agent: *" },
+  { path: "/sitemap.xml", contentType: "application/xml", marker: "<urlset" },
+  { path: "/google-shopping.xml", contentType: "application/rss+xml", marker: "<rss" },
+] as const;
 
-  test("sitemap.xml endpoint serves valid XML structure", async ({ request }) => {
-    try {
-      const res = await request.get("/sitemap.xml");
-      if (res.ok()) {
-        expect(res.status()).toBe(200);
-        const body = await res.text();
-        expect(body).toContain("<urlset");
-      }
-    } catch (err: any) {
-      if (err?.message?.includes("ECONNREFUSED")) {
-        console.log("Web server not active on port 3000; verified E2E route handler structure.");
-        expect(true).toBe(true);
-      } else {
-        throw err;
-      }
-    }
-  });
+test.describe("public SEO and trust routes", () => {
+  for (const route of seoRoutes) {
+    test(`${route.path} serves the canonical response`, async ({ request }) => {
+      const response = await request.get(route.path);
+      expect(response.status()).toBe(200);
+      expect(response.headers()["content-type"]).toContain(route.contentType);
+      expect(await response.text()).toContain(route.marker);
+    });
+  }
+
+  for (const path of ["/pages/shipping-policy", "/pages/return-policy", "/pages/faq"]) {
+    test(`${path} is available without CMS seeding`, async ({ request }) => {
+      const response = await request.get(path);
+      expect(response.status()).toBe(200);
+      expect(response.headers()["content-type"]).toContain("text/html");
+      expect((await response.text()).length).toBeGreaterThan(100);
+    });
+  }
 });
