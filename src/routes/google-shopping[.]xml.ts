@@ -6,7 +6,6 @@ import {
   xmlEscape,
   SITE_NAME,
   STORE_CURRENCY,
-  STORE_COUNTRY,
 } from "@/lib/seo";
 
 interface MerchantProduct {
@@ -78,11 +77,6 @@ ${extraImages ? extraImages + "\n" : ""}    <g:availability>${availability}</g:a
     <g:sku>${sku}</g:sku>
     <g:mpn>${mpn}</g:mpn>
 ${gtin ? `    <g:gtin>${xmlEscape(gtin)}</g:gtin>\n` : ""}    <g:product_type>${xmlEscape(product.categoryId || "عام")}</g:product_type>
-    <g:shipping>
-      <g:country>${STORE_COUNTRY}</g:country>
-      <g:service>Standard</g:service>
-      <g:price>0.00 ${STORE_CURRENCY}</g:price>
-    </g:shipping>
     <link>${productUrl}</link>
     <title>${xmlEscape(product.name)}</title>
   </item>`;
