@@ -27,7 +27,7 @@ export const Route = createFileRoute("/sitemap.xml")({
         const baseUrl = process.env.SITE_URL || (origin !== "null" ? origin : "");
         const today = toXmlDate();
         const [products, categories] = await Promise.allSettled([
-          fetchProducts({ limit: 500 }),
+          fetchProducts({ limit: 100 }),
           fetchCategories(),
         ]);
         const productList = products.status === "fulfilled" ? products.value : [];
