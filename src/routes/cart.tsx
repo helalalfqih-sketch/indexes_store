@@ -4,13 +4,11 @@ import { CartDrawer } from "@/components/storefront/CartDrawer";
 import type { CartItem, Product as DesignProduct } from "@/components/storefront/types";
 import { useCart } from "@/lib/cart-store";
 import { useFavorites } from "@/lib/use-favorites";
+import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
-    meta: [
-      { title: "سلة التسوق — اندكس ستور" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ title: "سلة التسوق — اندكس ستور" }, { name: "robots", content: "noindex, nofollow" }],
   }),
   component: CartRoutePage,
 });
@@ -28,6 +26,13 @@ function CartRoutePage() {
         product: {
           id: item.productId,
           slug: item.productId,
+          checkoutProductRef:
+            item.checkoutProductRef ??
+            checkoutProductRefFromCatalogProduct({
+              id: item.productId,
+              shopify_variant_id: item.variantId,
+            }),
+          shopifyVariantId: item.variantId ?? null,
           name: item.name,
           subtitle: item.name,
           description: item.name,
@@ -59,7 +64,8 @@ function CartRoutePage() {
         remove(item.product.id);
       }}
       onCheckout={(discountPercent) => {
-        const coupon = discountPercent === 20 ? "INDEXES20" : discountPercent === 10 ? "INDEXES10" : undefined;
+        const coupon =
+          discountPercent === 20 ? "INDEXES20" : discountPercent === 10 ? "INDEXES10" : undefined;
         navigate({
           to: "/order-completion",
           search: coupon ? { coupon } : undefined,

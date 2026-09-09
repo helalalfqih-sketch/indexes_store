@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Loader2, MapPin, Phone, User } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useServerFn } from "@tanstack/react-start";
 import { CartDrawer } from "./CartDrawer";
 import type { CartItem, Currency, Product } from "./types";
 import { formatPrice } from "./currency";
@@ -8,6 +9,12 @@ import { STORE_INFO } from "./constants";
 import { submitOrder } from "@/lib/actions/order.actions";
 import { useCart } from "@/lib/cart-store";
 import { yemeniPhoneSchema } from "@/lib/validation/phone";
+import {
+  checkoutModeForRefs,
+  checkoutProductRefFromCatalogProduct,
+  shopifyCartLinesForCheckout,
+} from "@/lib/checkout-product-contract";
+import { createShopifyCart } from "@/lib/shopify/catalog.functions";
 
 interface UnifiedCartFlowProps {
   isOpen: boolean;
@@ -46,6 +53,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
   const [orderId, setOrderId] = useState<string | null>(null);
   const idempotencyKeyRef = useRef<string | null>(null);
   const clearCart = useCart((state) => state.clear);
+  const createShopifyCartFn = useServerFn(createShopifyCart);
 
   useEffect(() => {
     if (!props.isOpen) {
@@ -85,11 +93,28 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
     idempotencyKeyRef.current ??= makeIdempotencyKey();
     setSubmitting(true);
     try {
+      const checkoutItems = props.cartItems.map((item) => ({
+        productRef:
+          item.product.checkoutProductRef ??
+          checkoutProductRefFromCatalogProduct({
+            id: item.product.id,
+            shopifyVariantId: item.product.shopifyVariantId,
+          }),
+        quantity: item.quantity,
+      }));
+      const checkoutMode = checkoutModeForRefs(checkoutItems.map((item) => item.productRef));
+
+      if (checkoutMode === "shopify") {
+        const result = await createShopifyCartFn({
+          data: { lines: shopifyCartLinesForCheckout(checkoutItems) },
+        });
+        clearCart();
+        window.location.assign(result.cart.checkoutUrl);
+        return;
+      }
+
       const result = await submitOrder({
-        items: props.cartItems.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-        })),
+        items: checkoutItems,
         customerName: name.trim(),
         customerPhone: phone.trim(),
         customerAddress: address.trim(),

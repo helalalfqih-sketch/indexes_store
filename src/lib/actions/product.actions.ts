@@ -8,8 +8,8 @@
  *  - Returns legacy UI shapes (LegacyProductShape) so existing components
  *  keep working without changes. DTO-native components can call the raw
  *    server fns.
- *  - Falls back to seed data (store-data.ts) on error or empty DB — the
- *    data-adapter safety net stays until Phase C removes it.
+ *  - Demo seed data is development-only. Production returns an empty/error
+ *    state instead of displaying products that cannot be purchased.
  */
 import { z } from "zod";
 import {
@@ -21,6 +21,7 @@ import {
 import { fetchCategories } from "@/lib/actions/category.actions";
 import { fallbackProducts, toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
 import type { ProductDTO } from "@/lib/domain/product";
+import { isCatalogProductReady, shouldUseDemoCatalog } from "@/lib/catalog-readiness";
 import {
   listShopifyProducts,
   getShopifyProductBySlug,
@@ -59,43 +60,13 @@ const enrichLegacy = (p: LegacyProductShape): LegacyProductShape => {
   };
 };
 
-// NOTE: Previous implementation filtered rows by `typeof r.price === "number" && r.price > 0`.
-// That caused products with a missing `price` field to be silently dropped even if they
-// had a valid fallback price in `compare_at_price`, `old_price`, or `cost_price`.
-// We normalize and resolve a price before converting to the legacy shape so that
-// products with an alternate stored price are not lost from the storefront.
 const dtoToLegacy = (rows: ProductDTO[]): LegacyProductShape[] =>
-  rows
-    .map((r) => {
-      // Resolve a usable price for display / legacy conversion.
-      let resolvedPrice: number | null = null;
+  rows.filter(isCatalogProductReady).map(toLegacyProduct);
 
-      if (typeof r.price === "number" && !Number.isNaN(r.price) && r.price > 0) {
-        resolvedPrice = r.price;
-      } else if (typeof r.compare_at_price === "number" && r.compare_at_price > 0) {
-        resolvedPrice = r.compare_at_price;
-      } else if (typeof r.old_price === "number" && r.old_price > 0) {
-        // Some DTOs use old_price (snake_case) — accept it as fallback.
-        resolvedPrice = r.old_price;
-      } else if (typeof r.cost_price === "number" && r.cost_price > 0) {
-        resolvedPrice = r.cost_price;
-      } else {
-        resolvedPrice = null;
-      }
-
-      return { original: r, resolvedPrice } as const;
-    })
-    // Keep rows where we could resolve a reasonable price.
-    .filter((entry) => entry.resolvedPrice !== null)
-    .map((entry) => {
-      // Inject the resolved price into a normalized DTO so `toLegacyProduct`
-      // and downstream UI code always see a numeric `price` field.
-      const normalized: ProductDTO = {
-        ...entry.original,
-        price: entry.resolvedPrice as number,
-      };
-      return toLegacyProduct(normalized);
-    });
+const developmentFallbackProducts = (): LegacyProductShape[] => {
+  if (!shouldUseDemoCatalog(import.meta.env.DEV)) return [];
+  return fallbackProducts().map(toLegacyProduct).map(enrichLegacy);
+};
 
 async function rethrowWhenShopifyIsRequired(error: unknown): Promise<void> {
   const status = await diagnoseShopifyCatalog();
@@ -125,12 +96,12 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
   try {
     const rows = await listProducts({ data });
     if (rows.length === 0) {
-      return fallbackProducts().map(toLegacyProduct).map(enrichLegacy);
+      return developmentFallbackProducts();
     }
     return dtoToLegacy(rows);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] fetchProducts fallback:", err);
-    return fallbackProducts().map(toLegacyProduct).map(enrichLegacy);
+    return developmentFallbackProducts();
   }
 }
 
@@ -138,18 +109,23 @@ export async function fetchProductBySlug(slug: string): Promise<LegacyProductSha
   const parsed = z.string().trim().min(1).parse(slug);
   try {
     const shopify = await getShopifyProductBySlug({ data: { slug: parsed } });
-    if (shopify.configured) return shopify.item ? toLegacyProduct(shopify.item) : null;
+    if (shopify.configured) {
+      return shopify.item && isCatalogProductReady(shopify.item)
+        ? toLegacyProduct(shopify.item)
+        : null;
+    }
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] Shopify product fallback:", err);
     await rethrowWhenShopifyIsRequired(err);
   }
   try {
     const dto = await getProductBySlugFn({ data: { slug: parsed } });
-    if (dto) return enrichLegacy(toLegacyProduct(dto));
+    if (dto && isCatalogProductReady(dto)) return enrichLegacy(toLegacyProduct(dto));
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] fetchProductBySlug fallback:", err);
   }
-  const seed = fallbackProducts().find((p) => p.slug === parsed);
+  if (!shouldUseDemoCatalog(import.meta.env.DEV)) return null;
+  const seed = fallbackProducts().find((product) => product.slug === parsed);
   return seed ? enrichLegacy(toLegacyProduct(seed)) : null;
 }
 

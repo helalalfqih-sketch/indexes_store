@@ -1629,6 +1629,23 @@ export type Database = {
         Args: { _tenant_id: string; _user_id: string };
         Returns: boolean;
       };
+      create_checkout_order_v2: {
+        Args: {
+          _tenant_id: string;
+          _user_id: string | null;
+          _customer_name: string;
+          _customer_phone: string;
+          _customer_address: string;
+          _customer_email: string | null;
+          _notes: string | null;
+          _coupon_code: string | null;
+          _expected_total: number | null;
+          _payment_provider: string | null;
+          _idempotency_key: string | null;
+          _items: Json;
+        };
+        Returns: Json;
+      };
       create_order_transaction: {
         Args: {
           _tenant_id: string;

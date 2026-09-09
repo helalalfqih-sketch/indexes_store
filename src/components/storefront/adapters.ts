@@ -1,5 +1,6 @@
 import type { LegacyProductShape, LegacyCategoryShape } from "@/lib/data-adapter";
 import type { Product as DesignProduct, Category as DesignCategory } from "./types";
+import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
 
 const NEUTRAL_FALLBACK_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='800' viewBox='0 0 800 800'%3E%3Crect width='800' height='800' fill='%23140E24'/%3E%3Cpath d='M270 330h260v180H270z' fill='none' stroke='%236b7280' stroke-width='18'/%3E%3Ccircle cx='350' cy='390' r='34' fill='%236b7280'/%3E%3Cpath d='m290 490 90-90 60 60 45-45 55 75' fill='none' stroke='%236b7280' stroke-width='18'/%3E%3C/svg%3E";
@@ -104,20 +105,30 @@ export function mapProductionProductToDesignProduct(p: LegacyProductShape): Desi
     const vMedia = p.media.find((m) => m.type === "video" && m.url);
     if (vMedia?.url) videoUrl = vMedia.url;
   }
-  const pAny = p as any;
+  const pAny = p as LegacyProductShape & {
+    source_url?: string;
+    videoPlaybackId?: string;
+    video_playback_id?: string;
+    brand_id?: string;
+  };
   if (!videoUrl && pAny.source_url && isVideoUrl(pAny.source_url)) {
     videoUrl = pAny.source_url;
   }
   if (!videoUrl && (pAny.videoPlaybackId || pAny.video_playback_id)) {
     const playbackId = pAny.videoPlaybackId || pAny.video_playback_id;
-    videoUrl = typeof playbackId === "string" && playbackId.startsWith("http")
-      ? playbackId
-      : `https://stream.mux.com/${playbackId}.m3u8`;
+    videoUrl =
+      typeof playbackId === "string" && playbackId.startsWith("http")
+        ? playbackId
+        : `https://stream.mux.com/${playbackId}.m3u8`;
   }
 
   return {
     id: p.id,
     slug: p.slug,
+    checkoutProductRef:
+      p.checkoutProductRef ??
+      checkoutProductRefFromCatalogProduct({ id: p.id, shopifyVariantId: p.shopifyVariantId }),
+    shopifyVariantId: p.shopifyVariantId ?? null,
     name: p.name,
     subtitle: p.description
       ? p.description.length > 60
@@ -129,12 +140,13 @@ export function mapProductionProductToDesignProduct(p: LegacyProductShape): Desi
     originalPriceYER,
     discountBadge,
     rating: typeof p.rating === "number" && !isNaN(p.rating) && p.rating > 0 ? p.rating : 0,
-    reviewsCount: typeof p.reviews === "number" && !isNaN(p.reviews) && p.reviews > 0 ? p.reviews : 0,
+    reviewsCount:
+      typeof p.reviews === "number" && !isNaN(p.reviews) && p.reviews > 0 ? p.reviews : 0,
     image: mainImage,
     gallery,
     videoUrl,
     category: p.categoryId || "all",
-    brand: p.brand || (p as any).brand_id || undefined,
+    brand: p.brand || pAny.brand_id || undefined,
     inStock: p.stock > 0,
     isBestOffer: p.isDeal || Boolean(rawOldPrice && rawOldPrice > priceYER),
     isNewArrival: p.featured || false,

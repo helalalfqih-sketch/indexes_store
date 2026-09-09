@@ -4,6 +4,10 @@
  * Converts production ProductDTO / CategoryDTO records into the legacy UI shape.
  */
 import type { ProductDTO, ProductMediaItem } from "@/lib/domain/product";
+import {
+  checkoutProductRefFromCatalogProduct,
+  type CheckoutProductRef,
+} from "@/lib/checkout-product-contract";
 export type { ProductMediaItem };
 
 import type { CategoryWithMetaDTO } from "@/lib/repositories/categories.repo";
@@ -111,6 +115,7 @@ export type LegacyProductShape = {
   dealStart?: string | null;
   dealEnd?: string | null;
   shopifyVariantId?: string | null;
+  checkoutProductRef?: CheckoutProductRef;
 };
 
 const isMetadataTag = (tag: string): boolean =>
@@ -154,7 +159,9 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   isDeal: p.is_deal ?? false,
   dealStart: p.deal_start ?? null,
   dealEnd: p.deal_end ?? null,
-  shopifyVariantId: (p as ProductDTO & { shopify_variant_id?: string | null }).shopify_variant_id ?? null,
+  shopifyVariantId:
+    (p as ProductDTO & { shopify_variant_id?: string | null }).shopify_variant_id ?? null,
+  checkoutProductRef: checkoutProductRefFromCatalogProduct(p),
 });
 
 export type LegacyCategoryShape = {

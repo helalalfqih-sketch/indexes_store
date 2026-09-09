@@ -8,11 +8,7 @@
  */
 import { queryOptions } from "@tanstack/react-query";
 import { fetchCategories } from "@/lib/actions/category.actions";
-import {
-  fetchBestSellers,
-  fetchOffers,
-  fetchProducts,
-} from "@/lib/actions/product.actions";
+import { fetchBestSellers, fetchOffers, fetchProducts } from "@/lib/actions/product.actions";
 import {
   fallbackProducts,
   toLegacyProduct,
@@ -49,15 +45,15 @@ const CATALOG_CACHE_VERSION = "v3" as const;
  * client, which search engines could index. These seeded rows are replaced by
  * fresh Shopify data immediately because refetchOnMount is always enabled.
  */
-const seededCatalog = (): LegacyProductShape[] =>
-  fallbackProducts()
+const seededCatalog = (): LegacyProductShape[] => {
+  if (!import.meta.env.DEV) return [];
+  return fallbackProducts()
     .map(toLegacyProduct)
     .filter((product) => typeof product.price === "number" && product.price > 0);
+};
 
 const seededBestSellers = (limit: number): LegacyProductShape[] =>
-  [...seededCatalog()]
-    .sort((a, b) => b.rating * b.reviews - a.rating * a.reviews)
-    .slice(0, limit);
+  [...seededCatalog()].sort((a, b) => b.rating * b.reviews - a.rating * a.reviews).slice(0, limit);
 
 const seededOffers = (limit: number): LegacyProductShape[] => {
   const seeded = seededCatalog();
