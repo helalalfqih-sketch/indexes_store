@@ -125,7 +125,7 @@ function HomeSkeleton() {
 }
 
 function HomePage() {
-  useHydrateCart();
+  const cartHasHydrated = useHydrateCart();
   const { settings: rawAppearanceSettings } = useAppearance();
   const mappedSettings = useMemo(
     () => mapPublishedStorefrontSettings(rawAppearanceSettings),
@@ -158,8 +158,10 @@ function HomePage() {
   }, [rawProductList]);
 
   // Real production cart & favorites hooks
-  const cartStoreItems = useCart((s) => s.items);
-  const cartStoreCount = useCart((s) => s.count());
+  const persistedCartItems = useCart((s) => s.items);
+  const persistedCartCount = useCart((s) => s.count());
+  const cartStoreItems = cartHasHydrated ? persistedCartItems : [];
+  const cartStoreCount = cartHasHydrated ? persistedCartCount : 0;
   const addToCartStore = useCart((s) => s.add);
   const setQtyCartStore = useCart((s) => s.setQty);
   const removeFromCartStore = useCart((s) => s.remove);
