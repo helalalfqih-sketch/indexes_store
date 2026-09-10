@@ -6,8 +6,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useCart, useHydrateCart } from "../../src/lib/cart-store";
 
 function CartCount() {
-  useHydrateCart();
-  const count = useCart((state) => state.count());
+  const hasHydrated = useHydrateCart();
+  const persistedCount = useCart((state) => state.count());
+  const count = hasHydrated ? persistedCount : 0;
   return <button>Cart{count > 0 ? <span>{count}</span> : null}</button>;
 }
 
