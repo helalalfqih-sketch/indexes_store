@@ -9,7 +9,8 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    base: process.env.VERCEL ? "/" : "/app/",
+    // Browser CI must exercise the same asset paths as the Vercel deployment.
+    base: process.env.VERCEL || process.env.CI ? "/" : "/app/",
     resolve: {
       dedupe: ["three"],
     },
