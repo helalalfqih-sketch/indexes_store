@@ -127,7 +127,25 @@ export const createOrder = createServerFn({ method: "POST" })
       throw new Error("The storefront tenant is unavailable.");
     }
 
-    const productIds = requireSupabaseCheckoutProductIds(data.items.map((item) => item.productRef));
+    const shopifyVariantIds = data.items.flatMap((item) =>
+      item.productRef.source === "shopify" ? [item.productRef.id] : [],
+    );
+    const shopifyProductIds = shopifyVariantIds.length
+      ? await (
+          await import("@/lib/shopify/yemen-checkout.server")
+        ).resolveShopifyVariantsForYemenCheckout(supabaseAdmin, tenantId, shopifyVariantIds)
+      : new Map<string, string>();
+    const resolvedItems = data.items.map((item) => ({
+      ...item,
+      productRef:
+        item.productRef.source === "shopify"
+          ? ({ source: "supabase", id: shopifyProductIds.get(item.productRef.id) ?? "" } as const)
+          : item.productRef,
+    }));
+
+    const productIds = requireSupabaseCheckoutProductIds(
+      resolvedItems.map((item) => item.productRef),
+    );
     const { data: catalogRows, error: catalogError } = await supabaseAdmin
       .from("products")
       .select("id, tenant_id, is_published, vendor_id")
@@ -142,11 +160,11 @@ export const createOrder = createServerFn({ method: "POST" })
 
     validateTenantCheckoutProducts(
       tenantId,
-      data.items.map((item) => item.productRef),
+      resolvedItems.map((item) => item.productRef),
       catalogRows ?? [],
     );
 
-    const rpcItems = data.items.map((item) => ({
+    const rpcItems = resolvedItems.map((item) => ({
       source: item.productRef.source,
       id: item.productRef.id,
       quantity: item.quantity,
