@@ -11,6 +11,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { useHydrateCart } from "@/lib/cart-store";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -342,6 +343,7 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
+  useHydrateCart();
   const { queryClient } = Route.useRouteContext();
   const { settings } = Route.useLoaderData();
   const router = useRouter();
