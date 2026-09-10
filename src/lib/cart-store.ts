@@ -133,7 +133,7 @@ export function useHydrateCart() {
 
   useEffect(() => {
     let active = true;
-    void useCart.persist.rehydrate().then(() => {
+    void Promise.resolve(useCart.persist.rehydrate()).then(() => {
       if (active) setHasHydrated(true);
     });
     return () => {
