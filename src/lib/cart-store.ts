@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Product } from "./store-data";
@@ -119,7 +120,16 @@ export const useCart = create<CartState>()(
     }),
     {
       name: "noqta-cart-v2",
+      // Keep the server and the browser first render identical. Restore storage after mount.
+      skipHydration: true,
       partialize: (state) => ({ items: state.items }),
     },
   ),
 );
+
+/** Restore the persisted cart only after React has hydrated the server snapshot. */
+export function useHydrateCart() {
+  useEffect(() => {
+    void useCart.persist.rehydrate();
+  }, []);
+}
