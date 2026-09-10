@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Product } from "./store-data";
@@ -129,7 +129,17 @@ export const useCart = create<CartState>()(
 
 /** Restore the persisted cart only after React has hydrated the server snapshot. */
 export function useHydrateCart() {
+  const [hasHydrated, setHasHydrated] = useState(false);
+
   useEffect(() => {
-    void useCart.persist.rehydrate();
+    let active = true;
+    void useCart.persist.rehydrate().then(() => {
+      if (active) setHasHydrated(true);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
+
+  return hasHydrated;
 }
