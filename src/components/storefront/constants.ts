@@ -2,7 +2,7 @@ export const STORE_INFO = {
   whatsappNumber: '967771370740',
   name: 'INDEXES STORE',
   nameAr: 'إندكس ستور',
-  address: 'صنعاء - شارع بيون - مقابل صيدلية الرعاية الصحية',
+  address: 'صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية',
   freeShippingThresholdYER: 30000,
   governorates: [
     'أمانة العاصمة صنعاء', 'عدن', 'تعز', 'الحديدة', 'إب', 'ذمار', 'حضرموت', 'المكلا',
