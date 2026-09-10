@@ -97,7 +97,7 @@ export async function resolveShopifyVariantsForYemenCheckout(
     `query CheckoutVariants($ids: [ID!]!) {
       nodes(ids: $ids) {
         ... on ProductVariant {
-          id sku barcode availableForSale quantityAvailable
+          id sku barcode availableForSale
           price { amount currencyCode }
           compareAtPrice { amount currencyCode }
           image { url altText }
