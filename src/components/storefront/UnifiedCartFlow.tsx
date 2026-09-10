@@ -9,6 +9,7 @@ import { submitOrder } from "@/lib/actions/order.actions";
 import { useCart } from "@/lib/cart-store";
 import { yemeniPhoneSchema } from "@/lib/validation/phone";
 import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
+import { buildCheckoutWhatsAppMessage, whatsappLink } from "@/lib/whatsapp";
 
 interface UnifiedCartFlowProps {
   isOpen: boolean;
@@ -45,6 +46,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const idempotencyKeyRef = useRef<string | null>(null);
   const clearCart = useCart((state) => state.clear);
 
@@ -54,6 +56,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
       setSubmitError(null);
       setErrors({});
       setOrderId(null);
+      setWhatsappUrl(null);
       idempotencyKeyRef.current = null;
     }
   }, [props.isOpen]);
@@ -106,9 +109,33 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
         paymentProvider: "cod",
         idempotencyKey: idempotencyKeyRef.current,
       });
+      const url = whatsappLink(
+        buildCheckoutWhatsAppMessage({
+          orderId: result.orderId,
+          items: props.cartItems.map((item) => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            unitPrice: item.product.priceYER,
+          })),
+          subtotal,
+          discount: discountAmount,
+          shipping,
+          total,
+          customer: {
+            name: name.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
+            notes: notes.trim() || undefined,
+          },
+          couponCode,
+        }),
+        STORE_INFO.whatsappNumber,
+      );
       clearCart();
       setOrderId(result.orderId);
+      setWhatsappUrl(url);
       setStep("success");
+      window.location.assign(url);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "تعذر إنشاء الطلب. حاول مرة أخرى.");
     } finally {
@@ -155,7 +182,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                   تم إنشاء طلبك بنجاح
                 </h2>
                 <p className="text-sm text-[var(--color-text-secondary)]">
-                  تم حفظ الطلب داخل Indexes Store.
+                  تم حفظ الطلب. أكمل التأكيد عبر واتساب.
                 </p>
                 {orderId && (
                   <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-4 py-3">
@@ -164,6 +191,14 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                       {orderId}
                     </p>
                   </div>
+                )}
+                {whatsappUrl && (
+                  <a
+                    href={whatsappUrl}
+                    className="rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white"
+                  >
+                    إكمال الطلب عبر واتساب
+                  </a>
                 )}
                 <button
                   type="button"
@@ -271,7 +306,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
-                    {submitting ? "جاري إنشاء الطلب..." : "تأكيد الطلب"}
+                    {submitting ? "جاري إنشاء الطلب..." : "تأكيد الطلب عبر واتساب"}
                   </button>
                 </div>
               </div>

@@ -65,6 +65,50 @@ export function whatsappLink(message: string, phone = STORE_CONTACT) {
   return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
 }
 
+export type CheckoutWhatsAppMessageInput = {
+  orderId: string;
+  items: Array<{ name: string; quantity: number; unitPrice: number }>;
+  subtotal: number;
+  discount: number;
+  shipping: number;
+  total: number;
+  customer: { name: string; phone: string; address: string; notes?: string };
+  couponCode?: string;
+};
+
+/** Build the customer-approved WhatsApp handoff after the order is committed. */
+export function buildCheckoutWhatsAppMessage(input: CheckoutWhatsAppMessageInput): string {
+  const lines = [
+    "السلام عليكم، أريد تأكيد طلبي من اندكس ستور.",
+    "",
+    `🧾 رقم الطلب: ${input.orderId}`,
+    "",
+    "🛒 المنتجات:",
+    ...input.items.map(
+      (item, index) =>
+        `${index + 1}. ${item.name} — ${item.quantity} × ${formatPrice(item.unitPrice)}`,
+    ),
+    "",
+    `💵 المجموع الفرعي: ${formatPrice(input.subtotal)}`,
+  ];
+
+  if (input.discount > 0) {
+    lines.push(`🏷️ الخصم: -${formatPrice(input.discount)}`);
+    if (input.couponCode) lines.push(`🎫 الكوبون: ${input.couponCode}`);
+  }
+  lines.push(
+    `🚚 الشحن: ${input.shipping === 0 ? "مجاني" : formatPrice(input.shipping)}`,
+    `💰 الإجمالي: ${formatPrice(input.total)}`,
+    "",
+    `👤 الاسم: ${input.customer.name}`,
+    `📞 الهاتف: ${input.customer.phone}`,
+    `📍 عنوان التوصيل: ${input.customer.address}`,
+  );
+  if (input.customer.notes) lines.push(`📝 ملاحظات: ${input.customer.notes}`);
+  lines.push("", "💳 طريقة الدفع: الدفع عند الاستلام");
+  return lines.join("\n");
+}
+
 /** Quick single-product order link matching the exact brand template. */
 export function quickOrderLink(
   product: Pick<Product, "name" | "price" | "slug">,
