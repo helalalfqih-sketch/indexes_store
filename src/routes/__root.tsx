@@ -155,7 +155,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const themeColor =
       storeIdentity?.themeColor || seo?.themeColor || brandSettings?.primaryColor || "#1F5EFF";
     const faviconUrl =
-      storeIdentity?.faviconUrl || storeIdentity?.logoUrl || navigation?.logoUrl || "/store-icon.svg";
+      storeIdentity?.faviconUrl ||
+      storeIdentity?.logoUrl ||
+      navigation?.logoUrl ||
+      "/store-icon.svg";
     const appleTouchIconUrl =
       storeIdentity?.appleTouchIconUrl ||
       storeIdentity?.logoUrl ||
