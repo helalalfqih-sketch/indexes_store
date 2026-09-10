@@ -1,6 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { validateYemenCheckoutVariant } from "@/lib/shopify/yemen-checkout.server";
+import {
+  resolveShopifyVariantsForYemenCheckout,
+  validateYemenCheckoutVariant,
+} from "@/lib/shopify/yemen-checkout.server";
+
+const storefrontMock = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/shopify/catalog.functions", () => ({ storefront: storefrontMock }));
 
 const variant = {
   id: "gid://shopify/ProductVariant/123",
@@ -35,6 +41,40 @@ describe("Yemen Shopify catalog checkout", () => {
     }
   });
 
+  it("requests sale availability without inventory-protected fields", async () => {
+    const captured = new Error("query captured before any database access");
+    storefrontMock.mockRejectedValueOnce(captured);
+    const from = vi.fn();
+    const admin = { from } as unknown as Parameters<
+      typeof resolveShopifyVariantsForYemenCheckout
+    >[0];
+
+    await expect(
+      resolveShopifyVariantsForYemenCheckout(admin, "fixture-tenant", [variant.id]),
+    ).rejects.toBe(captured);
+
+    const [query, variables] = storefrontMock.mock.calls[0];
+    expect(query).toContain("query CheckoutVariants");
+    expect(query).toMatch(/\bavailableForSale\b/);
+    expect(query).not.toMatch(/\b(quantityAvailable|storeAvailability)\b/);
+    expect(variables).toEqual({ ids: [variant.id] });
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, null])(
+    "supports available variants without inventory quantity (%s)",
+    (quantityAvailable) => {
+      const withoutInventory = { ...variant, quantityAvailable };
+      expect(validateYemenCheckoutVariant(withoutInventory, variant.id)).toMatchObject({
+        price: 12500,
+        currency: "YER",
+        stock: 999,
+      });
+      expect(() =>
+        validateYemenCheckoutVariant({ ...withoutInventory, availableForSale: false }, variant.id),
+      ).toThrow(/نفد/);
+    },
+  );
   it("creates an authoritative YER catalog snapshot", () => {
     expect(validateYemenCheckoutVariant(variant, variant.id)).toMatchObject({
       externalId: variant.id,
