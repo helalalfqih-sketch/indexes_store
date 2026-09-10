@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product as ProductionProduct } from "@/lib/store-data";
-import { useCart, useHydrateCart } from "@/lib/cart-store";
+import { useCart } from "@/lib/cart-store";
 import { useFavorites } from "@/lib/use-favorites";
 import { bestSellersQuery, offersQuery } from "@/lib/queries/catalog";
 import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
@@ -125,7 +125,6 @@ function HomeSkeleton() {
 }
 
 function HomePage() {
-  const cartHasHydrated = useHydrateCart();
   const { settings: rawAppearanceSettings } = useAppearance();
   const mappedSettings = useMemo(
     () => mapPublishedStorefrontSettings(rawAppearanceSettings),
@@ -158,13 +157,8 @@ function HomePage() {
   }, [rawProductList]);
 
   // Real production cart & favorites hooks
-  const persistedCartItems = useCart((s) => s.items);
-  const persistedCartCount = useCart((s) => s.count());
-  const cartStoreItems = useMemo(
-    () => (cartHasHydrated ? persistedCartItems : []),
-    [cartHasHydrated, persistedCartItems],
-  );
-  const cartStoreCount = cartHasHydrated ? persistedCartCount : 0;
+  const cartStoreItems = useCart((s) => s.items);
+  const cartStoreCount = cartStoreItems.reduce((count, item) => count + item.qty, 0);
   const addToCartStore = useCart((s) => s.add);
   const setQtyCartStore = useCart((s) => s.setQty);
   const removeFromCartStore = useCart((s) => s.remove);

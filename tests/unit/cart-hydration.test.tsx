@@ -6,10 +6,14 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useCart, useHydrateCart } from "../../src/lib/cart-store";
 
 function CartCount() {
-  const hasHydrated = useHydrateCart();
-  const persistedCount = useCart((state) => state.count());
-  const count = hasHydrated ? persistedCount : 0;
+  const items = useCart((state) => state.items);
+  const count = items.reduce((total, item) => total + item.qty, 0);
   return <button>Cart{count > 0 ? <span>{count}</span> : null}</button>;
+}
+
+function App() {
+  useHydrateCart();
+  return <CartCount />;
 }
 
 describe("persisted cart hydration", () => {
@@ -23,40 +27,45 @@ describe("persisted cart hydration", () => {
     document.body.replaceChildren();
   });
 
-  it("hydrates the empty server snapshot before restoring saved cart items", async () => {
-    useCart.setState({ items: [] });
-    localStorage.clear();
-    const html = renderToString(<CartCount />);
-    localStorage.setItem(
-      "noqta-cart-v2",
-      JSON.stringify({
-        state: {
-          items: [
-            {
-              productId: "fixture-product",
-              name: "Fixture",
-              price: 1000,
-              image: "/fixture.jpg",
-              qty: 2,
-            },
-          ],
-        },
-        version: 0,
-      }),
-    );
+  it.each([false, true])(
+    "hydrates the server snapshot with storage already restored=%s",
+    async (alreadyRestored) => {
+      useCart.setState({ items: [] });
+      localStorage.clear();
+      const html = renderToString(<App />);
+      localStorage.setItem(
+        "noqta-cart-v2",
+        JSON.stringify({
+          state: {
+            items: [
+              {
+                productId: "fixture-product",
+                name: "Fixture",
+                price: 1000,
+                image: "/fixture.jpg",
+                qty: 2,
+              },
+            ],
+          },
+          version: 0,
+        }),
+      );
 
-    const container = document.createElement("main");
-    container.innerHTML = html;
-    document.body.append(container);
-    const errors: string[] = [];
+      if (alreadyRestored) await useCart.persist.rehydrate();
 
-    await act(async () => {
-      root = hydrateRoot(container, <CartCount />, {
-        onRecoverableError: (error) => errors.push(String(error)),
+      const container = document.createElement("main");
+      container.innerHTML = html;
+      document.body.append(container);
+      const errors: string[] = [];
+
+      await act(async () => {
+        root = hydrateRoot(container, <App />, {
+          onRecoverableError: (error) => errors.push(String(error)),
+        });
       });
-    });
 
-    expect(errors).toEqual([]);
-    expect(container.textContent).toBe("Cart2");
-  });
+      expect(errors).toEqual([]);
+      expect(container.textContent).toBe("Cart2");
+    },
+  );
 });
