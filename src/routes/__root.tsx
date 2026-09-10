@@ -28,6 +28,7 @@ import {
   generateWebsiteJsonLd,
   DEFAULT_OG_IMAGE,
 } from "@/lib/seo";
+import { normalizeGoogleVerificationCode } from "@/lib/seo-verification";
 
 const idbPersister = {
   persistClient: async (client: unknown) => {
@@ -163,10 +164,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const twitterUsername = seo?.twitterUsername || "@indexes_store";
 
     const baseUrl = (
+      seo?.canonicalBaseUrl ||
       process.env.SITE_URL ||
       import.meta.env.VITE_PUBLIC_URL ||
       process.env.VITE_PUBLIC_URL ||
-      ""
+      "https://indexes.store"
     ).replace(/\/$/, "");
     const logoUrl = storeIdentity?.logoUrl || navigation?.logoUrl || undefined;
 
@@ -240,11 +242,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ];
 
-    // Add Google verification code if configured
-    if (seo?.googleVerificationCode) {
-      metaTags.push({ name: "google-site-verification", content: seo.googleVerificationCode });
-    } else {
-      metaTags.push({ name: "google-site-verification", content: "google84868c536ade5c41.html" });
+    // Add only a valid Google Search Console meta verification token.
+    const googleVerificationCode = normalizeGoogleVerificationCode(seo?.googleVerificationCode);
+    if (googleVerificationCode) {
+      metaTags.push({ name: "google-site-verification", content: googleVerificationCode });
     }
 
     // Add Bing verification code if configured
