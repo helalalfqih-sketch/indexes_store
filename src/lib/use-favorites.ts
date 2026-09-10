@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
 
+function readFavorites(): string[] {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem("indexes_favorites") ?? "[]");
+    return Array.isArray(stored) ? stored.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export function useFavorites() {
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const stored = localStorage.getItem("indexes_favorites");
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  // The server cannot read browser storage. Hydrate its empty snapshot first.
+  const [favorites, setFavorites] = useState<string[]>([]);
 
   const toggleFavorite = (productId: string) => {
     setFavorites((prev) => {
@@ -18,18 +20,16 @@ export function useFavorites() {
       try {
         localStorage.setItem("indexes_favorites", JSON.stringify(next));
         window.dispatchEvent(new Event("favorites_updated"));
-      } catch {}
+      } catch {
+        /* Favorites remain usable when browser storage is unavailable. */
+      }
       return next;
     });
   };
 
   useEffect(() => {
-    const handleSync = () => {
-      try {
-        const stored = localStorage.getItem("indexes_favorites");
-        if (stored) setFavorites(JSON.parse(stored));
-      } catch {}
-    };
+    const handleSync = () => setFavorites(readFavorites());
+    handleSync();
     window.addEventListener("favorites_updated", handleSync);
     window.addEventListener("storage", handleSync);
     return () => {
