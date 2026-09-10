@@ -30,13 +30,15 @@ describe("persisted cart hydration", () => {
       "noqta-cart-v2",
       JSON.stringify({
         state: {
-          items: [{
-            productId: "fixture-product",
-            name: "Fixture",
-            price: 1000,
-            image: "/fixture.jpg",
-            qty: 2,
-          }],
+          items: [
+            {
+              productId: "fixture-product",
+              name: "Fixture",
+              price: 1000,
+              image: "/fixture.jpg",
+              qty: 2,
+            },
+          ],
         },
         version: 0,
       }),
