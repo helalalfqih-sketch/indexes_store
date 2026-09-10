@@ -160,7 +160,10 @@ function HomePage() {
   // Real production cart & favorites hooks
   const persistedCartItems = useCart((s) => s.items);
   const persistedCartCount = useCart((s) => s.count());
-  const cartStoreItems = cartHasHydrated ? persistedCartItems : [];
+  const cartStoreItems = useMemo(
+    () => (cartHasHydrated ? persistedCartItems : []),
+    [cartHasHydrated, persistedCartItems],
+  );
   const cartStoreCount = cartHasHydrated ? persistedCartCount : 0;
   const addToCartStore = useCart((s) => s.add);
   const setQtyCartStore = useCart((s) => s.setQty);
