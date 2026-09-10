@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product as ProductionProduct } from "@/lib/store-data";
-import { useCart } from "@/lib/cart-store";
+import { useCart, useHydrateCart } from "@/lib/cart-store";
 import { useFavorites } from "@/lib/use-favorites";
 import { bestSellersQuery, offersQuery } from "@/lib/queries/catalog";
 import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
@@ -125,6 +125,7 @@ function HomeSkeleton() {
 }
 
 function HomePage() {
+  useHydrateCart();
   const { settings: rawAppearanceSettings } = useAppearance();
   const mappedSettings = useMemo(
     () => mapPublishedStorefrontSettings(rawAppearanceSettings),
