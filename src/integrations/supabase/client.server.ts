@@ -32,21 +32,29 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-function createSupabaseAdminClient() {
-  const SUPABASE_URL =
-    process.env.SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    "https://wtudcippyxbaobqzbmok.supabase.co";
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    "sb_publishable_xAxjCnoAAUs5x1d7Njbsbw_HHpypzrz";
-
-  if (!SUPABASE_URL || !key) {
-    console.warn("[Supabase] SUPABASE_URL or API key is not configured.");
+function isServerApiKey(key: string): boolean {
+  if (key.startsWith("sb_secret_") && key.length > "sb_secret_".length) return true;
+  const parts = key.split(".");
+  if (parts.length !== 3) return false;
+  try {
+    // Configuration sanity check only; Supabase still verifies the signature.
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
+    return payload?.role === "service_role";
+  } catch {
+    return false;
   }
+}
 
+function createSupabaseAdminClient() {
+  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+
+  if (!SUPABASE_URL) {
+    throw new Error("SUPABASE_URL is required for server database access.");
+  }
+  if (!key || !isServerApiKey(key)) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY must contain a server secret or service_role key.");
+  }
   return createClient<Database>(SUPABASE_URL, key, {
     global: {
       fetch: createSupabaseFetch(key),
