@@ -49,7 +49,7 @@ export const DEFAULT_SEO_CONFIG: GlobalSeoConfig = {
   ogDescription: "",
   twitterCard: "summary_large_image",
   twitterUsername: "@indexes_store",
-  canonicalBaseUrl: "https://indexes.store",
+  canonicalBaseUrl: "",
   sitemapEnabled: true,
   robotsEnabled: true,
   robotsCustomDirectives: "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /checkout/\nDisallow: /account/\nSitemap: /sitemap.xml",
