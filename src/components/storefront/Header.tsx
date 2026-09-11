@@ -345,6 +345,11 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="hidden sm:block">
         </div>
 
+        {/* Lite Mode network preference (single desktop control) */}
+        <div className="hidden sm:block">
+          <LiteModeToggle variant="button" />
+        </div>
+
         {/* App Download Button (SHEIN style) */}
         {onOpenAppDownload && (
           <motion.button
