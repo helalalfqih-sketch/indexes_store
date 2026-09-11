@@ -148,7 +148,7 @@ export const createOrder = createServerFn({ method: "POST" })
     );
     const { data: catalogRows, error: catalogError } = await supabaseAdmin
       .from("products")
-      .select("id, tenant_id, is_published, vendor_id")
+      .select("id, tenant_id, is_published")
       .in("id", Array.from(new Set(productIds)))
       .eq("tenant_id", tenantId)
       .eq("is_published", true);
@@ -194,13 +194,22 @@ export const createOrder = createServerFn({ method: "POST" })
     const result = assertCheckoutCommit(committed, commitError, data.items.length);
 
     try {
+      // Vendor splitting is optional and must not block the core checkout.
+      const { data: vendorRows, error: vendorError } = await supabaseAdmin
+        .from("products")
+        .select("id, vendor_id")
+        .in("id", Array.from(new Set(productIds)))
+        .eq("tenant_id", tenantId);
+      if (vendorError) {
+        throw new Error("Optional vendor assignments are unavailable.");
+      }
       const { data: insertedItems } = await supabaseAdmin
         .from("order_items")
         .select("id, order_id, product_id, quantity, unit_price, total_price")
         .eq("order_id", result.orderId)
         .eq("tenant_id", tenantId);
       const vendorByProduct = new Map(
-        (catalogRows ?? []).map((row) => [row.id, row.vendor_id ?? null]),
+        (vendorRows ?? []).map((row) => [row.id, row.vendor_id ?? null]),
       );
       const { splitOrderIntoVendorOrders } = await import("@/lib/services/vendor-order.service");
       await splitOrderIntoVendorOrders(supabaseAdmin, {
