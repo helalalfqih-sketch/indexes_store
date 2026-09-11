@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Plus, Search, Bell, ShoppingCart, X, Sparkles, ShieldCheck, Heart, Sun, Moon, History, MessageCircle, Smartphone, Flame } from 'lucide-react';
+import { Menu, Search, Bell, ShoppingCart, X, Sparkles, ShieldCheck, Heart, Sun, Moon, History, MessageCircle, Smartphone, Flame } from 'lucide-react';
 import { Product, Currency } from './types';
 import { formatPrice } from './currency';
 import { getRecentSearches, saveRecentSearch, removeRecentSearch, clearRecentSearches } from './searchHistory';
@@ -175,18 +175,6 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {onToggleTheme && (
-            <button
-              onClick={onToggleTheme}
-              aria-label={theme === 'dark' ? 'تفعيل الوضع الفاتح' : 'تفعيل الوضع الداكن'}
-              title={theme === 'dark' ? 'تفعيل الوضع الفاتح' : 'تفعيل الوضع الداكن'}
-              className="w-10 h-10 flex items-center justify-center border border-[var(--color-border-default)] rounded-xl bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] transition-all cursor-pointer shrink-0 text-amber-400 shadow-sm"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-600" />}
-            </button>
-          )}
-
-          <LiteModeToggle variant="button" />
         </div>
 
         {/* 4. Centered Search Bar with Autocomplete Dropdown */}
@@ -355,7 +343,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Lite Mode Network Speed Button (Desktop only in header to keep mobile clean) */}
         <div className="hidden sm:block">
-          <LiteModeToggle variant="button" />
         </div>
 
         {/* App Download Button (SHEIN style) */}
@@ -385,7 +372,7 @@ export const Header: React.FC<HeaderProps> = ({
           className="hidden sm:flex w-10 h-10 sm:w-11 sm:h-11 items-center justify-center text-white border border-blue-500/30 rounded-2xl bg-[#2F6BFF] hover:bg-[#2458D8] transition-all cursor-pointer shrink-0 shadow-md shadow-blue-600/20"
           title="تتبع طلبي المباشر"
         >
-          <Plus className="w-5 h-5 text-white" />
+          <Truck className="w-5 h-5 text-white" />
         </motion.button>
 
         {/* 7. Admin Panel Control Button (Only for authenticated Admin/Owner) */}
@@ -425,10 +412,10 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 9. SHEIN-Style Sub-Navigation Bar */}
       {onSelectCategory && (
-        <div className="w-full max-w-7xl mx-auto mt-1 pt-0.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between overflow-x-auto no-scrollbar text-[11px] sm:text-xs font-bold gap-3 sm:gap-6 text-[var(--color-text-secondary)] whitespace-nowrap px-1">
+        <div className="w-full max-w-7xl mx-auto mt-1 pt-0.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between overflow-x-auto snap-x snap-mandatory no-scrollbar text-[11px] sm:text-xs font-bold gap-3 sm:gap-6 text-[var(--color-text-secondary)] whitespace-nowrap px-1">
           <button
             onClick={() => onSelectCategory('all')}
-            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
+            className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'all' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -436,7 +423,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('smartwatches')}
-            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
+            className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'smartwatches' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -444,7 +431,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('audio')}
-            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
+            className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'audio' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -452,7 +439,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('accessories')}
-            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
+            className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'accessories' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -460,7 +447,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('home_appliances')}
-            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
+            className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'home_appliances' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -468,7 +455,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('perfumes')}
-            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
+            className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'perfumes' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
@@ -476,7 +463,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('automotive')}
-            className={`py-0.5 transition-colors hover:text-black dark:hover:text-white ${
+            className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'automotive' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
