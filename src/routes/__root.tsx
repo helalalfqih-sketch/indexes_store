@@ -22,6 +22,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
 import type { StorefrontSettingsShape } from "@/lib/domain/appearance";
 import { NetworkManager } from "@/components/network-manager";
+import { useHydrateCart } from "@/lib/cart-store";
 import {
   generateOrganizationJsonLd,
   generateLocalBusinessJsonLd,
@@ -342,6 +343,7 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
+  useHydrateCart();
   const { queryClient } = Route.useRouteContext();
   const { settings } = Route.useLoaderData();
   const router = useRouter();

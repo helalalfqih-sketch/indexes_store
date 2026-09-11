@@ -37,7 +37,7 @@ export function StorefrontWhatsAppFloating() {
 
 export function MobileCommerceBottomBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const count = useCart((s) => s.count());
+  const count = useCart((s) => s.items.reduce((count, item) => count + item.qty, 0));
   const { settings } = useAppearance();
   const phone = settings.navigation?.whatsappPhone || "967771370740";
   const storeName = settings.navigation?.storeName || "اندكس ستور";

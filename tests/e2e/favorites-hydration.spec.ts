@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 test("returning visitors restore favorites without a hydration mismatch", async ({ page }) => {
+  // Two cold document loads plus Axe can exceed the default CI test budget.
+  test.setTimeout(90_000);
   const hydrationErrors: string[] = [];
   const capture = (message: string) => {
     if (/hydration|hydrating|React error #418/i.test(message)) hydrationErrors.push(message);

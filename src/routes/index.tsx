@@ -158,7 +158,7 @@ function HomePage() {
 
   // Real production cart & favorites hooks
   const cartStoreItems = useCart((s) => s.items);
-  const cartStoreCount = useCart((s) => s.count());
+  const cartStoreCount = cartStoreItems.reduce((count, item) => count + item.qty, 0);
   const addToCartStore = useCart((s) => s.add);
   const setQtyCartStore = useCart((s) => s.setQty);
   const removeFromCartStore = useCart((s) => s.remove);

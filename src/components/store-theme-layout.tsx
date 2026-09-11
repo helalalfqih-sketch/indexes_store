@@ -232,7 +232,7 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
 
 function StoreTopBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const count = useCart((s) => s.count());
+  const count = useCart((s) => s.items.reduce((count, item) => count + item.qty, 0));
   const { settings } = useAppearance();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);

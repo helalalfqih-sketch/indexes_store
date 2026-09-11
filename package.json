@@ -20,7 +20,7 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/unit/p0-security.test.ts",
     "test:security": "vitest run tests/unit/p0-security.test.ts",
-    "test:e2e": "playwright test tests/e2e/seo-routes.spec.ts tests/e2e/favorites-hydration.spec.ts",
+    "test:e2e": "playwright test tests/e2e/seo-routes.spec.ts tests/e2e/favorites-hydration.spec.ts tests/e2e/cart-hydration.spec.ts",
     "test:accessibility": "playwright test tests/e2e/accessibility.spec.ts",
     "test:coverage": "vitest run --coverage"
   },
