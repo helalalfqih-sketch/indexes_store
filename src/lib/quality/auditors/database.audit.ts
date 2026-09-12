@@ -64,7 +64,7 @@ export const DatabaseAuditor: QualityAudit = {
         measuredAt,
         durationMs: Date.now() - startTime,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         auditId: "database-audit",
         name: "Database RLS & Schema Security Audit",
@@ -74,7 +74,10 @@ export const DatabaseAuditor: QualityAudit = {
         category: "MEDIUM",
         source: "supabase",
         metrics: { envConfigured: false },
-        error: { code: "DB_ENV_NOT_CONFIGURED", message: "Supabase environment variables not available in runner" },
+        error: {
+          code: "DB_ENV_NOT_CONFIGURED",
+          message: "Supabase environment variables not available in runner",
+        },
         measuredAt,
         durationMs: Date.now() - startTime,
       };
