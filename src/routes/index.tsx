@@ -22,6 +22,7 @@ import { mapProductionProductToDesignProduct } from "@/components/storefront/ada
 
 import { Header } from "@/components/storefront/Header";
 import { MobileReferenceHeader } from "@/components/storefront/MobileReferenceHeader";
+import { MainMenu } from "@/components/main-menu";
 import { ShippingBanner } from "@/components/storefront/ShippingBanner";
 import { SalesHero } from "@/components/storefront/SalesHero";
 import { VisualCategoryCircles } from "@/components/storefront/VisualCategoryCircles";
@@ -316,6 +317,7 @@ function HomePage() {
   const [isTrackerModalOpen, setIsTrackerModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isWishlistDrawerOpen, setIsWishlistDrawerOpen] = useState(false);
+  const [isMainMenuOpen, setIsMainMenuOpen] = useState(false);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [isProductStoryOpen, setIsProductStoryOpen] = useState(false);
   const [isProductUniverseOpen, setIsProductUniverseOpen] = useState(false);
@@ -549,7 +551,7 @@ function HomePage() {
             onOpenNotifications={() => setIsNotificationsModalOpen(true)}
             onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
             onOpenCompare={() => setIsCompareModalOpen(true)}
-            onOpenMenu={() => navigate({ to: "/account" })}
+            onOpenMenu={() => setIsMainMenuOpen(true)}
             onOpenTracker={() => setIsTrackerModalOpen(true)}
             onOpenAdmin={handleOpenAdmin}
             isAdminUser={isAdminUser}
@@ -563,13 +565,17 @@ function HomePage() {
         <MobileReferenceHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onSubmitSearch={() => navigate({ to: "/search", search: { q: searchQuery.trim() } })}
           cartCount={cartStoreCount}
           unreadNotificationsCount={unreadNotificationsCount}
           onOpenCart={() => setIsCartDrawerOpen(true)}
           onOpenNotifications={() => setIsNotificationsModalOpen(true)}
-          onOpenMenu={() => navigate({ to: "/account" })}
+          onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
+          onOpenMenu={() => setIsMainMenuOpen(true)}
           onSelectCategory={handleSelectCategoryWithLoading}
+          selectedCategory={selectedCategory}
         />
+        <MainMenu open={isMainMenuOpen} onOpenChange={setIsMainMenuOpen} />
 
         {/* 2. Top Shipping Announcement Banner */}
         <div className="hidden md:block">
