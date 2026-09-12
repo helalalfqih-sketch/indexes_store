@@ -2,6 +2,7 @@
  * ESLint Quality Auditor
  */
 import { QualityAudit, AuditResult } from "../types";
+import { createAbortedAuditResult } from "./audit-result";
 
 export const ESLintAuditor: QualityAudit = {
   id: "eslint-audit",
@@ -17,18 +18,13 @@ export const ESLintAuditor: QualityAudit = {
     const measuredAt = new Date().toISOString();
 
     if (signal?.aborted) {
-      return {
+      return createAbortedAuditResult({
         auditId: "eslint-audit",
         name: "ESLint Code Style & Quality Audit",
-        status: "NOT_MEASURED",
-        executionState: "SKIPPED",
-        score: 0,
         category: "FAST",
         source: "runtime",
-        metrics: {},
         measuredAt,
-        durationMs: 0,
-      };
+      });
     }
 
     const metrics = {
