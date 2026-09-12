@@ -2,6 +2,7 @@
  * Route Tree Quality Auditor
  */
 import { QualityAudit, AuditResult } from "../types";
+import { createAbortedAuditResult } from "./audit-result";
 
 export const RoutesAuditor: QualityAudit = {
   id: "routes-audit",
@@ -17,18 +18,13 @@ export const RoutesAuditor: QualityAudit = {
     const measuredAt = new Date().toISOString();
 
     if (signal?.aborted) {
-      return {
+      return createAbortedAuditResult({
         auditId: "routes-audit",
         name: "Route Tree & API Endpoint Integrity Audit",
-        status: "NOT_MEASURED",
-        executionState: "SKIPPED",
-        score: 0,
         category: "FAST",
         source: "runtime",
-        metrics: {},
         measuredAt,
-        durationMs: 0,
-      };
+      });
     }
 
     const metrics = {
