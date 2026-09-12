@@ -88,7 +88,18 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
         offset: data.offset,
       },
     });
-    if (shopify.configured) return dtoToLegacy(shopify.items);
+    if (shopify.configured) {
+      const readyShopifyProducts = dtoToLegacy(shopify.items);
+      if (readyShopifyProducts.length > 0) return readyShopifyProducts;
+
+      // A healthy Shopify connection does not guarantee that the returned
+      // products are storefront-ready. For example, a product can still be
+      // missing a positive price, public image, or purchasable variant. In
+      // that case, continue to the tenant-scoped Supabase catalog instead of
+      // turning the whole storefront into an empty page. Supabase rows pass
+      // the same readiness gate below, so this never exposes an unpurchasable
+      // fallback product.
+    }
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] Shopify catalog fallback:", err);
     await rethrowWhenShopifyIsRequired(err);
