@@ -35,7 +35,7 @@ export const TypeScriptAuditor: QualityAudit = {
         strictModeEnabled: true,
       };
 
-      const score = metrics.typeErrorsCount === 0 ? 100 : Math.max(0, 100 - metrics.typeErrorsCount * 10);
+      const score =\n        metrics.typeErrorsCount === 0 ? 100 : Math.max(0, 100 - metrics.typeErrorsCount * 10);
       const status = metrics.typeErrorsCount === 0 ? "PASS" : "FAIL";
 
       return {
@@ -51,7 +51,7 @@ export const TypeScriptAuditor: QualityAudit = {
         measuredAt,
         durationMs: Date.now() - startTime,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         auditId: "typescript-audit",
         name: "TypeScript Strictness & Compilation Audit",
@@ -61,7 +61,7 @@ export const TypeScriptAuditor: QualityAudit = {
         category: "FAST",
         source: "typescript",
         metrics: {},
-        error: { code: "TS_EXEC_ERROR", message: err?.message || String(err) },
+        error: { code: "TS_EXEC_ERROR", message: err instanceof Error ? err.message : String(err) },
         measuredAt,
         durationMs: Date.now() - startTime,
       };
