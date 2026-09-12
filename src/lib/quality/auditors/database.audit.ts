@@ -2,6 +2,7 @@
  * Database RLS & Security Quality Auditor
  */
 import { QualityAudit, AuditResult } from "../types";
+import { createAbortedAuditResult } from "./audit-result";
 import { getAgentDb } from "@/lib/ai-agent.functions";
 
 export const DatabaseAuditor: QualityAudit = {
@@ -18,18 +19,13 @@ export const DatabaseAuditor: QualityAudit = {
     const measuredAt = new Date().toISOString();
 
     if (signal?.aborted) {
-      return {
+      return createAbortedAuditResult({
         auditId: "database-audit",
         name: "Database RLS & Schema Security Audit",
-        status: "NOT_MEASURED",
-        executionState: "SKIPPED",
-        score: 0,
         category: "MEDIUM",
         source: "supabase",
-        metrics: {},
         measuredAt,
-        durationMs: 0,
-      };
+      });
     }
 
     try {
@@ -68,7 +64,7 @@ export const DatabaseAuditor: QualityAudit = {
         measuredAt,
         durationMs: Date.now() - startTime,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         auditId: "database-audit",
         name: "Database RLS & Schema Security Audit",
@@ -78,7 +74,10 @@ export const DatabaseAuditor: QualityAudit = {
         category: "MEDIUM",
         source: "supabase",
         metrics: { envConfigured: false },
-        error: { code: "DB_ENV_NOT_CONFIGURED", message: "Supabase environment variables not available in runner" },
+        error: {
+          code: "DB_ENV_NOT_CONFIGURED",
+          message: "Supabase environment variables not available in runner",
+        },
         measuredAt,
         durationMs: Date.now() - startTime,
       };

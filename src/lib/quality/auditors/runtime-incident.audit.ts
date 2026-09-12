@@ -2,6 +2,7 @@
  * Runtime Incident & Log Auditor
  */
 import { QualityAudit, AuditResult } from "../types";
+import { createAbortedAuditResult } from "./audit-result";
 import { fetchExecutionJournalLogs } from "@/services/ai-agent/journal.service";
 
 export interface RuntimeIncident {
@@ -30,18 +31,13 @@ export const RuntimeIncidentAuditor: QualityAudit = {
     const measuredAt = new Date().toISOString();
 
     if (signal?.aborted) {
-      return {
+      return createAbortedAuditResult({
         auditId: "runtime-incident-audit",
         name: "Runtime Incident & Log Intelligence Audit",
-        status: "NOT_MEASURED",
-        executionState: "SKIPPED",
-        score: 0,
         category: "MEDIUM",
         source: "runtime",
-        metrics: {},
         measuredAt,
-        durationMs: 0,
-      };
+      });
     }
 
     try {
@@ -84,7 +80,7 @@ export const RuntimeIncidentAuditor: QualityAudit = {
         measuredAt,
         durationMs: Date.now() - startTime,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         auditId: "runtime-incident-audit",
         name: "Runtime Incident & Log Intelligence Audit",
@@ -94,7 +90,10 @@ export const RuntimeIncidentAuditor: QualityAudit = {
         category: "MEDIUM",
         source: "runtime",
         metrics: { envConfigured: false },
-        error: { code: "INCIDENT_ENV_NOT_CONFIGURED", message: "Supabase DB connection not configured in runner" },
+        error: {
+          code: "INCIDENT_ENV_NOT_CONFIGURED",
+          message: "Supabase DB connection not configured in runner",
+        },
         measuredAt,
         durationMs: Date.now() - startTime,
       };

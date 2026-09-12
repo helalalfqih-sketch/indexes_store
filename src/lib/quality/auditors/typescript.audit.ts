@@ -2,6 +2,7 @@
  * TypeScript Quality Auditor
  */
 import { QualityAudit, AuditResult } from "../types";
+import { createAbortedAuditResult } from "./audit-result";
 
 export const TypeScriptAuditor: QualityAudit = {
   id: "typescript-audit",
@@ -17,18 +18,13 @@ export const TypeScriptAuditor: QualityAudit = {
     const measuredAt = new Date().toISOString();
 
     if (signal?.aborted) {
-      return {
+      return createAbortedAuditResult({
         auditId: "typescript-audit",
         name: "TypeScript Strictness & Compilation Audit",
-        status: "NOT_MEASURED",
-        executionState: "SKIPPED",
-        score: 0,
         category: "FAST",
         source: "typescript",
-        metrics: {},
         measuredAt,
-        durationMs: 0,
-      };
+      });
     }
 
     try {
@@ -39,7 +35,8 @@ export const TypeScriptAuditor: QualityAudit = {
         strictModeEnabled: true,
       };
 
-      const score = metrics.typeErrorsCount === 0 ? 100 : Math.max(0, 100 - metrics.typeErrorsCount * 10);
+      const score =
+        metrics.typeErrorsCount === 0 ? 100 : Math.max(0, 100 - metrics.typeErrorsCount * 10);
       const status = metrics.typeErrorsCount === 0 ? "PASS" : "FAIL";
 
       return {
@@ -55,7 +52,7 @@ export const TypeScriptAuditor: QualityAudit = {
         measuredAt,
         durationMs: Date.now() - startTime,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         auditId: "typescript-audit",
         name: "TypeScript Strictness & Compilation Audit",
@@ -65,7 +62,7 @@ export const TypeScriptAuditor: QualityAudit = {
         category: "FAST",
         source: "typescript",
         metrics: {},
-        error: { code: "TS_EXEC_ERROR", message: err?.message || String(err) },
+        error: { code: "TS_EXEC_ERROR", message: err instanceof Error ? err.message : String(err) },
         measuredAt,
         durationMs: Date.now() - startTime,
       };
