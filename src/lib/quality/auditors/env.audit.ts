@@ -31,7 +31,10 @@ export const EnvAuditor: QualityAudit = {
     const missingKeys: string[] = [];
 
     for (const key of requiredKeys) {
-      if (!process.env[key] && (typeof window === "undefined" || !(window as unknown as Record<string, unknown>)[key])) {
+      if (
+        !process.env[key] &&
+        (typeof window === "undefined" || !(window as unknown as Record<string, unknown>)[key])
+      ) {
         // Soft check
       }
     }
