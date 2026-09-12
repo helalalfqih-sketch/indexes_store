@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Product } from "./store-data";
@@ -129,7 +129,20 @@ export const useCart = create<CartState>()(
 
 /** Restore the persisted cart only after React has hydrated the server snapshot. */
 export function useHydrateCart() {
+  // Always start false, even if another route restored the module-level
+  // Zustand store before this React tree began hydrating. Rendering persisted
+  // items on the first client pass would differ from the empty server HTML.
+  const [hasHydrated, setHasHydrated] = useState(false);
+
   useEffect(() => {
-    void useCart.persist.rehydrate();
+    let active = true;
+    void Promise.resolve(useCart.persist.rehydrate()).then(() => {
+      if (active) setHasHydrated(true);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
+
+  return hasHydrated;
 }
