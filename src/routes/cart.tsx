@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import type { CartItem, Product as DesignProduct } from "@/components/storefront/types";
-import { useCart } from "@/lib/cart-store";
+import { useCart, useHydrateCart } from "@/lib/cart-store";
 import { useFavorites } from "@/lib/use-favorites";
 import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
 
@@ -15,7 +15,12 @@ export const Route = createFileRoute("/cart")({
 
 function CartRoutePage() {
   const navigate = useNavigate();
-  const items = useCart((state) => state.items);
+  const cartHasHydrated = useHydrateCart();
+  const persistedItems = useCart((state) => state.items);
+  const items = useMemo(
+    () => (cartHasHydrated ? persistedItems : []),
+    [cartHasHydrated, persistedItems],
+  );
   const setQty = useCart((state) => state.setQty);
   const remove = useCart((state) => state.remove);
   const { favorites, toggleFavorite } = useFavorites();
