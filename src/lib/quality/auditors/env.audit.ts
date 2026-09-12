@@ -2,6 +2,7 @@
  * Environment Variables Quality Auditor
  */
 import { QualityAudit, AuditResult } from "../types";
+import { createAbortedAuditResult } from "./audit-result";
 
 export const EnvAuditor: QualityAudit = {
   id: "env-audit",
@@ -17,18 +18,13 @@ export const EnvAuditor: QualityAudit = {
     const measuredAt = new Date().toISOString();
 
     if (signal?.aborted) {
-      return {
+      return createAbortedAuditResult({
         auditId: "env-audit",
         name: "Environment Variables Security Audit",
-        status: "NOT_MEASURED",
-        executionState: "SKIPPED",
-        score: 0,
         category: "FAST",
         source: "runtime",
-        metrics: {},
         measuredAt,
-        durationMs: 0,
-      };
+      });
     }
 
     const requiredKeys = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"];
