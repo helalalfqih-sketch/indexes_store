@@ -3,6 +3,6 @@
   "minLines": 8,
   "minTokens": 70,
   "reporters": ["console"],
-  "format": ["typescript", "javascript"],
+  "format": ["typescript", "javascript", "css", "dart"],
   "ignore": ["**/*.gen.ts", "**/*.d.ts"]
 }
