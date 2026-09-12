@@ -655,6 +655,9 @@ export type Database = {
           source: string | null;
           sequence_number: number | null;
           thumbnail_url: string | null;
+          storage_provider: string | null;
+          storage_bucket: string | null;
+          object_key: string | null;
           created_by: string | null;
           created_at: string;
         };
@@ -672,6 +675,9 @@ export type Database = {
           source?: string | null;
           sequence_number?: number | null;
           thumbnail_url?: string | null;
+          storage_provider?: string | null;
+          storage_bucket?: string | null;
+          object_key?: string | null;
           created_by?: string | null;
           created_at?: string;
         };
@@ -689,6 +695,9 @@ export type Database = {
           source?: string | null;
           sequence_number?: number | null;
           thumbnail_url?: string | null;
+          storage_provider?: string | null;
+          storage_bucket?: string | null;
+          object_key?: string | null;
           created_by?: string | null;
           created_at?: string;
         };
