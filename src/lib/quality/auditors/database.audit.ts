@@ -2,6 +2,7 @@
  * Database RLS & Security Quality Auditor
  */
 import { QualityAudit, AuditResult } from "../types";
+import { createAbortedAuditResult } from "./audit-result";
 import { getAgentDb } from "@/lib/ai-agent.functions";
 
 export const DatabaseAuditor: QualityAudit = {
@@ -18,18 +19,13 @@ export const DatabaseAuditor: QualityAudit = {
     const measuredAt = new Date().toISOString();
 
     if (signal?.aborted) {
-      return {
+      return createAbortedAuditResult({
         auditId: "database-audit",
         name: "Database RLS & Schema Security Audit",
-        status: "NOT_MEASURED",
-        executionState: "SKIPPED",
-        score: 0,
         category: "MEDIUM",
         source: "supabase",
-        metrics: {},
         measuredAt,
-        durationMs: 0,
-      };
+      });
     }
 
     try {
