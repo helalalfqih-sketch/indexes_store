@@ -46,9 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         className={hideStorefrontChrome ? "w-full" : "mx-auto w-full max-w-md lg:max-w-[1024px]"}
         style={{
           paddingBottom:
-            isProductPage || hideStorefrontChrome
-              ? 0
-              : "calc(104px + env(safe-area-inset-bottom))",
+            isProductPage || hideStorefrontChrome ? 0 : "calc(104px + env(safe-area-inset-bottom))",
         }}
       >
         {children}
@@ -151,7 +149,6 @@ function MobileShellHeader() {
         cartCount={count}
         unreadNotificationsCount={0}
         onOpenCart={() => navigate({ to: "/cart" })}
-        onOpenNotifications={() => navigate({ to: "/account" })}
         onOpenMenu={() => setMenuOpen(true)}
         onSelectCategory={(categoryId) => {
           if (categoryId === "all") {
