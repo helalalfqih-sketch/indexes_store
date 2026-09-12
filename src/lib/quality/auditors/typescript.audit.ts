@@ -2,6 +2,7 @@
  * TypeScript Quality Auditor
  */
 import { QualityAudit, AuditResult } from "../types";
+import { createAbortedAuditResult } from "./audit-result";
 
 export const TypeScriptAuditor: QualityAudit = {
   id: "typescript-audit",
@@ -17,18 +18,13 @@ export const TypeScriptAuditor: QualityAudit = {
     const measuredAt = new Date().toISOString();
 
     if (signal?.aborted) {
-      return {
+      return createAbortedAuditResult({
         auditId: "typescript-audit",
         name: "TypeScript Strictness & Compilation Audit",
-        status: "NOT_MEASURED",
-        executionState: "SKIPPED",
-        score: 0,
         category: "FAST",
         source: "typescript",
-        metrics: {},
         measuredAt,
-        durationMs: 0,
-      };
+      });
     }
 
     try {
