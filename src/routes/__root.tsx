@@ -30,6 +30,7 @@ import {
   DEFAULT_OG_IMAGE,
 } from "@/lib/seo";
 import { normalizeGoogleVerificationCode } from "@/lib/seo-verification";
+import { resolveCanonicalBaseUrl } from "@/lib/site-url";
 
 const idbPersister = {
   persistClient: async (client: unknown) => {
@@ -167,13 +168,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       "/apple-touch-icon.png";
     const twitterUsername = seo?.twitterUsername || "@indexes_store";
 
-    const baseUrl = (
-      seo?.canonicalBaseUrl ||
-      process.env.SITE_URL ||
-      import.meta.env.VITE_PUBLIC_URL ||
-      process.env.VITE_PUBLIC_URL ||
-      "https://indexes.store"
-    ).replace(/\/$/, "");
+    const baseUrl = resolveCanonicalBaseUrl(
+      seo?.canonicalBaseUrl,
+      process.env.SITE_URL,
+      import.meta.env.VITE_PUBLIC_URL,
+      process.env.VITE_PUBLIC_URL,
+    );
     const logoUrl = storeIdentity?.logoUrl || navigation?.logoUrl || undefined;
 
     // Collect enabled social URLs for sameAs JSON-LD
