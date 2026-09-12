@@ -6,14 +6,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useCart, useHydrateCart } from "../../src/lib/cart-store";
 
 function CartCount() {
-  const items = useCart((state) => state.items);
-  const count = items.reduce((total, item) => total + item.qty, 0);
+  const hasHydrated = useHydrateCart();
+  const persistedCount = useCart((state) => state.count());
+  const count = hasHydrated ? persistedCount : 0;
   return <button>Cart{count > 0 ? <span>{count}</span> : null}</button>;
-}
-
-function App() {
-  useHydrateCart();
-  return <CartCount />;
 }
 
 describe("persisted cart hydration", () => {
@@ -32,7 +28,7 @@ describe("persisted cart hydration", () => {
     async (alreadyRestored) => {
       useCart.setState({ items: [] });
       localStorage.clear();
-      const html = renderToString(<App />);
+      const html = renderToString(<CartCount />);
       localStorage.setItem(
         "noqta-cart-v2",
         JSON.stringify({
@@ -59,7 +55,7 @@ describe("persisted cart hydration", () => {
       const errors: string[] = [];
 
       await act(async () => {
-        root = hydrateRoot(container, <App />, {
+        root = hydrateRoot(container, <CartCount />, {
           onRecoverableError: (error) => errors.push(String(error)),
         });
       });
