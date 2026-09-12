@@ -1,0 +1,8 @@
+{
+  "threshold": 1.7,
+  "minLines": 8,
+  "minTokens": 70,
+  "reporters": ["console"],
+  "format": ["typescript", "javascript"],
+  "ignore": ["**/*.gen.ts", "**/*.d.ts"]
+}

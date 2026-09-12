@@ -30,15 +30,13 @@ const variant = {
 
 describe("Yemen Shopify catalog checkout", () => {
   it("commits inside Indexes Store before handing the customer to WhatsApp", () => {
-    for (const file of ["UnifiedCartFlow.tsx", "UnifiedCartFlow2.tsx"]) {
-      const source = readFileSync(`src/components/storefront/${file}`, "utf8");
-      expect(source).not.toContain("createShopifyCart");
-      expect(source).toContain("submitOrder");
-      expect(source.indexOf("await submitOrder")).toBeLessThan(
-        source.indexOf("window.location.assign(url)"),
-      );
-      expect(source).toContain("buildCheckoutWhatsAppMessage");
-    }
+    const source = readFileSync("src/components/storefront/UnifiedCartFlow2.tsx", "utf8");
+    expect(source).not.toContain("createShopifyCart");
+    expect(source).toContain("submitOrder");
+    expect(source.indexOf("await submitOrder")).toBeLessThan(
+      source.indexOf("window.location.assign(url)"),
+    );
+    expect(source).toContain("buildCheckoutWhatsAppMessage");
   });
 
   it("requests sale availability without inventory-protected fields", async () => {

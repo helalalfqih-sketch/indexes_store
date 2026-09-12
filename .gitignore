@@ -48,6 +48,7 @@ dist-ssr
 *.sw?
 
 # Quality Reports
+coverage/
 reports/
 playwright-report/
 test-results/
