@@ -35,7 +35,10 @@ export const TypeScriptAuditor: QualityAudit = {
         strictModeEnabled: true,
       };
 
-      const score =\n        metrics.typeErrorsCount === 0 ? 100 : Math.max(0, 100 - metrics.typeErrorsCount * 10);
+      const score =
+        metrics.typeErrorsCount === 0
+          ? 100
+          : Math.max(0, 100 - metrics.typeErrorsCount * 10);
       const status = metrics.typeErrorsCount === 0 ? "PASS" : "FAIL";
 
       return {
