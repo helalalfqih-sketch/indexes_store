@@ -80,7 +80,7 @@ export const RuntimeIncidentAuditor: QualityAudit = {
         measuredAt,
         durationMs: Date.now() - startTime,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         auditId: "runtime-incident-audit",
         name: "Runtime Incident & Log Intelligence Audit",
@@ -90,7 +90,10 @@ export const RuntimeIncidentAuditor: QualityAudit = {
         category: "MEDIUM",
         source: "runtime",
         metrics: { envConfigured: false },
-        error: { code: "INCIDENT_ENV_NOT_CONFIGURED", message: "Supabase DB connection not configured in runner" },
+        error: {
+          code: "INCIDENT_ENV_NOT_CONFIGURED",
+          message: "Supabase DB connection not configured in runner",
+        },
         measuredAt,
         durationMs: Date.now() - startTime,
       };
