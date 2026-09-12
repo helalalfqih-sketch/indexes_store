@@ -7,9 +7,7 @@ const UNOWNED_CANONICAL_HOSTS = new Set([
   "www.indexes-store.com",
 ]);
 
-export function resolveCanonicalBaseUrl(
-  ...candidates: Array<string | null | undefined>
-): string {
+export function resolveCanonicalBaseUrl(...candidates: Array<string | null | undefined>): string {
   for (const candidate of candidates) {
     const value = candidate?.trim();
     if (!value) continue;
