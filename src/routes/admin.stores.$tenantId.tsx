@@ -67,9 +67,35 @@ function SectionCard({
 const inputCls =
   "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary";
 
+type StoreStatus = "active" | "suspended" | "pending";
+type StorePlan = "free" | "pro" | "enterprise";
+type StoreRole = "owner" | "manager" | "staff" | "viewer";
+type MutationResult = { success: boolean; message?: string };
+
+function useStoreMutation<TVariables>(
+  tenantId: string,
+  mutationFn: (value: TVariables) => Promise<MutationResult>,
+  successMessage: string,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn,
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(successMessage);
+        void queryClient.invalidateQueries({ queryKey: ["admin-store-details", tenantId] });
+        void queryClient.invalidateQueries({ queryKey: ["admin-stores"] });
+      } else {
+        toast.error(result.message ?? "فشلت العملية");
+      }
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+}
+
 function StoreDetailsPage() {
   const { tenantId } = Route.useParams();
-  const qc = useQueryClient();
   const fetchDetails = useServerFn(getStoreDetailsAdmin);
   const setStatus = useServerFn(updateStoreStatusAdmin);
   const setPlan = useServerFn(updateStorePlanAdmin);
@@ -107,35 +133,31 @@ function StoreDetailsPage() {
 
   // New member form
   const [newMemberId, setNewMemberId] = useState("");
-  const [newMemberRole, setNewMemberRole] = useState<"owner" | "manager" | "staff" | "viewer">("staff");
+  const [newMemberRole, setNewMemberRole] = useState<StoreRole>("staff");
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-store-details", tenantId] });
-
-  const mkMut = (fn: (v: any) => Promise<{ success: boolean; message?: string }>, okMsg: string) =>
-    useMutation({
-      mutationFn: fn,
-      onSuccess: (r) => {
-        if (r.success) {
-          toast.success(okMsg);
-          invalidate();
-          qc.invalidateQueries({ queryKey: ["admin-stores"] });
-        } else toast.error(r.message ?? "فشلت العملية");
-      },
-      onError: (e: Error) => toast.error(e.message),
-    });
-
-  const statusMut = mkMut((status: any) => setStatus({ data: { tenantId, status } }), "تم تحديث حالة المتجر");
-  const planMut = mkMut((plan: any) => setPlan({ data: { tenantId, plan } }), "تم تحديث الخطة");
-  const profileMut = mkMut(
+  const statusMut = useStoreMutation<StoreStatus>(
+    tenantId,
+    (status) => setStatus({ data: { tenantId, status } }),
+    "تم تحديث حالة المتجر",
+  );
+  const planMut = useStoreMutation<StorePlan>(
+    tenantId,
+    (plan) => setPlan({ data: { tenantId, plan } }),
+    "تم تحديث الخطة",
+  );
+  const profileMut = useStoreMutation<void>(
+    tenantId,
     () => saveProfile({ data: { tenantId, profile: form } }),
     "تم حفظ هوية المتجر",
   );
-  const memberMut = mkMut(
-    (v: any) => upsertMember({ data: { tenantId, userId: v.userId, role: v.role } }),
+  const memberMut = useStoreMutation<{ userId: string; role: StoreRole }>(
+    tenantId,
+    (value) => upsertMember({ data: { tenantId, userId: value.userId, role: value.role } }),
     "تم تحديث العضوية",
   );
-  const removeMut = mkMut(
-    (userId: any) => removeMember({ data: { tenantId, userId } }),
+  const removeMut = useStoreMutation<string>(
+    tenantId,
+    (userId) => removeMember({ data: { tenantId, userId } }),
     "تمت إزالة العضو",
   );
 
@@ -154,7 +176,10 @@ function StoreDetailsPage() {
       <div className="rounded-2xl glass p-10 text-center space-y-3">
         <Store className="mx-auto h-8 w-8 text-muted-foreground" />
         <p className="text-sm font-bold">المتجر غير موجود أو لا تملك صلاحية الوصول</p>
-        <Link to="/admin/stores" className="inline-flex items-center gap-1 text-xs font-bold text-primary">
+        <Link
+          to="/admin/stores"
+          className="inline-flex items-center gap-1 text-xs font-bold text-primary"
+        >
           <ArrowRight className="h-3.5 w-3.5" /> العودة للمتاجر
         </Link>
       </div>
@@ -167,7 +192,11 @@ function StoreDetailsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           {d.profile?.logo_url ? (
-            <img src={d.profile.logo_url} alt="" className="h-12 w-12 rounded-xl object-cover border border-border" />
+            <img
+              src={d.profile.logo_url}
+              alt=""
+              className="h-12 w-12 rounded-xl object-cover border border-border"
+            />
           ) : (
             <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-lg font-black text-primary">
               {(d.profile?.display_name || d.name).slice(0, 1)}
@@ -175,7 +204,9 @@ function StoreDetailsPage() {
           )}
           <div>
             <h1 className="text-2xl font-black">{d.profile?.display_name || d.name}</h1>
-            <p className="text-xs text-muted-foreground" dir="ltr">/{d.slug}</p>
+            <p className="text-xs text-muted-foreground" dir="ltr">
+              /{d.slug}
+            </p>
           </div>
         </div>
         <Link
@@ -193,9 +224,15 @@ function StoreDetailsPage() {
             { label: "الإيرادات", value: formatPrice(d.stats.revenue) },
             { label: "الطلبات", value: `${d.stats.ordersCount} (${d.stats.pendingOrders} معلّق)` },
             { label: "العملاء المسجَّلون", value: String(d.stats.customersCount) },
-            { label: "المنتجات", value: `${d.stats.productsCount} (${d.stats.publishedCount} منشور)` },
+            {
+              label: "المنتجات",
+              value: `${d.stats.productsCount} (${d.stats.publishedCount} منشور)`,
+            },
           ].map((k) => (
-            <div key={k.label} className="rounded-xl border border-border bg-surface p-3 text-center">
+            <div
+              key={k.label}
+              className="rounded-xl border border-border bg-surface p-3 text-center"
+            >
               <p className="text-[10px] text-muted-foreground">{k.label}</p>
               <p className="mt-1 text-sm font-black">{k.value}</p>
             </div>
@@ -210,7 +247,7 @@ function StoreDetailsPage() {
             حالة المتجر
             <select
               value={d.status}
-              onChange={(e) => statusMut.mutate(e.target.value)}
+              onChange={(e) => statusMut.mutate(e.target.value as StoreStatus)}
               disabled={statusMut.isPending}
               className={inputCls}
             >
@@ -223,7 +260,7 @@ function StoreDetailsPage() {
             خطة الاشتراك
             <select
               value={d.plan}
-              onChange={(e) => planMut.mutate(e.target.value)}
+              onChange={(e) => planMut.mutate(e.target.value as StorePlan)}
               disabled={planMut.isPending}
               className={inputCls}
             >
@@ -249,23 +286,47 @@ function StoreDetailsPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="space-y-1 text-xs font-bold">
             اسم المتجر
-            <input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} className={inputCls} />
+            <input
+              value={form.display_name}
+              onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+              className={inputCls}
+            />
           </label>
           <label className="space-y-1 text-xs font-bold">
             البريد
-            <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} dir="ltr" />
+            <input
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className={inputCls}
+              dir="ltr"
+            />
           </label>
           <label className="space-y-1 text-xs font-bold">
             الهاتف
-            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} dir="ltr" />
+            <input
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className={inputCls}
+              dir="ltr"
+            />
           </label>
           <label className="space-y-1 text-xs font-bold">
             رابط الشعار
-            <input value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} className={inputCls} dir="ltr" />
+            <input
+              value={form.logo_url}
+              onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
+              className={inputCls}
+              dir="ltr"
+            />
           </label>
           <label className="space-y-1 text-xs font-bold sm:col-span-2">
             رابط البانر
-            <input value={form.banner_url} onChange={(e) => setForm({ ...form, banner_url: e.target.value })} className={inputCls} dir="ltr" />
+            <input
+              value={form.banner_url}
+              onChange={(e) => setForm({ ...form, banner_url: e.target.value })}
+              className={inputCls}
+              dir="ltr"
+            />
           </label>
           <label className="space-y-1 text-xs font-bold sm:col-span-2">
             الوصف
@@ -295,19 +356,28 @@ function StoreDetailsPage() {
             </p>
           )}
           {d.members.map((m) => (
-            <div key={m.user_id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface p-3">
+            <div
+              key={m.user_id}
+              className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface p-3"
+            >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold">{m.full_name || "مستخدم"}</p>
-                <p className="truncate text-[10px] text-muted-foreground" dir="ltr">{m.user_id}</p>
+                <p className="truncate text-[10px] text-muted-foreground" dir="ltr">
+                  {m.user_id}
+                </p>
               </div>
               <select
                 value={m.role}
-                onChange={(e) => memberMut.mutate({ userId: m.user_id, role: e.target.value })}
+                onChange={(e) =>
+                  memberMut.mutate({ userId: m.user_id, role: e.target.value as StoreRole })
+                }
                 disabled={memberMut.isPending}
                 className="rounded-lg border border-border bg-surface px-2 py-1.5 text-xs font-bold"
               >
                 {Object.entries(ROLE_LABELS).map(([v, l]) => (
-                  <option key={v} value={v}>{l}</option>
+                  <option key={v} value={v}>
+                    {l}
+                  </option>
                 ))}
               </select>
               <button
@@ -335,11 +405,13 @@ function StoreDetailsPage() {
           </label>
           <select
             value={newMemberRole}
-            onChange={(e) => setNewMemberRole(e.target.value as any)}
+            onChange={(e) => setNewMemberRole(e.target.value as StoreRole)}
             className="rounded-xl border border-border bg-surface px-3 py-2 text-xs font-bold"
           >
             {Object.entries(ROLE_LABELS).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
+              <option key={v} value={v}>
+                {l}
+              </option>
             ))}
           </select>
           <button
@@ -371,7 +443,10 @@ function StoreDetailsPage() {
         ) : (
           <div className="max-h-72 space-y-1.5 overflow-y-auto">
             {d.audit.map((a) => (
-              <div key={a.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-surface p-2.5 text-[11px]">
+              <div
+                key={a.id}
+                className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-surface p-2.5 text-[11px]"
+              >
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 font-bold text-primary">
                   {ACTION_LABELS[a.action] ?? a.action}
                 </span>
