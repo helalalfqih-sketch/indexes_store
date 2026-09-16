@@ -49,6 +49,7 @@ import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
 import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
 import { Route as CategoryIdRouteImport } from './routes/category.$id'
 import { Route as ApiOrdersRouteImport } from './routes/api/orders'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiCatalogHealthRouteImport } from './routes/api/catalog-health'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSystemHealthRouteImport } from './routes/admin.system-health'
@@ -298,6 +299,11 @@ const CategoryIdRoute = CategoryIdRouteImport.update({
 const ApiOrdersRoute = ApiOrdersRouteImport.update({
   id: '/api/orders',
   path: '/api/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCatalogHealthRoute = ApiCatalogHealthRouteImport.update({
@@ -609,6 +615,7 @@ export interface FileRoutesByFullPath {
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/catalog-health': typeof ApiCatalogHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -699,6 +706,7 @@ export interface FileRoutesByTo {
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/catalog-health': typeof ApiCatalogHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -792,6 +800,7 @@ export interface FileRoutesById {
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/catalog-health': typeof ApiCatalogHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -886,6 +895,7 @@ export interface FileRouteTypes {
     | '/admin/system-health'
     | '/admin/users'
     | '/api/catalog-health'
+    | '/api/mcp'
     | '/api/orders'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -976,6 +986,7 @@ export interface FileRouteTypes {
     | '/admin/system-health'
     | '/admin/users'
     | '/api/catalog-health'
+    | '/api/mcp'
     | '/api/orders'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -1068,6 +1079,7 @@ export interface FileRouteTypes {
     | '/admin/system-health'
     | '/admin/users'
     | '/api/catalog-health'
+    | '/api/mcp'
     | '/api/orders'
     | '/category/$id'
     | '/demo/3d-viewer'
@@ -1128,6 +1140,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
   ApiCatalogHealthRoute: typeof ApiCatalogHealthRoute
+  ApiMcpRoute: typeof ApiMcpRoute
   ApiOrdersRoute: typeof ApiOrdersRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
@@ -1431,6 +1444,13 @@ declare module '@tanstack/react-router' {
       path: '/api/orders'
       fullPath: '/api/orders'
       preLoaderRoute: typeof ApiOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/catalog-health': {
@@ -1931,6 +1951,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
   ApiCatalogHealthRoute: ApiCatalogHealthRoute,
+  ApiMcpRoute: ApiMcpRoute,
   ApiOrdersRoute: ApiOrdersRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
