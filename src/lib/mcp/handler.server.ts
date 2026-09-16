@@ -85,7 +85,7 @@ function createServer(catalog: CatalogAdapter) {
             .trim()
             .min(1)
             .max(255)
-            .regex(/^[\p{L}\p{N}_-]+$/u),
+            .regex(/^[\p{L}\p{N}\p{M}_-]+$/u),
         })
         .strict(),
       annotations,

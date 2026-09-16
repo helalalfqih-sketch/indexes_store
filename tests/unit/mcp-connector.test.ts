@@ -104,6 +104,17 @@ describe("public MCP connection", () => {
     }
   });
 
+  it("accepts Arabic product slugs with combining marks returned by the adapter", async () => {
+    const { client, catalog } = await connected();
+    try {
+      const id = "مُعطّر-سيارة";
+      expect((await client.callTool({ name: "fetch", arguments: { id } })).isError).not.toBe(true);
+      expect(catalog.fetch).toHaveBeenCalledWith(id);
+    } finally {
+      await client.close();
+    }
+  });
+
   it("returns an explicit sanitized error rather than fabricated data on upstream failure", async () => {
     const catalog = fixture();
     catalog.search.mockRejectedValueOnce(new Error("private credential or upstream response"));
