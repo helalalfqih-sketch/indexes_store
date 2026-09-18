@@ -2,10 +2,36 @@ import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { handleWhatsappMcp } from "../../src/lib/mcp/whatsapp-handler.server";
 import { exchangeCode, issueCode } from "../../src/lib/mcp/whatsapp-oauth.server";
+import { INDEXES_STORES_GROUP_ID } from "../../src/lib/whapi.server";
 
 const TEST_SECRET = "whatsapp-mcp-actions-test-secret-1234567890";
 const CALLBACK = "https://chatgpt.com/connector/oauth/test";
 const CLIENT_ID = "test-client";
+const READ_TOOLS = [
+  "whapi_list_chats",
+  "whapi_list_groups",
+  "whapi_list_channels",
+  "whapi_get_products",
+  "whapi_get_messages",
+];
+const WRITE_TOOLS = ["whapi_send_store_text", "whapi_forward_store_message"];
+
+type LiteralSchema = { const?: unknown; enum?: unknown[] };
+type DiscoveredTool = {
+  name: string;
+  title?: string;
+  annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean; idempotentHint?: boolean };
+  _meta?: { securitySchemes?: Array<{ type: string; scopes: string[] }> };
+  inputSchema?: {
+    additionalProperties?: boolean;
+    required?: string[];
+    properties?: Record<string, LiteralSchema>;
+  };
+};
+
+function literalValue(schema?: LiteralSchema) {
+  return schema?.const ?? (schema?.enum?.length === 1 ? schema.enum[0] : undefined);
+}
 
 function token() {
   process.env.WHAPI_WEBHOOK_SECRET = TEST_SECRET;
@@ -62,26 +88,32 @@ describe("Private WhatsApp MCP discovery", () => {
     expect(json.result?.capabilities?.tools).toBeDefined();
   });
 
-  it("advertises all five read-only WhatsApp tools", async () => {
+  it("advertises exactly five read tools and two existing destination-limited write tools", async () => {
     const response = await handleWhatsappMcp(
       request({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }, token()),
     );
 
     expect(response.status).toBe(200);
-    const json = (await response.json()) as {
-      result?: {
-        tools?: Array<{ name?: string; title?: string; annotations?: { readOnlyHint?: boolean } }>;
-      };
-    };
+    const json = (await response.json()) as { result?: { tools?: DiscoveredTool[] } };
     const tools = json.result?.tools ?? [];
-    expect(tools.map((tool) => tool.name)).toEqual([
-      "whapi_list_chats",
-      "whapi_list_groups",
-      "whapi_list_channels",
-      "whapi_get_products",
-      "whapi_get_messages",
-    ]);
+    expect(tools.map((tool) => tool.name)).toEqual([...READ_TOOLS, ...WRITE_TOOLS]);
     expect(tools.every((tool) => Boolean(tool.title))).toBe(true);
-    expect(tools.every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true);
+
+    for (const tool of tools) {
+      const write = WRITE_TOOLS.includes(tool.name);
+      expect(tool.annotations?.readOnlyHint).toBe(!write);
+      expect(tool.annotations?.destructiveHint).toBe(false);
+      expect(tool.annotations?.idempotentHint).toBe(!write);
+      expect(tool._meta?.securitySchemes).toEqual([
+        { type: "oauth2", scopes: [write ? "whatsapp.write" : "whatsapp.read"] },
+      ]);
+      if (write) {
+        expect(tool.inputSchema?.additionalProperties).toBe(false);
+        expect(tool.inputSchema?.required).toContain("to");
+        expect(tool.inputSchema?.required).toContain("confirmed");
+        expect(literalValue(tool.inputSchema?.properties?.to)).toBe(INDEXES_STORES_GROUP_ID);
+        expect(literalValue(tool.inputSchema?.properties?.confirmed)).toBe(true);
+      }
+    }
   });
 });
