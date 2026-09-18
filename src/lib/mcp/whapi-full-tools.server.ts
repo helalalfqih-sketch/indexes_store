@@ -8,7 +8,7 @@ const MANIFEST_URLS = [
 const WHAPI_BASE = "https://gate.whapi.cloud";
 
 type S = { type?: string; description?: string; enum?: unknown[]; properties?: Record<string,S>; items?: S; required?: string[] };
-type T = { toolName:string; summary?:string|null; description?:string|null; inputSchema?:S; http:{method:string;path:string;pathParams?:{name:string}[];queryParams?:{name:string}[];requestBody?:{contentType?:string|null;fields?:{name:string}[]};timeouts?:{requestMs?:number}} };
+type T = { toolName:string; summary?:string|null; description?:string|null; inputSchema?:S; http:{method:string;path:string;pathParams?:{name:string}[];queryParams?:{name:string}[];requestBody?:{contentType?:string|null;schema?:S|null;fields?:{name:string;required?:boolean}[]};timeouts?:{requestMs?:number}} };
 let cache: Promise<T[]> | null = null;
 
 async function manifest() {
@@ -56,12 +56,29 @@ async function run(t:T,args:Record<string,unknown>){
   let path=t.http.path;
   for(const n of pp){const v=args[n];if(v==null)throw new WhapiError("MISSING_PATH_PARAM",400);path=path.replace(`{${n}}`,encodeURIComponent(String(v)))}
   const q=new URLSearchParams();for(const n of qp){const v=args[n];if(v==null)continue;if(Array.isArray(v))v.forEach(x=>q.append(n,String(x)));else q.set(n,String(v))}
-  const body:Record<string,unknown>={};for(const[k,v]of Object.entries(args)){if(v!==undefined&&!pp.has(k)&&!qp.has(k)&&k!=="confirmed")body[k]=v}
+  const body:Record<string,unknown>={};
+  const bodyFields=new Set((t.http.requestBody?.fields??[]).map(x=>x.name));
+  for(const[k,v]of Object.entries(args)){
+    if(v===undefined||pp.has(k)||qp.has(k)||k==="confirmed")continue;
+    if(bodyFields.size===0||bodyFields.has(k))body[k]=v;
+  }
+  for(const field of t.http.requestBody?.fields??[]){
+    if(field.required&&body[field.name]===undefined)throw new WhapiError("MISSING_BODY_PARAM",400);
+  }
   const method=t.http.method.toUpperCase(), hasBody=!["GET","HEAD"].includes(method)&&Object.keys(body).length>0;
   const headers:Record<string,string>={Authorization:`Bearer ${token}`,Accept:"application/json"};if(hasBody)headers["Content-Type"]=t.http.requestBody?.contentType||"application/json";
   const r=await fetch(`${WHAPI_BASE}${path}${q.size?`?${q}`:""}`,{method,headers,body:hasBody?JSON.stringify(body):undefined,redirect:"error",cache:"no-store",signal:AbortSignal.timeout(Math.min(t.http.timeouts?.requestMs??30000,30000))});
   const raw=await r.text();let data:unknown=raw;try{data=raw?JSON.parse(raw):null}catch{}
-  if(!r.ok)throw new WhapiError(`WHAPI_${t.toolName.toUpperCase()}_${r.status}`,r.status===429?429:502);
+  if(!r.ok){
+    let providerMessage:string|null=null;
+    if(data&&typeof data==="object"&&!Array.isArray(data)){
+      const rec=data as Record<string,unknown>;
+      const err=rec.error&&typeof rec.error==="object"&&!Array.isArray(rec.error)?rec.error as Record<string,unknown>:null;
+      providerMessage=typeof rec.message==="string"?rec.message.slice(0,240):err&&typeof err.message==="string"?err.message.slice(0,240):null;
+    }
+    console.warn("[WHAPI_DYNAMIC_TOOL_ERROR]",{tool:t.toolName,path:t.http.path,status:r.status,providerMessage});
+    throw new WhapiError(`WHAPI_${t.toolName.toUpperCase()}_${r.status}`,r.status===429?429:502);
+  }
   return data;
 }
 export async function registerFullWhapiTools(instance:any,readSec:unknown,writeSec:unknown){
