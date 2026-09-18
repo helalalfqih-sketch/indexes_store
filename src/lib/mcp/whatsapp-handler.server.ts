@@ -1,7 +1,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
-import { INDEXES_STORES_GROUP_ID, readWhapi, sendWhapiText } from "@/lib/whapi.server";
+import {
+  forwardWhapiMessage,
+  INDEXES_STORES_GROUP_ID,
+  readWhapi,
+  sendWhapiText,
+} from "@/lib/whapi.server";
 import { verifyAccessToken, AUDIENCE } from "./whatsapp-oauth.server";
 
 const META = `${AUDIENCE.replace(
@@ -122,6 +127,36 @@ function server() {
     },
     async ({ to, body }) => {
       const data = await sendWhapiText({ to, body });
+      return {
+        structuredContent: { data },
+        content: [{ type: "text" as const, text: JSON.stringify(data) }],
+      };
+    },
+  );
+
+  instance.registerTool(
+    "whapi_forward_store_message",
+    {
+      title: "Forward approved WhatsApp message to Indexes stores group",
+      description:
+        "Forward one explicitly approved existing WhatsApp message (including image/video media) only to the fixed Indexes stores group.",
+      inputSchema: z
+        .object({
+          messageId: z.string().min(1).max(512),
+          to: z.literal(INDEXES_STORES_GROUP_ID),
+          confirmed: z.literal(true),
+        })
+        .strict(),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      _meta: { securitySchemes: writeSecuritySchemes },
+    },
+    async ({ messageId, to }) => {
+      const data = await forwardWhapiMessage({ messageId, to });
       return {
         structuredContent: { data },
         content: [{ type: "text" as const, text: JSON.stringify(data) }],
