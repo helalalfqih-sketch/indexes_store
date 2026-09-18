@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { WhapiError } from "@/lib/whapi.server";
 
-const MANIFEST_URL = "https://raw.githubusercontent.com/Whapi-Cloud/whapi-mcp/main/B_manifest.json";
+const MANIFEST_URLS = [
+  "https://raw.githubusercontent.com/Whapi-Cloud/whapi-mcp/main/B_manifest.json",
+  "https://raw.githubusercontent.com/Whapi-Cloud/whapi-mcp/master/B_manifest.json",
+];
 const WHAPI_BASE = "https://gate.whapi.cloud";
 
 type S = { type?: string; description?: string; enum?: unknown[]; properties?: Record<string,S>; items?: S; required?: string[] };
@@ -9,9 +12,27 @@ type T = { toolName:string; summary?:string|null; description?:string|null; inpu
 let cache: Promise<T[]> | null = null;
 
 async function manifest() {
-  if (!cache) cache = fetch(MANIFEST_URL,{headers:{Accept:"application/json"},cache:"force-cache",signal:AbortSignal.timeout(10000)})
-    .then(async r=>{if(!r.ok) throw new Error(`manifest HTTP ${r.status}`); const x=await r.json(); if(!Array.isArray(x)||x.length<100) throw new Error("invalid manifest"); return x as T[]})
-    .catch(e=>{cache=null;throw e});
+  if (!cache)
+    cache = (async () => {
+      for (const url of MANIFEST_URLS) {
+        try {
+          const r = await fetch(url, {
+            headers: { Accept: "application/json" },
+            cache: "force-cache",
+            signal: AbortSignal.timeout(10000),
+          });
+          if (!r.ok) continue;
+          const x = await r.json();
+          if (Array.isArray(x) && x.length >= 100) return x as T[];
+        } catch {
+          // Try the next pinned provider location. Never fail MCP discovery for a remote 404.
+        }
+      }
+      return [];
+    })().catch((e) => {
+      cache = null;
+      throw e;
+    });
   return cache;
 }
 function zs(s?:S):z.ZodTypeAny {
