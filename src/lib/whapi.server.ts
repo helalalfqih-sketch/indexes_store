@@ -290,7 +290,7 @@ export async function sendWhapiText(
   const result = asRecord(
     await request("/messages/text", {
       method: "POST",
-      body: JSON.stringify({ to: input.to, body }),
+      body: JSON.stringify({ to: input.to, body: { text: body } }),
     }),
   );
   const message = asRecord(result.message);
