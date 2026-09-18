@@ -8,12 +8,24 @@ const META = `${AUDIENCE.replace(
   "/api/mcp/whatsapp",
   "",
 )}/.well-known/oauth-protected-resource/api/mcp/whatsapp`;
+const RESPONSE_HEADERS = {
+  "Cache-Control": "private, no-store",
+  "X-Content-Type-Options": "nosniff",
+};
 const annotations = {
   readOnlyHint: true,
   destructiveHint: false,
   idempotentHint: true,
   openWorldHint: true,
 };
+const securitySchemes = [{ type: "oauth2", scopes: ["whatsapp.read"] }];
+
+const titles = {
+  chats: "List WhatsApp chats",
+  groups: "List WhatsApp groups",
+  channels: "List WhatsApp channels",
+  products: "Read WhatsApp business products",
+} as const;
 
 function bearer(request: Request) {
   const match = /^Bearer (.+)$/.exec(request.headers.get("authorization") || "");
@@ -37,6 +49,7 @@ function server() {
     instance.registerTool(
       name,
       {
+        title: titles[resource],
         description: `Read one bounded page of WhatsApp ${resource}.`,
         inputSchema: z
           .object({
@@ -45,7 +58,7 @@ function server() {
           })
           .strict(),
         annotations,
-        _meta: { securitySchemes: [{ type: "oauth2", scopes: ["whatsapp.read"] }] },
+        _meta: { securitySchemes },
       },
       async ({ count, offset }) => {
         const data = await readWhapi({ resource, count, offset });
@@ -64,6 +77,7 @@ function server() {
   instance.registerTool(
     "whapi_get_messages",
     {
+      title: "Read WhatsApp chat messages",
       description:
         "Read a bounded page of messages from an exact chat ID returned by whapi_list_chats.",
       inputSchema: z
@@ -74,7 +88,7 @@ function server() {
         })
         .strict(),
       annotations,
-      _meta: { securitySchemes: [{ type: "oauth2", scopes: ["whatsapp.read"] }] },
+      _meta: { securitySchemes },
     },
     async ({ chatId, count, offset }) => {
       const data = await readWhapi({ resource: "messages", chatId, count, offset });
@@ -88,19 +102,34 @@ function server() {
 }
 
 export async function handleWhatsappMcp(request: Request) {
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        ...RESPONSE_HEADERS,
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Authorization, Content-Type, MCP-Protocol-Version",
+      },
+    });
+  }
+
   if (!bearer(request))
     return Response.json(
       { error: "unauthorized" },
       {
         status: 401,
         headers: {
+          ...RESPONSE_HEADERS,
           "WWW-Authenticate": `Bearer resource_metadata="${META}"`,
-          "Cache-Control": "private, no-store",
         },
       },
     );
+
   if (request.method !== "POST")
-    return new Response(null, { status: 405, headers: { Allow: "POST" } });
+    return new Response(null, {
+      status: 405,
+      headers: { ...RESPONSE_HEADERS, Allow: "POST, OPTIONS" },
+    });
 
   const instance = server();
   const transport = new WebStandardStreamableHTTPServerTransport({
@@ -109,7 +138,14 @@ export async function handleWhatsappMcp(request: Request) {
   });
   try {
     await instance.connect(transport);
-    return await transport.handleRequest(request);
+    const response = await transport.handleRequest(request);
+
+    // The stateless server is closed after each request. Buffer the JSON response
+    // first so tools/list and other MCP results are fully materialized before close.
+    const body = response.body ? await response.text() : null;
+    const headers = new Headers(response.headers);
+    Object.entries(RESPONSE_HEADERS).forEach(([key, value]) => headers.set(key, value));
+    return new Response(body, { status: response.status, headers });
   } finally {
     await instance.close();
   }
