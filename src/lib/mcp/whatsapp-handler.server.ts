@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
-import { readWhapi } from "@/lib/whapi.server";
+import { INDEXES_STORES_GROUP_ID, readWhapi, sendWhapiText } from "@/lib/whapi.server";
 import { verifyAccessToken, AUDIENCE } from "./whatsapp-oauth.server";
 
 const META = `${AUDIENCE.replace(
@@ -19,6 +19,7 @@ const annotations = {
   openWorldHint: true,
 };
 const securitySchemes = [{ type: "oauth2", scopes: ["whatsapp.read"] }];
+const writeSecuritySchemes = [{ type: "oauth2", scopes: ["whatsapp.write"] }];
 
 const titles = {
   chats: "List WhatsApp chats",
@@ -42,7 +43,7 @@ function server() {
     { name: "indexes-whatsapp", version: "1.0.0" },
     {
       instructions:
-        "Private read-only WhatsApp access for the Indexes Store administrator. Never send, delete, publish or mutate.",
+        "Private WhatsApp access for the Indexes Store administrator. Reads are allowed; writes are limited to explicit allowlisted tools and destinations. Never delete, edit, broadcast, or mutate groups.",
     },
   );
   const add = (name: string, resource: "chats" | "groups" | "channels" | "products") =>
@@ -98,6 +99,36 @@ function server() {
       };
     },
   );
+  instance.registerTool(
+    "whapi_send_store_text",
+    {
+      title: "Send approved text to Indexes stores group",
+      description:
+        "Send one explicitly approved text message only to the fixed Indexes stores WhatsApp group. Never use for previews or drafts.",
+      inputSchema: z
+        .object({
+          to: z.literal(INDEXES_STORES_GROUP_ID),
+          body: z.string().min(1).max(4000),
+          confirmed: z.literal(true),
+        })
+        .strict(),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      _meta: { securitySchemes: writeSecuritySchemes },
+    },
+    async ({ to, body }) => {
+      const data = await sendWhapiText({ to, body });
+      return {
+        structuredContent: { data },
+        content: [{ type: "text" as const, text: JSON.stringify(data) }],
+      };
+    },
+  );
+
   return instance;
 }
 
