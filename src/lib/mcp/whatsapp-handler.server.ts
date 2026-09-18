@@ -48,7 +48,7 @@ function bearer(request: Request) {
 
 async function server() {
   const instance = new McpServer(
-    { name: "indexes-whatsapp", version: "1.0.0" },
+    { name: "indexes-whatsapp", version: "1.1.0" },
     {
       instructions:
         "Private WhatsApp access for the Indexes Store administrator. Verify the exact destination before each approved write.",
@@ -235,9 +235,9 @@ async function server() {
   instance.registerTool(
     "whapi_get_media_image",
     {
-      title: "Read original WhatsApp image",
+      title: "Whapi get media image",
       description:
-        "Fetch one original JPEG/PNG image from Whapi by Media ID and return it as MCP image content for visual inspection.",
+        "CORE IMAGE TOOL. Fetch one original JPEG/PNG image from Whapi by Media ID and return it as MCP image content for visual inspection. Prefer this over generic media tools for images.",
       inputSchema: z.object({ mediaId: z.string().min(1).max(512) }).strict(),
       annotations,
       _meta: { securitySchemes },
