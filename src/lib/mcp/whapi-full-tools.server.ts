@@ -84,7 +84,12 @@ async function run(t:T,args:Record<string,unknown>){
 }
 export async function registerFullWhapiTools(instance:any,readSec:unknown,writeSec:unknown){
   const list=await manifest();
-  for(const t of list){const ro=["GET","HEAD"].includes(t.http.method),d=destructive(t),sh=inputShape(t);if(d)sh.confirmed=z.literal(true).describe("Explicit confirmation required.");
+  for(const t of list){
+    // Original media retrieval is exposed as the fixed whapi_get_media_image tool.
+    // Do not register the generic getMedia action because its binary response is
+    // serialized as text by this dynamic adapter and competes with image discovery.
+    if(t.toolName==="getMedia") continue;
+    const ro=["GET","HEAD"].includes(t.http.method),d=destructive(t),sh=inputShape(t);if(d)sh.confirmed=z.literal(true).describe("Explicit confirmation required.");
     instance.registerTool(t.toolName,{title:t.summary||t.toolName,description:`${d?"[DESTRUCTIVE] ":""}${t.description||`${t.http.method} ${t.http.path}`}`,inputSchema:z.object(sh).passthrough(),annotations:{readOnlyHint:ro,destructiveHint:d,idempotentHint:ro,openWorldHint:true},_meta:{securitySchemes:ro?readSec:writeSec}},async(args:Record<string,unknown>)=>{try{const data=await run(t,args);return{structuredContent:{data},content:[{type:"text" as const,text:JSON.stringify(data)}]}}catch(e){return{isError:true,content:[{type:"text" as const,text:e instanceof Error?e.message:"WHAPI_TOOL_FAILED"}]}}});
   }
   return list.length;
