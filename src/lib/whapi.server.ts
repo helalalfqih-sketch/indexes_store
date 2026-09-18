@@ -257,6 +257,75 @@ export async function resolveWhapiDestination(
   }
 }
 
+export interface WhapiResolvedName {
+  id: string;
+  name: string;
+  type: string | null;
+  readOnly: boolean;
+}
+
+function normalizedWhapiName(value: string): string {
+  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("ar");
+}
+
+export async function resolveWhapiDestinationByName(
+  name: string,
+  runtime: WhapiRuntime = {},
+): Promise<WhapiResolvedName> {
+  const wanted = normalizedWhapiName(name);
+  if (!wanted || wanted.length > 160) throw new WhapiError("INVALID_DESTINATION_NAME", 400);
+  const token = runtime.token ?? process.env.WHAPI_TOKEN;
+  if (!token || !token.trim()) throw new WhapiError("WHAPI_NOT_CONFIGURED", 503);
+  const fetcher = runtime.fetcher ?? fetch;
+  const matches = new Map<string, WhapiResolvedName>();
+
+  for (let offset = 0; offset <= 1000; offset += 100) {
+    const response = await fetcher(`${WHAPI_BASE}/chats?count=100&offset=${offset}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      redirect: "error",
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw new WhapiError("WHAPI_DESTINATION_LOOKUP_FAILED", 502);
+    }
+    const page = asRecord(await readBoundedJson(response, 256 * 1024));
+    const chats = Array.isArray(page.chats) ? page.chats : [];
+    for (const value of chats) {
+      const chat = asRecord(value);
+      if (
+        typeof chat.id === "string" &&
+        typeof chat.name === "string" &&
+        normalizedWhapiName(chat.name) === wanted
+      ) {
+        matches.set(chat.id, {
+          id: chat.id,
+          name: chat.name,
+          type: typeof chat.type === "string" ? chat.type : null,
+          readOnly: chat.read_only === true,
+        });
+      }
+    }
+    if (chats.length < 100) break;
+  }
+
+  if (matches.size === 0) throw new WhapiError("WHAPI_DESTINATION_NAME_NOT_FOUND", 404);
+  if (matches.size > 1) throw new WhapiError("WHAPI_DESTINATION_NAME_AMBIGUOUS", 409);
+  return [...matches.values()][0];
+}
+
+export async function sendWhapiTextByName(
+  input: { name: string; body: string },
+  runtime: WhapiRuntime = {},
+): Promise<unknown> {
+  const destination = await resolveWhapiDestinationByName(input.name, runtime);
+  if (destination.readOnly) throw new WhapiError("WHAPI_DESTINATION_READ_ONLY", 403);
+  const sent = asRecord(await sendWhapiText({ to: destination.id, body: input.body }, runtime));
+  return { ...sent, destinationName: destination.name };
+}
+
 export interface WhapiSendTextInput {
   to: string;
   body: string;
