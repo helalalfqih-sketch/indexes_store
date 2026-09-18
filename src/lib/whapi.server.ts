@@ -196,5 +196,19 @@ export async function readWhapi(
     };
   }
   if (!authorized) throw new WhapiError("WHAPI_NOT_AUTHORIZED", 503);
-  return get(path);
+  const data = await get(path);
+
+  // Whapi may expose group history through the global messages collection even
+  // when /messages/list/{groupJid} returns an empty page. Fall back only for
+  // exact group JIDs and keep the same bounded pagination.
+  if (input.resource === "messages" && input.chatId?.endsWith("@g.us")) {
+    const record = asRecord(data);
+    const messages = Array.isArray(record.messages) ? record.messages : null;
+    if (messages?.length === 0) {
+      const fallback = `/messages/list?chat_id=${encodeURIComponent(input.chatId)}&count=${input.count}&offset=${input.offset}`;
+      return get(fallback);
+    }
+  }
+
+  return data;
 }
