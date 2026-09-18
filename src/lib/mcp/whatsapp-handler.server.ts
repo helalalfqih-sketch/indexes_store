@@ -4,8 +4,10 @@ import { z } from "zod";
 import {
   forwardWhapiMessage,
   resolveWhapiDestination,
+  resolveWhapiDestinationByName,
   readWhapi,
   sendWhapiText,
+  sendWhapiTextByName,
 } from "@/lib/whapi.server";
 import { verifyAccessToken, AUDIENCE } from "./whatsapp-oauth.server";
 import { registerFullWhapiTools } from "./whapi-full-tools.server";
@@ -116,6 +118,55 @@ async function server() {
     },
     async ({ to }) => {
       const data = await resolveWhapiDestination(to);
+      return {
+        structuredContent: { data },
+        content: [{ type: "text" as const, text: JSON.stringify(data) }],
+      };
+    },
+  );
+
+  instance.registerTool(
+    "whapi_resolve_destination_by_name",
+    {
+      title: "Resolve WhatsApp destination by exact name",
+      description:
+        "Resolve one exact WhatsApp chat/group/channel name to a unique Chat ID. Fails instead of guessing when zero or multiple exact matches exist.",
+      inputSchema: z.object({ name: z.string().min(1).max(160) }).strict(),
+      annotations,
+      _meta: { securitySchemes },
+    },
+    async ({ name }) => {
+      const data = await resolveWhapiDestinationByName(name);
+      return {
+        structuredContent: { data },
+        content: [{ type: "text" as const, text: JSON.stringify(data) }],
+      };
+    },
+  );
+
+  instance.registerTool(
+    "whapi_send_text_by_name",
+    {
+      title: "Send approved WhatsApp text by exact destination name",
+      description:
+        "Resolve one exact destination name, refuse ambiguous matches, then send one explicitly approved text message to the resolved Chat ID.",
+      inputSchema: z
+        .object({
+          name: z.string().min(1).max(160),
+          body: z.string().min(1).max(4000),
+          confirmed: z.literal(true),
+        })
+        .strict(),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      _meta: { securitySchemes: writeSecuritySchemes },
+    },
+    async ({ name, body }) => {
+      const data = await sendWhapiTextByName({ name, body });
       return {
         structuredContent: { data },
         content: [{ type: "text" as const, text: JSON.stringify(data) }],
