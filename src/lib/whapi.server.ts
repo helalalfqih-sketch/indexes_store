@@ -250,13 +250,22 @@ export async function sendWhapiText(
       if (!response.ok) {
         const providerStatus = response.status;
         let providerCode: string | null = null;
+        let providerFieldNames: string[] = [];
+        let providerMessage: string | null = null;
         try {
           const errorBody = asRecord(await readBoundedJson(response, 16 * 1024));
+          providerFieldNames = Object.keys(errorBody).slice(0, 12);
           providerCode =
             typeof errorBody.code === "string"
               ? errorBody.code.slice(0, 80)
               : typeof errorBody.error === "string"
                 ? errorBody.error.slice(0, 80)
+                : null;
+          providerMessage =
+            typeof errorBody.message === "string"
+              ? errorBody.message.slice(0, 240)
+              : typeof errorBody.detail === "string"
+                ? errorBody.detail.slice(0, 240)
                 : null;
         } catch {
           await response.body?.cancel().catch(() => undefined);
@@ -266,6 +275,8 @@ export async function sendWhapiText(
           endpoint: "/messages/text",
           providerStatus,
           providerCode,
+          providerFieldNames,
+          providerMessage,
         });
         throw new WhapiError(
           providerStatus === 429 ? "WHAPI_RATE_LIMITED" : `WHAPI_UPSTREAM_${providerStatus}`,
