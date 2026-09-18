@@ -54,7 +54,10 @@ describe("Whapi text send request contract and safe diagnostics", () => {
       chatId: input.to,
       timestamp: 123,
     });
-    assert.deepEqual(mock.calls.map((call) => call.init.method), ["GET", "POST", "GET"]);
+    assert.deepEqual(
+      mock.calls.map((call) => call.init.method),
+      ["GET", "POST", "GET"],
+    );
     assert.equal(new Headers(mock.calls[0].init.headers).has("Content-Type"), false);
     assert.equal(mock.calls[1].url, "https://gate.whapi.cloud/messages/text");
     assert.equal(new Headers(mock.calls[1].init.headers).get("Content-Type"), "application/json");
