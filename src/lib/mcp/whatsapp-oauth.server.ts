@@ -54,14 +54,10 @@ export const resourceMetadata = () => ({
 });
 
 export function registerClient(redirectUris: string[]) {
-  if (!redirectUris.length || redirectUris.length > 5)
-    throw new WhapiError("INVALID_CLIENT", 400);
+  if (!redirectUris.length || redirectUris.length > 5) throw new WhapiError("INVALID_CLIENT", 400);
   for (const uri of redirectUris) {
     const u = new URL(uri);
-    if (
-      u.protocol !== "https:" ||
-      !["chatgpt.com", "chat.openai.com"].includes(u.hostname)
-    )
+    if (u.protocol !== "https:" || !["chatgpt.com", "chat.openai.com"].includes(u.hostname))
       throw new WhapiError("INVALID_REDIRECT_URI", 400);
   }
   return sign({
