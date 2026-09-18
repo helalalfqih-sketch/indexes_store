@@ -35,7 +35,10 @@ const READ_PATHS = {
 export function parseWhapiReadInput(url: URL, fixedResource?: "health"): WhapiReadInput {
   const params = url.searchParams;
   for (const key of params.keys()) {
-    if (!["resource", "count", "offset", "chatId"].includes(key) || params.getAll(key).length !== 1) {
+    if (
+      !["resource", "count", "offset", "chatId"].includes(key) ||
+      params.getAll(key).length !== 1
+    ) {
       throw new WhapiError("INVALID_QUERY", 400);
     }
   }
@@ -55,7 +58,10 @@ export function parseWhapiReadInput(url: URL, fixedResource?: "health"): WhapiRe
   };
   const chatId = params.get("chatId") ?? undefined;
   if (resource === "messages") {
-    if (!chatId || !/^[a-zA-Z0-9_-]{1,128}@(s\.whatsapp\.net|g\.us|newsletter|lid|c\.us)$/.test(chatId)) {
+    if (
+      !chatId ||
+      !/^[a-zA-Z0-9_-]{1,128}@(s\.whatsapp\.net|g\.us|newsletter|lid|c\.us)$/.test(chatId)
+    ) {
       throw new WhapiError("INVALID_CHAT_ID", 400);
     }
   } else if (chatId !== undefined) {
@@ -71,17 +77,25 @@ export function parseWhapiReadInput(url: URL, fixedResource?: "health"): WhapiRe
 
 export function buildWhapiReadPath(input: WhapiReadInput): string {
   // Validate again at the server-client boundary; never expose an arbitrary URL proxy.
-  const params = new URLSearchParams({ resource: input.resource, count: String(input.count), offset: String(input.offset) });
+  const params = new URLSearchParams({
+    resource: input.resource,
+    count: String(input.count),
+    offset: String(input.offset),
+  });
   if (input.chatId !== undefined) params.set("chatId", input.chatId);
   const checked = parseWhapiReadInput(new URL(`https://localhost/?${params}`));
   if (checked.resource === "health") return "/health";
-  const path = checked.resource === "messages"
-    ? `/messages/list/${encodeURIComponent(checked.chatId!)}`
-    : READ_PATHS[checked.resource];
+  const path =
+    checked.resource === "messages"
+      ? `/messages/list/${encodeURIComponent(checked.chatId!)}`
+      : READ_PATHS[checked.resource];
   return `${path}?count=${checked.count}&offset=${checked.offset}`;
 }
 
-export async function readBoundedJson(response: Response, maxBytes = MAX_RESPONSE_BYTES): Promise<unknown> {
+export async function readBoundedJson(
+  response: Response,
+  maxBytes = MAX_RESPONSE_BYTES,
+): Promise<unknown> {
   const length = Number(response.headers.get("content-length"));
   if (Number.isFinite(length) && length > maxBytes) throw new WhapiError("PAYLOAD_TOO_LARGE", 413);
   if (!response.body) throw new WhapiError("INVALID_JSON", 400);
@@ -109,17 +123,25 @@ export async function readBoundedJson(response: Response, maxBytes = MAX_RESPONS
   }
 }
 
-export function verifyWhapiWebhook(request: Request, secret = process.env.WHAPI_WEBHOOK_SECRET): boolean {
+export function verifyWhapiWebhook(
+  request: Request,
+  secret = process.env.WHAPI_WEBHOOK_SECRET,
+): boolean {
   if (!secret || secret.length < 32) return false;
-  const supplied = request.headers.get("x-whapi-secret") || request.headers.get("x-webhook-secret") ||
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
+  const supplied =
+    request.headers.get("x-whapi-secret") ||
+    request.headers.get("x-webhook-secret") ||
+    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
+    "";
   if (!supplied || supplied.length > 4096) return false;
   const digest = (value: string) => createHash("sha256").update(value).digest();
   return timingSafeEqual(digest(supplied), digest(secret));
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 export interface WhapiRuntime {
@@ -127,7 +149,10 @@ export interface WhapiRuntime {
   fetcher?: typeof fetch;
 }
 
-export async function readWhapi(input: WhapiReadInput, runtime: WhapiRuntime = {}): Promise<unknown> {
+export async function readWhapi(
+  input: WhapiReadInput,
+  runtime: WhapiRuntime = {},
+): Promise<unknown> {
   const path = buildWhapiReadPath(input);
   const token = runtime.token ?? process.env.WHAPI_TOKEN;
   if (!token || !token.trim()) throw new WhapiError("WHAPI_NOT_CONFIGURED", 503);
@@ -143,7 +168,10 @@ export async function readWhapi(input: WhapiReadInput, runtime: WhapiRuntime = {
       });
       if (!response.ok) {
         await response.body?.cancel();
-        throw new WhapiError(response.status === 429 ? "WHAPI_RATE_LIMITED" : "WHAPI_UPSTREAM_ERROR", response.status === 429 ? 429 : 502);
+        throw new WhapiError(
+          response.status === 429 ? "WHAPI_RATE_LIMITED" : "WHAPI_UPSTREAM_ERROR",
+          response.status === 429 ? 429 : 502,
+        );
       }
       return await readBoundedJson(response);
     } catch (error) {
@@ -157,9 +185,15 @@ export async function readWhapi(input: WhapiReadInput, runtime: WhapiRuntime = {
   // This integration is deliberately restricted to the owner's one configured channel.
   if (health.channel_id !== WHAPI_CHANNEL_ID) throw new WhapiError("WHAPI_CHANNEL_MISMATCH", 409);
   const authorized = status.code === 4 && status.text === "AUTH";
-  if (authorized && String(user.id) !== WHAPI_PHONE) throw new WhapiError("WHAPI_PHONE_MISMATCH", 409);
+  if (authorized && String(user.id) !== WHAPI_PHONE)
+    throw new WhapiError("WHAPI_PHONE_MISMATCH", 409);
   if (input.resource === "health") {
-    return { provider: "whapi", channelId: WHAPI_CHANNEL_ID, authorized, phone: authorized ? WHAPI_PHONE : null };
+    return {
+      provider: "whapi",
+      channelId: WHAPI_CHANNEL_ID,
+      authorized,
+      phone: authorized ? WHAPI_PHONE : null,
+    };
   }
   if (!authorized) throw new WhapiError("WHAPI_NOT_AUTHORIZED", 503);
   return get(path);

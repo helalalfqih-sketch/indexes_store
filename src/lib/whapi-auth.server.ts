@@ -4,7 +4,10 @@ export interface WhapiAuthClient {
   auth: {
     getUser: (token: string) => Promise<{ data: { user: { id: string } | null }; error: unknown }>;
   };
-  rpc: (name: "has_role", args: { _user_id: string; _role: "admin" }) => PromiseLike<{ data: unknown; error: unknown }>;
+  rpc: (
+    name: "has_role",
+    args: { _user_id: string; _role: "admin" },
+  ) => PromiseLike<{ data: unknown; error: unknown }>;
 }
 
 async function createAuthClient(token: string): Promise<WhapiAuthClient> {
@@ -22,7 +25,9 @@ export async function requireWhapiAdmin(
   request: Request,
   factory: (token: string) => Promise<WhapiAuthClient> = createAuthClient,
 ): Promise<string> {
-  const match = /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(request.headers.get("authorization") || "");
+  const match = /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(
+    request.headers.get("authorization") || "",
+  );
   if (!match || match[1].length > 8192) throw new WhapiError("UNAUTHORIZED", 401);
   const client = await factory(match[1]);
   const { data, error } = await client.auth.getUser(match[1]);

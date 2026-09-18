@@ -1,10 +1,16 @@
 import { requireWhapiAdmin } from "./whapi-auth.server";
-import { parseWhapiReadInput, readBoundedJson, readWhapi, verifyWhapiWebhook, WhapiError } from "./whapi.server";
+import {
+  parseWhapiReadInput,
+  readBoundedJson,
+  readWhapi,
+  verifyWhapiWebhook,
+  WhapiError,
+} from "./whapi.server";
 import type { WhapiReadInput } from "./whapi.server";
 
 const PRIVATE_HEADERS = {
   "Cache-Control": "private, no-store",
-  "Vary": "Authorization",
+  Vary: "Authorization",
   "X-Content-Type-Options": "nosniff",
 };
 
@@ -44,8 +50,12 @@ export async function handleWhapiWebhook(request: Request): Promise<Response> {
     return json({ ok: false, code: "JSON_REQUIRED" }, 415);
   }
   try {
-    const body = await readBoundedJson(new Response(request.body, { headers: request.headers }), 256 * 1024);
-    if (!body || typeof body !== "object" || Array.isArray(body)) throw new WhapiError("INVALID_EVENT", 400);
+    const body = await readBoundedJson(
+      new Response(request.body, { headers: request.headers }),
+      256 * 1024,
+    );
+    if (!body || typeof body !== "object" || Array.isArray(body))
+      throw new WhapiError("INVALID_EVENT", 400);
     // Do NOT acknowledge deliveries until a durable inbox exists. Read tools need no webhook.
     return json({ ok: false, code: "WEBHOOK_PROCESSOR_NOT_CONFIGURED", processed: false }, 503);
   } catch (error) {
