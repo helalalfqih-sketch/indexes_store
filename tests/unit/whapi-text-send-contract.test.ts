@@ -61,7 +61,10 @@ describe("Whapi text send request contract and safe diagnostics", () => {
     assert.equal(new Headers(mock.calls[0].init.headers).has("Content-Type"), false);
     assert.equal(mock.calls[1].url, "https://gate.whapi.cloud/messages/text");
     assert.equal(new Headers(mock.calls[1].init.headers).get("Content-Type"), "application/json");
-    assert.deepEqual(JSON.parse(String(mock.calls[1].init.body)), input);
+    assert.deepEqual(JSON.parse(String(mock.calls[1].init.body)), {
+      ...input,
+      typing_time: 0,
+    });
     assert.equal(new Headers(mock.calls[2].init.headers).has("Content-Type"), false);
     assert.ok(mock.calls.every((call) => call.init.redirect === "error"));
   });
