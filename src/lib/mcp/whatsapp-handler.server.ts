@@ -3,7 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { z } from "zod";
 import {
   forwardWhapiMessage,
-  INDEXES_STORES_GROUP_ID,
+  resolveWhapiDestination,
   readWhapi,
   sendWhapiText,
 } from "@/lib/whapi.server";
@@ -48,7 +48,7 @@ function server() {
     { name: "indexes-whatsapp", version: "1.0.0" },
     {
       instructions:
-        "Private WhatsApp access for the Indexes Store administrator. Reads are allowed; writes are limited to explicit allowlisted tools and destinations. Never delete, edit, broadcast, or mutate groups.",
+        "Private WhatsApp access for the Indexes Store administrator. Verify the exact destination before each approved write.",
     },
   );
   const add = (name: string, resource: "chats" | "groups" | "channels" | "products") =>
@@ -105,14 +105,31 @@ function server() {
     },
   );
   instance.registerTool(
-    "whapi_send_store_text",
+    "whapi_resolve_destination",
     {
-      title: "Send approved text to Indexes stores group",
-      description:
-        "Send one explicitly approved text message only to the fixed Indexes stores WhatsApp group. Never use for previews or drafts.",
+      title: "Resolve WhatsApp destination",
+      description: "Verify an exact Chat ID with Whapi before writing.",
+      inputSchema: z.object({ to: z.string().min(1).max(128) }).strict(),
+      annotations,
+      _meta: { securitySchemes },
+    },
+    async ({ to }) => {
+      const data = await resolveWhapiDestination(to);
+      return {
+        structuredContent: { data },
+        content: [{ type: "text" as const, text: JSON.stringify(data) }],
+      };
+    },
+  );
+
+  instance.registerTool(
+    "whapi_send_text",
+    {
+      title: "Send approved WhatsApp text",
+      description: "Send one approved text to an exact verified WhatsApp Chat ID.",
       inputSchema: z
         .object({
-          to: z.literal(INDEXES_STORES_GROUP_ID),
+          to: z.string().min(1).max(128),
           body: z.string().min(1).max(4000),
           confirmed: z.literal(true),
         })
@@ -135,15 +152,14 @@ function server() {
   );
 
   instance.registerTool(
-    "whapi_forward_store_message",
+    "whapi_forward_message",
     {
-      title: "Forward approved WhatsApp message to Indexes stores group",
-      description:
-        "Forward one explicitly approved existing WhatsApp message (including image/video media) only to the fixed Indexes stores group.",
+      title: "Forward approved WhatsApp message",
+      description: "Forward one approved existing WhatsApp message to an exact verified Chat ID.",
       inputSchema: z
         .object({
           messageId: z.string().min(1).max(512),
-          to: z.literal(INDEXES_STORES_GROUP_ID),
+          to: z.string().min(1).max(128),
           confirmed: z.literal(true),
         })
         .strict(),
