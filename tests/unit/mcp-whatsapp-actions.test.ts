@@ -26,6 +26,7 @@ function request(body: Record<string, unknown>, accessToken: string) {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
       "MCP-Protocol-Version": "2025-06-18",
     },
     body: JSON.stringify(body),
