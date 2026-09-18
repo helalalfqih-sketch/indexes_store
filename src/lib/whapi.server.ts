@@ -214,7 +214,7 @@ export async function readWhapi(
 }
 
 
-const WHAPI_DESTINATION_RE = /^[\\d-]{10,31}@(s\\.whatsapp\\.net|g\\.us|newsletter|lid|c\\.us)$/;
+const WHAPI_DESTINATION_RE = /^[\\d-]{9,31}@(s\\.whatsapp\\.net|g\\.us|newsletter|lid|c\\.us)$/;
 
 export function validateWhapiDestinationId(to: string): void {
   if (!WHAPI_DESTINATION_RE.test(to)) throw new WhapiError("INVALID_DESTINATION_ID", 400);
