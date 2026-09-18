@@ -248,10 +248,28 @@ export async function sendWhapiText(
         signal: AbortSignal.timeout(10000),
       });
       if (!response.ok) {
-        await response.body?.cancel();
+        const providerStatus = response.status;
+        let providerCode: string | null = null;
+        try {
+          const errorBody = asRecord(await readBoundedJson(response, 16 * 1024));
+          providerCode =
+            typeof errorBody.code === "string"
+              ? errorBody.code.slice(0, 80)
+              : typeof errorBody.error === "string"
+                ? errorBody.error.slice(0, 80)
+                : null;
+        } catch {
+          await response.body?.cancel().catch(() => undefined);
+        }
+        console.warn("[WHAPI_WRITE_ERROR]", {
+          operation: "send_text",
+          endpoint: "/messages/text",
+          providerStatus,
+          providerCode,
+        });
         throw new WhapiError(
-          response.status === 429 ? "WHAPI_RATE_LIMITED" : "WHAPI_UPSTREAM_ERROR",
-          response.status === 429 ? 429 : 502,
+          providerStatus === 429 ? "WHAPI_RATE_LIMITED" : `WHAPI_UPSTREAM_${providerStatus}`,
+          providerStatus === 429 ? 429 : 502,
         );
       }
       return readBoundedJson(response);
