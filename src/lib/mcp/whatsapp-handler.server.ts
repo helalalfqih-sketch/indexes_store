@@ -232,6 +232,59 @@ async function server() {
     },
   );
 
+  instance.registerTool(
+    "whapi_get_media_image",
+    {
+      title: "Read original WhatsApp image",
+      description:
+        "Fetch one original JPEG/PNG image from Whapi by Media ID and return it as MCP image content for visual inspection.",
+      inputSchema: z.object({ mediaId: z.string().min(1).max(512) }).strict(),
+      annotations,
+      _meta: { securitySchemes },
+    },
+    async ({ mediaId }) => {
+      const token = process.env.WHAPI_TOKEN;
+      if (!token?.trim()) throw new Error("WHAPI_NOT_CONFIGURED");
+      const response = await fetch(
+        `https://gate.whapi.cloud/media/${encodeURIComponent(mediaId)}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+          redirect: "error",
+          cache: "no-store",
+          signal: AbortSignal.timeout(15000),
+        },
+      );
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new Error(`WHAPI_MEDIA_${response.status}`);
+      }
+      const mime = (response.headers.get("content-type") || "").split(";")[0].trim();
+      if (!["image/jpeg", "image/png"].includes(mime)) {
+        await response.body?.cancel();
+        throw new Error("WHAPI_MEDIA_NOT_IMAGE");
+      }
+      const length = Number(response.headers.get("content-length"));
+      if (Number.isFinite(length) && length > 8 * 1024 * 1024) {
+        await response.body?.cancel();
+        throw new Error("WHAPI_MEDIA_TOO_LARGE");
+      }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("WHAPI_MEDIA_TOO_LARGE");
+      const data = Buffer.from(bytes).toString("base64");
+      return {
+        structuredContent: { mediaId, mimeType: mime, size: bytes.byteLength },
+        content: [
+          { type: "image" as const, data, mimeType: mime },
+          {
+            type: "text" as const,
+            text: JSON.stringify({ mediaId, mimeType: mime, size: bytes.byteLength }),
+          },
+        ],
+      };
+    },
+  );
+
   await registerFullWhapiTools(instance, securitySchemes, writeSecuritySchemes);
   return instance;
 }
