@@ -4,6 +4,8 @@ import { WhapiError } from "../whapi.server";
 const ISSUER = "https://indexes-store.vercel.app";
 const AUDIENCE = `${ISSUER}/api/mcp/whatsapp`;
 const SCOPE = "whatsapp.read";
+const CHATGPT_CLIENT_ID = "indexes_whatsapp_chatgpt";
+const CHATGPT_CALLBACK = "https://chatgpt.com/connector/oauth/P1JNErjTS0-9";
 const b64 = (v: Buffer | string) => Buffer.from(v).toString("base64url");
 
 const secret = () => {
@@ -68,6 +70,10 @@ export function registerClient(redirectUris: string[]) {
 }
 
 export function validateClient(clientId: string, redirectUri: string) {
+  if (clientId === CHATGPT_CLIENT_ID) {
+    if (redirectUri !== CHATGPT_CALLBACK) throw new WhapiError("INVALID_REDIRECT_URI", 400);
+    return;
+  }
   const data = verify(clientId);
   if (
     data.kind !== "client" ||
@@ -130,4 +136,4 @@ export function verifyAccessToken(token: string) {
   return data.sub;
 }
 
-export { ISSUER, AUDIENCE, SCOPE };
+export { ISSUER, AUDIENCE, SCOPE, CHATGPT_CLIENT_ID, CHATGPT_CALLBACK };
