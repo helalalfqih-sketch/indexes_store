@@ -69,7 +69,9 @@ describe("Private WhatsApp MCP discovery", () => {
 
     expect(response.status).toBe(200);
     const json = (await response.json()) as {
-      result?: { tools?: Array<{ name?: string; title?: string; annotations?: { readOnlyHint?: boolean } }> };
+      result?: {
+        tools?: Array<{ name?: string; title?: string; annotations?: { readOnlyHint?: boolean } }>;
+      };
     };
     const tools = json.result?.tools ?? [];
     expect(tools.map((tool) => tool.name)).toEqual([
