@@ -49,6 +49,7 @@ function zs(s?:S):z.ZodTypeAny {
   return s.description?v.describe(s.description):v;
 }
 function shape(s?:S){const sh:Record<string,z.ZodTypeAny>={};const req=new Set(s?.required??[]);for(const[k,c]of Object.entries(s?.properties??{})){const q=zs(c);sh[k]=req.has(k)?q:q.optional()}return sh}
+function inputShape(t:T){const schema=t.http.requestBody?.schema??t.inputSchema;return shape(schema)}
 function destructive(t:T){return t.http.method==="DELETE"||/delete|remove|leave|reject|reset|revoke|unsubscribe|demote|blacklist/i.test(t.toolName)}
 async function run(t:T,args:Record<string,unknown>){
   const token=process.env.WHAPI_TOKEN;if(!token?.trim())throw new WhapiError("WHAPI_NOT_CONFIGURED",503);
@@ -83,7 +84,7 @@ async function run(t:T,args:Record<string,unknown>){
 }
 export async function registerFullWhapiTools(instance:any,readSec:unknown,writeSec:unknown){
   const list=await manifest();
-  for(const t of list){const ro=["GET","HEAD"].includes(t.http.method),d=destructive(t),sh=shape(t.inputSchema);if(d)sh.confirmed=z.literal(true).describe("Explicit confirmation required.");
+  for(const t of list){const ro=["GET","HEAD"].includes(t.http.method),d=destructive(t),sh=inputShape(t);if(d)sh.confirmed=z.literal(true).describe("Explicit confirmation required.");
     instance.registerTool(t.toolName,{title:t.summary||t.toolName,description:`${d?"[DESTRUCTIVE] ":""}${t.description||`${t.http.method} ${t.http.path}`}`,inputSchema:z.object(sh).passthrough(),annotations:{readOnlyHint:ro,destructiveHint:d,idempotentHint:ro,openWorldHint:true},_meta:{securitySchemes:ro?readSec:writeSec}},async(args:Record<string,unknown>)=>{try{const data=await run(t,args);return{structuredContent:{data},content:[{type:"text" as const,text:JSON.stringify(data)}]}}catch(e){return{isError:true,content:[{type:"text" as const,text:e instanceof Error?e.message:"WHAPI_TOOL_FAILED"}]}}});
   }
   return list.length;
