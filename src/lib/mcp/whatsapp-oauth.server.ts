@@ -3,7 +3,7 @@ import { WhapiError } from "../whapi.server";
 
 const ISSUER = "https://indexes-store.vercel.app";
 const AUDIENCE = `${ISSUER}/api/mcp/whatsapp`;
-const SCOPE = "whatsapp.read whatsapp.write";
+const SCOPE = "whatsapp.read whatsapp.write offline_access";
 const CHATGPT_CLIENT_ID = "indexes_whatsapp_chatgpt";
 const CHATGPT_CALLBACK = "https://chatgpt.com/connector/oauth/P1JNErjTS0-9";
 const b64 = (v: Buffer | string) => Buffer.from(v).toString("base64url");
@@ -42,16 +42,16 @@ export const oauthMetadata = () => ({
   token_endpoint: `${ISSUER}/api/mcp/oauth/token`,
   registration_endpoint: `${ISSUER}/api/mcp/oauth/register`,
   response_types_supported: ["code"],
-  grant_types_supported: ["authorization_code"],
+  grant_types_supported: ["authorization_code", "refresh_token"],
   code_challenge_methods_supported: ["S256"],
-  scopes_supported: ["whatsapp.read", "whatsapp.write"],
+  scopes_supported: ["whatsapp.read", "whatsapp.write", "offline_access"],
   token_endpoint_auth_methods_supported: ["none"],
 });
 
 export const resourceMetadata = () => ({
   resource: AUDIENCE,
   authorization_servers: [ISSUER],
-  scopes_supported: ["whatsapp.read", "whatsapp.write"],
+  scopes_supported: ["whatsapp.read", "whatsapp.write", "offline_access"],
   bearer_methods_supported: ["header"],
 });
 
@@ -122,6 +122,37 @@ export function exchangeCode(
     scope: SCOPE,
     exp: Math.floor(Date.now() / 1000) + 3600,
   });
+}
+
+export function issueRefreshToken(sub: string) {
+  return sign({
+    kind: "refresh",
+    sub,
+    aud: AUDIENCE,
+    scope: SCOPE,
+    exp: Math.floor(Date.now() / 1000) + 86400 * 30,
+  });
+}
+
+export function exchangeRefreshToken(refreshToken: string) {
+  const data = verify(refreshToken);
+  if (
+    data.kind !== "refresh" ||
+    data.aud !== AUDIENCE ||
+    data.scope !== SCOPE ||
+    typeof data.sub !== "string"
+  )
+    throw new WhapiError("INVALID_GRANT", 400);
+  return {
+    accessToken: sign({
+      kind: "access",
+      sub: data.sub,
+      aud: AUDIENCE,
+      scope: SCOPE,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    }),
+    refreshToken: issueRefreshToken(data.sub),
+  };
 }
 
 export function verifyAccessToken(token: string) {
