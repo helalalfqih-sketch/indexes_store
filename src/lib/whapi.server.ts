@@ -213,7 +213,6 @@ export async function readWhapi(
   return data;
 }
 
-
 export const INDEXES_STORES_GROUP_ID = "120363386103838570@g.us";
 
 export interface WhapiSendTextInput {
@@ -225,7 +224,9 @@ export async function sendWhapiText(
   input: WhapiSendTextInput,
   runtime: WhapiRuntime = {},
 ): Promise<unknown> {
-  if (input.to !== INDEXES_STORES_GROUP_ID) throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
+  if (input.to !== INDEXES_STORES_GROUP_ID)
+    throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
+  if (typeof input.body !== "string") throw new WhapiError("INVALID_MESSAGE_BODY", 400);
   const body = input.body.trim();
   if (!body || body.length > 4000) throw new WhapiError("INVALID_MESSAGE_BODY", 400);
 
@@ -234,66 +235,82 @@ export async function sendWhapiText(
   const fetcher = runtime.fetcher ?? fetch;
 
   const request = async (path: string, init: RequestInit): Promise<unknown> => {
+    const stage = path === "/health" ? "health" : path === "/messages/text" ? "submit" : "verify";
+    const endpoint = stage === "verify" ? "/messages/list/{chatId}" : path;
+    const headers = new Headers(init.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    headers.set("Accept", "application/json");
+    // GET requests have no JSON body. Only the submission declares a content type.
+    if (init.body != null) headers.set("Content-Type", "application/json");
+    else headers.delete("Content-Type");
+
     try {
       const response = await fetcher(`${WHAPI_BASE}${path}`, {
         ...init,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          ...init.headers,
-        },
+        headers,
         redirect: "error",
         cache: "no-store",
         signal: AbortSignal.timeout(10000),
       });
       if (!response.ok) {
         const providerStatus = response.status;
-        let providerCode: string | null = null;
-        let providerFieldNames: string[] = [];
-        let providerMessage: string | null = null;
+        let providerCode: number | null = null;
+        let providerFields: string[] = [];
+        let reasonHints: string[] = [];
+        let responseFormat = "unreadable";
         try {
-          const errorBody = asRecord(await readBoundedJson(response, 16 * 1024));
-          providerFieldNames = Object.keys(errorBody).slice(0, 12);
-          const providerError = asRecord(errorBody.error);
-          providerCode =
-            typeof errorBody.code === "string"
-              ? errorBody.code.slice(0, 80)
-              : typeof errorBody.error === "string"
-                ? errorBody.error.slice(0, 80)
-                : typeof providerError.code === "string"
-                  ? providerError.code.slice(0, 80)
-                  : null;
-          providerMessage =
-            typeof errorBody.message === "string"
-              ? errorBody.message.slice(0, 240)
-              : typeof errorBody.detail === "string"
-                ? errorBody.detail.slice(0, 240)
-                : typeof providerError.message === "string"
-                  ? providerError.message.slice(0, 240)
-                  : typeof providerError.details === "string"
-                    ? providerError.details.slice(0, 240)
-                    : null;
+          const envelope = asRecord(await readBoundedJson(response, 16 * 1024));
+          const error = asRecord(envelope.error);
+          const code = error.code ?? envelope.code;
+          providerCode = typeof code === "number" && Number.isSafeInteger(code) ? code : null;
+          responseFormat = "json";
+          // Whapi documents { error: { code, message, details } }. Never log raw
+          // message/details: they may echo a token, recipient, or the message body.
+          const diagnostic = [error.message, error.details]
+            .filter((value): value is string => typeof value === "string")
+            .join(" ")
+            .toLowerCase();
+          providerFields = ["to", "body", "text", "chat_id"].filter((field) =>
+            new RegExp(`\\b${field}\\b`).test(diagnostic),
+          );
+          reasonHints = [
+            "required",
+            "invalid",
+            "string",
+            "object",
+            "not found",
+            "permission",
+            "not authorized",
+            "not a participant",
+            "admin",
+            "channel",
+            "blocked",
+          ].filter((hint) => diagnostic.includes(hint));
         } catch {
           await response.body?.cancel().catch(() => undefined);
         }
         console.warn("[WHAPI_WRITE_ERROR]", {
           operation: "send_text",
-          endpoint: "/messages/text",
+          stage,
+          endpoint,
+          method: init.method,
           providerStatus,
           providerCode,
-          providerFieldNames,
-          providerMessage,
+          providerFields,
+          reasonHints,
+          responseFormat,
         });
+        const prefix = stage === "health" ? "WHAPI_HEALTH" : "WHAPI_UPSTREAM";
         throw new WhapiError(
-          providerStatus === 429 ? "WHAPI_RATE_LIMITED" : `WHAPI_UPSTREAM_${providerStatus}`,
+          providerStatus === 429 ? "WHAPI_RATE_LIMITED" : `${prefix}_${providerStatus}`,
           providerStatus === 429 ? 429 : 502,
         );
       }
-      return readBoundedJson(response);
+      return await readBoundedJson(response);
     } catch (error) {
       if (error instanceof WhapiError) throw error;
-      throw new WhapiError("WHAPI_UNAVAILABLE", 502);
+      // A transport failure after POST is ambiguous. Never retry automatically.
+      throw new WhapiError(stage === "submit" ? "WHAPI_SEND_UNKNOWN" : "WHAPI_UNAVAILABLE", 502);
     }
   };
 
@@ -308,7 +325,7 @@ export async function sendWhapiText(
   const result = asRecord(
     await request("/messages/text", {
       method: "POST",
-      body: JSON.stringify({ to: input.to, body: { text: body } }),
+      body: JSON.stringify({ to: input.to, body }),
     }),
   );
   const message = asRecord(result.message);
@@ -318,10 +335,9 @@ export async function sendWhapiText(
   // Verify the message is actually readable from the intended destination before
   // reporting SENT. A provider acknowledgement alone is not delivery proof.
   const verification = asRecord(
-    await request(
-      `/messages/list/${encodeURIComponent(input.to)}?count=20&offset=0`,
-      { method: "GET" },
-    ),
+    await request(`/messages/list/${encodeURIComponent(input.to)}?count=20&offset=0`, {
+      method: "GET",
+    }),
   );
   const messages = Array.isArray(verification.messages) ? verification.messages : [];
   const verified = messages.some((value) => {
@@ -348,7 +364,8 @@ export async function forwardWhapiMessage(
   input: WhapiForwardInput,
   runtime: WhapiRuntime = {},
 ): Promise<unknown> {
-  if (input.to !== INDEXES_STORES_GROUP_ID) throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
+  if (input.to !== INDEXES_STORES_GROUP_ID)
+    throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
   if (!/^[A-Za-z0-9._:-]{1,512}$/.test(input.messageId))
     throw new WhapiError("INVALID_MESSAGE_ID", 400);
 
@@ -387,7 +404,8 @@ export async function forwardWhapiMessage(
   const user = asRecord(health.user);
   const status = asRecord(health.status);
   if (health.channel_id !== WHAPI_CHANNEL_ID) throw new WhapiError("WHAPI_CHANNEL_MISMATCH", 409);
-  if (!(status.code === 4 && status.text === "AUTH")) throw new WhapiError("WHAPI_NOT_AUTHORIZED", 503);
+  if (!(status.code === 4 && status.text === "AUTH"))
+    throw new WhapiError("WHAPI_NOT_AUTHORIZED", 503);
   if (String(user.id) !== WHAPI_PHONE) throw new WhapiError("WHAPI_PHONE_MISMATCH", 409);
 
   const result = asRecord(
@@ -401,10 +419,9 @@ export async function forwardWhapiMessage(
     throw new WhapiError("WHAPI_FORWARD_UNCONFIRMED", 502);
   }
   const verification = asRecord(
-    await call(
-      `/messages/list/${encodeURIComponent(input.to)}?count=20&offset=0`,
-      { method: "GET" },
-    ),
+    await call(`/messages/list/${encodeURIComponent(input.to)}?count=20&offset=0`, {
+      method: "GET",
+    }),
   );
   const messages = Array.isArray(verification.messages) ? verification.messages : [];
   const verified = messages.some((value) => {
