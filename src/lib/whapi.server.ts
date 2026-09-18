@@ -286,3 +286,74 @@ export async function sendWhapiText(
     timestamp: message.timestamp ?? null,
   };
 }
+
+
+export interface WhapiForwardInput {
+  messageId: string;
+  to: string;
+}
+
+export async function forwardWhapiMessage(
+  input: WhapiForwardInput,
+  runtime: WhapiRuntime = {},
+): Promise<unknown> {
+  if (input.to !== INDEXES_STORES_GROUP_ID) throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
+  if (!/^[A-Za-z0-9._:-]{1,512}$/.test(input.messageId))
+    throw new WhapiError("INVALID_MESSAGE_ID", 400);
+
+  const token = runtime.token ?? process.env.WHAPI_TOKEN;
+  if (!token || !token.trim()) throw new WhapiError("WHAPI_NOT_CONFIGURED", 503);
+  const fetcher = runtime.fetcher ?? fetch;
+  const call = async (path: string, init: RequestInit): Promise<unknown> => {
+    try {
+      const response = await fetcher(`${WHAPI_BASE}${path}`, {
+        ...init,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...init.headers,
+        },
+        redirect: "error",
+        cache: "no-store",
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new WhapiError(
+          response.status === 429 ? "WHAPI_RATE_LIMITED" : "WHAPI_UPSTREAM_ERROR",
+          response.status === 429 ? 429 : 502,
+        );
+      }
+      return readBoundedJson(response);
+    } catch (error) {
+      if (error instanceof WhapiError) throw error;
+      throw new WhapiError("WHAPI_UNAVAILABLE", 502);
+    }
+  };
+
+  const health = asRecord(await call("/health", { method: "GET" }));
+  const user = asRecord(health.user);
+  const status = asRecord(health.status);
+  if (health.channel_id !== WHAPI_CHANNEL_ID) throw new WhapiError("WHAPI_CHANNEL_MISMATCH", 409);
+  if (!(status.code === 4 && status.text === "AUTH")) throw new WhapiError("WHAPI_NOT_AUTHORIZED", 503);
+  if (String(user.id) !== WHAPI_PHONE) throw new WhapiError("WHAPI_PHONE_MISMATCH", 409);
+
+  const result = asRecord(
+    await call(`/messages/${encodeURIComponent(input.messageId)}`, {
+      method: "POST",
+      body: JSON.stringify({ to: input.to, force: true }),
+    }),
+  );
+  const message = asRecord(result.message);
+  if (result.sent !== true || typeof message.id !== "string" || message.chat_id !== input.to) {
+    throw new WhapiError("WHAPI_FORWARD_UNCONFIRMED", 502);
+  }
+  return {
+    sent: true,
+    messageId: message.id,
+    chatId: message.chat_id,
+    type: message.type ?? null,
+    timestamp: message.timestamp ?? null,
+  };
+}
