@@ -226,6 +226,26 @@ describe("Whapi upstream guardrails", () => {
     assert.equal(mock.calls[1].url, "https://gate.whapi.cloud/chats?count=1&offset=0");
     assert.ok(mock.calls.every((call) => call.init?.method === "GET"));
   });
+  it("falls back to the global message query when a group-specific history page is empty", async () => {
+    const groupId = "120363424962689313@g.us";
+    const mock = upstream([healthy(), { messages: [] }, { messages: [{ id: "group-message" }] }]);
+    assert.deepEqual(
+      await readWhapi(input(`resource=messages&chatId=${encodeURIComponent(groupId)}&count=20`), {
+        token: "test",
+        fetcher: mock.fetcher,
+      }),
+      { messages: [{ id: "group-message" }] },
+    );
+    assert.equal(
+      mock.calls[1].url,
+      `https://gate.whapi.cloud/messages/list/${encodeURIComponent(groupId)}?count=20&offset=0`,
+    );
+    assert.equal(
+      mock.calls[2].url,
+      `https://gate.whapi.cloud/messages/list?chat_id=${encodeURIComponent(groupId)}&count=20&offset=0`,
+    );
+  });
+
   it("rejects an empty token before network access", async () => {
     const mock = upstream([]);
     await assert.rejects(
