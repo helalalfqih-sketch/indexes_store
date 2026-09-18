@@ -1,5 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { WhapiError } from "./whapi.server";
+import { WhapiError } from "../whapi.server";
 
 const ISSUER = "https://indexes-store.vercel.app";
 const AUDIENCE = `${ISSUER}/api/mcp/whatsapp`;
