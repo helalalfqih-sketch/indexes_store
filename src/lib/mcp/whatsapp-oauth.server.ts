@@ -3,7 +3,7 @@ import { WhapiError } from "../whapi.server";
 
 const ISSUER = "https://indexes-store.vercel.app";
 const AUDIENCE = `${ISSUER}/api/mcp/whatsapp`;
-const SCOPE = "whatsapp.read";
+const SCOPE = "whatsapp.read whatsapp.write";
 const CHATGPT_CLIENT_ID = "indexes_whatsapp_chatgpt";
 const CHATGPT_CALLBACK = "https://chatgpt.com/connector/oauth/P1JNErjTS0-9";
 const b64 = (v: Buffer | string) => Buffer.from(v).toString("base64url");
@@ -44,14 +44,14 @@ export const oauthMetadata = () => ({
   response_types_supported: ["code"],
   grant_types_supported: ["authorization_code"],
   code_challenge_methods_supported: ["S256"],
-  scopes_supported: [SCOPE],
+  scopes_supported: ["whatsapp.read", "whatsapp.write"],
   token_endpoint_auth_methods_supported: ["none"],
 });
 
 export const resourceMetadata = () => ({
   resource: AUDIENCE,
   authorization_servers: [ISSUER],
-  scopes_supported: [SCOPE],
+  scopes_supported: ["whatsapp.read", "whatsapp.write"],
   bearer_methods_supported: ["header"],
 });
 
