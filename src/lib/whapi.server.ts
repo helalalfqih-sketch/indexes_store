@@ -279,14 +279,29 @@ export async function sendWhapiText(
   if (result.sent !== true || typeof message.id !== "string" || message.chat_id !== input.to) {
     throw new WhapiError("WHAPI_SEND_UNCONFIRMED", 502);
   }
+  // Verify the message is actually readable from the intended destination before
+  // reporting SENT. A provider acknowledgement alone is not delivery proof.
+  const verification = asRecord(
+    await request(
+      `/messages/list/${encodeURIComponent(input.to)}?count=20&offset=0`,
+      { method: "GET" },
+    ),
+  );
+  const messages = Array.isArray(verification.messages) ? verification.messages : [];
+  const verified = messages.some((value) => {
+    const candidate = asRecord(value);
+    return candidate.id === message.id && candidate.chat_id === input.to;
+  });
+  if (!verified) throw new WhapiError("WHAPI_SEND_UNVERIFIED", 502);
+
   return {
     sent: true,
+    verified: true,
     messageId: message.id,
     chatId: message.chat_id,
     timestamp: message.timestamp ?? null,
   };
 }
-
 
 export interface WhapiForwardInput {
   messageId: string;
@@ -349,8 +364,22 @@ export async function forwardWhapiMessage(
   if (result.sent !== true || typeof message.id !== "string" || message.chat_id !== input.to) {
     throw new WhapiError("WHAPI_FORWARD_UNCONFIRMED", 502);
   }
+  const verification = asRecord(
+    await call(
+      `/messages/list/${encodeURIComponent(input.to)}?count=20&offset=0`,
+      { method: "GET" },
+    ),
+  );
+  const messages = Array.isArray(verification.messages) ? verification.messages : [];
+  const verified = messages.some((value) => {
+    const candidate = asRecord(value);
+    return candidate.id === message.id && candidate.chat_id === input.to;
+  });
+  if (!verified) throw new WhapiError("WHAPI_FORWARD_UNVERIFIED", 502);
+
   return {
     sent: true,
+    verified: true,
     messageId: message.id,
     chatId: message.chat_id,
     type: message.type ?? null,
