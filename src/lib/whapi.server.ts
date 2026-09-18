@@ -205,9 +205,18 @@ export async function readWhapi(
     const record = asRecord(data);
     const messages = Array.isArray(record.messages) ? record.messages : null;
     if (messages?.length === 0) {
-      const fallback = `/messages/list?chat_id=${encodeURIComponent(input.chatId)}&count=${input.count}&offset=${input.offset}`;
-      return get(fallback);
+      const fallback = asRecord(
+        await get(
+          `/messages/list?chat_id=${encodeURIComponent(input.chatId)}&count=${input.count}&offset=${input.offset}`,
+        ),
+      );
+      const fallbackMessages = Array.isArray(fallback.messages) ? fallback.messages : [];
+      const exact = fallbackMessages.filter((value) => asRecord(value).chat_id === input.chatId);
+      // Never leak messages from another chat if Whapi ignores the chat_id filter.
+      return { ...fallback, messages: exact };
     }
+    const exact = messages.filter((value) => asRecord(value).chat_id === input.chatId);
+    return { ...record, messages: exact };
   }
 
   return data;
