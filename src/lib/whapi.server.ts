@@ -255,18 +255,25 @@ export async function sendWhapiText(
         try {
           const errorBody = asRecord(await readBoundedJson(response, 16 * 1024));
           providerFieldNames = Object.keys(errorBody).slice(0, 12);
+          const providerError = asRecord(errorBody.error);
           providerCode =
             typeof errorBody.code === "string"
               ? errorBody.code.slice(0, 80)
               : typeof errorBody.error === "string"
                 ? errorBody.error.slice(0, 80)
-                : null;
+                : typeof providerError.code === "string"
+                  ? providerError.code.slice(0, 80)
+                  : null;
           providerMessage =
             typeof errorBody.message === "string"
               ? errorBody.message.slice(0, 240)
               : typeof errorBody.detail === "string"
                 ? errorBody.detail.slice(0, 240)
-                : null;
+                : typeof providerError.message === "string"
+                  ? providerError.message.slice(0, 240)
+                  : typeof providerError.details === "string"
+                    ? providerError.details.slice(0, 240)
+                    : null;
         } catch {
           await response.body?.cancel().catch(() => undefined);
         }
