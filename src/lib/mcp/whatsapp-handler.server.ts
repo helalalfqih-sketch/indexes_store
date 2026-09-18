@@ -8,6 +8,7 @@ import {
   sendWhapiText,
 } from "@/lib/whapi.server";
 import { verifyAccessToken, AUDIENCE } from "./whatsapp-oauth.server";
+import { registerFullWhapiTools } from "./whapi-full-tools.server";
 
 const META = `${AUDIENCE.replace(
   "/api/mcp/whatsapp",
@@ -43,7 +44,7 @@ function bearer(request: Request) {
   }
 }
 
-function server() {
+async function server() {
   const instance = new McpServer(
     { name: "indexes-whatsapp", version: "1.0.0" },
     {
@@ -180,6 +181,7 @@ function server() {
     },
   );
 
+  await registerFullWhapiTools(instance, securitySchemes, writeSecuritySchemes);
   return instance;
 }
 
@@ -213,7 +215,7 @@ export async function handleWhatsappMcp(request: Request) {
       headers: { ...RESPONSE_HEADERS, Allow: "POST, OPTIONS" },
     });
 
-  const instance = server();
+  const instance = await server();
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
