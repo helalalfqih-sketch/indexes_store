@@ -48,7 +48,7 @@ function bearer(request: Request) {
 
 async function server() {
   const instance = new McpServer(
-    { name: "indexes-whatsapp", version: "1.1.0" },
+    { name: "indexes-whatsapp", version: "1.2.0" },
     {
       instructions:
         "Private WhatsApp access for the Indexes Store administrator. Verify the exact destination before each approved write.",
@@ -228,6 +228,148 @@ async function server() {
       return {
         structuredContent: { data },
         content: [{ type: "text" as const, text: JSON.stringify(data) }],
+      };
+    },
+  );
+
+  instance.registerTool(
+    "whapi_prepare_archive_sync",
+    {
+      title: "Prepare Whapi archive sync",
+      description:
+        "Safely enable full_history and callback_persist, preserve existing webhooks, attach the private webhook secret to the Indexes webhook, and run one webhook test. Does not reconnect WhatsApp automatically.",
+      inputSchema: z.object({ confirmed: z.literal(true) }).strict(),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+      _meta: { securitySchemes: writeSecuritySchemes },
+    },
+    async () => {
+      const token = process.env.WHAPI_TOKEN?.trim();
+      const secret = process.env.WHAPI_WEBHOOK_SECRET?.trim();
+      if (!token) throw new Error("WHAPI_NOT_CONFIGURED");
+      if (!secret || secret.length < 32) throw new Error("WHAPI_WEBHOOK_SECRET_NOT_CONFIGURED");
+
+      const baseUrl = AUDIENCE.replace("/api/mcp/whatsapp", "");
+      const targetUrl = `${baseUrl}/api/webhooks/whapi`;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      };
+
+      const currentResponse = await fetch("https://gate.whapi.cloud/settings", {
+        method: "GET",
+        headers,
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!currentResponse.ok) {
+        await currentResponse.body?.cancel();
+        throw new Error(`WHAPI_GET_SETTINGS_${currentResponse.status}`);
+      }
+      const current = (await currentResponse.json()) as Record<string, unknown>;
+      const currentWebhooks = Array.isArray(current.webhooks) ? current.webhooks : [];
+
+      let found = false;
+      const webhooks = currentWebhooks.map((value) => {
+        if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+        const webhook = value as Record<string, unknown>;
+        if (webhook.url !== targetUrl) return value;
+        found = true;
+
+        const existingHeaders =
+          webhook.headers && typeof webhook.headers === "object" && !Array.isArray(webhook.headers)
+            ? (webhook.headers as Record<string, string>)
+            : {};
+        const existingEvents = Array.isArray(webhook.events) ? webhook.events : [];
+        const hasMessagesPost = existingEvents.some((event) => {
+          if (!event || typeof event !== "object" || Array.isArray(event)) return false;
+          const item = event as Record<string, unknown>;
+          return item.type === "messages" && item.method === "post";
+        });
+        return {
+          ...webhook,
+          url: targetUrl,
+          mode: "body",
+          headers: { ...existingHeaders, "x-whapi-secret": secret },
+          events: hasMessagesPost
+            ? existingEvents
+            : [...existingEvents, { type: "messages", method: "post" }],
+        };
+      });
+
+      if (!found) {
+        webhooks.push({
+          url: targetUrl,
+          mode: "body",
+          headers: { "x-whapi-secret": secret },
+          events: [{ type: "messages", method: "post" }],
+        });
+      }
+
+      const patchResponse = await fetch("https://gate.whapi.cloud/settings", {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({
+          full_history: true,
+          callback_persist: true,
+          webhooks,
+        }),
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!patchResponse.ok) {
+        await patchResponse.body?.cancel();
+        throw new Error(`WHAPI_PATCH_SETTINGS_${patchResponse.status}`);
+      }
+      await patchResponse.body?.cancel();
+
+      const testResponse = await fetch("https://gate.whapi.cloud/settings/webhook_test", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          type: "messages",
+          url: targetUrl,
+          mode: "body",
+          headers: { "x-whapi-secret": secret },
+        }),
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(15000),
+      });
+      const webhookTestOk = testResponse.ok;
+      if (testResponse.body) await testResponse.body.cancel();
+
+      return {
+        structuredContent: {
+          data: {
+            fullHistoryEnabled: true,
+            callbackPersistEnabled: true,
+            webhookConfigured: true,
+            webhookTestOk,
+            webhookUrl: targetUrl,
+            reconnectRequired: true,
+          },
+        },
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify({
+              fullHistoryEnabled: true,
+              callbackPersistEnabled: true,
+              webhookConfigured: true,
+              webhookTestOk,
+              webhookUrl: targetUrl,
+              reconnectRequired: true,
+            }),
+          },
+        ],
       };
     },
   );
