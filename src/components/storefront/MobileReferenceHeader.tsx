@@ -1,16 +1,18 @@
 import React from "react";
-import { Bell, Camera, ChevronDown, Heart, Mail, Search, ShoppingCart } from "lucide-react";
+import { Bell, ChevronDown, Heart, Menu, Search, ShoppingCart } from "lucide-react";
 
 interface MobileReferenceHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onSubmitSearch?: () => void;
+  onSubmitSearch: () => void;
   cartCount: number;
   unreadNotificationsCount: number;
   onOpenCart: () => void;
-  onOpenNotifications: () => void;
+  onOpenNotifications?: () => void;
+  onOpenWishlist?: () => void;
   onOpenMenu: () => void;
   onSelectCategory?: (categoryId: string) => void;
+  selectedCategory?: string;
 }
 
 const categories = [
@@ -29,8 +31,10 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
   unreadNotificationsCount,
   onOpenCart,
   onOpenNotifications,
+  onOpenWishlist,
   onOpenMenu,
   onSelectCategory,
+  selectedCategory = "all",
 }) => {
   return (
     <header
@@ -38,14 +42,16 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
       dir="rtl"
     >
       <div className="flex h-12 items-center gap-1 px-2" dir="ltr">
-        <button
-          type="button"
-          onClick={onOpenMenu}
-          aria-label="المفضلة"
-          className="grid h-10 w-9 shrink-0 place-items-center text-white"
-        >
-          <Heart className="h-[21px] w-[21px] stroke-[1.8]" />
-        </button>
+        {onOpenWishlist && (
+          <button
+            type="button"
+            onClick={onOpenWishlist}
+            aria-label="المفضلة"
+            className="grid h-10 w-9 shrink-0 place-items-center text-white"
+          >
+            <Heart className="h-[21px] w-[21px] stroke-[1.8]" />
+          </button>
+        )}
 
         <div
           className="flex h-9 min-w-0 flex-1 items-center border border-white bg-white"
@@ -55,7 +61,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") onSubmitSearch?.();
+              if (event.key === "Enter") onSubmitSearch();
             }}
             placeholder="البحث"
             aria-label="البحث عن المنتجات"
@@ -68,13 +74,6 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
             className="grid h-9 w-9 shrink-0 place-items-center border-r border-neutral-200 text-black"
           >
             <Search className="h-[18px] w-[18px] stroke-[2]" />
-          </button>
-          <button
-            type="button"
-            aria-label="البحث بالكاميرا"
-            className="grid h-9 w-8 shrink-0 place-items-center text-black"
-          >
-            <Camera className="h-[17px] w-[17px] stroke-[1.8]" />
           </button>
         </div>
 
@@ -91,24 +90,26 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
             </span>
           )}
         </button>
-        <button
-          type="button"
-          onClick={onOpenNotifications}
-          aria-label="الإشعارات"
-          className="relative grid h-10 w-9 shrink-0 place-items-center text-white"
-        >
-          <Bell className="h-[21px] w-[21px] stroke-[1.8]" />
-          {unreadNotificationsCount > 0 && (
-            <span className="absolute right-0.5 top-1 h-2 w-2 rounded-full bg-[#ff2442]" />
-          )}
-        </button>
+        {onOpenNotifications && (
+          <button
+            type="button"
+            onClick={onOpenNotifications}
+            aria-label="الإشعارات"
+            className="relative grid h-10 w-9 shrink-0 place-items-center text-white"
+          >
+            <Bell className="h-[21px] w-[21px] stroke-[1.8]" />
+            {unreadNotificationsCount > 0 && (
+              <span className="absolute right-0.5 top-1 h-2 w-2 rounded-full bg-[#ff2442]" />
+            )}
+          </button>
+        )}
         <button
           type="button"
           onClick={onOpenMenu}
-          aria-label="الرسائل والقائمة"
+          aria-label="القائمة الرئيسية"
           className="grid h-10 w-8 shrink-0 place-items-center text-white"
         >
-          <Mail className="h-[20px] w-[20px] stroke-[1.8]" />
+          <Menu className="h-[20px] w-[20px] stroke-[1.8]" />
         </button>
       </div>
 
@@ -116,15 +117,18 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
         className="flex h-9 items-end gap-5 overflow-x-auto border-t border-white/10 px-3 no-scrollbar"
         aria-label="أقسام المتجر"
       >
-        {categories.map((category, index) => (
+        {categories.map((category) => (
           <button
             type="button"
             key={category.id}
             onClick={() => onSelectCategory?.(category.id)}
-            className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${index === 0 ? "font-black text-white" : "text-white/75"}`}
+            aria-pressed={selectedCategory === category.id}
+            className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${selectedCategory === category.id ? "font-black text-white" : "text-white/75"}`}
           >
             {category.label}
-            {index === 0 && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-white" />}
+            {selectedCategory === category.id && (
+              <span className="absolute inset-x-0 bottom-0 h-[2px] bg-white" />
+            )}
           </button>
         ))}
         <button
