@@ -30,6 +30,15 @@ describe("store development adapter guardrails", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("rejects PR inspection outside agent branches before GitHub access", async () => {
+    process.env.STORE_MCP_GITHUB_TOKEN = "test-token";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const adapter = createStoreDevelopmentAdapter();
+    await expect(adapter.inspectPullRequest("main")).rejects.toThrow("UNSAFE_BRANCH");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("rejects direct main writes and non-agent branches", async () => {
     process.env.STORE_MCP_GITHUB_TOKEN = "test-token";
     const fetchMock = vi.fn();
