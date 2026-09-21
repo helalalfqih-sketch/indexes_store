@@ -20,6 +20,17 @@ describe("store browser inspection adapter", () => {
     ).rejects.toThrow("BROWSER_URL_FORBIDDEN");
   });
 
+  it("rejects broad safe-click selectors before launching Chromium", async () => {
+    const adapter = createStoreBrowserInspectionAdapter();
+    await expect(
+      adapter.safeClick({
+        url: "https://indexes-store.vercel.app/",
+        selector: "button",
+        device: "desktop",
+      }),
+    ).rejects.toThrow("SAFE_SELECTOR_FORBIDDEN");
+  });
+
   it("blocks safe-click inspection outside the Store origin before launching Chromium", async () => {
     const adapter = createStoreBrowserInspectionAdapter();
     await expect(
