@@ -7,6 +7,10 @@ import {
   type StoreDevelopmentAdapter,
 } from "./store-development.server";
 import { createStoreInspectionAdapter, type StoreInspectionAdapter } from "./store-inspection.server";
+import {
+  createStoreBrowserInspectionAdapter,
+  type StoreBrowserInspectionAdapter,
+} from "./store-browser-inspection.server";
 import { STORE_MCP_AUDIENCE, STORE_MCP_SCOPE, verifyStoreAccessToken } from "./store-oauth.server";
 
 const RESOURCE_METADATA = `${STORE_MCP_AUDIENCE.replace(
@@ -37,6 +41,7 @@ type Authorize = (token: string) => Authorization;
 type AdapterFactory = (tenantId: string) => StoreAdminAdapter;
 type DevelopmentAdapterFactory = () => StoreDevelopmentAdapter;
 type InspectionAdapterFactory = () => StoreInspectionAdapter;
+type BrowserInspectionAdapterFactory = () => StoreBrowserInspectionAdapter;
 
 function bearer(request: Request, authorize: Authorize): Authorization | null {
   const match = /^Bearer (.+)$/.exec(request.headers.get("authorization") || "");
@@ -75,6 +80,7 @@ function createServer(
   adapter: StoreAdminAdapter,
   development: StoreDevelopmentAdapter,
   inspection: StoreInspectionAdapter,
+  browserInspection: StoreBrowserInspectionAdapter,
 ) {
   const server = new McpServer(
     { name: "indexes-store-control-plane", version: "2.0.0" },
@@ -243,6 +249,45 @@ function createServer(
     ({ url }) => inspection.inspectMobileUi(url),
   );
 
+  tool(
+    "inspect_rendered_page",
+    "Inspect rendered Store page",
+    "Launch a headless browser and inspect the rendered interactive DOM at desktop or mobile size. Read-only: no form submission or mutation.",
+    z
+      .object({
+        url: z.string().url().default("https://indexes-store.vercel.app/"),
+        device: z.enum(["desktop", "mobile"]).default("desktop"),
+      })
+      .strict(),
+    ({ url, device }) => browserInspection.inspectRenderedPage(url, device),
+  );
+  tool(
+    "inspect_console",
+    "Inspect Store browser console",
+    "Load a Store page in a headless browser and capture console errors and page errors. Read-only.",
+    z.object({ url: z.string().url().default("https://indexes-store.vercel.app/") }).strict(),
+    ({ url }) => browserInspection.inspectConsole(url),
+  );
+  tool(
+    "inspect_network",
+    "Inspect Store browser network",
+    "Load a Store page and report failed requests and HTTP responses >=400 without returning credentials, request bodies, or headers.",
+    z.object({ url: z.string().url().default("https://indexes-store.vercel.app/") }).strict(),
+    ({ url }) => browserInspection.inspectNetwork(url),
+  );
+  tool(
+    "inspect_screenshot",
+    "Inspect Store screenshot",
+    "Render a full-page desktop or mobile screenshot and return size/hash metadata. No site mutation is performed.",
+    z
+      .object({
+        url: z.string().url().default("https://indexes-store.vercel.app/"),
+        device: z.enum(["desktop", "mobile"]).default("desktop"),
+      })
+      .strict(),
+    ({ url, device }) => browserInspection.screenshot(url, device),
+  );
+
   developmentRead(
     "development_repository",
     "Inspect Store source repository",
@@ -321,6 +366,7 @@ export async function handleStoreMcp(
     adapterFactory?: AdapterFactory;
     developmentAdapterFactory?: DevelopmentAdapterFactory;
     inspectionAdapterFactory?: InspectionAdapterFactory;
+    browserInspectionAdapterFactory?: BrowserInspectionAdapterFactory;
   } = {},
 ) {
   if (request.method === "OPTIONS") {
@@ -354,7 +400,9 @@ export async function handleStoreMcp(
   const adapter = (options.adapterFactory ?? createStoreAdminAdapter)(authorization.tenantId);
   const development = (options.developmentAdapterFactory ?? createStoreDevelopmentAdapter)();
   const inspection = (options.inspectionAdapterFactory ?? createStoreInspectionAdapter)();
-  const server = createServer(adapter, development, inspection);
+  const browserInspection =
+    (options.browserInspectionAdapterFactory ?? createStoreBrowserInspectionAdapter)();
+  const server = createServer(adapter, development, inspection, browserInspection);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
