@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { describe, expect, it } from "vitest";
 import { createStoreBrowserInspectionAdapter } from "@/lib/mcp/store-browser-inspection.server";
 
