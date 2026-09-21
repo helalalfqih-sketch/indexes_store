@@ -178,5 +178,7 @@ export function verifyStoreAccessToken(token: string) {
   ) {
     throw new Error("UNAUTHORIZED");
   }
-  return { sub: payload.sub, tenantId: payload.tenant_id };
+  const scopes =
+    typeof payload.scope === "string" ? payload.scope.split(/\s+/).filter(Boolean) : [];
+  return { sub: payload.sub, tenantId: payload.tenant_id, scopes };
 }
