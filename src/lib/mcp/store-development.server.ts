@@ -231,7 +231,10 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
           let score = 0;
           if (path.startsWith("src/components/") || path.startsWith("src/routes/")) score += 4;
           if (path.endsWith(".tsx") || path.endsWith(".ts")) score += 3;
-          const loweredPath = path.toLowerCase();\n          if (["test", "spec", "docs", "migration"].some((part) => loweredPath.includes(part))) score -= 3;
+          const loweredPath = path.toLowerCase();
+          if (["test", "spec", "docs", "migration"].some((part) => loweredPath.includes(part))) {
+            score -= 3;
+          }
           return { ...item, score };
         })
         .sort((a, b) => Number(b.score) - Number(a.score))
