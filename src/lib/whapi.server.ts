@@ -215,7 +215,7 @@ export async function readWhapi(
       // Never leak messages from another chat if Whapi ignores the chat_id filter.
       return { ...fallback, messages: exact };
     }
-    const exact = messages.filter((value) => asRecord(value).chat_id === input.chatId);
+    const exact = (messages ?? []).filter((value) => asRecord(value).chat_id === input.chatId);
     return { ...record, messages: exact };
   }
 
