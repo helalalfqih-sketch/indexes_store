@@ -43,9 +43,8 @@ export async function requireStoreAdminSession(
       .from("tenant_members")
       .select("tenant_id, role")
       .eq("user_id", userId)
-      .in("role", ["owner", "manager"])
       .order("created_at", { ascending: true })
-      .limit(2),
+      .limit(100),
   ]);
   if (owned.error || memberships.error) throw new Error("AUTHORIZATION_UNAVAILABLE");
 
