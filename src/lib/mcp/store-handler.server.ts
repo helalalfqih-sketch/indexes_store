@@ -311,6 +311,22 @@ function createServer(
     z.object({ query: z.string().trim().min(1).max(120) }).strict(),
     ({ query }) => development.searchCode(query),
   );
+  developmentRead(
+    "trace_element_to_source",
+    "Trace Store element to source",
+    "Use rendered element signals such as visible text, data-testid, href, or element id to rank likely React source files. Returns candidates, not a fabricated exact mapping.",
+    z
+      .object({
+        text: z.string().trim().min(2).max(120).optional(),
+        test_id: z.string().trim().min(2).max(120).optional(),
+        href: z.string().trim().min(2).max(240).optional(),
+        element_id: z.string().trim().min(2).max(120).optional(),
+      })
+      .strict(),
+    ({ text, test_id, href, element_id }) =>
+      development.traceElement({ text, testId: test_id, href, elementId: element_id }),
+  );
+
   developmentWrite(
     "create_development_branch",
     "Create safe Store development branch",
