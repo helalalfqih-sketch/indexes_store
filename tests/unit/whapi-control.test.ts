@@ -238,7 +238,7 @@ describe("Whapi upstream guardrails", () => {
         token: "test",
         fetcher: mock.fetcher,
       }),
-      { messages: [{ id: "group-message" }] },
+      { messages: [{ id: "group-message", chat_id: groupId }] },
     );
     assert.equal(
       mock.calls[1].url,
