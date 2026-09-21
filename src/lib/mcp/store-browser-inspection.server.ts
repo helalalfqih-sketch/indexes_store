@@ -221,6 +221,7 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
     },
 
     async safeClick(input) {
+      allowedUrl(input.url);
       if (!SAFE_SELECTOR_RE.test(input.selector)) throw new Error("SAFE_SELECTOR_FORBIDDEN");
       const viewport =
         input.device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
