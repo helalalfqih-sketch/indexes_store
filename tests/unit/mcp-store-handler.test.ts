@@ -67,7 +67,7 @@ async function connected() {
       requestInit: { headers: { Authorization: "Bearer test" } },
       fetch: (url, init) =>
         handleStoreMcp(new Request(url, init), {
-          authorize: () => ({ sub: "admin", tenantId: "tenant-a" }),
+          authorize: () => ({ sub: "admin", tenantId: "tenant-a", scopes: ["store.read", "store.develop"] }),
           adapterFactory: (tenantId) => {
             expect(tenantId).toBe("tenant-a");
             return adapter;
