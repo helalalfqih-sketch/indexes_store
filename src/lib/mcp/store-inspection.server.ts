@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
 const MAX_HTML_BYTES = 1_500_000;
 const MAX_LINKS = 300;
