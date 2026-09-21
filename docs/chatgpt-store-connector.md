@@ -68,3 +68,13 @@ The worker currently targets the production Store origin only. Preview-origin in
 introduced with an explicit Vercel deployment allowlist so arbitrary external URLs cannot be used as
 a browser proxy.
 
+### Safe interaction and Preview comparison
+
+The browser worker now supports `trial_navigation` for same-origin link navigation only. It does not
+click buttons, submit forms, place orders, authenticate, or execute destructive actions.
+
+`compare_preview` accepts Production plus a Vercel hostname matching the fixed
+`indexes-store-*.vercel.app` preview pattern. It renders both at the same viewport and compares
+title, interactive-element count, and screenshot hash. Arbitrary Vercel projects and external hosts
+remain blocked.
+
