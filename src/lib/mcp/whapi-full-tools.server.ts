@@ -72,7 +72,7 @@ async function run(t:T,args:Record<string,unknown>){
   const method=t.http.method.toUpperCase(), hasBody=!["GET","HEAD"].includes(method)&&Object.keys(body).length>0;
   const headers:Record<string,string>={Authorization:`Bearer ${token}`,Accept:"application/json"};if(hasBody)headers["Content-Type"]=t.http.requestBody?.contentType||"application/json";
   const r=await fetch(`${WHAPI_BASE}${path}${q.size?`?${q}`:""}`,{method,headers,body:hasBody?JSON.stringify(body):undefined,redirect:"error",cache:"no-store",signal:AbortSignal.timeout(Math.min(t.http.timeouts?.requestMs??30000,30000))});
-  const raw=await r.text();let data:unknown=raw;try{data=raw?JSON.parse(raw):null}catch{}
+  const raw=await r.text();let data:unknown=raw;try{data=raw?JSON.parse(raw):null}catch{/* Preserve a non-JSON provider body. */}
   if(!r.ok){
     let providerMessage:string|null=null;
     if(data&&typeof data==="object"&&!Array.isArray(data)){
