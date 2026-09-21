@@ -3,7 +3,7 @@ import { chromium, type Browser, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
-const PREVIEW_HOST_RE = /^indexes-store-[a-z0-9-]+\.vercel\.app$/i;
+const PREVIEW_HOST_RE = /^indexes-store-[a-z0-9-]+\.vercel\.app$/i;\nconst SAFE_SELECTOR_RE = /^(?:#[A-Za-z][\\w-]{0,80}|\\[data-testid="[A-Za-z0-9_.:-]{1,80}"\\])$/;
 const MAX_ELEMENTS = 400;
 const MAX_EVENTS = 100;
 const MAX_SCREENSHOT_BYTES = 4_000_000;
@@ -11,7 +11,7 @@ const MAX_SCREENSHOT_BYTES = 4_000_000;
 function allowedUrl(value: string) {
   const url = new URL(value, STORE_ORIGIN);
   const production = url.origin === STORE_ORIGIN;
-  const preview = url.protocol === "https:" && PREVIEW_HOST_RE.test(url.hostname);
+  const preview =\n    url.protocol === "https:" &&\n    PREVIEW_HOST_RE.test(url.hostname) &&\n    !url.username &&\n    !url.password &&\n    !url.port;
   if ((!production && !preview) || !["https:", "http:"].includes(url.protocol)) {
     throw new Error("BROWSER_URL_FORBIDDEN");
   }
