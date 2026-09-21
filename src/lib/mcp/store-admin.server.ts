@@ -179,7 +179,9 @@ export function createStoreAdminAdapter(tenantId: string): StoreAdminAdapter {
     async inspectInventory(lowStockThreshold) {
       const { data, error } = await db
         .from("products")
-        .select("id, slug, name, sku, stock, reserved_stock, availability, is_published, external_id")
+        .select(
+          "id, slug, name, sku, stock, reserved_stock, availability, is_published, external_id",
+        )
         .eq("tenant_id", tenantId)
         .order("stock", { ascending: true })
         .limit(MAX_SCAN);

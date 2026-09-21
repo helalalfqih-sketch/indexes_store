@@ -2,11 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import { createStoreAdminAdapter, type StoreAdminAdapter } from "./store-admin.server";
-import {
-  STORE_MCP_AUDIENCE,
-  STORE_MCP_SCOPE,
-  verifyStoreAccessToken,
-} from "./store-oauth.server";
+import { STORE_MCP_AUDIENCE, STORE_MCP_SCOPE, verifyStoreAccessToken } from "./store-oauth.server";
 
 const RESOURCE_METADATA = `${STORE_MCP_AUDIENCE.replace(
   "/api/mcp/store",

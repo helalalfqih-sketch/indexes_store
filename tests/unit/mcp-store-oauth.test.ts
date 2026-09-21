@@ -36,12 +36,12 @@ describe("store MCP OAuth", () => {
       sub: "admin-user",
       tenantId: "11111111-1111-4111-8111-111111111111",
     });
-    expect(verifyStoreAccessToken(exchangeStoreRefreshToken(tokens.refreshToken).accessToken)).toEqual(
-      {
-        sub: "admin-user",
-        tenantId: "11111111-1111-4111-8111-111111111111",
-      },
-    );
+    expect(
+      verifyStoreAccessToken(exchangeStoreRefreshToken(tokens.refreshToken).accessToken),
+    ).toEqual({
+      sub: "admin-user",
+      tenantId: "11111111-1111-4111-8111-111111111111",
+    });
   });
 
   it("rejects redirect substitution and an incorrect PKCE verifier", () => {

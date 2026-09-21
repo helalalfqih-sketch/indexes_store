@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier, @typescript-eslint/no-explicit-any */
 import { z } from "zod";
 import { WhapiError } from "@/lib/whapi.server";
 
