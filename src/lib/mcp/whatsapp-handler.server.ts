@@ -134,7 +134,6 @@ function server() {
     },
   );
 
-
   instance.registerTool(
     "whapi_forward_store_message",
     {
