@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 
