@@ -2,6 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import { createStoreAdminAdapter, type StoreAdminAdapter } from "./store-admin.server";
+import {
+  createStoreDevelopmentAdapter,
+  type StoreDevelopmentAdapter,
+} from "./store-development.server";
 import { STORE_MCP_AUDIENCE, STORE_MCP_SCOPE, verifyStoreAccessToken } from "./store-oauth.server";
 
 const RESOURCE_METADATA = `${STORE_MCP_AUDIENCE.replace(
@@ -19,10 +23,18 @@ const annotations = {
   openWorldHint: false,
 };
 const securitySchemes = [{ type: "oauth2", scopes: ["store.read"] }];
+const developmentSecuritySchemes = [{ type: "oauth2", scopes: ["store.develop"] }];
+const writeAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: false,
+};
 
 type Authorization = { sub: string; tenantId: string };
 type Authorize = (token: string) => Authorization;
 type AdapterFactory = (tenantId: string) => StoreAdminAdapter;
+type DevelopmentAdapterFactory = () => StoreDevelopmentAdapter;
 
 function bearer(request: Request, authorize: Authorize): Authorization | null {
   const match = /^Bearer (.+)$/.exec(request.headers.get("authorization") || "");
@@ -57,12 +69,12 @@ async function safeRead(read: () => Promise<Record<string, unknown>>) {
   }
 }
 
-function createServer(adapter: StoreAdminAdapter) {
+function createServer(adapter: StoreAdminAdapter, development: StoreDevelopmentAdapter) {
   const server = new McpServer(
-    { name: "indexes-store-admin", version: "1.0.0" },
+    { name: "indexes-store-control-plane", version: "2.0.0" },
     {
       instructions:
-        "Private, tenant-bound, read-only administration for Indexes Store. Never infer missing prices, stock, order state, or deployment health. This server cannot write, publish, delete, migrate, deploy, or read secrets.",
+        "Private, tenant-bound Store administration plus guarded source development. Store data remains read-only. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
     },
   );
   const tool = <T extends z.ZodRawShape>(
@@ -146,6 +158,110 @@ function createServer(adapter: StoreAdminAdapter) {
     z.object({ limit: z.number().int().min(1).max(100).default(20) }).strict(),
     ({ limit }) => adapter.auditLog(limit),
   );
+  const developmentRead = <T extends z.ZodRawShape>(
+    name: string,
+    title: string,
+    description: string,
+    inputSchema: z.ZodObject<T>,
+    read: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>,
+  ) =>
+    server.registerTool(
+      name,
+      {
+        title,
+        description,
+        inputSchema,
+        annotations,
+        _meta: { securitySchemes: developmentSecuritySchemes },
+      },
+      (input) => safeRead(() => read(input)),
+    );
+
+  const developmentWrite = <T extends z.ZodRawShape>(
+    name: string,
+    title: string,
+    description: string,
+    inputSchema: z.ZodObject<T>,
+    write: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>,
+  ) =>
+    server.registerTool(
+      name,
+      {
+        title,
+        description,
+        inputSchema,
+        annotations: writeAnnotations,
+        _meta: { securitySchemes: developmentSecuritySchemes },
+      },
+      (input) => safeRead(() => write(input)),
+    );
+
+  developmentRead(
+    "development_repository",
+    "Inspect Store source repository",
+    "Read the fixed Indexes Store repository identity and development safety mode. Never exposes credentials.",
+    z.object({}).strict(),
+    () => development.repositoryInfo(),
+  );
+  developmentRead(
+    "read_source_file",
+    "Read Store source file",
+    "Read a UTF-8 source file from main or an agent/* branch. Secret-like paths and environment files are blocked.",
+    z.object({ path: z.string().trim().min(1).max(240), ref: z.string().trim().default("main") }).strict(),
+    ({ path, ref }) => development.readFile(path, ref),
+  );
+  developmentRead(
+    "search_source_code",
+    "Search Store source code",
+    "Search the fixed Indexes Store GitHub repository for source references and components.",
+    z.object({ query: z.string().trim().min(1).max(120) }).strict(),
+    ({ query }) => development.searchCode(query),
+  );
+  developmentWrite(
+    "create_development_branch",
+    "Create safe Store development branch",
+    "Create an agent/* branch from main. Direct main writes are forbidden.",
+    z
+      .object({
+        branch: z.string().trim().min(3).max(86),
+        base: z.literal("main").default("main"),
+        confirmed: z.literal(true),
+      })
+      .strict(),
+    ({ branch, base }) => development.createBranch(branch, base),
+  );
+  developmentWrite(
+    "patch_source_file",
+    "Patch Store source file",
+    "Replace one existing UTF-8 source file on an agent/* branch using an expected SHA guard. Direct main writes and secret-like paths are forbidden.",
+    z
+      .object({
+        branch: z.string().trim().min(3).max(86),
+        path: z.string().trim().min(1).max(240),
+        expected_sha: z.string().trim().min(6).max(80),
+        content: z.string().min(1).max(200000),
+        message: z.string().trim().min(1).max(120),
+        confirmed: z.literal(true),
+      })
+      .strict(),
+    ({ branch, path, expected_sha, content, message }) =>
+      development.patchFile({ branch, path, expectedSha: expected_sha, content, message }),
+  );
+  developmentWrite(
+    "create_development_pr",
+    "Create Store development pull request",
+    "Open a draft PR from an agent/* branch into main. This does not merge or deploy.",
+    z
+      .object({
+        branch: z.string().trim().min(3).max(86),
+        title: z.string().trim().min(1).max(120),
+        body: z.string().max(10000).default(""),
+        confirmed: z.literal(true),
+      })
+      .strict(),
+    ({ branch, title, body }) => development.createPullRequest({ branch, title, body }),
+  );
+
   return server;
 }
 
@@ -154,6 +270,7 @@ export async function handleStoreMcp(
   options: {
     authorize?: Authorize;
     adapterFactory?: AdapterFactory;
+    developmentAdapterFactory?: DevelopmentAdapterFactory;
   } = {},
 ) {
   if (request.method === "OPTIONS") {
@@ -185,7 +302,8 @@ export async function handleStoreMcp(
   }
 
   const adapter = (options.adapterFactory ?? createStoreAdminAdapter)(authorization.tenantId);
-  const server = createServer(adapter);
+  const development = (options.developmentAdapterFactory ?? createStoreDevelopmentAdapter)();
+  const server = createServer(adapter, development);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
