@@ -96,6 +96,7 @@ export interface StoreDevelopmentAdapter {
     elementId?: string;
   }): Promise<Record<string, unknown>>;
   inspectPullRequest(branch: string): Promise<Record<string, unknown>>;
+  releaseReadiness(input: { branch: string; expectedHeadSha: string }): Promise<Record<string, unknown>>;
 }
 
 export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
@@ -293,6 +294,73 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
         allSuccessful:
           checkRuns.length > 0 &&
           checkRuns.every((check) => ["success", "neutral", "skipped"].includes(String(check.conclusion))),
+      };
+    },
+
+    async releaseReadiness(input) {
+      const safe = safeBranch(input.branch);
+      if (!/^[0-9a-f]{40}$/i.test(input.expectedHeadSha)) throw new Error("EXPECTED_HEAD_SHA_REQUIRED");
+      const pulls = (await github(
+        `/repos/${REPOSITORY}/pulls?state=open&head=${encodeURIComponent(`helalalfqih-sketch:${safe}`)}&base=${DEFAULT_BRANCH}&per_page=5`,
+      )) as Array<Record<string, unknown>>;
+      const pull = pulls[0];
+      if (!pull) return { repository: REPOSITORY, branch: safe, ready: false, reason: "PR_NOT_FOUND" };
+
+      const headSha = String((pull.head as { sha?: string })?.sha ?? "");
+      if (headSha !== input.expectedHeadSha) {
+        return {
+          repository: REPOSITORY,
+          branch: safe,
+          ready: false,
+          reason: "HEAD_SHA_CHANGED",
+          expectedHeadSha: input.expectedHeadSha,
+          actualHeadSha: headSha,
+        };
+      }
+
+      const checks = (await github(`/repos/${REPOSITORY}/commits/${headSha}/check-runs`)) as {
+        check_runs?: Array<Record<string, unknown>>;
+      };
+      const statuses = (await github(`/repos/${REPOSITORY}/commits/${headSha}/status`)) as {
+        state?: string;
+        statuses?: Array<Record<string, unknown>>;
+      };
+      const checkRuns = checks.check_runs ?? [];
+      const completed = checkRuns.length > 0 && checkRuns.every((check) => check.status === "completed");
+      const successful =
+        completed &&
+        checkRuns.every((check) =>
+          ["success", "neutral", "skipped"].includes(String(check.conclusion)),
+        );
+      const combinedSuccess = statuses.state === "success";
+      const mergeable = pull.mergeable === true && String(pull.mergeable_state) === "clean";
+
+      return {
+        repository: REPOSITORY,
+        branch: safe,
+        ready: successful && combinedSuccess && mergeable,
+        headSha,
+        pullRequest: {
+          number: pull.number,
+          url: pull.html_url,
+          draft: pull.draft,
+          mergeable: pull.mergeable,
+          mergeableState: pull.mergeable_state,
+        },
+        gates: {
+          checksCompleted: completed,
+          checksSuccessful: successful,
+          combinedStatus: statuses.state ?? "unknown",
+          mergeableClean: mergeable,
+        },
+        blockers: [
+          !completed ? "CHECKS_NOT_COMPLETE" : null,
+          completed && !successful ? "CHECKS_FAILED" : null,
+          !combinedSuccess ? "COMBINED_STATUS_NOT_SUCCESS" : null,
+          !mergeable ? "PR_NOT_CLEAN" : null,
+        ].filter(Boolean),
+        note:
+          "Readiness is advisory and SHA-bound. This V2 connector still cannot merge or deploy.",
       };
     },
 
