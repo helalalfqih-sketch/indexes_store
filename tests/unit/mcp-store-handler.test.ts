@@ -49,6 +49,8 @@ function browserInspectionFixture(): StoreBrowserInspectionAdapter {
     inspectConsole: vi.fn(async () => ({ errors: [], events: [] })),
     inspectNetwork: vi.fn(async () => ({ failedRequests: [], badResponses: [] })),
     screenshot: vi.fn(async () => ({ mimeType: "image/png", bytes: 1, sha256: "abc" })),
+    trialNavigation: vi.fn(async () => ({ found: true, finalUrl: "https://indexes-store.vercel.app/" })),
+    comparePages: vi.fn(async () => ({ changed: false })),
   };
 }
 
@@ -108,6 +110,8 @@ describe("private store MCP", () => {
           "inspect_console",
           "inspect_network",
           "inspect_screenshot",
+          "trial_navigation",
+          "compare_preview",
         ].sort(),
       );
       const byName = new Map(tools.map((tool) => [tool.name, tool]));
