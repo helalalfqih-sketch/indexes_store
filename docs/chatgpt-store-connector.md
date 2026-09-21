@@ -90,3 +90,7 @@ combined commit status is not successful, or GitHub does not report a clean merg
 V2 deliberately stops here: readiness never performs merge or deployment. A later release capability
 must consume this exact SHA and independently re-check the gates immediately before any merge.
 
+`verify_production_source` provides post-release read-only verification of the current `main` SHA,
+its GitHub check runs, and combined commit status. It does not claim that Vercel production is healthy;
+runtime/site health must still be verified independently with Store health and browser inspection tools.
+
