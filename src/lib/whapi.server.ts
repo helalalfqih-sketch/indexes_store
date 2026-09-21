@@ -215,15 +215,14 @@ export async function readWhapi(
       // Never leak messages from another chat if Whapi ignores the chat_id filter.
       return { ...fallback, messages: exact };
     }
-    const exact = messages.filter((value) => asRecord(value).chat_id === input.chatId);
+    const exact = (messages ?? []).filter((value) => asRecord(value).chat_id === input.chatId);
     return { ...record, messages: exact };
   }
 
   return data;
 }
 
-
-const WHAPI_DESTINATION_RE = /^[\\d-]{9,31}@(s\\.whatsapp\\.net|g\\.us|newsletter|lid|c\\.us)$/;
+const WHAPI_DESTINATION_RE = /^[\d-]{9,31}@(s\.whatsapp\.net|g\.us|newsletter|lid|c\.us)$/;
 
 export function validateWhapiDestinationId(to: string): void {
   if (!WHAPI_DESTINATION_RE.test(to)) throw new WhapiError("INVALID_DESTINATION_ID", 400);
@@ -446,7 +445,7 @@ export async function sendWhapiText(
   const result = asRecord(
     await request("/messages/text", {
       method: "POST",
-      body: JSON.stringify({ to: input.to, body }),
+      body: JSON.stringify({ to: input.to, body, typing_time: 0 }),
     }),
   );
   const message = asRecord(result.message);

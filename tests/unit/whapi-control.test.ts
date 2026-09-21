@@ -228,13 +228,17 @@ describe("Whapi upstream guardrails", () => {
   });
   it("falls back to the global message query when a group-specific history page is empty", async () => {
     const groupId = "120363424962689313@g.us";
-    const mock = upstream([healthy(), { messages: [] }, { messages: [{ id: "group-message" }] }]);
+    const mock = upstream([
+      healthy(),
+      { messages: [] },
+      { messages: [{ id: "group-message", chat_id: groupId }] },
+    ]);
     assert.deepEqual(
       await readWhapi(input(`resource=messages&chatId=${encodeURIComponent(groupId)}&count=20`), {
         token: "test",
         fetcher: mock.fetcher,
       }),
-      { messages: [{ id: "group-message" }] },
+      { messages: [{ id: "group-message", chat_id: groupId }] },
     );
     assert.equal(
       mock.calls[1].url,
@@ -321,7 +325,42 @@ describe("Whapi webhook staging", () => {
       false,
     );
   });
-  it("does not acknowledge authenticated events before durable storage exists", async () => {
+  it("acknowledges authenticated messages only after durable persistence succeeds", async () => {
+    const previous = process.env.WHAPI_WEBHOOK_SECRET;
+    process.env.WHAPI_WEBHOOK_SECRET = testSecret;
+    const stored: Record<string, unknown>[][] = [];
+    try {
+      const response = await handleWhapiWebhook(
+        new Request("https://example.test/api/webhooks/whapi", {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-whapi-secret": testSecret },
+          body: JSON.stringify({
+            messages: [
+              {
+                id: "test-message",
+                chat_id: "120363386103838570@g.us",
+                type: "text",
+                text: { body: "hello" },
+              },
+            ],
+          }),
+        }),
+        async (rows) => {
+          stored.push(rows);
+        },
+      );
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { ok: true, processed: 1 });
+      assert.equal(stored.length, 1);
+      assert.equal(stored[0][0].message_id, "test-message");
+      assert.equal(stored[0][0].chat_id, "120363386103838570@g.us");
+    } finally {
+      if (previous === undefined) delete process.env.WHAPI_WEBHOOK_SECRET;
+      else process.env.WHAPI_WEBHOOK_SECRET = previous;
+    }
+  });
+
+  it("does not acknowledge authenticated messages when durable persistence fails", async () => {
     const previous = process.env.WHAPI_WEBHOOK_SECRET;
     process.env.WHAPI_WEBHOOK_SECRET = testSecret;
     try {
@@ -329,15 +368,16 @@ describe("Whapi webhook staging", () => {
         new Request("https://example.test/api/webhooks/whapi", {
           method: "POST",
           headers: { "content-type": "application/json", "x-whapi-secret": testSecret },
-          body: JSON.stringify({ messages: [{ id: "test" }] }),
+          body: JSON.stringify({
+            messages: [{ id: "test-message", chat_id: "120363386103838570@g.us", type: "text" }],
+          }),
         }),
+        async () => {
+          throw new WhapiError("WHAPI_INBOX_WRITE_FAILED", 503);
+        },
       );
       assert.equal(response.status, 503);
-      assert.deepEqual(await response.json(), {
-        ok: false,
-        code: "WEBHOOK_PROCESSOR_NOT_CONFIGURED",
-        processed: false,
-      });
+      assert.deepEqual(await response.json(), { ok: false, code: "WHAPI_INBOX_WRITE_FAILED" });
     } finally {
       if (previous === undefined) delete process.env.WHAPI_WEBHOOK_SECRET;
       else process.env.WHAPI_WEBHOOK_SECRET = previous;

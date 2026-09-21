@@ -1,22 +1,23 @@
 import assert from "node:assert/strict";
 import { describe, it } from "vitest";
 import {
-  INDEXES_STORES_GROUP_ID,
   sendWhapiText,
   WHAPI_CHANNEL_ID,
   WHAPI_PHONE,
   WhapiError,
 } from "../../src/lib/whapi.server";
 
-const input = { to: INDEXES_STORES_GROUP_ID, body: "اختبار محلي فقط" };
+const DESTINATION = "120363386103838570@g.us";
+const input = { to: DESTINATION, body: "اختبار محلي فقط" };
 const token = "unit-test-only-no-provider-access";
 const health = {
   channel_id: WHAPI_CHANNEL_ID,
   status: { code: 4, text: "AUTH" },
   user: { id: WHAPI_PHONE },
 };
-const message = { id: "test-receipt", chat_id: INDEXES_STORES_GROUP_ID, timestamp: 123 };
+const message = { id: "test-receipt", chat_id: DESTINATION, timestamp: 123 };
 const accepted = { sent: true, message };
+const destination = { id: DESTINATION, name: "Indexes Stores", type: "group", read_only: false };
 const codeIs = (code: string) => (error: unknown) =>
   error instanceof WhapiError && error.code === code;
 
@@ -45,7 +46,7 @@ async function captureWarnings(run: (logs: unknown[][]) => Promise<void>) {
 
 describe("Whapi text send request contract and safe diagnostics", () => {
   it("uses the documented string body and verifies the exact destination receipt", async () => {
-    const mock = upstream([health, accepted, { messages: [message] }]);
+    const mock = upstream([health, destination, accepted, { messages: [message] }]);
     const result = await sendWhapiText(input, mock);
     assert.deepEqual(result, {
       sent: true,
@@ -56,16 +57,20 @@ describe("Whapi text send request contract and safe diagnostics", () => {
     });
     assert.deepEqual(
       mock.calls.map((call) => call.init.method),
-      ["GET", "POST", "GET"],
+      ["GET", "GET", "POST", "GET"],
     );
     assert.equal(new Headers(mock.calls[0].init.headers).has("Content-Type"), false);
-    assert.equal(mock.calls[1].url, "https://gate.whapi.cloud/messages/text");
-    assert.equal(new Headers(mock.calls[1].init.headers).get("Content-Type"), "application/json");
-    assert.deepEqual(JSON.parse(String(mock.calls[1].init.body)), {
+    assert.equal(
+      mock.calls[1].url,
+      `https://gate.whapi.cloud/chats/${encodeURIComponent(input.to)}`,
+    );
+    assert.equal(mock.calls[2].url, "https://gate.whapi.cloud/messages/text");
+    assert.equal(new Headers(mock.calls[2].init.headers).get("Content-Type"), "application/json");
+    assert.deepEqual(JSON.parse(String(mock.calls[2].init.body)), {
       ...input,
       typing_time: 0,
     });
-    assert.equal(new Headers(mock.calls[2].init.headers).has("Content-Type"), false);
+    assert.equal(new Headers(mock.calls[3].init.headers).has("Content-Type"), false);
     assert.ok(mock.calls.every((call) => call.init.redirect === "error"));
   });
 
@@ -73,6 +78,7 @@ describe("Whapi text send request contract and safe diagnostics", () => {
     await captureWarnings(async (logs) => {
       const mock = upstream([
         health,
+        destination,
         Response.json(
           {
             error: { code: 400, message: "body must be string", details: `${token} ${input.body}` },
@@ -81,7 +87,7 @@ describe("Whapi text send request contract and safe diagnostics", () => {
         ),
       ]);
       await assert.rejects(sendWhapiText(input, mock), codeIs("WHAPI_UPSTREAM_400"));
-      assert.equal(mock.calls.length, 2);
+      assert.equal(mock.calls.length, 3);
       assert.equal(logs.length, 1);
       const event = logs[0][1] as Record<string, unknown>;
       assert.equal(event.stage, "submit");
@@ -112,9 +118,13 @@ describe("Whapi text send request contract and safe diagnostics", () => {
 
   it("preserves the HTTP failure for a non-JSON error and does not retry", async () => {
     await captureWarnings(async (logs) => {
-      const mock = upstream([health, new Response("private gateway error", { status: 400 })]);
+      const mock = upstream([
+        health,
+        destination,
+        new Response("private gateway error", { status: 400 }),
+      ]);
       await assert.rejects(sendWhapiText(input, mock), codeIs("WHAPI_UPSTREAM_400"));
-      assert.equal(mock.calls.length, 2);
+      assert.equal(mock.calls.length, 3);
       const event = logs[0][1] as Record<string, unknown>;
       assert.equal(event.providerCode, null);
       assert.equal(event.responseFormat, "unreadable");
@@ -126,6 +136,7 @@ describe("Whapi text send request contract and safe diagnostics", () => {
     await captureWarnings(async (logs) => {
       const mock = upstream([
         health,
+        destination,
         Response.json({ code: token, error: input.body }, { status: 400 }),
       ]);
       await assert.rejects(sendWhapiText(input, mock), codeIs("WHAPI_UPSTREAM_400"));
@@ -142,13 +153,18 @@ describe("Whapi text send request contract and safe diagnostics", () => {
     assert.equal(mock.calls.length, 0);
   });
 
-  it("keeps the destination and channel guardrails", async () => {
-    const mock = upstream([]);
+  it("keeps destination format, read-only, and channel guardrails", async () => {
+    const invalid = upstream([]);
     await assert.rejects(
-      sendWhapiText({ ...input, to: "other@g.us" }, mock),
-      codeIs("WHAPI_DESTINATION_FORBIDDEN"),
+      sendWhapiText({ ...input, to: "other@g.us" }, invalid),
+      codeIs("INVALID_DESTINATION_ID"),
     );
-    assert.equal(mock.calls.length, 0);
+    assert.equal(invalid.calls.length, 0);
+
+    const readOnly = upstream([health, { ...destination, read_only: true }]);
+    await assert.rejects(sendWhapiText(input, readOnly), codeIs("WHAPI_DESTINATION_READ_ONLY"));
+    assert.equal(readOnly.calls.length, 2);
+
     const wrongChannel = upstream([{ ...health, channel_id: "OTHER" }]);
     await assert.rejects(sendWhapiText(input, wrongChannel), codeIs("WHAPI_CHANNEL_MISMATCH"));
     assert.equal(wrongChannel.calls.length, 1);
@@ -157,22 +173,23 @@ describe("Whapi text send request contract and safe diagnostics", () => {
   it("does not report verified success for the same ID in a different chat", async () => {
     const mock = upstream([
       health,
+      destination,
       accepted,
-      { messages: [{ ...message, chat_id: "other@g.us" }] },
+      { messages: [{ ...message, chat_id: "120363000000000000@g.us" }] },
     ]);
     await assert.rejects(sendWhapiText(input, mock), codeIs("WHAPI_SEND_UNVERIFIED"));
     assert.equal(mock.calls.filter((call) => call.init.method === "POST").length, 1);
   });
 
   it("does not attempt verification when the provider returns no message ID", async () => {
-    const mock = upstream([health, { sent: true, message: { chat_id: input.to } }]);
+    const mock = upstream([health, destination, { sent: true, message: { chat_id: input.to } }]);
     await assert.rejects(sendWhapiText(input, mock), codeIs("WHAPI_SEND_UNCONFIRMED"));
-    assert.equal(mock.calls.length, 2);
+    assert.equal(mock.calls.length, 3);
   });
 
   it("treats a POST transport failure as unknown and never repeats the send", async () => {
-    const mock = upstream([health, new Error("socket closed")]);
+    const mock = upstream([health, destination, new Error("socket closed")]);
     await assert.rejects(sendWhapiText(input, mock), codeIs("WHAPI_SEND_UNKNOWN"));
-    assert.equal(mock.calls.length, 2);
+    assert.equal(mock.calls.length, 3);
   });
 });
