@@ -88,6 +88,12 @@ export interface StoreDevelopmentAdapter {
     title: string;
     body: string;
   }): Promise<Record<string, unknown>>;
+  traceElement(input: {
+    text?: string;
+    testId?: string;
+    href?: string;
+    elementId?: string;
+  }): Promise<Record<string, unknown>>;
 }
 
 export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
@@ -185,6 +191,55 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
         path,
         commitSha: data.commit?.sha,
         contentSha: data.content?.sha,
+      };
+    },
+
+    async traceElement(input) {
+      const terms = [
+        input.testId?.trim(),
+        input.elementId?.trim(),
+        input.href?.trim(),
+        input.text?.trim(),
+      ].filter((value): value is string => Boolean(value && value.length >= 2));
+      if (!terms.length) throw new Error("TRACE_SIGNAL_REQUIRED");
+
+      const unique = [...new Set(terms)].slice(0, 4);
+      const matches = new Map<string, Record<string, unknown>>();
+      for (const term of unique) {
+        const data = (await github(
+          `/search/code?q=${encodeURIComponent(`${term} repo:${REPOSITORY}`)}&per_page=20`,
+        )) as { items?: Array<Record<string, unknown>> };
+        for (const item of data.items ?? []) {
+          const path = String(item.path ?? "");
+          if (!path || matches.has(path)) continue;
+          matches.set(path, {
+            path,
+            name: item.name,
+            sha: item.sha,
+            htmlUrl: item.html_url,
+            matchedSignal: term,
+          });
+        }
+      }
+
+      const ranked = [...matches.values()]
+        .map((item) => {
+          const path = String(item.path ?? "");
+          let score = 0;
+          if (/^src\/(components|routes)\//.test(path)) score += 4;
+          if (/\.(tsx|ts)$/.test(path)) score += 3;
+          if (/test|spec|docs|migration/i.test(path)) score -= 3;
+          return { ...item, score };
+        })
+        .sort((a, b) => Number(b.score) - Number(a.score))
+        .slice(0, 20);
+
+      return {
+        repository: REPOSITORY,
+        signals: unique,
+        candidates: ranked,
+        note:
+          "Candidates are source-search evidence, not a guaranteed component mapping. Read the top files before patching.",
       };
     },
 
