@@ -2,13 +2,16 @@ import { chromium, type Browser, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
+const PREVIEW_HOST_RE = /^indexes-store-[a-z0-9-]+\.vercel\.app$/i;
 const MAX_ELEMENTS = 400;
 const MAX_EVENTS = 100;
 const MAX_SCREENSHOT_BYTES = 4_000_000;
 
 function allowedUrl(value: string) {
   const url = new URL(value, STORE_ORIGIN);
-  if (url.origin !== STORE_ORIGIN || !["https:", "http:"].includes(url.protocol)) {
+  const production = url.origin === STORE_ORIGIN;
+  const preview = url.protocol === "https:" && PREVIEW_HOST_RE.test(url.hostname);
+  if ((!production && !preview) || !["https:", "http:"].includes(url.protocol)) {
     throw new Error("BROWSER_URL_FORBIDDEN");
   }
   return url;
@@ -35,6 +38,16 @@ export interface StoreBrowserInspectionAdapter {
   inspectConsole(url: string): Promise<Record<string, unknown>>;
   inspectNetwork(url: string): Promise<Record<string, unknown>>;
   screenshot(url: string, device: "desktop" | "mobile"): Promise<Record<string, unknown>>;
+  trialNavigation(input: {
+    url: string;
+    href?: string;
+    text?: string;
+  }): Promise<Record<string, unknown>>;
+  comparePages(input: {
+    productionUrl: string;
+    previewUrl: string;
+    device: "desktop" | "mobile";
+  }): Promise<Record<string, unknown>>;
 }
 
 export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAdapter {
@@ -131,6 +144,68 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
         await page.reload({ waitUntil: "networkidle", timeout: 30_000 });
         return { url: page.url(), failedRequests: failures, badResponses };
       });
+    },
+
+    async trialNavigation(input) {
+      return withPage(input.url, { width: 1440, height: 1000 }, async (page) => {
+        if (!input.href && !input.text) throw new Error("NAVIGATION_TARGET_REQUIRED");
+        const locator = input.href
+          ? page.locator(`a[href="${input.href.replace(/"/g, '\\"')}"]`).first()
+          : page.getByRole("link", { name: input.text!, exact: true }).first();
+        if ((await locator.count()) === 0) {
+          return { found: false, startUrl: page.url(), destination: null };
+        }
+        const href = await locator.getAttribute("href");
+        if (!href) return { found: true, navigable: false, startUrl: page.url(), destination: null };
+        const destination = allowedUrl(new URL(href, page.url()).toString());
+        const before = page.url();
+        await locator.click({ timeout: 10_000 });
+        await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => undefined);
+        return {
+          found: true,
+          navigable: true,
+          startUrl: before,
+          expectedDestination: destination.toString(),
+          finalUrl: page.url(),
+          stayedWithinAllowlist: Boolean(allowedUrl(page.url())),
+        };
+      });
+    },
+
+    async comparePages(input) {
+      const production = allowedUrl(input.productionUrl);
+      const preview = allowedUrl(input.previewUrl);
+      if (production.origin !== STORE_ORIGIN) throw new Error("PRODUCTION_URL_REQUIRED");
+      if (preview.origin === STORE_ORIGIN) throw new Error("PREVIEW_URL_REQUIRED");
+      const viewport =
+        input.device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
+
+      const inspect = async (url: string) =>
+        withPage(url, viewport, async (page) => {
+          const elements = await page.locator("a,button,input,select,textarea,form").count();
+          const image = await page.screenshot({ fullPage: true, type: "png" });
+          return {
+            url: page.url(),
+            title: await page.title(),
+            elementCount: elements,
+            screenshotSha256: createHash("sha256").update(image).digest("hex"),
+            screenshotBytes: image.length,
+          };
+        });
+
+      const [before, after] = await Promise.all([
+        inspect(production.toString()),
+        inspect(preview.toString()),
+      ]);
+      return {
+        device: input.device,
+        production: before,
+        preview: after,
+        changed:
+          before.title !== after.title ||
+          before.elementCount !== after.elementCount ||
+          before.screenshotSha256 !== after.screenshotSha256,
+      };
     },
 
     async screenshot(url, device) {
