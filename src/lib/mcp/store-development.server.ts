@@ -229,8 +229,8 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
         .map((item) => {
           const path = String(item.path ?? "");
           let score = 0;
-          if (/^src\/(components|routes)\//.test(path)) score += 4;
-          if (/\.(tsx|ts)$/.test(path)) score += 3;
+          if (path.startsWith("src/components/") || path.startsWith("src/routes/")) score += 4;
+          if (path.endsWith(".tsx") || path.endsWith(".ts")) score += 3;
           if (/test|spec|docs|migration/i.test(path)) score -= 3;
           return { ...item, score };
         })
