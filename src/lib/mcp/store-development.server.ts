@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 const GITHUB_API = "https://api.github.com";
 const REPOSITORY = "helalalfqih-sketch/indexes_store";
 const DEFAULT_BRANCH = "main";
