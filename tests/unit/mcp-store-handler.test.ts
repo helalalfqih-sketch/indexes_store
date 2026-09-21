@@ -133,6 +133,34 @@ describe("private store MCP", () => {
     }
   });
 
+  it("blocks development tools when store.develop is absent", async () => {
+    const adapter = fixture();
+    const development = developmentFixture();
+    const { client } = await createMcpClient(
+      new URL("https://indexes-store.vercel.app/api/mcp/store"),
+      {
+        requestHandler: (request) =>
+          handleStoreMcp(request, {
+            authorize: () => ({ sub: "admin", tenantId: "tenant-a", scopes: ["store.read"] }),
+            adapterFactory: () => adapter,
+            developmentAdapterFactory: () => development,
+            inspectionAdapterFactory: () => inspectionFixture(),
+            browserInspectionAdapterFactory: () => browserInspectionFixture(),
+          }),
+      },
+    );
+    try {
+      const response = await client.callTool({
+        name: "development_repository",
+        arguments: {},
+      });
+      expect(response.isError).toBe(true);
+      expect(development.repositoryInfo).not.toHaveBeenCalled();
+    } finally {
+      await client.close();
+    }
+  });
+
   it("does not allow a caller-supplied tenant override", async () => {
     const { client, adapter } = await connected();
     try {
