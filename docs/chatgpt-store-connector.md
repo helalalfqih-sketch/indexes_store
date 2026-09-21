@@ -40,3 +40,17 @@ The server-only `STORE_MCP_GITHUB_TOKEN` credential is required for development 
 fine-grained GitHub token restricted to the single repository with the minimum Contents and Pull
 Requests permissions required. The token is never returned through MCP.
 
+### Read-only site inspection
+
+V2 also exposes same-origin inspection tools that can analyze the live Store without mutating it:
+`inspect_site`, `inspect_page`, `inspect_navigation`, `inspect_forms`, and
+`inspect_mobile_ui`.
+
+These tools are intentionally read-only and currently inspect HTTP/HTML signals. They can enumerate
+links, buttons, forms, controls, headings, SEO metadata, image-alt gaps, and responsive viewport
+metadata. They do not submit forms, place orders, click destructive controls, or write data.
+
+A later browser worker will add rendered DOM, viewport screenshots, safe click/navigation trials,
+console/network capture, and Preview-vs-Production comparison. That worker must remain inspection-only;
+source fixes continue through the guarded GitHub branch/PR path.
+
