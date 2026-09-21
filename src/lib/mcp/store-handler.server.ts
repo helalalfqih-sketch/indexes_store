@@ -207,7 +207,7 @@ function createServer(adapter: StoreAdminAdapter, development: StoreDevelopmentA
     "read_source_file",
     "Read Store source file",
     "Read a UTF-8 source file from main or an agent/* branch. Secret-like paths and environment files are blocked.",
-    z.object({ path: z.string().trim().min(1).max(240), ref: z.string().trim().default("main") }).strict(),
+    z\n      .object({ path: z.string().trim().min(1).max(240), ref: z.string().trim().default("main") })\n      .strict(),
     ({ path, ref }) => development.readFile(path, ref),
   );
   developmentRead(
