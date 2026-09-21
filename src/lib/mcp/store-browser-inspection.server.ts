@@ -22,7 +22,7 @@ async function withPage<T>(
   const url = allowedUrl(value);
   const browser = await chromium.launch({ headless: true });
   try {
-    const page = await browser.newPage({ viewportSize: viewport });
+    const page = await browser.newPage({ viewport });
     await page.goto(url.toString(), { waitUntil: "networkidle", timeout: 30_000 });
     return await run(page, browser);
   } finally {
