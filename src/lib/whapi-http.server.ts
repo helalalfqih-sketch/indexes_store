@@ -45,7 +45,17 @@ export async function handleWhapiRead(
   }
 }
 
-export async function handleWhapiWebhook(request: Request): Promise<Response> {
+async function persistWhapiInboxRows(rows: Record<string, unknown>[]): Promise<void> {
+  const { error } = await getSupabaseAdmin()
+    .from("whatsapp_inbox" as never)
+    .upsert(rows as never, { onConflict: "message_id", ignoreDuplicates: true });
+  if (error) throw new WhapiError("WHAPI_INBOX_WRITE_FAILED", 503);
+}
+
+export async function handleWhapiWebhook(
+  request: Request,
+  persistRows: (rows: Record<string, unknown>[]) => Promise<void> = persistWhapiInboxRows,
+): Promise<Response> {
   if (!verifyWhapiWebhook(request)) return json({ ok: false, code: "FORBIDDEN" }, 403);
   if (!/^application\/json(?:;|$)/i.test(request.headers.get("content-type") || "")) {
     return json({ ok: false, code: "JSON_REQUIRED" }, 415);
@@ -123,10 +133,7 @@ export async function handleWhapiWebhook(request: Request): Promise<Response> {
     });
     if (rows.length === 0) return json({ ok: true, processed: 0 });
 
-    const { error } = await getSupabaseAdmin()
-      .from("whatsapp_inbox" as never)
-      .upsert(rows as never, { onConflict: "message_id", ignoreDuplicates: true });
-    if (error) throw new WhapiError("WHAPI_INBOX_WRITE_FAILED", 503);
+    await persistRows(rows);
     return json({ ok: true, processed: rows.length });
   } catch (error) {
     return failure(error);

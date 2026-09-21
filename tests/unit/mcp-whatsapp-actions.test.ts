@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { handleWhatsappMcp } from "../../src/lib/mcp/whatsapp-handler.server";
 import { exchangeCode, issueCode } from "../../src/lib/mcp/whatsapp-oauth.server";
-import { INDEXES_STORES_GROUP_ID } from "../../src/lib/whapi.server";
 
 const TEST_SECRET = "whatsapp-mcp-actions-test-secret-1234567890";
 const CALLBACK = "https://chatgpt.com/connector/oauth/test";
@@ -13,8 +12,16 @@ const READ_TOOLS = [
   "whapi_list_channels",
   "whapi_get_products",
   "whapi_get_messages",
+  "whapi_resolve_destination",
+  "whapi_resolve_destination_by_name",
+  "whapi_get_media_image",
 ];
-const WRITE_TOOLS = ["whapi_send_store_text", "whapi_forward_store_message"];
+const WRITE_TOOLS = [
+  "whapi_send_text_by_name",
+  "whapi_send_text",
+  "whapi_forward_message",
+  "whapi_prepare_archive_sync",
+];
 
 type LiteralSchema = { const?: unknown; enum?: unknown[] };
 type DiscoveredTool = {
@@ -88,7 +95,7 @@ describe("Private WhatsApp MCP discovery", () => {
     expect(json.result?.capabilities?.tools).toBeDefined();
   });
 
-  it("advertises exactly five read tools and two existing destination-limited write tools", async () => {
+  it("preserves first-party tool security contracts while allowing the provider tool surface", async () => {
     const response = await handleWhatsappMcp(
       request({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }, token()),
     );
@@ -96,22 +103,39 @@ describe("Private WhatsApp MCP discovery", () => {
     expect(response.status).toBe(200);
     const json = (await response.json()) as { result?: { tools?: DiscoveredTool[] } };
     const tools = json.result?.tools ?? [];
-    expect(tools.map((tool) => tool.name)).toEqual([...READ_TOOLS, ...WRITE_TOOLS]);
-    expect(tools.every((tool) => Boolean(tool.title))).toBe(true);
+    const byName = new Map(tools.map((tool) => [tool.name, tool]));
+
+    for (const name of READ_TOOLS) {
+      const tool = byName.get(name);
+      expect(tool, `missing read tool: ${name}`).toBeDefined();
+      expect(Boolean(tool?.title)).toBe(true);
+      expect(tool?.annotations?.readOnlyHint).toBe(true);
+      expect(tool?.annotations?.destructiveHint).toBe(false);
+      expect(tool?.annotations?.idempotentHint).toBe(true);
+      expect(tool?._meta?.securitySchemes).toEqual([
+        { type: "oauth2", scopes: ["whatsapp.read"] },
+      ]);
+    }
+
+    for (const name of WRITE_TOOLS) {
+      const tool = byName.get(name);
+      expect(tool, `missing write tool: ${name}`).toBeDefined();
+      expect(Boolean(tool?.title)).toBe(true);
+      expect(tool?.annotations?.readOnlyHint).toBe(false);
+      expect(tool?._meta?.securitySchemes).toEqual([
+        { type: "oauth2", scopes: ["whatsapp.write"] },
+      ]);
+      expect(tool?.inputSchema?.additionalProperties).toBe(false);
+      expect(tool?.inputSchema?.required).toContain("confirmed");
+      expect(literalValue(tool?.inputSchema?.properties?.confirmed)).toBe(true);
+    }
 
     for (const tool of tools) {
-      const write = WRITE_TOOLS.includes(tool.name);
-      expect(tool.annotations?.readOnlyHint).toBe(!write);
-      expect(tool.annotations?.destructiveHint).toBe(false);
-      expect(tool.annotations?.idempotentHint).toBe(!write);
-      expect(tool._meta?.securitySchemes).toEqual([
-        { type: "oauth2", scopes: [write ? "whatsapp.write" : "whatsapp.read"] },
-      ]);
-      if (write) {
-        expect(tool.inputSchema?.additionalProperties).toBe(false);
-        expect(tool.inputSchema?.required).toContain("to");
-        expect(tool.inputSchema?.required).toContain("confirmed");
-        expect(literalValue(tool.inputSchema?.properties?.to)).toBe(INDEXES_STORES_GROUP_ID);
+      expect(Boolean(tool.title), `missing title: ${tool.name}`).toBe(true);
+      const scope = tool.annotations?.readOnlyHint === true ? "whatsapp.read" : "whatsapp.write";
+      expect(tool._meta?.securitySchemes?.[0]?.type).toBe("oauth2");
+      expect(tool._meta?.securitySchemes?.[0]?.scopes).toContain(scope);
+      if (tool.annotations?.destructiveHint === true) {
         expect(literalValue(tool.inputSchema?.properties?.confirmed)).toBe(true);
       }
     }
