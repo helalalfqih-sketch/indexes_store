@@ -288,6 +288,38 @@ function createServer(
     ({ url, device }) => browserInspection.screenshot(url, device),
   );
 
+  tool(
+    "trial_navigation",
+    "Trial safe Store navigation",
+    "Click one same-origin link by exact href or accessible text and report the resulting URL. Does not submit forms or click buttons.",
+    z
+      .object({
+        url: z.string().url().default("https://indexes-store.vercel.app/"),
+        href: z.string().trim().min(1).max(240).optional(),
+        text: z.string().trim().min(1).max(120).optional(),
+      })
+      .strict(),
+    ({ url, href, text }) => browserInspection.trialNavigation({ url, href, text }),
+  );
+  tool(
+    "compare_preview",
+    "Compare Production and Vercel Preview",
+    "Render an allowlisted Production page and an indexes-store Vercel Preview page at the same viewport and compare title, interactive-element count, and screenshot hash.",
+    z
+      .object({
+        production_url: z.string().url(),
+        preview_url: z.string().url(),
+        device: z.enum(["desktop", "mobile"]).default("desktop"),
+      })
+      .strict(),
+    ({ production_url, preview_url, device }) =>
+      browserInspection.comparePages({
+        productionUrl: production_url,
+        previewUrl: preview_url,
+        device,
+      }),
+  );
+
   developmentRead(
     "development_repository",
     "Inspect Store source repository",
