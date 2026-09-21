@@ -159,7 +159,8 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
     async patchFile(input) {
       const branch = safeBranch(input.branch);
       const path = safePath(input.path);
-      if (!input.expectedSha || input.expectedSha.length > 80)\n        throw new Error("EXPECTED_SHA_REQUIRED");
+      if (!input.expectedSha || input.expectedSha.length > 80)
+        throw new Error("EXPECTED_SHA_REQUIRED");
       if (!input.content || Buffer.byteLength(input.content, "utf8") > MAX_FILE_BYTES) {
         throw new Error("INVALID_CONTENT");
       }
