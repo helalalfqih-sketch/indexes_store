@@ -3,6 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { handleStoreMcp } from "@/lib/mcp/store-handler.server";
 import type { StoreAdminAdapter } from "@/lib/mcp/store-admin.server";
+import type { StoreDevelopmentAdapter } from "@/lib/mcp/store-development.server";
 
 function fixture(): StoreAdminAdapter {
   return {
@@ -15,6 +16,17 @@ function fixture(): StoreAdminAdapter {
     inspectPages: vi.fn(async () => ({ pages: [] })),
     inspectRuntimeErrors: vi.fn(async () => ({ incidents: [] })),
     auditLog: vi.fn(async () => ({ entries: [] })),
+  };
+}
+
+function developmentFixture(): StoreDevelopmentAdapter {
+  return {
+    repositoryInfo: vi.fn(async () => ({ repository: "helalalfqih-sketch/indexes_store" })),
+    readFile: vi.fn(async () => ({ path: "src/app.tsx", sha: "abc", content: "export {};" })),
+    searchCode: vi.fn(async () => ({ results: [] })),
+    createBranch: vi.fn(async () => ({ branch: "agent/test-change", base: "main" })),
+    patchFile: vi.fn(async () => ({ commitSha: "commit-a" })),
+    createPullRequest: vi.fn(async () => ({ number: 125, draft: true })),
   };
 }
 
@@ -32,6 +44,7 @@ async function connected() {
             expect(tenantId).toBe("tenant-a");
             return adapter;
           },
+          developmentAdapterFactory: () => developmentFixture(),
         }),
     },
   );
@@ -55,11 +68,19 @@ describe("private store MCP", () => {
           "inspect_runtime_errors",
           "search_products",
           "store_health",
+          "development_repository",
+          "read_source_file",
+          "search_source_code",
+          "create_development_branch",
+          "patch_source_file",
+          "create_development_pr",
         ].sort(),
       );
-      expect(
-        tools.every((tool) => tool.annotations?.readOnlyHint && !tool.annotations?.destructiveHint),
-      ).toBe(true);
+      const byName = new Map(tools.map((tool) => [tool.name, tool]));
+      expect(byName.get("store_health")?.annotations?.readOnlyHint).toBe(true);
+      expect(byName.get("read_source_file")?.annotations?.readOnlyHint).toBe(true);
+      expect(byName.get("patch_source_file")?.annotations?.readOnlyHint).toBe(false);
+      expect(byName.get("patch_source_file")?.annotations?.destructiveHint).toBe(false);
       expect((await client.callTool({ name: "update_product", arguments: {} })).isError).toBe(true);
     } finally {
       await client.close();
