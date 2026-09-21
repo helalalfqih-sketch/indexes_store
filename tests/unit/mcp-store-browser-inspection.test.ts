@@ -20,4 +20,15 @@ describe("store browser inspection adapter", () => {
     ).rejects.toThrow("BROWSER_URL_FORBIDDEN");
   });
 
+  it("blocks safe-click inspection outside the Store origin before launching Chromium", async () => {
+    const adapter = createStoreBrowserInspectionAdapter();
+    await expect(
+      adapter.safeClick({
+        url: "https://example.com/",
+        selector: "a",
+        device: "desktop",
+      }),
+    ).rejects.toThrow("BROWSER_URL_FORBIDDEN");
+  });
+
 });
