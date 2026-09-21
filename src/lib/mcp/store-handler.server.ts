@@ -402,7 +402,7 @@ function createServer(
     z
       .object({
         branch: z.string().trim().min(3).max(86),
-        expected_head_sha: z.string().regex(/^[0-9a-f]{40}$/i),
+        expected_head_sha: z.string().length(40),
       })
       .strict(),
     ({ branch, expected_head_sha }) =>
