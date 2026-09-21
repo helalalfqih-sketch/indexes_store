@@ -39,6 +39,11 @@ export interface StoreBrowserInspectionAdapter {
   inspectConsole(url: string): Promise<Record<string, unknown>>;
   inspectNetwork(url: string): Promise<Record<string, unknown>>;
   screenshot(url: string, device: "desktop" | "mobile"): Promise<Record<string, unknown>>;
+  safeClick(input: {
+    url: string;
+    selector: string;
+    device: "desktop" | "mobile";
+  }): Promise<Record<string, unknown>>;
   trialNavigation(input: {
     url: string;
     href?: string;
@@ -207,6 +212,56 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
           before.elementCount !== after.elementCount ||
           before.screenshotSha256 !== after.screenshotSha256,
       };
+    },
+
+    async safeClick(input) {
+      const viewport =
+        input.device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
+      return withPage(input.url, viewport, async (page) => {
+        const locator = page.locator(input.selector).first();
+        if ((await locator.count()) !== 1) throw new Error("SAFE_CLICK_TARGET_NOT_FOUND");
+        const info = await locator.evaluate((node) => {
+          const element = node as HTMLElement;
+          const tag = element.tagName.toLowerCase();
+          const href = element instanceof HTMLAnchorElement ? element.href : null;
+          const type = element.getAttribute("type")?.toLowerCase() ?? null;
+          const text = (element.innerText || element.getAttribute("aria-label") || "").trim();
+          const form = element.closest("form");
+          return {
+            tag,
+            href,
+            type,
+            text: text.slice(0, 200),
+            insideForm: Boolean(form),
+            formAction: form?.getAttribute("action") ?? null,
+          };
+        });
+
+        const forbiddenText =
+          /(شراء|اطلب|تأكيد|دفع|checkout|place order|submit|delete|remove|حذف|ارسال|إرسال)/i;
+        if (
+          info.insideForm ||
+          info.type === "submit" ||
+          forbiddenText.test(info.text) ||
+          (info.href && new URL(info.href).origin !== STORE_ORIGIN)
+        ) {
+          throw new Error("SAFE_CLICK_FORBIDDEN");
+        }
+
+        const before = page.url();
+        await locator.click({ timeout: 10_000 });
+        await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+        const after = page.url();
+        if (new URL(after).origin !== STORE_ORIGIN) throw new Error("SAFE_CLICK_LEFT_STORE_ORIGIN");
+        return {
+          before,
+          after,
+          target: info,
+          navigationChanged: before !== after,
+          title: await page.title(),
+          inspectionMode: "safe-click-read-only",
+        };
+      });
     },
 
     async screenshot(url, device) {
