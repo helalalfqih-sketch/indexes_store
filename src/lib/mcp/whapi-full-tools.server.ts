@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier, @typescript-eslint/no-explicit-any */
 import { z } from "zod";
 import { WhapiError } from "@/lib/whapi.server";
 
@@ -7,7 +8,8 @@ const MANIFEST_URLS = [
 ];
 const WHAPI_BASE = "https://gate.whapi.cloud";
 
-type S = { type?: string; description?: string; enum?: unknown[]; properties?: Record<string,S>; items?: S; required?: string[] };
+type Primitive = string | number | boolean | null;
+type S = { type?: string; description?: string; enum?: Primitive[]; properties?: Record<string,S>; items?: S; required?: string[] };
 type T = { toolName:string; summary?:string|null; description?:string|null; inputSchema?:S; http:{method:string;path:string;pathParams?:{name:string}[];queryParams?:{name:string}[];requestBody?:{contentType?:string|null;schema?:S|null;fields?:{name:string;required?:boolean}[]};timeouts?:{requestMs?:number}} };
 let cache: Promise<T[]> | null = null;
 
@@ -38,7 +40,8 @@ async function manifest() {
 function zs(s?:S):z.ZodTypeAny {
   if(!s) return z.any();
   let v:z.ZodTypeAny;
-  if(s.enum?.length) v=z.union(s.enum.map(x=>z.literal(x)) as [z.ZodLiteral<any>,...z.ZodLiteral<any>[]]);
+  if(s.enum?.length===1) v=z.literal(s.enum[0]);
+  else if(s.enum&&s.enum.length>1){const [first,second,...rest]=s.enum.map(x=>z.literal(x));v=z.union([first,second,...rest])}
   else if(s.type==="string") v=z.string();
   else if(s.type==="integer") v=z.number().int();
   else if(s.type==="number") v=z.number();
@@ -69,7 +72,7 @@ async function run(t:T,args:Record<string,unknown>){
   const method=t.http.method.toUpperCase(), hasBody=!["GET","HEAD"].includes(method)&&Object.keys(body).length>0;
   const headers:Record<string,string>={Authorization:`Bearer ${token}`,Accept:"application/json"};if(hasBody)headers["Content-Type"]=t.http.requestBody?.contentType||"application/json";
   const r=await fetch(`${WHAPI_BASE}${path}${q.size?`?${q}`:""}`,{method,headers,body:hasBody?JSON.stringify(body):undefined,redirect:"error",cache:"no-store",signal:AbortSignal.timeout(Math.min(t.http.timeouts?.requestMs??30000,30000))});
-  const raw=await r.text();let data:unknown=raw;try{data=raw?JSON.parse(raw):null}catch{}
+  const raw=await r.text();let data:unknown=raw;try{data=raw?JSON.parse(raw):null}catch{/* Preserve a non-JSON provider body. */}
   if(!r.ok){
     let providerMessage:string|null=null;
     if(data&&typeof data==="object"&&!Array.isArray(data)){

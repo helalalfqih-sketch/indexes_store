@@ -4,6 +4,7 @@ const WHAPI_BASE = "https://gate.whapi.cloud";
 const MAX_RESPONSE_BYTES = 1024 * 1024;
 export const WHAPI_CHANNEL_ID = "HAWKEY-KFHM7";
 export const WHAPI_PHONE = "967771370740";
+export const INDEXES_STORES_GROUP_ID = "120363386103838570@g.us";
 
 export class WhapiError extends Error {
   readonly code: string;
@@ -203,7 +204,7 @@ export async function readWhapi(
   // exact group JIDs and keep the same bounded pagination.
   if (input.resource === "messages" && input.chatId?.endsWith("@g.us")) {
     const record = asRecord(data);
-    const messages = Array.isArray(record.messages) ? record.messages : null;
+    const messages = Array.isArray(record.messages) ? record.messages : [];
     if (messages?.length === 0) {
       const fallback = asRecord(
         await get(
@@ -222,8 +223,7 @@ export async function readWhapi(
   return data;
 }
 
-
-const WHAPI_DESTINATION_RE = /^[\\d-]{9,31}@(s\\.whatsapp\\.net|g\\.us|newsletter|lid|c\\.us)$/;
+const WHAPI_DESTINATION_RE = /^[\d-]{9,31}@(s\.whatsapp\.net|g\.us|newsletter|lid|c\.us)$/;
 
 export function validateWhapiDestinationId(to: string): void {
   if (!WHAPI_DESTINATION_RE.test(to)) throw new WhapiError("INVALID_DESTINATION_ID", 400);
@@ -344,7 +344,8 @@ export async function sendWhapiText(
   input: WhapiSendTextInput,
   runtime: WhapiRuntime = {},
 ): Promise<unknown> {
-  validateWhapiDestinationId(input.to);
+  if (input.to !== INDEXES_STORES_GROUP_ID)
+    throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
   if (typeof input.body !== "string") throw new WhapiError("INVALID_MESSAGE_BODY", 400);
   const body = input.body.trim();
   if (!body || body.length > 4000) throw new WhapiError("INVALID_MESSAGE_BODY", 400);
@@ -440,13 +441,11 @@ export async function sendWhapiText(
   const authorized = status.code === 4 && status.text === "AUTH";
   if (!authorized) throw new WhapiError("WHAPI_NOT_AUTHORIZED", 503);
   if (String(user.id) !== WHAPI_PHONE) throw new WhapiError("WHAPI_PHONE_MISMATCH", 409);
-  const destination = await resolveWhapiDestination(input.to, { token, fetcher });
-  if (destination.readOnly) throw new WhapiError("WHAPI_DESTINATION_READ_ONLY", 403);
 
   const result = asRecord(
     await request("/messages/text", {
       method: "POST",
-      body: JSON.stringify({ to: input.to, body }),
+      body: JSON.stringify({ to: input.to, body, typing_time: 0 }),
     }),
   );
   const message = asRecord(result.message);
@@ -485,7 +484,8 @@ export async function forwardWhapiMessage(
   input: WhapiForwardInput,
   runtime: WhapiRuntime = {},
 ): Promise<unknown> {
-  validateWhapiDestinationId(input.to);
+  if (input.to !== INDEXES_STORES_GROUP_ID)
+    throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
   if (!/^[A-Za-z0-9._:-]{1,512}$/.test(input.messageId))
     throw new WhapiError("INVALID_MESSAGE_ID", 400);
 
@@ -527,8 +527,6 @@ export async function forwardWhapiMessage(
   if (!(status.code === 4 && status.text === "AUTH"))
     throw new WhapiError("WHAPI_NOT_AUTHORIZED", 503);
   if (String(user.id) !== WHAPI_PHONE) throw new WhapiError("WHAPI_PHONE_MISMATCH", 409);
-  const destination = await resolveWhapiDestination(input.to, { token, fetcher });
-  if (destination.readOnly) throw new WhapiError("WHAPI_DESTINATION_READ_ONLY", 403);
 
   const result = asRecord(
     await call(`/messages/${encodeURIComponent(input.messageId)}`, {
