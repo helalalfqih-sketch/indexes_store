@@ -69,7 +69,7 @@ function decodeFile(file: GitHubFile) {
     throw new Error("FILE_UNAVAILABLE");
   }
   if ((file.size ?? 0) > MAX_FILE_BYTES) throw new Error("FILE_TOO_LARGE");
-  return Buffer.from(file.content.replace(/\n/g, ""), "base64").toString("utf8");
+  return Buffer.from(file.content.split("\n").join(""), "base64").toString("utf8");
 }
 
 export interface StoreDevelopmentAdapter {
