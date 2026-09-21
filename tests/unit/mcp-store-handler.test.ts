@@ -32,7 +32,7 @@ function developmentFixture(): StoreDevelopmentAdapter {
     createPullRequest: vi.fn(async () => ({ number: 125, draft: true })),
     traceElement: vi.fn(async () => ({ candidates: [] })),
     inspectPullRequest: vi.fn(async () => ({ found: false })),
-    releaseReadiness: vi.fn(async () => ({ ready: false, blockers: ["CHECKS_NOT_COMPLETE"] })),
+    releaseReadiness: vi.fn(async () => ({ ready: false, blockers: ["CHECKS_NOT_COMPLETE"] })),\n    inspectProduction: vi.fn(async () => ({ headSha: "a".repeat(40), combinedStatus: "success" })),
   };
 }
 
@@ -103,7 +103,7 @@ describe("private store MCP", () => {
           "search_source_code",
           "trace_element_to_source",
           "inspect_development_pr",
-          "release_readiness",
+          "release_readiness",\n          "verify_production_source",
           "create_development_branch",
           "patch_source_file",
           "create_development_pr",
