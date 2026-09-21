@@ -101,7 +101,7 @@ function createServer(
     server.registerTool(
       name,
       { title, description, inputSchema, annotations, _meta: { securitySchemes } },
-      (input) => requireDevelopmentScope(() => read(input)),
+      (input) => safeRead(() => read(input)),
     );
 
   tool(
@@ -200,7 +200,7 @@ function createServer(
         annotations,
         _meta: { securitySchemes: developmentSecuritySchemes },
       },
-      (input) => safeRead(() => read(input)),
+      (input) => requireDevelopmentScope(() => read(input)),
     );
 
   const developmentWrite = <T extends z.ZodRawShape>(
