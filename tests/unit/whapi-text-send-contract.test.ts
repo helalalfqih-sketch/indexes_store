@@ -60,7 +60,10 @@ describe("Whapi text send request contract and safe diagnostics", () => {
       ["GET", "GET", "POST", "GET"],
     );
     assert.equal(new Headers(mock.calls[0].init.headers).has("Content-Type"), false);
-    assert.equal(mock.calls[1].url, `https://gate.whapi.cloud/chats/${encodeURIComponent(input.to)}`);
+    assert.equal(
+      mock.calls[1].url,
+      `https://gate.whapi.cloud/chats/${encodeURIComponent(input.to)}`,
+    );
     assert.equal(mock.calls[2].url, "https://gate.whapi.cloud/messages/text");
     assert.equal(new Headers(mock.calls[2].init.headers).get("Content-Type"), "application/json");
     assert.deepEqual(JSON.parse(String(mock.calls[2].init.body)), {
@@ -115,7 +118,11 @@ describe("Whapi text send request contract and safe diagnostics", () => {
 
   it("preserves the HTTP failure for a non-JSON error and does not retry", async () => {
     await captureWarnings(async (logs) => {
-      const mock = upstream([health, destination, new Response("private gateway error", { status: 400 })]);
+      const mock = upstream([
+        health,
+        destination,
+        new Response("private gateway error", { status: 400 }),
+      ]);
       await assert.rejects(sendWhapiText(input, mock), codeIs("WHAPI_UPSTREAM_400"));
       assert.equal(mock.calls.length, 3);
       const event = logs[0][1] as Record<string, unknown>;

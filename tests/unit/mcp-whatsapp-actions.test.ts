@@ -112,9 +112,7 @@ describe("Private WhatsApp MCP discovery", () => {
       expect(tool?.annotations?.readOnlyHint).toBe(true);
       expect(tool?.annotations?.destructiveHint).toBe(false);
       expect(tool?.annotations?.idempotentHint).toBe(true);
-      expect(tool?._meta?.securitySchemes).toEqual([
-        { type: "oauth2", scopes: ["whatsapp.read"] },
-      ]);
+      expect(tool?._meta?.securitySchemes).toEqual([{ type: "oauth2", scopes: ["whatsapp.read"] }]);
     }
 
     for (const name of WRITE_TOOLS) {

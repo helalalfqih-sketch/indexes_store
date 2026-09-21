@@ -228,7 +228,11 @@ describe("Whapi upstream guardrails", () => {
   });
   it("falls back to the global message query when a group-specific history page is empty", async () => {
     const groupId = "120363424962689313@g.us";
-    const mock = upstream([healthy(), { messages: [] }, { messages: [{ id: "group-message", chat_id: groupId }] }]);
+    const mock = upstream([
+      healthy(),
+      { messages: [] },
+      { messages: [{ id: "group-message", chat_id: groupId }] },
+    ]);
     assert.deepEqual(
       await readWhapi(input(`resource=messages&chatId=${encodeURIComponent(groupId)}&count=20`), {
         token: "test",
@@ -331,12 +335,14 @@ describe("Whapi webhook staging", () => {
           method: "POST",
           headers: { "content-type": "application/json", "x-whapi-secret": testSecret },
           body: JSON.stringify({
-            messages: [{
-              id: "test-message",
-              chat_id: "120363386103838570@g.us",
-              type: "text",
-              text: { body: "hello" },
-            }],
+            messages: [
+              {
+                id: "test-message",
+                chat_id: "120363386103838570@g.us",
+                type: "text",
+                text: { body: "hello" },
+              },
+            ],
           }),
         }),
         async (rows) => {

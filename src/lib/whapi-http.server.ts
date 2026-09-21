@@ -119,17 +119,19 @@ export async function handleWhapiWebhook(
         typeof message.timestamp === "number" && Number.isFinite(message.timestamp)
           ? Math.trunc(message.timestamp)
           : null;
-      return [{
-        message_id: id,
-        chat_id: chatId,
-        sender_id: sender,
-        message_type: type,
-        text_content: text,
-        media_id: mediaId,
-        media_type: mediaId ? type : null,
-        message_timestamp: timestamp,
-        raw_metadata: { source: "whapi_webhook", has_media: Boolean(mediaId) },
-      }];
+      return [
+        {
+          message_id: id,
+          chat_id: chatId,
+          sender_id: sender,
+          message_type: type,
+          text_content: text,
+          media_id: mediaId,
+          media_type: mediaId ? type : null,
+          message_timestamp: timestamp,
+          raw_metadata: { source: "whapi_webhook", has_media: Boolean(mediaId) },
+        },
+      ];
     });
     if (rows.length === 0) return json({ ok: true, processed: 0 });
 
