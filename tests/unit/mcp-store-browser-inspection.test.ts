@@ -8,4 +8,15 @@ describe("store browser inspection adapter", () => {
       "BROWSER_URL_FORBIDDEN",
     );
   });
+  it("blocks arbitrary hosts while allowing indexes-store Vercel previews", async () => {
+    const adapter = createStoreBrowserInspectionAdapter();
+    await expect(
+      adapter.comparePages({
+        productionUrl: "https://indexes-store.vercel.app/",
+        previewUrl: "https://example.vercel.app/",
+        device: "desktop",
+      }),
+    ).rejects.toThrow("BROWSER_URL_FORBIDDEN");
+  });
+
 });
