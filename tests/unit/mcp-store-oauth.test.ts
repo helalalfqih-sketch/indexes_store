@@ -35,12 +35,14 @@ describe("store MCP OAuth", () => {
     expect(verifyStoreAccessToken(tokens.accessToken)).toEqual({
       sub: "admin-user",
       tenantId: "11111111-1111-4111-8111-111111111111",
+      scopes: ["store.read", "store.develop", "offline_access"],
     });
     expect(
       verifyStoreAccessToken(exchangeStoreRefreshToken(tokens.refreshToken).accessToken),
     ).toEqual({
       sub: "admin-user",
       tenantId: "11111111-1111-4111-8111-111111111111",
+      scopes: ["store.read", "store.develop", "offline_access"],
     });
   });
 
