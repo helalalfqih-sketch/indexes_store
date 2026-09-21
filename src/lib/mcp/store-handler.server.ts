@@ -396,6 +396,14 @@ function createServer(
       development.releaseReadiness({ branch, expectedHeadSha: expected_head_sha }),
   );
 
+  developmentRead(
+    "verify_production_source",
+    "Verify Store production source",
+    "Read main branch SHA and its GitHub checks/status after a release. This is source verification only and does not deploy or roll back.",
+    z.object({}).strict(),
+    () => development.inspectProduction(),
+  );
+
   developmentWrite(
     "create_development_branch",
     "Create safe Store development branch",
