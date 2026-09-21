@@ -21,6 +21,15 @@ describe("store development adapter guardrails", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("requires an evidence signal before tracing an element to source", async () => {
+    process.env.STORE_MCP_GITHUB_TOKEN = "test-token";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const adapter = createStoreDevelopmentAdapter();
+    await expect(adapter.traceElement({})).rejects.toThrow("TRACE_SIGNAL_REQUIRED");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("rejects direct main writes and non-agent branches", async () => {
     process.env.STORE_MCP_GITHUB_TOKEN = "test-token";
     const fetchMock = vi.fn();
