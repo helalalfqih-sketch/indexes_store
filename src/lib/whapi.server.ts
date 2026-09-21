@@ -344,7 +344,8 @@ export async function sendWhapiText(
   input: WhapiSendTextInput,
   runtime: WhapiRuntime = {},
 ): Promise<unknown> {
-  if (input.to !== INDEXES_STORES_GROUP_ID)\n    throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
+  if (input.to !== INDEXES_STORES_GROUP_ID)
+    throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
   if (typeof input.body !== "string") throw new WhapiError("INVALID_MESSAGE_BODY", 400);
   const body = input.body.trim();
   if (!body || body.length > 4000) throw new WhapiError("INVALID_MESSAGE_BODY", 400);
@@ -483,7 +484,8 @@ export async function forwardWhapiMessage(
   input: WhapiForwardInput,
   runtime: WhapiRuntime = {},
 ): Promise<unknown> {
-  if (input.to !== INDEXES_STORES_GROUP_ID)\n    throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
+  if (input.to !== INDEXES_STORES_GROUP_ID)
+    throw new WhapiError("WHAPI_DESTINATION_FORBIDDEN", 403);
   if (!/^[A-Za-z0-9._:-]{1,512}$/.test(input.messageId))
     throw new WhapiError("INVALID_MESSAGE_ID", 400);
 
