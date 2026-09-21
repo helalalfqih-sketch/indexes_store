@@ -382,6 +382,20 @@ function createServer(
     ({ branch }) => development.inspectPullRequest(branch),
   );
 
+  developmentRead(
+    "release_readiness",
+    "Check Store release readiness",
+    "Evaluate one exact agent/* branch and expected head SHA against GitHub checks, combined status, and clean mergeability. Advisory only; does not merge or deploy.",
+    z
+      .object({
+        branch: z.string().trim().min(3).max(86),
+        expected_head_sha: z.string().regex(/^[0-9a-f]{40}$/i),
+      })
+      .strict(),
+    ({ branch, expected_head_sha }) =>
+      development.releaseReadiness({ branch, expectedHeadSha: expected_head_sha }),
+  );
+
   developmentWrite(
     "create_development_branch",
     "Create safe Store development branch",
