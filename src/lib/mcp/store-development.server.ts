@@ -302,7 +302,13 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
 
     async releaseReadiness(input) {
       const safe = safeBranch(input.branch);
-      const normalizedHeadSha = input.expectedHeadSha.toLowerCase();\n      if (normalizedHeadSha.length !== 40 || [...normalizedHeadSha].some((char) => !"0123456789abcdef".includes(char))) {\n        throw new Error("EXPECTED_HEAD_SHA_REQUIRED");\n      }
+      const normalizedHeadSha = input.expectedHeadSha.toLowerCase();
+      if (
+        normalizedHeadSha.length !== 40 ||
+        [...normalizedHeadSha].some((char) => !"0123456789abcdef".includes(char))
+      ) {
+        throw new Error("EXPECTED_HEAD_SHA_REQUIRED");
+      }
       const pulls = (await github(
         `/repos/${REPOSITORY}/pulls?state=open&head=${encodeURIComponent(`helalalfqih-sketch:${safe}`)}&base=${DEFAULT_BRANCH}&per_page=5`,
       )) as Array<Record<string, unknown>>;
