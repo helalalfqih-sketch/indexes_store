@@ -12,7 +12,12 @@ const MAX_SCREENSHOT_BYTES = 4_000_000;
 function allowedUrl(value: string) {
   const url = new URL(value, STORE_ORIGIN);
   const production = url.origin === STORE_ORIGIN;
-  const preview =\n    url.protocol === "https:" &&\n    PREVIEW_HOST_RE.test(url.hostname) &&\n    !url.username &&\n    !url.password &&\n    !url.port;
+  const preview =
+    url.protocol === "https:" &&
+    PREVIEW_HOST_RE.test(url.hostname) &&
+    !url.username &&
+    !url.password &&
+    !url.port;
   if ((!production && !preview) || !["https:", "http:"].includes(url.protocol)) {
     throw new Error("BROWSER_URL_FORBIDDEN");
   }
