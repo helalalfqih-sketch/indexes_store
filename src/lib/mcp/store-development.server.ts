@@ -96,7 +96,7 @@ export interface StoreDevelopmentAdapter {
     elementId?: string;
   }): Promise<Record<string, unknown>>;
   inspectPullRequest(branch: string): Promise<Record<string, unknown>>;
-  releaseReadiness(input: { branch: string; expectedHeadSha: string }): Promise<Record<string, unknown>>;
+  releaseReadiness(input: { branch: string; expectedHeadSha: string }): Promise<Record<string, unknown>>;\n  inspectProduction(): Promise<Record<string, unknown>>;
 }
 
 export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
@@ -361,6 +361,51 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
         ].filter(Boolean),
         note:
           "Readiness is advisory and SHA-bound. This V2 connector still cannot merge or deploy.",
+      };
+    },
+
+    async inspectProduction() {
+      const branch = (await github(`/repos/${REPOSITORY}/branches/${DEFAULT_BRANCH}`)) as {
+        commit?: { sha?: string };
+        protected?: boolean;
+      };
+      const headSha = branch.commit?.sha;
+      if (!headSha) throw new Error("MAIN_SHA_UNAVAILABLE");
+
+      const [checks, status, commit] = await Promise.all([
+        github(`/repos/${REPOSITORY}/commits/${headSha}/check-runs`) as Promise<{
+          check_runs?: Array<Record<string, unknown>>;
+        }>,
+        github(`/repos/${REPOSITORY}/commits/${headSha}/status`) as Promise<{
+          state?: string;
+          statuses?: Array<Record<string, unknown>>;
+        }>,
+        github(`/repos/${REPOSITORY}/commits/${headSha}`) as Promise<Record<string, unknown>>,
+      ]);
+      const checkRuns = checks.check_runs ?? [];
+      return {
+        repository: REPOSITORY,
+        branch: DEFAULT_BRANCH,
+        headSha,
+        protected: branch.protected ?? null,
+        commit: {
+          url: commit.html_url,
+          message: (commit.commit as { message?: string })?.message?.split("\n")[0] ?? null,
+        },
+        checks: checkRuns.map((check) => ({
+          name: check.name,
+          status: check.status,
+          conclusion: check.conclusion,
+          detailsUrl: check.details_url,
+        })),
+        checksCompleted: checkRuns.length > 0 && checkRuns.every((check) => check.status === "completed"),
+        checksSuccessful:
+          checkRuns.length > 0 &&
+          checkRuns.every((check) =>
+            ["success", "neutral", "skipped"].includes(String(check.conclusion)),
+          ),
+        combinedStatus: status.state ?? "unknown",
+        inspectionMode: "read-only-production-verification",
       };
     },
 
