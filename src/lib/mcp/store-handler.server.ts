@@ -374,6 +374,14 @@ function createServer(
       development.traceElement({ text, testId: test_id, href, elementId: element_id }),
   );
 
+  developmentRead(
+    "inspect_development_pr",
+    "Inspect Store development PR",
+    "Read the open draft PR, changed-file summary, and GitHub check-run state for one agent/* branch. Does not merge or deploy.",
+    z.object({ branch: z.string().trim().min(3).max(86) }).strict(),
+    ({ branch }) => development.inspectPullRequest(branch),
+  );
+
   developmentWrite(
     "create_development_branch",
     "Create safe Store development branch",
