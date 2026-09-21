@@ -6,6 +6,7 @@ import {
   createStoreDevelopmentAdapter,
   type StoreDevelopmentAdapter,
 } from "./store-development.server";
+import { createStoreInspectionAdapter, type StoreInspectionAdapter } from "./store-inspection.server";
 import { STORE_MCP_AUDIENCE, STORE_MCP_SCOPE, verifyStoreAccessToken } from "./store-oauth.server";
 
 const RESOURCE_METADATA = `${STORE_MCP_AUDIENCE.replace(
@@ -35,6 +36,7 @@ type Authorization = { sub: string; tenantId: string };
 type Authorize = (token: string) => Authorization;
 type AdapterFactory = (tenantId: string) => StoreAdminAdapter;
 type DevelopmentAdapterFactory = () => StoreDevelopmentAdapter;
+type InspectionAdapterFactory = () => StoreInspectionAdapter;
 
 function bearer(request: Request, authorize: Authorize): Authorization | null {
   const match = /^Bearer (.+)$/.exec(request.headers.get("authorization") || "");
@@ -69,7 +71,11 @@ async function safeRead(read: () => Promise<Record<string, unknown>>) {
   }
 }
 
-function createServer(adapter: StoreAdminAdapter, development: StoreDevelopmentAdapter) {
+function createServer(
+  adapter: StoreAdminAdapter,
+  development: StoreDevelopmentAdapter,
+  inspection: StoreInspectionAdapter,
+) {
   const server = new McpServer(
     { name: "indexes-store-control-plane", version: "2.0.0" },
     {
@@ -196,6 +202,47 @@ function createServer(adapter: StoreAdminAdapter, development: StoreDevelopmentA
       (input) => safeRead(() => write(input)),
     );
 
+  tool(
+    "inspect_site",
+    "Inspect Store site",
+    "Crawl up to 25 same-origin Store pages and report HTTP, title, heading, and image-alt signals. Read-only.",
+    z
+      .object({
+        start_url: z.string().url().default("https://indexes-store.vercel.app/"),
+        limit: z.number().int().min(1).max(25).default(10),
+      })
+      .strict(),
+    ({ start_url, limit }) => inspection.inspectSite(start_url, limit),
+  );
+  tool(
+    "inspect_page",
+    "Inspect Store page",
+    "Read one Store page HTML and enumerate links, buttons, forms, controls, headings, SEO, and basic accessibility signals without changing the site.",
+    z.object({ url: z.string().url().default("https://indexes-store.vercel.app/") }).strict(),
+    ({ url }) => inspection.inspectPage(url),
+  );
+  tool(
+    "inspect_navigation",
+    "Inspect Store navigation",
+    "Enumerate page links and resolved destinations for navigation analysis. Read-only.",
+    z.object({ url: z.string().url().default("https://indexes-store.vercel.app/") }).strict(),
+    ({ url }) => inspection.inspectNavigation(url),
+  );
+  tool(
+    "inspect_forms",
+    "Inspect Store forms",
+    "Inspect forms and controls for missing names or accessible labels. Does not submit forms.",
+    z.object({ url: z.string().url().default("https://indexes-store.vercel.app/") }).strict(),
+    ({ url }) => inspection.inspectForms(url),
+  );
+  tool(
+    "inspect_mobile_ui",
+    "Inspect Store mobile signals",
+    "Inspect responsive viewport metadata and report whether browser-rendered mobile testing is still required.",
+    z.object({ url: z.string().url().default("https://indexes-store.vercel.app/") }).strict(),
+    ({ url }) => inspection.inspectMobileUi(url),
+  );
+
   developmentRead(
     "development_repository",
     "Inspect Store source repository",
@@ -271,6 +318,7 @@ export async function handleStoreMcp(
     authorize?: Authorize;
     adapterFactory?: AdapterFactory;
     developmentAdapterFactory?: DevelopmentAdapterFactory;
+    inspectionAdapterFactory?: InspectionAdapterFactory;
   } = {},
 ) {
   if (request.method === "OPTIONS") {
@@ -303,7 +351,8 @@ export async function handleStoreMcp(
 
   const adapter = (options.adapterFactory ?? createStoreAdminAdapter)(authorization.tenantId);
   const development = (options.developmentAdapterFactory ?? createStoreDevelopmentAdapter)();
-  const server = createServer(adapter, development);
+  const inspection = (options.inspectionAdapterFactory ?? createStoreInspectionAdapter)();
+  const server = createServer(adapter, development, inspection);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
