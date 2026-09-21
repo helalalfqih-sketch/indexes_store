@@ -222,7 +222,6 @@ export async function readWhapi(
   return data;
 }
 
-
 const WHAPI_DESTINATION_RE = /^[\\d-]{9,31}@(s\\.whatsapp\\.net|g\\.us|newsletter|lid|c\\.us)$/;
 
 export function validateWhapiDestinationId(to: string): void {
