@@ -1,4 +1,4 @@
-import { chromium, type Browser, type Page } from "playwright";
+import { chromium, type Browser, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
