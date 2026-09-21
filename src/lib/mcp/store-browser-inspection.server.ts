@@ -3,7 +3,8 @@ import { chromium, type Browser, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
-const PREVIEW_HOST_RE = /^indexes-store-[a-z0-9-]+\.vercel\.app$/i;\nconst SAFE_SELECTOR_RE = /^(?:#[A-Za-z][\\w-]{0,80}|\\[data-testid="[A-Za-z0-9_.:-]{1,80}"\\])$/;
+const PREVIEW_HOST_RE = /^indexes-store-[a-z0-9-]+\.vercel\.app$/i;
+const SAFE_SELECTOR_RE = /^(?:#[A-Za-z][\w-]{0,80}|\[data-testid="[A-Za-z0-9_.:-]{1,80}"\])$/;
 const MAX_ELEMENTS = 400;
 const MAX_EVENTS = 100;
 const MAX_SCREENSHOT_BYTES = 4_000_000;
