@@ -321,6 +321,20 @@ function createServer(
       }),
   );
 
+  tool(
+    "try_safe_click",
+    "Try safe Store click",
+    "Click one explicitly selected Store element only when it is outside forms, is not a submit control, has no purchase/delete/send intent, and cannot leave the Store origin.",
+    z
+      .object({
+        url: z.string().url().default("https://indexes-store.vercel.app/"),
+        selector: z.string().trim().min(1).max(200),
+        device: z.enum(["desktop", "mobile"]).default("desktop"),
+      })
+      .strict(),
+    ({ url, selector, device }) => browserInspection.safeClick({ url, selector, device }),
+  );
+
   developmentRead(
     "development_repository",
     "Inspect Store source repository",
