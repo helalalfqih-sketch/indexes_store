@@ -96,7 +96,11 @@ export interface StoreDevelopmentAdapter {
     elementId?: string;
   }): Promise<Record<string, unknown>>;
   inspectPullRequest(branch: string): Promise<Record<string, unknown>>;
-  releaseReadiness(input: { branch: string; expectedHeadSha: string }): Promise<Record<string, unknown>>;\n  inspectProduction(): Promise<Record<string, unknown>>;
+  releaseReadiness(input: {
+    branch: string;
+    expectedHeadSha: string;
+  }): Promise<Record<string, unknown>>;
+  inspectProduction(): Promise<Record<string, unknown>>;
 }
 
 export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
