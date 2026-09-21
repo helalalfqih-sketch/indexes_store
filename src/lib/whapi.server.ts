@@ -203,7 +203,7 @@ export async function readWhapi(
   // exact group JIDs and keep the same bounded pagination.
   if (input.resource === "messages" && input.chatId?.endsWith("@g.us")) {
     const record = asRecord(data);
-    const messages = Array.isArray(record.messages) ? record.messages : null;
+    const messages = Array.isArray(record.messages) ? record.messages : [];
     if (messages?.length === 0) {
       const fallback = asRecord(
         await get(

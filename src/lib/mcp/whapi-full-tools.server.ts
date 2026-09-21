@@ -7,7 +7,7 @@ const MANIFEST_URLS = [
 ];
 const WHAPI_BASE = "https://gate.whapi.cloud";
 
-type S = { type?: string; description?: string; enum?: unknown[]; properties?: Record<string,S>; items?: S; required?: string[] };
+type Primitive = string | number | boolean | null;\ntype S = { type?: string; description?: string; enum?: Primitive[]; properties?: Record<string,S>; items?: S; required?: string[] };
 type T = { toolName:string; summary?:string|null; description?:string|null; inputSchema?:S; http:{method:string;path:string;pathParams?:{name:string}[];queryParams?:{name:string}[];requestBody?:{contentType?:string|null;schema?:S|null;fields?:{name:string;required?:boolean}[]};timeouts?:{requestMs?:number}} };
 let cache: Promise<T[]> | null = null;
 
@@ -38,7 +38,7 @@ async function manifest() {
 function zs(s?:S):z.ZodTypeAny {
   if(!s) return z.any();
   let v:z.ZodTypeAny;
-  if(s.enum?.length) v=z.union(s.enum.map(x=>z.literal(x)) as [z.ZodLiteral<any>,...z.ZodLiteral<any>[]]);
+  if(s.enum?.length===1) v=z.literal(s.enum[0]);\n  else if(s.enum&&s.enum.length>1){const [first,second,...rest]=s.enum.map(x=>z.literal(x));v=z.union([first,second,...rest])}
   else if(s.type==="string") v=z.string();
   else if(s.type==="integer") v=z.number().int();
   else if(s.type==="number") v=z.number();
