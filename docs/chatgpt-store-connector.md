@@ -78,3 +78,15 @@ click buttons, submit forms, place orders, authenticate, or execute destructive 
 title, interactive-element count, and screenshot hash. Arbitrary Vercel projects and external hosts
 remain blocked.
 
+### Verification and release-readiness gates
+
+Development branches can be inspected with `inspect_development_pr`, which returns the draft PR,
+changed-file summary, exact head/base SHAs, and GitHub check-run state.
+
+`release_readiness` is a stricter advisory gate. It requires the caller to provide the exact expected
+40-character head SHA and fails readiness when that SHA changed, checks are incomplete/failed, the
+combined commit status is not successful, or GitHub does not report a clean mergeable PR.
+
+V2 deliberately stops here: readiness never performs merge or deployment. A later release capability
+must consume this exact SHA and independently re-check the gates immediately before any merge.
+
