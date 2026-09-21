@@ -121,7 +121,7 @@ export async function handleWhapiWebhook(request: Request): Promise<Response> {
         raw_metadata: { source: "whapi_webhook", has_media: Boolean(mediaId) },
       }];
     });
-    if (rows.length === 0) return json({ ok: true, processed: 0 });
+    if (rows.length === 0) throw new WhapiError("INVALID_EVENT", 400);
 
     const { error } = await getSupabaseAdmin()
       .from("whatsapp_inbox" as never)

@@ -228,7 +228,11 @@ describe("Whapi upstream guardrails", () => {
   });
   it("falls back to the global message query when a group-specific history page is empty", async () => {
     const groupId = "120363424962689313@g.us";
-    const mock = upstream([healthy(), { messages: [] }, { messages: [{ id: "group-message" }] }]);
+    const mock = upstream([
+      healthy(),
+      { messages: [] },
+      { messages: [{ id: "group-message", chat_id: groupId }] },
+    ]);
     assert.deepEqual(
       await readWhapi(input(`resource=messages&chatId=${encodeURIComponent(groupId)}&count=20`), {
         token: "test",
@@ -321,7 +325,7 @@ describe("Whapi webhook staging", () => {
       false,
     );
   });
-  it("does not acknowledge authenticated events before durable storage exists", async () => {
+  it("rejects malformed authenticated message events without acknowledging them", async () => {
     const previous = process.env.WHAPI_WEBHOOK_SECRET;
     process.env.WHAPI_WEBHOOK_SECRET = testSecret;
     try {
@@ -332,12 +336,8 @@ describe("Whapi webhook staging", () => {
           body: JSON.stringify({ messages: [{ id: "test" }] }),
         }),
       );
-      assert.equal(response.status, 503);
-      assert.deepEqual(await response.json(), {
-        ok: false,
-        code: "WEBHOOK_PROCESSOR_NOT_CONFIGURED",
-        processed: false,
-      });
+      assert.equal(response.status, 400);
+      assert.deepEqual(await response.json(), { ok: false, code: "INVALID_EVENT" });
     } finally {
       if (previous === undefined) delete process.env.WHAPI_WEBHOOK_SECRET;
       else process.env.WHAPI_WEBHOOK_SECRET = previous;
