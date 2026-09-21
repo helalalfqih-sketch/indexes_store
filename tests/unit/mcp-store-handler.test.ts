@@ -32,7 +32,14 @@ function developmentFixture(): StoreDevelopmentAdapter {
     createPullRequest: vi.fn(async () => ({ number: 125, draft: true })),
     traceElement: vi.fn(async () => ({ candidates: [] })),
     inspectPullRequest: vi.fn(async () => ({ found: false })),
-    releaseReadiness: vi.fn(async () => ({ ready: false, blockers: ["CHECKS_NOT_COMPLETE"] })),\n    inspectProduction: vi.fn(async () => ({ headSha: "a".repeat(40), combinedStatus: "success" })),
+    releaseReadiness: vi.fn(async () => ({
+      ready: false,
+      blockers: ["CHECKS_NOT_COMPLETE"],
+    })),
+    inspectProduction: vi.fn(async () => ({
+      headSha: "a".repeat(40),
+      combinedStatus: "success",
+    })),
   };
 }
 
