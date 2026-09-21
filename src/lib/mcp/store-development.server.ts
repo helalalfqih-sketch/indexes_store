@@ -95,6 +95,7 @@ export interface StoreDevelopmentAdapter {
     href?: string;
     elementId?: string;
   }): Promise<Record<string, unknown>>;
+  inspectPullRequest(branch: string): Promise<Record<string, unknown>>;
 }
 
 export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
@@ -241,6 +242,57 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
         candidates: ranked,
         note:
           "Candidates are source-search evidence, not a guaranteed component mapping. Read the top files before patching.",
+      };
+    },
+
+    async inspectPullRequest(branch) {
+      const safe = safeBranch(branch);
+      const pulls = (await github(
+        `/repos/${REPOSITORY}/pulls?state=open&head=${encodeURIComponent(`helalalfqih-sketch:${safe}`)}&base=${DEFAULT_BRANCH}&per_page=5`,
+      )) as Array<Record<string, unknown>>;
+      const pull = pulls[0];
+      if (!pull) return { repository: REPOSITORY, branch: safe, found: false };
+
+      const number = Number(pull.number);
+      const [files, checks] = await Promise.all([
+        github(`/repos/${REPOSITORY}/pulls/${number}/files?per_page=100`) as Promise<
+          Array<Record<string, unknown>>
+        >,
+        github(`/repos/${REPOSITORY}/commits/${String((pull.head as { sha?: string })?.sha ?? "")}/check-runs`) as Promise<{
+          check_runs?: Array<Record<string, unknown>>;
+        }>,
+      ]);
+      const checkRuns = checks.check_runs ?? [];
+      return {
+        repository: REPOSITORY,
+        branch: safe,
+        found: true,
+        pullRequest: {
+          number,
+          url: pull.html_url,
+          draft: pull.draft,
+          mergeable: pull.mergeable,
+          mergeableState: pull.mergeable_state,
+          headSha: (pull.head as { sha?: string })?.sha,
+          baseSha: (pull.base as { sha?: string })?.sha,
+        },
+        files: files.map((file) => ({
+          path: file.filename,
+          status: file.status,
+          additions: file.additions,
+          deletions: file.deletions,
+          changes: file.changes,
+        })),
+        checks: checkRuns.map((check) => ({
+          name: check.name,
+          status: check.status,
+          conclusion: check.conclusion,
+          detailsUrl: check.details_url,
+        })),
+        allCompleted: checkRuns.length > 0 && checkRuns.every((check) => check.status === "completed"),
+        allSuccessful:
+          checkRuns.length > 0 &&
+          checkRuns.every((check) => ["success", "neutral", "skipped"].includes(String(check.conclusion))),
       };
     },
 
