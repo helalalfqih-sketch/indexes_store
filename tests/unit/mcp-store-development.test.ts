@@ -35,7 +35,7 @@ describe("store development adapter guardrails", () => {
         message: "test",
       }),
     ).rejects.toThrow("UNSAFE_BRANCH");
-    await expect(adapter.createBranch("feature/free-form", "main")).rejects.toThrow("UNSAFE_BRANCH");
+    await expect(adapter.createBranch("feature/free-form", "main")).rejects.toThrow(\n      "UNSAFE_BRANCH",\n    );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
