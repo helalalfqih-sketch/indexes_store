@@ -1,8 +1,12 @@
+/* eslint-disable prettier/prettier */
 import { describe, expect, it, vi } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { handleStoreMcp } from "@/lib/mcp/store-handler.server";
 import type { StoreAdminAdapter } from "@/lib/mcp/store-admin.server";
+import type { StoreDevelopmentAdapter } from "@/lib/mcp/store-development.server";
+import type { StoreInspectionAdapter } from "@/lib/mcp/store-inspection.server";
+import type { StoreBrowserInspectionAdapter } from "@/lib/mcp/store-browser-inspection.server";
 
 function fixture(): StoreAdminAdapter {
   return {
@@ -18,6 +22,49 @@ function fixture(): StoreAdminAdapter {
   };
 }
 
+function developmentFixture(): StoreDevelopmentAdapter {
+  return {
+    repositoryInfo: vi.fn(async () => ({ repository: "helalalfqih-sketch/indexes_store" })),
+    readFile: vi.fn(async () => ({ path: "src/app.tsx", sha: "abc", content: "export {};" })),
+    searchCode: vi.fn(async () => ({ results: [] })),
+    createBranch: vi.fn(async () => ({ branch: "agent/test-change", base: "main" })),
+    patchFile: vi.fn(async () => ({ commitSha: "commit-a" })),
+    createPullRequest: vi.fn(async () => ({ number: 125, draft: true })),
+    traceElement: vi.fn(async () => ({ candidates: [] })),
+    inspectPullRequest: vi.fn(async () => ({ found: false })),
+    releaseReadiness: vi.fn(async () => ({
+      ready: false,
+      blockers: ["CHECKS_NOT_COMPLETE"],
+    })),
+    inspectProduction: vi.fn(async () => ({
+      headSha: "a".repeat(40),
+      combinedStatus: "success",
+    })),
+  };
+}
+
+function inspectionFixture(): StoreInspectionAdapter {
+  return {
+    inspectPage: vi.fn(async () => ({ status: 200, interactiveElements: [] })),
+    inspectNavigation: vi.fn(async () => ({ links: [] })),
+    inspectForms: vi.fn(async () => ({ forms: [], controls: [] })),
+    inspectMobileUi: vi.fn(async () => ({ hasResponsiveViewport: true })),
+    inspectSite: vi.fn(async () => ({ pages: [] })),
+  };
+}
+
+function browserInspectionFixture(): StoreBrowserInspectionAdapter {
+  return {
+    inspectRenderedPage: vi.fn(async () => ({ elements: [], inspectionMode: "rendered-read-only" })),
+    inspectConsole: vi.fn(async () => ({ errors: [], events: [] })),
+    inspectNetwork: vi.fn(async () => ({ failedRequests: [], badResponses: [] })),
+    screenshot: vi.fn(async () => ({ mimeType: "image/png", bytes: 1, sha256: "abc" })),
+    safeClick: vi.fn(async () => ({ inspectionMode: "safe-click-read-only" })),
+    trialNavigation: vi.fn(async () => ({ found: true, finalUrl: "https://indexes-store.vercel.app/" })),
+    comparePages: vi.fn(async () => ({ changed: false })),
+  };
+}
+
 async function connected() {
   const adapter = fixture();
   const client = new Client({ name: "store-mcp-test", version: "1.0.0" });
@@ -27,11 +74,14 @@ async function connected() {
       requestInit: { headers: { Authorization: "Bearer test" } },
       fetch: (url, init) =>
         handleStoreMcp(new Request(url, init), {
-          authorize: () => ({ sub: "admin", tenantId: "tenant-a" }),
+          authorize: () => ({ sub: "admin", tenantId: "tenant-a", scopes: ["store.read", "store.develop"] }),
           adapterFactory: (tenantId) => {
             expect(tenantId).toBe("tenant-a");
             return adapter;
           },
+          developmentAdapterFactory: () => developmentFixture(),
+          inspectionAdapterFactory: () => inspectionFixture(),
+          browserInspectionAdapterFactory: () => browserInspectionFixture(),
         }),
     },
   );
@@ -55,12 +105,67 @@ describe("private store MCP", () => {
           "inspect_runtime_errors",
           "search_products",
           "store_health",
+          "development_repository",
+          "read_source_file",
+          "search_source_code",
+          "trace_element_to_source",
+          "inspect_development_pr",
+          "release_readiness",
+          "verify_production_source",
+          "create_development_branch",
+          "patch_source_file",
+          "create_development_pr",
+          "inspect_site",
+          "inspect_page",
+          "inspect_navigation",
+          "inspect_forms",
+          "inspect_mobile_ui",
+          "inspect_rendered_page",
+          "inspect_console",
+          "inspect_network",
+          "inspect_screenshot",
+          "try_safe_click",
+          "trial_navigation",
+          "compare_preview",
         ].sort(),
       );
-      expect(
-        tools.every((tool) => tool.annotations?.readOnlyHint && !tool.annotations?.destructiveHint),
-      ).toBe(true);
+      const byName = new Map(tools.map((tool) => [tool.name, tool]));
+      expect(byName.get("store_health")?.annotations?.readOnlyHint).toBe(true);
+      expect(byName.get("read_source_file")?.annotations?.readOnlyHint).toBe(true);
+      expect(byName.get("patch_source_file")?.annotations?.readOnlyHint).toBe(false);
+      expect(byName.get("patch_source_file")?.annotations?.destructiveHint).toBe(false);
       expect((await client.callTool({ name: "update_product", arguments: {} })).isError).toBe(true);
+    } finally {
+      await client.close();
+    }
+  });
+
+  it("blocks development tools when store.develop is absent", async () => {
+    const adapter = fixture();
+    const development = developmentFixture();
+    const client = new Client({ name: "store-mcp-read-only-test", version: "1.0.0" });
+    const transport = new StreamableHTTPClientTransport(
+      new URL("https://indexes-store.vercel.app/api/mcp/store"),
+      {
+        requestInit: { headers: { Authorization: "Bearer test" } },
+        fetch: (url, init) =>
+          handleStoreMcp(new Request(url, init), {
+            authorize: () => ({ sub: "admin", tenantId: "tenant-a", scopes: ["store.read"] }),
+            adapterFactory: () => adapter,
+            developmentAdapterFactory: () => development,
+            inspectionAdapterFactory: () => inspectionFixture(),
+            browserInspectionAdapterFactory: () => browserInspectionFixture(),
+          }),
+      },
+    );
+    await client.connect(transport);
+    try {
+      const response = await client.callTool({
+        name: "development_repository",
+        arguments: {},
+      });
+      expect(response.isError).toBe(true);
+      expect(development.repositoryInfo).not.toHaveBeenCalled();
     } finally {
       await client.close();
     }

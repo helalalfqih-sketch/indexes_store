@@ -3,7 +3,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 export const STORE_ORIGIN = "https://indexes-store.vercel.app";
 export const STORE_OAUTH_ISSUER = `${STORE_ORIGIN}/api/mcp/store/oauth`;
 export const STORE_MCP_AUDIENCE = `${STORE_ORIGIN}/api/mcp/store`;
-export const STORE_MCP_SCOPE = "store.read offline_access";
+export const STORE_MCP_SCOPE = "store.read store.develop offline_access";
 
 const b64 = (value: Buffer | string) => Buffer.from(value).toString("base64url");
 
@@ -52,14 +52,14 @@ export const storeOauthMetadata = () => ({
   response_types_supported: ["code"],
   grant_types_supported: ["authorization_code", "refresh_token"],
   code_challenge_methods_supported: ["S256"],
-  scopes_supported: ["store.read", "offline_access"],
+  scopes_supported: ["store.read", "store.develop", "offline_access"],
   token_endpoint_auth_methods_supported: ["none"],
 });
 
 export const storeResourceMetadata = () => ({
   resource: STORE_MCP_AUDIENCE,
   authorization_servers: [STORE_OAUTH_ISSUER],
-  scopes_supported: ["store.read", "offline_access"],
+  scopes_supported: ["store.read", "store.develop", "offline_access"],
   bearer_methods_supported: ["header"],
 });
 
@@ -178,5 +178,7 @@ export function verifyStoreAccessToken(token: string) {
   ) {
     throw new Error("UNAUTHORIZED");
   }
-  return { sub: payload.sub, tenantId: payload.tenant_id };
+  const scopes =
+    typeof payload.scope === "string" ? payload.scope.split(/\s+/).filter(Boolean) : [];
+  return { sub: payload.sub, tenantId: payload.tenant_id, scopes };
 }
