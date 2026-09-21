@@ -39,6 +39,17 @@ describe("store development adapter guardrails", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("requires an exact commit SHA for release readiness", async () => {
+    process.env.STORE_MCP_GITHUB_TOKEN = "test-token";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const adapter = createStoreDevelopmentAdapter();
+    await expect(
+      adapter.releaseReadiness({ branch: "agent/test-change", expectedHeadSha: "abc" }),
+    ).rejects.toThrow("EXPECTED_HEAD_SHA_REQUIRED");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("rejects direct main writes and non-agent branches", async () => {
     process.env.STORE_MCP_GITHUB_TOKEN = "test-token";
     const fetchMock = vi.fn();
