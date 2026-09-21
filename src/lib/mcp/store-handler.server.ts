@@ -37,7 +37,7 @@ const writeAnnotations = {
   openWorldHint: false,
 };
 
-type Authorization = { sub: string; tenantId: string };
+type Authorization = { sub: string; tenantId: string; scopes: string[] };
 type Authorize = (token: string) => Authorization;
 type AdapterFactory = (tenantId: string) => StoreAdminAdapter;
 type DevelopmentAdapterFactory = () => StoreDevelopmentAdapter;
@@ -82,6 +82,7 @@ function createServer(
   development: StoreDevelopmentAdapter,
   inspection: StoreInspectionAdapter,
   browserInspection: StoreBrowserInspectionAdapter,
+  scopes: string[],
 ) {
   const server = new McpServer(
     { name: "indexes-store-control-plane", version: "2.0.0" },
@@ -100,7 +101,7 @@ function createServer(
     server.registerTool(
       name,
       { title, description, inputSchema, annotations, _meta: { securitySchemes } },
-      (input) => safeRead(() => read(input)),
+      (input) => requireDevelopmentScope(() => read(input)),
     );
 
   tool(
@@ -171,6 +172,18 @@ function createServer(
     z.object({ limit: z.number().int().min(1).max(100).default(20) }).strict(),
     ({ limit }) => adapter.auditLog(limit),
   );
+  const requireDevelopmentScope = async (
+    action: () => Promise<Record<string, unknown>>,
+  ) => {
+    if (!scopes.includes("store.develop")) {
+      return {
+        isError: true,
+        content: [{ type: "text" as const, text: "Missing required OAuth scope: store.develop" }],
+      };
+    }
+    return safeRead(action);
+  };
+
   const developmentRead = <T extends z.ZodRawShape>(
     name: string,
     title: string,
@@ -206,7 +219,7 @@ function createServer(
         annotations: writeAnnotations,
         _meta: { securitySchemes: developmentSecuritySchemes },
       },
-      (input) => safeRead(() => write(input)),
+      (input) => requireDevelopmentScope(() => write(input)),
     );
 
   tool(
@@ -495,7 +508,7 @@ export async function handleStoreMcp(
   const inspection = (options.inspectionAdapterFactory ?? createStoreInspectionAdapter)();
   const browserInspection =
     (options.browserInspectionAdapterFactory ?? createStoreBrowserInspectionAdapter)();
-  const server = createServer(adapter, development, inspection, browserInspection);
+  const server = createServer(adapter, development, inspection, browserInspection, authorization.scopes);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
