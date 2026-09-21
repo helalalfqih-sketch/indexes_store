@@ -143,11 +143,13 @@ describe("private store MCP", () => {
   it("blocks development tools when store.develop is absent", async () => {
     const adapter = fixture();
     const development = developmentFixture();
-    const { client } = await createMcpClient(
+    const client = new Client({ name: "store-mcp-read-only-test", version: "1.0.0" });
+    const transport = new StreamableHTTPClientTransport(
       new URL("https://indexes-store.vercel.app/api/mcp/store"),
       {
-        requestHandler: (request) =>
-          handleStoreMcp(request, {
+        requestInit: { headers: { Authorization: "Bearer test" } },
+        fetch: (url, init) =>
+          handleStoreMcp(new Request(url, init), {
             authorize: () => ({ sub: "admin", tenantId: "tenant-a", scopes: ["store.read"] }),
             adapterFactory: () => adapter,
             developmentAdapterFactory: () => development,
@@ -156,6 +158,7 @@ describe("private store MCP", () => {
           }),
       },
     );
+    await client.connect(transport);
     try {
       const response = await client.callTool({
         name: "development_repository",
