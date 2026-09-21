@@ -1,16 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getSupabaseAdmin } from "@/integrations/supabase/client.server";
 import { issueStoreCode, validateStoreClient } from "@/lib/mcp/store-oauth.server";
-import { resolveTenantId } from "@/lib/saas/tenant-context";
-import { requireWhapiAdmin } from "@/lib/whapi-auth.server";
+import { requireStoreAdminSession } from "@/lib/mcp/store-auth.server";
 
 export const Route = createFileRoute("/api/mcp/store/oauth/approve")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         try {
-          const sub = await requireWhapiAdmin(request);
-          const tenantId = await resolveTenantId(getSupabaseAdmin(), { userId: sub });
+          const { sub, tenantId } = await requireStoreAdminSession(request);
           const body = (await request.json()) as Record<string, string>;
           validateStoreClient(body.client_id, body.redirect_uri);
           if (!body.state || !body.code_challenge) throw new Error("INVALID_REQUEST");

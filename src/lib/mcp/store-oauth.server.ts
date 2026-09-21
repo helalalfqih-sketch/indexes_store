@@ -8,7 +8,7 @@ export const STORE_MCP_SCOPE = "store.read offline_access";
 const b64 = (value: Buffer | string) => Buffer.from(value).toString("base64url");
 
 function secret() {
-  const value = (process.env.STORE_MCP_OAUTH_SECRET || process.env.WHAPI_WEBHOOK_SECRET)?.trim();
+  const value = process.env.STORE_MCP_OAUTH_SECRET?.trim();
   if (!value || value.length < 32) throw new Error("STORE_MCP_OAUTH_NOT_CONFIGURED");
   return createHash("sha256").update("indexes-store-mcp-oauth-v1").update(value).digest();
 }
