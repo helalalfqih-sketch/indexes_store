@@ -54,3 +54,17 @@ A later browser worker will add rendered DOM, viewport screenshots, safe click/n
 console/network capture, and Preview-vs-Production comparison. That worker must remain inspection-only;
 source fixes continue through the guarded GitHub branch/PR path.
 
+### Rendered browser inspection worker
+
+V2 now includes read-only rendered-browser tools:
+`inspect_rendered_page`, `inspect_console`, `inspect_network`, and `inspect_screenshot`.
+
+The browser is restricted to the production Store origin. It may render pages at desktop/mobile
+viewports and observe interactive DOM, console/page errors, failed requests, HTTP >=400 responses,
+and screenshot metadata. Network inspection intentionally omits headers, cookies, credentials, and
+request bodies. These tools do not submit forms, place orders, or perform write actions.
+
+The worker currently targets the production Store origin only. Preview-origin inspection will be
+introduced with an explicit Vercel deployment allowlist so arbitrary external URLs cannot be used as
+a browser proxy.
+
