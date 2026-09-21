@@ -31,6 +31,7 @@ function developmentFixture(): StoreDevelopmentAdapter {
     patchFile: vi.fn(async () => ({ commitSha: "commit-a" })),
     createPullRequest: vi.fn(async () => ({ number: 125, draft: true })),
     traceElement: vi.fn(async () => ({ candidates: [] })),
+    inspectPullRequest: vi.fn(async () => ({ found: false })),
   };
 }
 
@@ -100,6 +101,7 @@ describe("private store MCP", () => {
           "read_source_file",
           "search_source_code",
           "trace_element_to_source",
+          "inspect_development_pr",
           "create_development_branch",
           "patch_source_file",
           "create_development_pr",
