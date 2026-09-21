@@ -5,6 +5,7 @@ import { handleStoreMcp } from "@/lib/mcp/store-handler.server";
 import type { StoreAdminAdapter } from "@/lib/mcp/store-admin.server";
 import type { StoreDevelopmentAdapter } from "@/lib/mcp/store-development.server";
 import type { StoreInspectionAdapter } from "@/lib/mcp/store-inspection.server";
+import type { StoreBrowserInspectionAdapter } from "@/lib/mcp/store-browser-inspection.server";
 
 function fixture(): StoreAdminAdapter {
   return {
@@ -41,6 +42,15 @@ function inspectionFixture(): StoreInspectionAdapter {
   };
 }
 
+function browserInspectionFixture(): StoreBrowserInspectionAdapter {
+  return {
+    inspectRenderedPage: vi.fn(async () => ({ elements: [], inspectionMode: "rendered-read-only" })),
+    inspectConsole: vi.fn(async () => ({ errors: [], events: [] })),
+    inspectNetwork: vi.fn(async () => ({ failedRequests: [], badResponses: [] })),
+    screenshot: vi.fn(async () => ({ mimeType: "image/png", bytes: 1, sha256: "abc" })),
+  };
+}
+
 async function connected() {
   const adapter = fixture();
   const client = new Client({ name: "store-mcp-test", version: "1.0.0" });
@@ -57,6 +67,7 @@ async function connected() {
           },
           developmentAdapterFactory: () => developmentFixture(),
           inspectionAdapterFactory: () => inspectionFixture(),
+          browserInspectionAdapterFactory: () => browserInspectionFixture(),
         }),
     },
   );
@@ -91,6 +102,10 @@ describe("private store MCP", () => {
           "inspect_navigation",
           "inspect_forms",
           "inspect_mobile_ui",
+          "inspect_rendered_page",
+          "inspect_console",
+          "inspect_network",
+          "inspect_screenshot",
         ].sort(),
       );
       const byName = new Map(tools.map((tool) => [tool.name, tool]));
