@@ -7,9 +7,42 @@ describe("store development adapter guardrails", () => {
     delete process.env.STORE_MCP_GITHUB_TOKEN;
   });
 
-  it("fails closed when the server-side GitHub credential is not configured", async () => {
+  it("allows public repository reads without a write credential", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          default_branch: "main",
+          private: false,
+          html_url: "https://github.com/helalalfqih-sketch/indexes_store",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
     const adapter = createStoreDevelopmentAdapter();
-    await expect(adapter.repositoryInfo()).rejects.toThrow("STORE_MCP_GITHUB_NOT_CONFIGURED");
+    await expect(adapter.repositoryInfo()).resolves.toMatchObject({
+      repository: "helalalfqih-sketch/indexes_store",
+      readSourceMode: "public-github-read-only",
+      writeConfigured: false,
+      writeBlocker: "STORE_MCP_GITHUB_WRITE_NOT_CONFIGURED",
+    });
+  });
+
+  it("fails closed for GitHub writes when the server-side credential is missing", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          ref: "refs/heads/main",
+          object: { sha: "1234567890123456789012345678901234567890" },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const adapter = createStoreDevelopmentAdapter();
+    await expect(adapter.createBranch("agent/test-change", "main")).rejects.toThrow(
+      "STORE_MCP_GITHUB_WRITE_NOT_CONFIGURED",
+    );
   });
 
   it("rejects secret-like paths before making a GitHub request", async () => {
