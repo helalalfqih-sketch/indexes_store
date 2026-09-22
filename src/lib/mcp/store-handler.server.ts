@@ -71,16 +71,35 @@ function result(data: Record<string, unknown>) {
   };
 }
 
+function safeErrorCode(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  if (message === "STORE_MCP_GITHUB_NOT_CONFIGURED") return "SOURCE_GITHUB_NOT_CONFIGURED";
+  if (message.startsWith("GITHUB_")) return message;
+  if (message === "BROWSER_URL_FORBIDDEN") return "BROWSER_URL_FORBIDDEN";
+  if (
+    message.includes("Executable doesn't exist") ||
+    message.includes("browserType.launch") ||
+    message.includes("chromium")
+  ) {
+    return "BROWSER_RUNTIME_UNAVAILABLE";
+  }
+  if (message.includes("Timeout") || message.includes("timeout")) return "UPSTREAM_TIMEOUT";
+  return "UPSTREAM_UNAVAILABLE";
+}
+
 async function safeRead(read: () => Promise<Record<string, unknown>>) {
   try {
     return result(await read());
-  } catch {
+  } catch (error) {
+    const code = safeErrorCode(error);
+    console.error("[StoreMCP tool failure]", { code });
     return {
       isError: true,
+      structuredContent: { error: code },
       content: [
         {
           type: "text" as const,
-          text: "Store data is temporarily unavailable. No result was inferred or fabricated.",
+          text: `Store tool failed safely: ${code}. No result was inferred or fabricated.`,
         },
       ],
     };
