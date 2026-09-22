@@ -587,6 +587,9 @@ function HomePage() {
                 if (!mappedSettings.hero.enabled) return null;
                 return (
                   <div key="hero-shein-block" className="space-y-2">
+                    <h1 className="sr-only">
+                      {mappedSettings.hero.title || "اندكس ستور - التسوق الإلكتروني في اليمن"}
+                    </h1>
                     {/* SHEIN Campaign & Promotional Collage Grid */}
                     <SheinPromoGrid
                       products={products}
