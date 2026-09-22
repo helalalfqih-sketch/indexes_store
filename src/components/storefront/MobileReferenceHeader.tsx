@@ -78,7 +78,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
         >
           <ShoppingCart className="h-[22px] w-[22px] stroke-[1.8]" />
           {cartCount > 0 && (
-            <span className="absolute right-0 top-0 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-[#ff2442] px-0.5 text-[8px] font-black text-[var(--color-primary-ui)]">
+            <span className="absolute right-0 top-0 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-[#ff2442] px-0.5 text-[8px] rounded-lg bg-[var(--color-primary-ui)] px-2 font-black text-white">
               {cartCount}
             </span>
           )}
@@ -105,7 +105,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
       </div>
 
       <nav
-        className="flex h-9 items-end gap-5 overflow-x-auto border-t border-white/10 px-3 no-scrollbar"
+        className="flex h-11 items-center gap-5 overflow-x-auto border-t border-white/10 px-3 no-scrollbar"
         aria-label="أقسام المتجر"
       >
         {PRIMARY_CATEGORIES.map((category) => (
@@ -115,7 +115,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
             aria-label={category.name}
             aria-pressed={selectedCategory === category.id}
             onClick={() => onSelectCategory?.(category.id)}
-            className={`relative h-9 shrink-0 whitespace-nowrap text-sm font-bold ${selectedCategory === category.id ? "font-black text-[var(--color-primary-ui)]" : "text-white/75"}`}
+            className={`relative h-10 shrink-0 whitespace-nowrap text-sm font-bold ${selectedCategory === category.id ? "rounded-lg bg-[var(--color-primary-ui)] px-2 font-black text-white" : "text-white/75"}`}
           >
             {category.name}
             {selectedCategory === category.id && (
