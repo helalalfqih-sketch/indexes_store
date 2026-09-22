@@ -4,6 +4,8 @@ export const STORE_ORIGIN = "https://indexes-store.vercel.app";
 export const STORE_OAUTH_ISSUER = `${STORE_ORIGIN}/api/mcp/store/oauth`;
 export const STORE_MCP_AUDIENCE = `${STORE_ORIGIN}/api/mcp/store`;
 export const STORE_MCP_SCOPE = "store.read store.develop offline_access";
+export const STORE_MCP_DISCOVERY_VERSION = "2.2.0";
+const STORE_CLIENT_KIND = "store_client_v2";
 
 const b64 = (value: Buffer | string) => Buffer.from(value).toString("base64url");
 
@@ -54,6 +56,7 @@ export const storeOauthMetadata = () => ({
   code_challenge_methods_supported: ["S256"],
   scopes_supported: ["store.read", "store.develop", "offline_access"],
   token_endpoint_auth_methods_supported: ["none"],
+  service_documentation: `${STORE_ORIGIN}/mcp-store-authorize?discovery=${STORE_MCP_DISCOVERY_VERSION}`,
 });
 
 export const storeResourceMetadata = () => ({
@@ -61,13 +64,14 @@ export const storeResourceMetadata = () => ({
   authorization_servers: [STORE_OAUTH_ISSUER],
   scopes_supported: ["store.read", "store.develop", "offline_access"],
   bearer_methods_supported: ["header"],
+  resource_documentation: `${STORE_ORIGIN}/mcp-store-authorize?discovery=${STORE_MCP_DISCOVERY_VERSION}`,
 });
 
 export function registerStoreClient(redirectUris: string[]) {
   if (!redirectUris.length || redirectUris.length > 5) throw new Error("INVALID_CLIENT");
   redirectUris.forEach(validateRedirectUri);
   return sign({
-    kind: "store_client",
+    kind: STORE_CLIENT_KIND,
     redirect_uris: redirectUris,
     exp: Math.floor(Date.now() / 1000) + 86400 * 30,
   });
@@ -77,7 +81,7 @@ export function validateStoreClient(clientId: string, redirectUri: string) {
   validateRedirectUri(redirectUri);
   const payload = verify(clientId);
   if (
-    payload.kind !== "store_client" ||
+    payload.kind !== STORE_CLIENT_KIND ||
     !Array.isArray(payload.redirect_uris) ||
     !payload.redirect_uris.includes(redirectUri)
   ) {
