@@ -199,25 +199,16 @@ export interface StoreDevelopmentAdapter {
 export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
   return {
     async repositoryInfo() {
-      const configured = Boolean(process.env.STORE_MCP_GITHUB_TOKEN?.trim());
-      if (!configured) {
-        return {
-          repository: REPOSITORY,
-          defaultBranch: DEFAULT_BRANCH,
-          configured: false,
-          mode: "branch-and-pr-only",
-          directMainWrites: false,
-          secretsReadable: false,
-          blocker: "SOURCE_GITHUB_NOT_CONFIGURED",
-        };
-      }
       const repo = (await github(`/repos/${REPOSITORY}`)) as Record<string, unknown>;
+      const writeConfigured = Boolean(githubToken());
       return {
-        configured: true,
         repository: REPOSITORY,
         defaultBranch: repo.default_branch,
         private: repo.private,
         htmlUrl: repo.html_url,
+        readSourceMode: writeConfigured ? "authenticated-github" : "public-github-read-only",
+        writeConfigured,
+        writeBlocker: writeConfigured ? null : "STORE_MCP_GITHUB_WRITE_NOT_CONFIGURED",
         mode: "branch-and-pr-only",
         directMainWrites: false,
         secretsReadable: false,
@@ -243,19 +234,13 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
     async searchCode(query) {
       const term = query.trim();
       if (!term || term.length > 120) throw new Error("INVALID_QUERY");
-      const data = (await github(
-        `/search/code?q=${encodeURIComponent(`${term} repo:${REPOSITORY}`)}&per_page=${MAX_SEARCH_RESULTS}`,
-      )) as { total_count?: number; items?: Array<Record<string, unknown>> };
+      const results = await searchSourceTerms([term], MAX_SEARCH_RESULTS);
       return {
         repository: REPOSITORY,
         query: term,
-        total: data.total_count ?? 0,
-        results: (data.items ?? []).slice(0, MAX_SEARCH_RESULTS).map((item) => ({
-          name: item.name,
-          path: item.path,
-          sha: item.sha,
-          htmlUrl: item.html_url,
-        })),
+        sourceMode: githubToken() ? "authenticated-github-search" : "public-repository-scan",
+        total: results.length,
+        results,
       };
     },
 
@@ -317,25 +302,9 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
       if (!terms.length) throw new Error("TRACE_SIGNAL_REQUIRED");
 
       const unique = [...new Set(terms)].slice(0, 4);
-      const matches = new Map<string, Record<string, unknown>>();
-      for (const term of unique) {
-        const data = (await github(
-          `/search/code?q=${encodeURIComponent(`${term} repo:${REPOSITORY}`)}&per_page=20`,
-        )) as { items?: Array<Record<string, unknown>> };
-        for (const item of data.items ?? []) {
-          const path = String(item.path ?? "");
-          if (!path || matches.has(path)) continue;
-          matches.set(path, {
-            path,
-            name: item.name,
-            sha: item.sha,
-            htmlUrl: item.html_url,
-            matchedSignal: term,
-          });
-        }
-      }
+      const matches = await searchSourceTerms(unique, 50);
 
-      const ranked = [...matches.values()]
+      const ranked = matches
         .map((item) => {
           const path = String(item.path ?? "");
           let score = 0;
