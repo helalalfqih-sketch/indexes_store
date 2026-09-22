@@ -371,8 +371,14 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
       const viewport =
         input.device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
       return withPage(input.url, viewport, async (page) => {
-        const locator = page.locator(input.selector).first();
-        if ((await locator.count()) !== 1) throw new Error("SAFE_CLICK_TARGET_NOT_FOUND");
+        // Desktop controls can remain in the mobile DOM while hidden.
+        const locator = page.locator(`${input.selector}:visible`).first();
+        try {
+          await locator.waitFor({ state: "visible", timeout: 5_000 });
+        } catch {
+          throw new Error("SAFE_CLICK_TARGET_NOT_FOUND");
+        }
+        if (!(await locator.isEnabled())) throw new Error("SAFE_CLICK_TARGET_DISABLED");
         const info = await locator.evaluate((node) => {
           const element = node as HTMLElement;
           const tag = element.tagName.toLowerCase();
@@ -403,7 +409,8 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
 
         const before = page.url();
         await locator.click({ timeout: 10_000 });
-        await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+        await page.waitForLoadState("domcontentloaded", { timeout: 3_000 }).catch(() => undefined);
+        await page.waitForTimeout(500);
         const after = page.url();
         if (new URL(after).origin !== targetOrigin) throw new Error("SAFE_CLICK_LEFT_STORE_ORIGIN");
         return {
@@ -411,6 +418,7 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
           after,
           target: info,
           navigationChanged: before !== after,
+          elementsAfter: await readRenderedElements(page),
           title: await page.title(),
           inspectionMode: "safe-click-read-only",
         };

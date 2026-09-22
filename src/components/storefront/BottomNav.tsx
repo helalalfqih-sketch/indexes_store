@@ -38,7 +38,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
   ];
 
   const activate = (tab: ActiveTab) => {
-    if (tab === "cart") {
+    if (tab === "cart" || tab === ("categories" as ActiveTab)) {
       setActiveTab(tab);
       return;
     }
@@ -46,7 +46,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
       void navigate({ to: "/account" });
       return;
     }
-    if (tab === "search" || tab === ("categories" as ActiveTab)) {
+    if (tab === "search") {
       void navigate({ to: "/search", search: { q: "" } });
       return;
     }

@@ -21,6 +21,7 @@ import {
 import { mapProductionProductToDesignProduct } from "@/components/storefront/adapters";
 
 import { Header } from "@/components/storefront/Header";
+import { MainMenu } from "@/components/main-menu";
 import { MobileReferenceHeader } from "@/components/storefront/MobileReferenceHeader";
 import { ShippingBanner } from "@/components/storefront/ShippingBanner";
 import { SalesHero } from "@/components/storefront/SalesHero";
@@ -259,6 +260,7 @@ function HomePage() {
   }, []);
 
   // UI State
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const currency: Currency = "YER";
@@ -516,7 +518,7 @@ function HomePage() {
     } else if (tab === "search") {
       window.scrollTo({ top: 400, behavior: "smooth" });
     } else if (tab === ("categories" as ActiveTab)) {
-      document.querySelector('[data-section="categories"]')?.scrollIntoView({ behavior: "smooth" });
+      setIsMenuOpen(true);
     }
   };
 
@@ -524,6 +526,7 @@ function HomePage() {
     <div className="dir-rtl relative flex min-h-screen flex-col overflow-x-hidden bg-white pb-20 text-right font-sans text-black transition-colors duration-200 selection:bg-black selection:text-white md:bg-[var(--color-bg,#08090B)] md:pb-28 md:text-[var(--color-text-primary,#F5F7FA)]">
       {/* Global Toast Notifications */}
       <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
+      <MainMenu open={isMenuOpen} onOpenChange={setIsMenuOpen} />
 
       {/* Foreground Store Content */}
       <div className="relative z-10 flex flex-col min-h-screen">
@@ -549,7 +552,7 @@ function HomePage() {
             onOpenNotifications={() => setIsNotificationsModalOpen(true)}
             onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
             onOpenCompare={() => setIsCompareModalOpen(true)}
-            onOpenMenu={() => navigate({ to: "/account" })}
+            onOpenMenu={() => setIsMenuOpen(true)}
             onOpenTracker={() => setIsTrackerModalOpen(true)}
             onOpenAdmin={handleOpenAdmin}
             isAdminUser={isAdminUser}
@@ -563,11 +566,13 @@ function HomePage() {
         <MobileReferenceHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onSubmitSearch={() => navigate({ to: "/search", search: { q: searchQuery.trim() } })}
           cartCount={cartStoreCount}
           unreadNotificationsCount={unreadNotificationsCount}
           onOpenCart={() => setIsCartDrawerOpen(true)}
           onOpenNotifications={() => setIsNotificationsModalOpen(true)}
-          onOpenMenu={() => navigate({ to: "/account" })}
+          onOpenMenu={() => setIsMenuOpen(true)}
+          onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
           onSelectCategory={handleSelectCategoryWithLoading}
         />
 

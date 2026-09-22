@@ -10,6 +10,7 @@ interface MobileReferenceHeaderProps {
   onOpenCart: () => void;
   onOpenNotifications: () => void;
   onOpenMenu: () => void;
+  onOpenWishlist?: () => void;
   onSelectCategory?: (categoryId: string) => void;
 }
 
@@ -30,6 +31,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
   onOpenCart,
   onOpenNotifications,
   onOpenMenu,
+  onOpenWishlist,
   onSelectCategory,
 }) => {
   return (
@@ -38,14 +40,16 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
       dir="rtl"
     >
       <div className="flex h-12 items-center gap-1 px-2" dir="ltr">
-        <button
-          type="button"
-          onClick={onOpenMenu}
-          aria-label="المفضلة"
-          className="grid h-10 w-9 shrink-0 place-items-center text-white"
-        >
-          <Heart className="h-[21px] w-[21px] stroke-[1.8]" />
-        </button>
+        {onOpenWishlist && (
+          <button
+            type="button"
+            onClick={onOpenWishlist}
+            aria-label="المفضلة"
+            className="grid h-10 w-9 shrink-0 place-items-center text-white"
+          >
+            <Heart className="h-[21px] w-[21px] stroke-[1.8]" />
+          </button>
+        )}
 
         <div
           className="flex h-9 min-w-0 flex-1 items-center border border-white bg-white"
@@ -72,6 +76,8 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           <button
             type="button"
             aria-label="البحث بالكاميرا"
+            disabled
+            title="البحث بالكاميرا غير متاح حاليًا"
             className="grid h-9 w-8 shrink-0 place-items-center text-black"
           >
             <Camera className="h-[17px] w-[17px] stroke-[1.8]" />
