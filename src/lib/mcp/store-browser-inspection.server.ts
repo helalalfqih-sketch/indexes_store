@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
-import { chromium, type Browser, type Page } from "@playwright/test";
+import serverlessChromium from "@sparticuz/chromium";
+import { chromium as playwright, type Browser, type Page } from "playwright-core";
 import { createHash } from "node:crypto";
 
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
@@ -24,19 +25,49 @@ function allowedUrl(value: string) {
   return url;
 }
 
+async function launchBrowser() {
+  try {
+    if (process.env.VERCEL) {
+      return await playwright.launch({
+        args: serverlessChromium.args,
+        executablePath: await serverlessChromium.executablePath(),
+        headless: true,
+      });
+    }
+    return await playwright.launch({ headless: true });
+  } catch {
+    throw new Error("BROWSER_RUNTIME_UNAVAILABLE");
+  }
+}
+
+async function settle(page: Page) {
+  await page.waitForLoadState("load", { timeout: 10_000 }).catch(() => undefined);
+  await page.waitForTimeout(750);
+}
+
 async function withPage<T>(
   value: string,
   viewport: { width: number; height: number },
   run: (page: Page, browser: Browser) => Promise<T>,
 ) {
   const url = allowedUrl(value);
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchBrowser();
   try {
-    const page = await browser.newPage({ viewport });
-    await page.goto(url.toString(), { waitUntil: "networkidle", timeout: 30_000 });
+    let page: Page;
+    try {
+      page = await browser.newPage({ viewport });
+    } catch {
+      throw new Error("BROWSER_RUNTIME_UNAVAILABLE");
+    }
+    try {
+      await page.goto(url.toString(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await settle(page);
+    } catch {
+      throw new Error("BROWSER_NAVIGATION_FAILED");
+    }
     return await run(page, browser);
   } finally {
-    await browser.close();
+    await browser.close().catch(() => undefined);
   }
 }
 
@@ -118,7 +149,8 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
           if (events.length >= MAX_EVENTS) return;
           events.push({ type: "pageerror", text: error.message.slice(0, 1000) });
         });
-        await page.reload({ waitUntil: "networkidle", timeout: 30_000 });
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
+        await settle(page);
         return {
           url: page.url(),
           count: events.length,
@@ -153,7 +185,8 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
             resourceType: response.request().resourceType(),
           });
         });
-        await page.reload({ waitUntil: "networkidle", timeout: 30_000 });
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
+        await settle(page);
         return { url: page.url(), failedRequests: failures, badResponses };
       });
     },
