@@ -14,6 +14,9 @@ export default defineConfig({
     resolve: {
       dedupe: ["three"],
     },
+    ssr: {
+      external: ["@sparticuz/chromium"],
+    },
     plugins: [
       VitePWA({
         outDir: ".output/public",
