@@ -58,32 +58,76 @@ async function launchBrowser() {
 }
 
 async function settle(page: Page) {
-  await page.waitForLoadState("load", { timeout: 10_000 }).catch(() => undefined);
-  await page.waitForTimeout(750);
+  await page.waitForLoadState("domcontentloaded", { timeout: 8_000 }).catch(() => undefined);
+  await page.waitForLoadState("load", { timeout: 5_000 }).catch(() => undefined);
+  await page.waitForTimeout(500);
+}
+
+async function hasUsableDocument(page: Page, target: URL) {
+  try {
+    const current = allowedUrl(page.url());
+    if (current.origin !== target.origin) return false;
+    await page.locator("body").waitFor({ state: "attached", timeout: 3_000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function navigatePage(page: Page, target: URL) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await page.goto(target.toString(), {
+        waitUntil: "commit",
+        timeout: 15_000,
+      });
+      if (response && response.status() >= 400) {
+        throw new Error(`BROWSER_HTTP_${response.status()}`);
+      }
+      await settle(page);
+      if (await hasUsableDocument(page, target)) return;
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith("BROWSER_HTTP_")) throw error;
+      if (await hasUsableDocument(page, target)) {
+        await settle(page);
+        return;
+      }
+    }
+
+    if (attempt === 0) {
+      await page.waitForTimeout(350).catch(() => undefined);
+    }
+  }
+
+  throw new Error("BROWSER_NAVIGATION_FAILED");
 }
 
 async function withPage<T>(
   value: string,
   viewport: { width: number; height: number },
   run: (page: Page, browser: Browser) => Promise<T>,
+  beforeNavigate?: (page: Page) => void,
 ) {
   const url = allowedUrl(value);
   const browser = await launchBrowser();
+  let context: Awaited<ReturnType<Browser["newContext"]>> | undefined;
   try {
     let page: Page;
     try {
-      page = await browser.newPage({ viewport });
+      context = await browser.newContext({
+        viewport,
+        serviceWorkers: "block",
+      });
+      page = await context.newPage();
     } catch {
-      throw new Error("BROWSER_RUNTIME_UNAVAILABLE");
+      throw new Error("BROWSER_PAGE_INIT_FAILED");
     }
-    try {
-      await page.goto(url.toString(), { waitUntil: "domcontentloaded", timeout: 30_000 });
-      await settle(page);
-    } catch {
-      throw new Error("BROWSER_NAVIGATION_FAILED");
-    }
+
+    beforeNavigate?.(page);
+    await navigatePage(page, url);
     return await run(page, browser);
   } finally {
+    await context?.close().catch(() => undefined);
     await browser.close().catch(() => undefined);
   }
 }
@@ -156,56 +200,60 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
     },
 
     async inspectConsole(url) {
-      return withPage(url, { width: 1440, height: 1000 }, async (page) => {
-        const events: Array<Record<string, unknown>> = [];
-        page.on("console", (message) => {
-          if (events.length >= MAX_EVENTS) return;
-          events.push({ type: message.type(), text: message.text().slice(0, 1000) });
-        });
-        page.on("pageerror", (error) => {
-          if (events.length >= MAX_EVENTS) return;
-          events.push({ type: "pageerror", text: error.message.slice(0, 1000) });
-        });
-        await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
-        await settle(page);
-        return {
+      const events: Array<Record<string, unknown>> = [];
+      return withPage(
+        url,
+        { width: 1440, height: 1000 },
+        async (page) => ({
           url: page.url(),
           count: events.length,
           errors: events.filter((event) => ["error", "pageerror"].includes(String(event.type))),
           events,
-        };
-      });
+        }),
+        (page) => {
+          page.on("console", (message) => {
+            if (events.length >= MAX_EVENTS) return;
+            events.push({ type: message.type(), text: message.text().slice(0, 1000) });
+          });
+          page.on("pageerror", (error) => {
+            if (events.length >= MAX_EVENTS) return;
+            events.push({ type: "pageerror", text: error.message.slice(0, 1000) });
+          });
+        },
+      );
     },
 
     async inspectNetwork(url) {
-      return withPage(url, { width: 1440, height: 1000 }, async (page) => {
-        const failures: Array<Record<string, unknown>> = [];
-        const badResponses: Array<Record<string, unknown>> = [];
-        page.on("requestfailed", (request) => {
-          if (failures.length >= MAX_EVENTS) return;
-          const requestUrl = new URL(request.url());
-          failures.push({
-            method: request.method(),
-            origin: requestUrl.origin,
-            path: requestUrl.pathname,
-            resourceType: request.resourceType(),
-            error: request.failure()?.errorText ?? null,
+      const failures: Array<Record<string, unknown>> = [];
+      const badResponses: Array<Record<string, unknown>> = [];
+      return withPage(
+        url,
+        { width: 1440, height: 1000 },
+        async (page) => ({ url: page.url(), failedRequests: failures, badResponses }),
+        (page) => {
+          page.on("requestfailed", (request) => {
+            if (failures.length >= MAX_EVENTS) return;
+            const requestUrl = new URL(request.url());
+            failures.push({
+              method: request.method(),
+              origin: requestUrl.origin,
+              path: requestUrl.pathname,
+              resourceType: request.resourceType(),
+              error: request.failure()?.errorText ?? null,
+            });
           });
-        });
-        page.on("response", (response) => {
-          if (response.status() < 400 || badResponses.length >= MAX_EVENTS) return;
-          const responseUrl = new URL(response.url());
-          badResponses.push({
-            status: response.status(),
-            origin: responseUrl.origin,
-            path: responseUrl.pathname,
-            resourceType: response.request().resourceType(),
+          page.on("response", (response) => {
+            if (response.status() < 400 || badResponses.length >= MAX_EVENTS) return;
+            const responseUrl = new URL(response.url());
+            badResponses.push({
+              status: response.status(),
+              origin: responseUrl.origin,
+              path: responseUrl.pathname,
+              resourceType: response.request().resourceType(),
+            });
           });
-        });
-        await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
-        await settle(page);
-        return { url: page.url(), failedRequests: failures, badResponses };
-      });
+        },
+      );
     },
 
     async trialNavigation(input) {
