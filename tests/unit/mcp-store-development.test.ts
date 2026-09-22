@@ -8,15 +8,16 @@ describe("store development adapter guardrails", () => {
   });
 
   it("allows public repository reads without a write credential", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          default_branch: "main",
-          private: false,
-          html_url: "https://github.com/helalalfqih-sketch/indexes_store",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            default_branch: "main",
+            private: false,
+            html_url: "https://github.com/helalalfqih-sketch/indexes_store",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
     const adapter = createStoreDevelopmentAdapter();
@@ -29,14 +30,15 @@ describe("store development adapter guardrails", () => {
   });
 
   it("fails closed for GitHub writes when the server-side credential is missing", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          ref: "refs/heads/main",
-          object: { sha: "1234567890123456789012345678901234567890" },
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            ref: "refs/heads/main",
+            object: { sha: "1234567890123456789012345678901234567890" },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
     const adapter = createStoreDevelopmentAdapter();
