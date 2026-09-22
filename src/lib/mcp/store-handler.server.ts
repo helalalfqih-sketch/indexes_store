@@ -75,16 +75,15 @@ function safeErrorCode(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   if (message === "STORE_MCP_GITHUB_NOT_CONFIGURED") return "SOURCE_GITHUB_NOT_CONFIGURED";
   if (message === "STORE_MCP_GITHUB_WRITE_NOT_CONFIGURED") return "SOURCE_GITHUB_WRITE_NOT_CONFIGURED";
-  if (message.startsWith("GITHUB_")) return message;
-  if (message === "BROWSER_URL_FORBIDDEN") return "BROWSER_URL_FORBIDDEN";
+  if (/^[A-Z][A-Z0-9_]{2,80}$/.test(message)) return message;
   if (
     message.includes("Executable doesn't exist") ||
     message.includes("browserType.launch") ||
-    message.includes("chromium")
+    message.toLowerCase().includes("chromium")
   ) {
     return "BROWSER_RUNTIME_UNAVAILABLE";
   }
-  if (message.includes("Timeout") || message.includes("timeout")) return "UPSTREAM_TIMEOUT";
+  if (/timeout/i.test(message)) return "UPSTREAM_TIMEOUT";
   return "UPSTREAM_UNAVAILABLE";
 }
 
