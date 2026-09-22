@@ -7,9 +7,27 @@ describe("store development adapter guardrails", () => {
     delete process.env.STORE_MCP_GITHUB_TOKEN;
   });
 
-  it("fails closed when the server-side GitHub credential is not configured", async () => {
+  it("allows public source reads but reports writes blocked without a GitHub credential", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            default_branch: "main",
+            private: false,
+            html_url: "https://github.com/helalalfqih-sketch/indexes_store",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
     const adapter = createStoreDevelopmentAdapter();
-    await expect(adapter.repositoryInfo()).rejects.toThrow("STORE_MCP_GITHUB_NOT_CONFIGURED");
+    await expect(adapter.repositoryInfo()).resolves.toMatchObject({
+      repository: "helalalfqih-sketch/indexes_store",
+      sourceReadConfigured: true,
+      sourceReadMode: "public-github-api",
+      sourceWriteConfigured: false,
+      writeBlocker: "SOURCE_GITHUB_WRITE_NOT_CONFIGURED",
+    });
   });
 
   it("rejects secret-like paths before making a GitHub request", async () => {
