@@ -7,14 +7,15 @@ const MAX_RESULTS = 100;
 
 type RuntimeIncident = {
   id: string;
-  level: string;
-  title: string;
-  message: string;
-  source: string;
-  occurrences_count: number;
-  first_seen_at: string;
-  last_seen_at: string;
-  status: string;
+  tenant_id: string;
+  error_name: string | null;
+  error_type: string | null;
+  level: string | null;
+  location: string | null;
+  cause: string | null;
+  suggested_fix: string | null;
+  status: string | null;
+  created_at: string;
 };
 
 type RuntimeResult = {
@@ -29,7 +30,7 @@ type RuntimeQuery = {
 };
 
 type RuntimeClient = {
-  from(table: "runtime_incidents"): {
+  from(table: "system_live_logs"): {
     select(columns: string): RuntimeQuery;
   };
 };
@@ -257,21 +258,34 @@ export function createStoreAdminAdapter(tenantId: string): StoreAdminAdapter {
     async inspectRuntimeErrors(limit) {
       const runtimeDb = db as unknown as RuntimeClient;
       const { data, error } = await runtimeDb
-        .from("runtime_incidents")
+        .from("system_live_logs")
         .select(
-          "id, level, title, message, source, occurrences_count, first_seen_at, last_seen_at, status",
+          "id, tenant_id, error_name, error_type, level, location, cause, suggested_fix, status, created_at",
         )
         .eq("tenant_id", tenantId)
-        .order("last_seen_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(limit);
       fail(error, "RUNTIME_INSPECTION_UNAVAILABLE");
       const incidents = data ?? [];
       return {
         tenantId,
+        source: "system_live_logs",
         count: incidents.length,
         open: incidents.filter((item) => item.status === "open").length,
         fatal: incidents.filter((item) => item.level === "fatal").length,
-        incidents,
+        incidents: incidents.map((item) => ({
+          id: item.id,
+          level: item.level,
+          title: item.error_name,
+          type: item.error_type,
+          location: item.location,
+          cause: item.cause?.slice(0, 500) ?? null,
+          suggestedFix: item.suggested_fix?.slice(0, 500) ?? null,
+          status: item.status,
+          createdAt: item.created_at,
+        })),
+        stackTracesIncluded: false,
+        requestContextIncluded: false,
       };
     },
 
