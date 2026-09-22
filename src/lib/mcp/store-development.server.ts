@@ -5,7 +5,7 @@ const DEFAULT_BRANCH = "main";
 const MAX_FILE_BYTES = 200_000;
 const MAX_SEARCH_RESULTS = 50;
 const MAX_PUBLIC_SEARCH_FILES = 400;
-const PUBLIC_SOURCE_EXTENSIONS = /\\.(?:ts|tsx|js|jsx|json|md|css|scss|html|yml|yaml)$/i;
+const PUBLIC_SOURCE_EXTENSIONS = /\.(?:ts|tsx|js|jsx|json|md|css|scss|html|yml|yaml)$/i;
 
 type GitHubFile = {
   type?: string;
