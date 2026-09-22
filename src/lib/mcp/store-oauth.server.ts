@@ -4,8 +4,8 @@ export const STORE_ORIGIN = "https://indexes-store.vercel.app";
 export const STORE_OAUTH_ISSUER = `${STORE_ORIGIN}/api/mcp/store/oauth`;
 export const STORE_MCP_AUDIENCE = `${STORE_ORIGIN}/api/mcp/store`;
 export const STORE_MCP_SCOPE = "store.read store.develop offline_access";
-export const STORE_MCP_DISCOVERY_VERSION = "2.2.0";
-const STORE_CLIENT_KIND = "store_client_v2";
+export const STORE_MCP_DISCOVERY_VERSION = "2.3.0";
+const STORE_CLIENT_KIND = "store_client_v3";
 
 const b64 = (value: Buffer | string) => Buffer.from(value).toString("base64url");
 
