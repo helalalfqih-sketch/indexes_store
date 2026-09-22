@@ -4,6 +4,8 @@ const REPOSITORY = "helalalfqih-sketch/indexes_store";
 const DEFAULT_BRANCH = "main";
 const MAX_FILE_BYTES = 200_000;
 const MAX_SEARCH_RESULTS = 50;
+const MAX_PUBLIC_SEARCH_FILES = 500;
+const PUBLIC_SEARCH_BATCH = 32;
 
 type GitHubFile = {
   type?: string;
@@ -16,9 +18,7 @@ type GitHubFile = {
 };
 
 function githubToken() {
-  const token = process.env.STORE_MCP_GITHUB_TOKEN?.trim();
-  if (!token) throw new Error("STORE_MCP_GITHUB_NOT_CONFIGURED");
-  return token;
+  return process.env.STORE_MCP_GITHUB_TOKEN?.trim() || null;
 }
 
 function safePath(value: string) {
@@ -49,11 +49,17 @@ function safeBranch(value: string) {
 }
 
 async function github(path: string, init: RequestInit = {}) {
+  const method = String(init.method || "GET").toUpperCase();
+  const token = githubToken();
+  if (method !== "GET" && !token) {
+    throw new Error("STORE_MCP_GITHUB_WRITE_NOT_CONFIGURED");
+  }
+
   const response = await fetch(`${GITHUB_API}${path}`, {
     ...init,
     headers: {
       Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${githubToken()}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       "X-GitHub-Api-Version": "2022-11-28",
       ...(init.headers ?? {}),
     },
@@ -62,6 +68,101 @@ async function github(path: string, init: RequestInit = {}) {
   const data = text ? (JSON.parse(text) as unknown) : null;
   if (!response.ok) throw new Error(`GITHUB_${response.status}`);
   return data;
+}
+
+type GitTreeEntry = {
+  type?: string;
+  path?: string;
+  sha?: string;
+  size?: number;
+};
+
+async function searchPublicSource(term: string, limit: number) {
+  const tree = (await github(
+    `/repos/${REPOSITORY}/git/trees/${encodeURIComponent(DEFAULT_BRANCH)}?recursive=1`,
+  )) as { tree?: GitTreeEntry[]; truncated?: boolean };
+
+  const allowedExtension = /\.(?:ts|tsx|js|jsx|json|css|md|yml|yaml)$/i;
+  const candidates = (tree.tree ?? [])
+    .filter(
+      (entry) =>
+        entry.type === "blob" &&
+        typeof entry.path === "string" &&
+        allowedExtension.test(entry.path) &&
+        (entry.size ?? 0) <= MAX_FILE_BYTES &&
+        !/(^|\/)(node_modules|dist|build|\.git|\.vercel)(\/|$)/i.test(entry.path),
+    )
+    .sort((a, b) => {
+      const score = (entry: GitTreeEntry) => {
+        const p = String(entry.path ?? "").toLowerCase();
+        let value = 0;
+        if (p.startsWith("src/routes/")) value += 5;
+        if (p.startsWith("src/components/")) value += 5;
+        if (p.startsWith("src/lib/")) value += 4;
+        if (p.includes(term.toLowerCase())) value += 10;
+        return value;
+      };
+      return score(b) - score(a);
+    })
+    .slice(0, MAX_PUBLIC_SEARCH_FILES);
+
+  const needle = term.toLowerCase();
+  const matches: Array<Record<string, unknown>> = [];
+
+  for (let start = 0; start < candidates.length && matches.length < limit; start += PUBLIC_SEARCH_BATCH) {
+    const batch = candidates.slice(start, start + PUBLIC_SEARCH_BATCH);
+    const inspected = await Promise.all(
+      batch.map(async (entry) => {
+        const rawUrl = `https://raw.githubusercontent.com/${REPOSITORY}/${DEFAULT_BRANCH}/${String(entry.path)
+          .split("/")
+          .map(encodeURIComponent)
+          .join("/")}`;
+        try {
+          const response = await fetch(rawUrl, { headers: { Accept: "text/plain" } });
+          if (!response.ok) return null;
+          const text = await response.text();
+          if (!text.toLowerCase().includes(needle)) return null;
+          const path = String(entry.path);
+          return {
+            name: path.split("/").pop(),
+            path,
+            sha: entry.sha,
+            html_url: `https://github.com/${REPOSITORY}/blob/${DEFAULT_BRANCH}/${path}`,
+          };
+        } catch {
+          return null;
+        }
+      }),
+    );
+    for (const item of inspected) {
+      if (item) matches.push(item);
+      if (matches.length >= limit) break;
+    }
+  }
+
+  return {
+    total_count: matches.length,
+    items: matches,
+    search_mode: "public-repository-fallback",
+    scanned_files: candidates.length,
+    truncated: Boolean(tree.truncated) || candidates.length >= MAX_PUBLIC_SEARCH_FILES,
+  };
+}
+
+async function searchSource(term: string, limit = MAX_SEARCH_RESULTS) {
+  const token = githubToken();
+  if (token) {
+    return (await github(
+      `/search/code?q=${encodeURIComponent(`${term} repo:${REPOSITORY}`)}&per_page=${limit}`,
+    )) as {
+      total_count?: number;
+      items?: Array<Record<string, unknown>>;
+      search_mode?: string;
+      scanned_files?: number;
+      truncated?: boolean;
+    };
+  }
+  return searchPublicSource(term, limit);
 }
 
 function decodeFile(file: GitHubFile) {
@@ -106,25 +207,17 @@ export interface StoreDevelopmentAdapter {
 export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
   return {
     async repositoryInfo() {
-      const configured = Boolean(process.env.STORE_MCP_GITHUB_TOKEN?.trim());
-      if (!configured) {
-        return {
-          repository: REPOSITORY,
-          defaultBranch: DEFAULT_BRANCH,
-          configured: false,
-          mode: "branch-and-pr-only",
-          directMainWrites: false,
-          secretsReadable: false,
-          blocker: "SOURCE_GITHUB_NOT_CONFIGURED",
-        };
-      }
       const repo = (await github(`/repos/${REPOSITORY}`)) as Record<string, unknown>;
+      const writeConfigured = Boolean(githubToken());
       return {
-        configured: true,
         repository: REPOSITORY,
         defaultBranch: repo.default_branch,
         private: repo.private,
         htmlUrl: repo.html_url,
+        sourceReadConfigured: true,
+        sourceReadMode: writeConfigured ? "authenticated-github-api" : "public-github-api",
+        sourceWriteConfigured: writeConfigured,
+        writeBlocker: writeConfigured ? null : "SOURCE_GITHUB_WRITE_NOT_CONFIGURED",
         mode: "branch-and-pr-only",
         directMainWrites: false,
         secretsReadable: false,
@@ -150,13 +243,14 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
     async searchCode(query) {
       const term = query.trim();
       if (!term || term.length > 120) throw new Error("INVALID_QUERY");
-      const data = (await github(
-        `/search/code?q=${encodeURIComponent(`${term} repo:${REPOSITORY}`)}&per_page=${MAX_SEARCH_RESULTS}`,
-      )) as { total_count?: number; items?: Array<Record<string, unknown>> };
+      const data = await searchSource(term, MAX_SEARCH_RESULTS);
       return {
         repository: REPOSITORY,
         query: term,
         total: data.total_count ?? 0,
+        searchMode: data.search_mode ?? (githubToken() ? "authenticated-code-search" : "public-repository-fallback"),
+        scannedFiles: data.scanned_files ?? null,
+        truncated: data.truncated ?? false,
         results: (data.items ?? []).slice(0, MAX_SEARCH_RESULTS).map((item) => ({
           name: item.name,
           path: item.path,
@@ -226,9 +320,7 @@ export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
       const unique = [...new Set(terms)].slice(0, 4);
       const matches = new Map<string, Record<string, unknown>>();
       for (const term of unique) {
-        const data = (await github(
-          `/search/code?q=${encodeURIComponent(`${term} repo:${REPOSITORY}`)}&per_page=20`,
-        )) as { items?: Array<Record<string, unknown>> };
+        const data = await searchSource(term, 20);
         for (const item of data.items ?? []) {
           const path = String(item.path ?? "");
           if (!path || matches.has(path)) continue;
