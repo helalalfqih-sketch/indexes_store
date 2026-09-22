@@ -1,3 +1,4 @@
+import { STOREFRONT_CATEGORIES } from "./categories";
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SortOption } from "./types";
@@ -50,18 +51,7 @@ export interface CategoryBarProps {
   onSelectRatings?: (ratings: string[]) => void;
 }
 
-const CATEGORY_ITEMS = [
-  { id: "all", name: "الكل", icon: Grid },
-  { id: "tools", name: "أدوات ومعدات", icon: Wrench },
-  { id: "automotive", name: "مستلزمات السيارات", icon: Car },
-  { id: "health_fitness", name: "الصحة واللياقة", icon: Dumbbell },
-  { id: "home_appliances", name: "أجهزة ومنزل", icon: Home },
-  { id: "baby_kids", name: "مستلزمات الأطفال", icon: Baby },
-  { id: "smartwatches", name: "ساعات ذكية", icon: Watch },
-  { id: "audio", name: "سماعات وصوتيات", icon: Headphones },
-  { id: "perfumes", name: "عطور وبخور", icon: Sparkles },
-  { id: "accessories", name: "إكسسوارات وهواتف", icon: Smartphone },
-];
+const CATEGORY_ITEMS = STOREFRONT_CATEGORIES.map((category) => ({ ...category, icon: Grid }));
 
 const PRICE_PRESETS: {
   id: PriceRangePreset;
@@ -188,9 +178,9 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               aria-label={`تصفية الفئة: ${cat.name}`}
               aria-pressed={isSelected}
               onClick={() => onSelectCategory(cat.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-sm font-bold transition-all shrink-0 cursor-pointer ${
                 isSelected
-                  ? "bg-[#2F6BFF] border-[#2F6BFF] text-white shadow-md shadow-blue-500/20"
+                  ? "bg-[var(--color-primary-ui)] border-[var(--color-primary-ui)] text-white shadow-md shadow-blue-500/20"
                   : "bg-[var(--color-surface-1)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
               }`}
             >
@@ -214,8 +204,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* Right Label & Preset Pill Buttons */}
           <div className="flex items-center gap-2 flex-wrap flex-1">
-            <div className="flex items-center gap-1.5 text-xs font-extrabold text-[var(--color-text-primary)] shrink-0 pl-1 border-l border-[var(--color-border-subtle)] ml-1">
-              <Banknote className="w-4 h-4 text-[#2F6BFF]" />
+            <div className="flex items-center gap-1.5 text-sm font-extrabold text-[var(--color-text-primary)] shrink-0 pl-1 border-l border-[var(--color-border-subtle)] ml-1">
+              <Banknote className="w-4 h-4 text-[var(--color-primary-ui)]" />
               <span>تصفية السعر:</span>
             </div>
 
@@ -242,14 +232,14 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                         onSelectPriceRange(preset.id);
                       }
                     }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-bold transition-all shrink-0 cursor-pointer ${
                       isSelected
-                        ? "bg-[#2F6BFF] border-[#2F6BFF] text-white shadow-sm"
+                        ? "bg-[var(--color-primary-ui)] border-[var(--color-primary-ui)] text-white shadow-sm"
                         : "bg-[var(--color-surface-2)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)]"
                     }`}
                   >
                     <PresetIcon
-                      className={`w-3 h-3 ${isSelected ? "text-white" : "text-[#2F6BFF]"}`}
+                      className={`w-3 h-3 ${isSelected ? "text-white" : "text-[var(--color-primary-ui)]"}`}
                     />
                     <span>{preset.label}</span>
                   </button>
@@ -262,9 +252,9 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                 onClick={() => setIsCustomDrawerOpen(!isCustomDrawerOpen)}
                 aria-label="نطاق مخصص"
                 aria-expanded={isCustomDrawerOpen}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-bold transition-all shrink-0 cursor-pointer ${
                   selectedPriceRange === "custom"
-                    ? "bg-[#2F6BFF] border-[#2F6BFF] text-white shadow-sm"
+                    ? "bg-[var(--color-primary-ui)] border-[var(--color-primary-ui)] text-white shadow-sm"
                     : "bg-[var(--color-surface-2)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                 }`}
               >
@@ -285,15 +275,15 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               onClick={() =>
                 onSelectSort(selectedSort === "price-low" ? "price-high" : "price-low")
               }
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
                 selectedSort === "price-low" || selectedSort === "price-high"
-                  ? "bg-[#2F6BFF]/15 text-[#2F6BFF] border-[#2F6BFF]/50 shadow-sm"
+                  ? "bg-[var(--color-primary-ui)]/15 text-[var(--color-primary-ui)] border-[var(--color-primary-ui)]/50 shadow-sm"
                   : "bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]"
               }`}
               title="تبديل الترتيب بين المنخفض والمرتفع"
               aria-label="سعر منخفض/مرتفع"
             >
-              <ArrowUpDown className="w-3 h-3 text-[#2F6BFF]" />
+              <ArrowUpDown className="w-3 h-3 text-[var(--color-primary-ui)]" />
               <span className="hidden sm:inline">
                 {selectedSort === "price-low"
                   ? "منخفض → مرتفع"
@@ -315,9 +305,9 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               aria-label={`ترتيب المنتجات: ${currentSortObj.label}`}
               aria-expanded={isDropdownOpen}
-              className={`flex items-center gap-1.5 border px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 border px-2.5 py-1.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                 selectedSort !== "default"
-                  ? "bg-[#2F6BFF] text-white border-[#2F6BFF]"
+                  ? "bg-[var(--color-primary-ui)] text-white border-[var(--color-primary-ui)]"
                   : "bg-[var(--color-surface-2)] text-[var(--color-text-primary)] border-[var(--color-border-default)] hover:border-[var(--color-border-strong)]"
               }`}
             >
@@ -349,9 +339,9 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                           onSelectSort(opt.id);
                           setIsDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                           isOptSelected
-                            ? "bg-[#2F6BFF] text-white shadow-sm"
+                            ? "bg-[var(--color-primary-ui)] text-white shadow-sm"
                             : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)]"
                         }`}
                       >
@@ -377,7 +367,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                 setIsRatingDrawerOpen(false);
                 setIsCustomDrawerOpen(false);
               }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-sm font-bold transition-all shrink-0 cursor-pointer ${
                 selectedBrands.length > 0
                   ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
                   : "bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]"
@@ -405,7 +395,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                 setIsBrandDrawerOpen(false);
                 setIsCustomDrawerOpen(false);
               }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-sm font-bold transition-all shrink-0 cursor-pointer ${
                 selectedRatings.length > 0
                   ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
                   : "bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]"
@@ -427,14 +417,14 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 
         {/* Applied Filters Active Status Bar & Reset Button */}
         {hasActiveFilters && (
-          <div className="pt-1 border-t border-[var(--color-border-subtle)] flex items-center justify-between gap-2 flex-wrap text-xs">
+          <div className="pt-1 border-t border-[var(--color-border-subtle)] flex items-center justify-between gap-2 flex-wrap text-sm">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-extrabold text-[var(--color-text-secondary)]">
+              <span className="text-sm font-extrabold text-[var(--color-text-secondary)]">
                 الفلاتر المطبقة:
               </span>
 
               {selectedPriceRange !== "all" && (
-                <div className="inline-flex items-center gap-1 bg-[#2F6BFF]/15 text-[#2F6BFF] border border-[#2F6BFF]/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                <div className="inline-flex items-center gap-1 bg-[var(--color-primary-ui)]/15 text-[var(--color-primary-ui)] border border-[var(--color-primary-ui)]/30 px-2.5 py-0.5 rounded-full text-sm font-bold">
                   <Filter className="w-3 h-3 animate-pulse" />
                   <span>
                     السعر:{" "}
@@ -457,7 +447,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                 return br ? (
                   <div
                     key={bid}
-                    className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                    className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-full text-sm font-bold"
                   >
                     <Tag className="w-3 h-3" />
                     <span>{br.name}</span>
@@ -478,7 +468,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                 return ratingOpt ? (
                   <div
                     key={rid}
-                    className="inline-flex items-center gap-1 bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                    className="inline-flex items-center gap-1 bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2.5 py-0.5 rounded-full text-sm font-bold"
                   >
                     <Star className="w-3 h-3" />
                     <span>{ratingOpt.id}+</span>
@@ -495,7 +485,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               })}
 
               {selectedSort !== "default" && (
-                <div className="inline-flex items-center gap-1 bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                <div className="inline-flex items-center gap-1 bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 px-2.5 py-0.5 rounded-full text-sm font-bold">
                   <ArrowUpDown className="w-3 h-3" />
                   <span>
                     الترتيب:{" "}
@@ -515,7 +505,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 
             <button
               onClick={handleResetAllFilters}
-              className="text-[11px] font-extrabold text-rose-400 hover:text-rose-300 transition-colors cursor-pointer flex items-center gap-1 mr-auto"
+              className="text-sm font-extrabold text-rose-400 hover:text-rose-300 transition-colors cursor-pointer flex items-center gap-1 mr-auto"
             >
               <RotateCcw className="w-3 h-3" />
               <span>إعادة ضبط الكل</span>
@@ -534,7 +524,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               className="overflow-hidden bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl p-3 mt-2 dir-rtl"
             >
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-primary)]">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-[var(--color-text-primary)]">
                   <Award className="w-3.5 h-3.5 text-amber-400" />
                   <span>تصفية حسب العلامة التجارية</span>
                 </div>
@@ -554,7 +544,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                       key={brand.id}
                       type="button"
                       onClick={() => handleToggleBrand(brand.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
                         isSelected
                           ? "bg-amber-500/25 text-amber-200 border-amber-500/50"
                           : "bg-[var(--color-surface-1)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -570,7 +560,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectBrands([])}
-                  className="mt-2 text-[11px] text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 cursor-pointer"
+                  className="mt-2 text-sm text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>إلغاء تحديد العلامات</span>
@@ -591,7 +581,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               className="overflow-hidden bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl p-3 mt-2 dir-rtl"
             >
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-primary)]">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-[var(--color-text-primary)]">
                   <Star className="w-3.5 h-3.5 text-amber-400" />
                   <span>تصفية حسب التقييم</span>
                 </div>
@@ -611,7 +601,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                       key={ratingOpt.id}
                       type="button"
                       onClick={() => handleToggleRating(ratingOpt.id)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-bold transition-all cursor-pointer text-right ${
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-bold transition-all cursor-pointer text-right ${
                         isSelected
                           ? "bg-rose-500/20 text-rose-200 border-rose-500/40"
                           : "bg-[var(--color-surface-1)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -640,8 +630,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               className="overflow-hidden bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl p-3 mt-2 space-y-3 dir-rtl"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-text-primary)]">
-                  <Sliders className="w-3.5 h-3.5 text-[#2F6BFF]" />
+                <div className="flex items-center gap-1.5 text-sm font-bold text-[var(--color-text-primary)]">
+                  <Sliders className="w-3.5 h-3.5 text-[var(--color-primary-ui)]" />
                   <span>تحديد نطاق السعر بالريال اليمني (YER)</span>
                 </div>
                 <button
@@ -655,7 +645,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-extrabold text-[var(--color-text-secondary)] mb-1">
+                  <label className="block text-sm font-extrabold text-[var(--color-text-secondary)] mb-1">
                     الحد الأدنى (من)
                   </label>
                   <input
@@ -663,11 +653,11 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                     placeholder="مثال: 10000"
                     value={tempMin}
                     onChange={(e) => setTempMin(e.target.value)}
-                    className="w-full bg-[var(--color-surface-1)] border border-[var(--color-border-default)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[#2F6BFF]"
+                    className="w-full bg-[var(--color-surface-1)] border border-[var(--color-border-default)] rounded-lg px-2.5 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-primary-ui)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-extrabold text-[var(--color-text-secondary)] mb-1">
+                  <label className="block text-sm font-extrabold text-[var(--color-text-secondary)] mb-1">
                     الحد الأقصى (إلى)
                   </label>
                   <input
@@ -675,7 +665,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                     placeholder="مثال: 60000"
                     value={tempMax}
                     onChange={(e) => setTempMax(e.target.value)}
-                    className="w-full bg-[var(--color-surface-1)] border border-[var(--color-border-default)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[#2F6BFF]"
+                    className="w-full bg-[var(--color-surface-1)] border border-[var(--color-border-default)] rounded-lg px-2.5 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-primary-ui)]"
                   />
                 </div>
               </div>
@@ -689,13 +679,13 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                     if (onSelectPriceRange) onSelectPriceRange("all");
                     setIsCustomDrawerOpen(false);
                   }}
-                  className="px-3 py-1 rounded-lg text-xs font-bold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)] cursor-pointer"
+                  className="px-3 py-1 rounded-lg text-sm font-bold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)] cursor-pointer"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1 rounded-lg text-xs font-bold bg-[#2F6BFF] hover:bg-[#2458D8] text-white shadow-sm cursor-pointer"
+                  className="px-4 py-1 rounded-lg text-sm font-bold bg-[var(--color-primary-ui)] hover:bg-[#2458D8] text-white shadow-sm cursor-pointer"
                 >
                   تطبيق النطاق
                 </button>

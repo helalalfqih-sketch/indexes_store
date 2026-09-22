@@ -1,7 +1,9 @@
+import { PRIMARY_CATEGORIES } from "./categories";
 import React from "react";
 import { Bell, ChevronDown, Heart, Mail, Search, ShoppingCart } from "lucide-react";
 
 interface MobileReferenceHeaderProps {
+  selectedCategory?: string;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onSubmitSearch?: () => void;
@@ -14,15 +16,8 @@ interface MobileReferenceHeaderProps {
   onSelectCategory?: (categoryId: string) => void;
 }
 
-const categories = [
-  { id: "all", label: "كل" },
-  { id: "women", label: "نساء" },
-  { id: "home_appliances", label: "المنزل + الحيوانات الأليفة" },
-  { id: "men", label: "رجال" },
-  { id: "accessories", label: "مجوهرات وإكسسوارات" },
-];
-
 export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
+  selectedCategory = "all",
   searchQuery,
   onSearchChange,
   onSubmitSearch,
@@ -83,7 +78,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
         >
           <ShoppingCart className="h-[22px] w-[22px] stroke-[1.8]" />
           {cartCount > 0 && (
-            <span className="absolute right-0 top-0 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-[#ff2442] px-0.5 text-[8px] font-black text-white">
+            <span className="absolute right-0 top-0 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-[#ff2442] px-0.5 text-[8px] font-black text-[var(--color-primary-ui)]">
               {cartCount}
             </span>
           )}
@@ -113,16 +108,19 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
         className="flex h-9 items-end gap-5 overflow-x-auto border-t border-white/10 px-3 no-scrollbar"
         aria-label="أقسام المتجر"
       >
-        {categories.map((category, index) => (
+        {PRIMARY_CATEGORIES.map((category) => (
           <button
             type="button"
             key={category.id}
-            aria-label={category.label}
+            aria-label={category.name}
+            aria-pressed={selectedCategory === category.id}
             onClick={() => onSelectCategory?.(category.id)}
-            className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${index === 0 ? "font-black text-white" : "text-white/75"}`}
+            className={`relative h-9 shrink-0 whitespace-nowrap text-sm font-bold ${selectedCategory === category.id ? "font-black text-[var(--color-primary-ui)]" : "text-white/75"}`}
           >
-            {category.label}
-            {index === 0 && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-white" />}
+            {category.name}
+            {selectedCategory === category.id && (
+              <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[var(--color-primary-ui)]" />
+            )}
           </button>
         ))}
         <button

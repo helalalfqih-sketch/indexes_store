@@ -62,51 +62,8 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
       aria-label="العروض الترويجية الكبرى"
     >
       <div className="grid grid-cols-1 items-stretch gap-1 sm:gap-4 lg:grid-cols-12">
-        {/* Left Side Quick Brand Features */}
-        <div className="hidden xl:flex xl:col-span-2 flex-col gap-3 justify-between">
-          <div
-            onClick={() => {
-              onSelectCategory?.("smartwatches");
-              onShopNow("smartwatches");
-            }}
-            className="group relative flex-1 cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-neutral-900 via-black to-neutral-950 text-white p-5 flex flex-col justify-between shadow-sm border border-neutral-800 hover:border-[#F93A00] transition-all"
-          >
-            <div>
-              <span className="rounded bg-[#F93A00] px-2 py-0.5 text-[10px] font-black">
-                ترند المتجر
-              </span>
-              <h4 className="mt-2 text-base font-black">أجهزة وساعات</h4>
-              <p className="text-[11px] text-neutral-400 mt-1">تكنولوجيا أصلية بضمان حقيقي</p>
-            </div>
-            <div className="flex items-center text-xs font-bold text-[#F93A00] group-hover:gap-2 transition-all">
-              <span>تصفح القسم</span>
-              <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-            </div>
-          </div>
-
-          <div
-            onClick={() => {
-              onSelectCategory?.("audio");
-              onShopNow("audio");
-            }}
-            className="group relative flex-1 cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-neutral-900 to-black text-white p-5 flex flex-col justify-between shadow-sm border border-neutral-800 hover:border-[#F93A00] transition-all"
-          >
-            <div>
-              <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-black border border-white/20">
-                صوت فائق
-              </span>
-              <h4 className="mt-2 text-base font-black">سماعات وصوتيات</h4>
-              <p className="text-[11px] text-neutral-400 mt-1">عزل ضوضاء ونقاء استثنائي</p>
-            </div>
-            <div className="flex items-center text-xs font-bold text-white group-hover:gap-2 transition-all">
-              <span>عرض المنتجات</span>
-              <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-            </div>
-          </div>
-        </div>
-
         {/* Center Main Promotional Hero */}
-        <div className="relative min-h-[205px] overflow-hidden border-y border-neutral-200 bg-white shadow-none sm:min-h-[320px] sm:rounded-3xl sm:border lg:col-span-8 xl:col-span-7 dark:bg-white">
+        <div className="relative min-h-[205px] overflow-hidden border-y border-neutral-200 bg-white shadow-none sm:min-h-[320px] sm:rounded-3xl sm:border lg:col-span-8 xl:col-span-8 dark:bg-white">
           {activeProduct ? (
             <AnimatePresence mode="wait">
               <motion.div
