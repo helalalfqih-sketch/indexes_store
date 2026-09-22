@@ -82,7 +82,7 @@ async function hasUsableDocument(page: Page, target: URL) {
 }
 
 async function navigatePage(page: Page, target: URL) {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const response = await page.goto(target.toString(), {
         waitUntil: "commit",
