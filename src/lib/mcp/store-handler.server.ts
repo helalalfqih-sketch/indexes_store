@@ -12,7 +12,12 @@ import {
   createStoreBrowserInspectionAdapter,
   type StoreBrowserInspectionAdapter,
 } from "./store-browser-inspection.server";
-import { STORE_MCP_AUDIENCE, STORE_MCP_SCOPE, verifyStoreAccessToken } from "./store-oauth.server";
+import {
+  STORE_MCP_AUDIENCE,
+  STORE_MCP_DISCOVERY_VERSION,
+  STORE_MCP_SCOPE,
+  verifyStoreAccessToken,
+} from "./store-oauth.server";
 
 const RESOURCE_METADATA = `${STORE_MCP_AUDIENCE.replace(
   "/api/mcp/store",
@@ -23,7 +28,7 @@ const HEADERS = {
   Pragma: "no-cache",
   Expires: "0",
   "X-Content-Type-Options": "nosniff",
-  "MCP-Server-Version": "2.1.0",
+  "MCP-Server-Version": STORE_MCP_DISCOVERY_VERSION,
 };
 const annotations = {
   readOnlyHint: true,
@@ -88,7 +93,7 @@ function createServer(
   scopes: string[],
 ) {
   const server = new McpServer(
-    { name: "indexes-store-control-plane", version: "2.1.0" },
+    { name: "indexes-store-control-plane", version: STORE_MCP_DISCOVERY_VERSION },
     {
       instructions:
         "Private, tenant-bound Store administration plus guarded source development. Store data remains read-only. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
