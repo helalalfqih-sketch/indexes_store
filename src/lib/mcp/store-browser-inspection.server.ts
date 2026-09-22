@@ -4,6 +4,7 @@ import { chromium as playwright, type Browser, type BrowserContext, type Page } 
 import { createHash } from "node:crypto";
 
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
+const PRODUCTION_ORIGIN = "https://indexes-store-rosy.vercel.app";
 const PREVIEW_HOST_RE = /^indexes-store-[a-z0-9-]+\.vercel\.app$/i;
 const SAFE_SELECTOR_RE =
   /^(?:#[A-Za-z][\w-]{0,80}|(?:(?:button|a|input|select|textarea))?\[(?:data-testid|aria-label|name|title)="[^"\\]{1,120}"\])$/u;
@@ -331,8 +332,8 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
     async comparePages(input) {
       const production = allowedUrl(input.productionUrl);
       const preview = allowedUrl(input.previewUrl);
-      if (production.origin !== STORE_ORIGIN) throw new Error("PRODUCTION_URL_REQUIRED");
-      if (preview.origin === STORE_ORIGIN) throw new Error("PREVIEW_URL_REQUIRED");
+      if (production.origin !== PRODUCTION_ORIGIN) throw new Error("PRODUCTION_URL_REQUIRED");
+      if (preview.origin === PRODUCTION_ORIGIN || preview.origin === STORE_ORIGIN) throw new Error("PREVIEW_URL_REQUIRED");
       const viewport =
         input.device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
 
@@ -365,7 +366,7 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
     },
 
     async safeClick(input) {
-      allowedUrl(input.url);
+      const targetOrigin = allowedUrl(input.url).origin;
       if (!SAFE_SELECTOR_RE.test(input.selector)) throw new Error("SAFE_SELECTOR_FORBIDDEN");
       const viewport =
         input.device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
@@ -395,7 +396,7 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
           info.insideForm ||
           info.type === "submit" ||
           forbiddenText.test(info.text) ||
-          (info.href && new URL(info.href).origin !== STORE_ORIGIN)
+          (info.href && new URL(info.href).origin !== targetOrigin)
         ) {
           throw new Error("SAFE_CLICK_FORBIDDEN");
         }
@@ -404,7 +405,7 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
         await locator.click({ timeout: 10_000 });
         await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
         const after = page.url();
-        if (new URL(after).origin !== STORE_ORIGIN) throw new Error("SAFE_CLICK_LEFT_STORE_ORIGIN");
+        if (new URL(after).origin !== targetOrigin) throw new Error("SAFE_CLICK_LEFT_STORE_ORIGIN");
         return {
           before,
           after,
