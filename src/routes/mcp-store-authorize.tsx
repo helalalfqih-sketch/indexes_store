@@ -19,15 +19,31 @@ const capabilityGroups = [
   },
   {
     title: "فحص الواجهة والمتصفح",
-    items: ["فحص الصفحات والعناصر والنماذج", "فحص Desktop وMobile", "Console وNetwork", "تجربة تنقل ونقر آمن"],
+    items: [
+      "فحص الصفحات والعناصر والنماذج",
+      "فحص Desktop وMobile",
+      "Console وNetwork",
+      "تجربة تنقل ونقر آمن",
+    ],
   },
   {
     title: "تطوير المصدر عبر GitHub",
-    items: ["قراءة والبحث في الكود", "ربط عناصر الواجهة بملفات المصدر", "إنشاء agent/* branch", "تعديل ملف مع SHA guard", "إنشاء Draft Pull Request"],
+    items: [
+      "قراءة والبحث في الكود",
+      "ربط عناصر الواجهة بملفات المصدر",
+      "إنشاء agent/* branch",
+      "تعديل ملف مع SHA guard",
+      "إنشاء Draft Pull Request",
+    ],
   },
   {
     title: "التحقق قبل الإصدار",
-    items: ["فحص PR ونتائج CI", "مقارنة Production وPreview", "Release readiness", "التحقق من مصدر Production"],
+    items: [
+      "فحص PR ونتائج CI",
+      "مقارنة Production وPreview",
+      "Release readiness",
+      "التحقق من مصدر Production",
+    ],
   },
 ] as const;
 
@@ -92,7 +108,9 @@ function StoreMcpAuthorize() {
           </p>
         </div>
 
-        <p className="mt-4 text-sm" aria-live="polite">{status}</p>
+        <p className="mt-4 text-sm" aria-live="polite">
+          {status}
+        </p>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           <button
