@@ -46,15 +46,22 @@ async function launchBrowser() {
     throw new Error("BROWSER_EXECUTABLE_UNAVAILABLE");
   }
 
-  try {
-    return await playwright.launch({
-      args: serverlessChromium.args,
-      executablePath,
-      headless: true,
-    });
-  } catch {
-    throw new Error("BROWSER_LAUNCH_FAILED");
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await playwright.launch({
+        args: serverlessChromium.args,
+        executablePath,
+        headless: true,
+      });
+    } catch {
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        continue;
+      }
+    }
   }
+
+  throw new Error("BROWSER_LAUNCH_FAILED");
 }
 
 async function settle(page: Page) {
@@ -94,8 +101,8 @@ async function navigatePage(page: Page, target: URL) {
       }
     }
 
-    if (attempt === 0) {
-      await page.waitForTimeout(350).catch(() => undefined);
+    if (attempt < 2) {
+      await page.waitForTimeout(attempt === 0 ? 350 : 700).catch(() => undefined);
     }
   }
 
@@ -132,6 +139,72 @@ async function withPage<T>(
   }
 }
 
+async function readRenderedElements(page: Page) {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await page.locator("body").waitFor({ state: "attached", timeout: 3_000 });
+      if (attempt > 0) {
+        await page.waitForTimeout(300);
+      }
+      return await page.evaluate((maxElements) => {
+        const nodes = Array.from(
+          document.querySelectorAll("a,button,input,select,textarea,form"),
+        ).slice(0, maxElements);
+
+        return nodes.map((node) => {
+          const element = node as HTMLElement;
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            tag: element.tagName.toLowerCase(),
+            text: (element.innerText || element.getAttribute("aria-label") || "")
+              .trim()
+              .slice(0, 300),
+            id: element.id || null,
+            role: element.getAttribute("role"),
+            ariaLabel: element.getAttribute("aria-label"),
+            href: element instanceof HTMLAnchorElement ? element.href : null,
+            disabled: element.hasAttribute("disabled"),
+            visible:
+              rect.width > 0 &&
+              rect.height > 0 &&
+              style.visibility !== "hidden" &&
+              style.display !== "none",
+            box: {
+              x: Math.round(rect.x),
+              y: Math.round(rect.y),
+              width: Math.round(rect.width),
+              height: Math.round(rect.height),
+            },
+          };
+        });
+      }, MAX_ELEMENTS);
+    } catch (error) {
+      lastError = error;
+      if (page.isClosed()) throw new Error("BROWSER_PAGE_CLOSED");
+      await page.waitForLoadState("domcontentloaded", { timeout: 3_000 }).catch(() => undefined);
+    }
+  }
+
+  if (lastError) throw new Error("BROWSER_DOM_INSPECTION_FAILED");
+  throw new Error("BROWSER_DOM_INSPECTION_FAILED");
+}
+
+async function readPageTitle(page: Page) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await page.title();
+    } catch {
+      if (attempt === 0) {
+        await page.waitForTimeout(200).catch(() => undefined);
+      }
+    }
+  }
+  throw new Error("BROWSER_TITLE_READ_FAILED");
+}
+
 export interface StoreBrowserInspectionAdapter {
   inspectRenderedPage(url: string, device: "desktop" | "mobile"): Promise<Record<string, unknown>>;
   inspectConsole(url: string): Promise<Record<string, unknown>>;
@@ -159,37 +232,10 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
     async inspectRenderedPage(url, device) {
       const viewport = device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
       return withPage(url, viewport, async (page) => {
-        const data = await page.locator("a,button,input,select,textarea,form").evaluateAll(
-          (nodes) =>
-            nodes.slice(0, MAX_ELEMENTS).map((node) => {
-              const element = node as HTMLElement;
-              const rect = element.getBoundingClientRect();
-              const style = getComputedStyle(element);
-              return {
-                tag: element.tagName.toLowerCase(),
-                text: (element.innerText || element.getAttribute("aria-label") || "").trim().slice(0, 300),
-                id: element.id || null,
-                role: element.getAttribute("role"),
-                ariaLabel: element.getAttribute("aria-label"),
-                href: element instanceof HTMLAnchorElement ? element.href : null,
-                disabled: element.hasAttribute("disabled"),
-                visible:
-                  rect.width > 0 &&
-                  rect.height > 0 &&
-                  style.visibility !== "hidden" &&
-                  style.display !== "none",
-                box: {
-                  x: Math.round(rect.x),
-                  y: Math.round(rect.y),
-                  width: Math.round(rect.width),
-                  height: Math.round(rect.height),
-                },
-              };
-            }),
-        );
+        const data = await readRenderedElements(page);
         return {
           url: page.url(),
-          title: await page.title(),
+          title: await readPageTitle(page),
           device,
           viewport,
           elements: data,
