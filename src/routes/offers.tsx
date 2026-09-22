@@ -12,10 +12,10 @@ export const Route = createFileRoute("/offers")({
   head: () => ({
     meta: [
       { title: "العروض والخصومات — اندكس ستور" },
-      { name: "description", content: "تصفح أقوى عروض وخصومات اندكس ستور. خصومات تصل إلى 40% لفترة محدودة على إلكترونيات، أدوات منزلية، والمزيد." },
+      { name: "description", content: "تصفح عروض اندكس ستور وقارن الأسعار الحالية والسابقة لكل منتج." },
       { name: "robots", content: "index, follow" },
       { property: "og:title", content: "العروض والخصومات — اندكس ستور" },
-      { property: "og:description", content: "خصومات تصل إلى 40% لفترة محدودة" },
+      { property: "og:description", content: "تصفح العروض والأسعار الحالية في اندكس ستور" },
       { property: "og:type", content: "website" },
     ],
   }),
@@ -189,7 +189,7 @@ function OffersPage() {
                 مباشر 🔴
               </span>
             </h1>
-            <p className="text-xs text-showcase-foreground/70">خصومات مميزة تصل إلى 40% لفترة محدودة على أفضل المنتجات</p>
+            <p className="text-xs text-showcase-foreground/70">تصفح العروض وقارن السعر الحالي والسابق لكل منتج</p>
           </div>
         </div>
 
@@ -259,4 +259,3 @@ function OffersPage() {
     </div>
   );
 }
-
