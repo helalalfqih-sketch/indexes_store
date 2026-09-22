@@ -27,8 +27,10 @@ const HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
   Pragma: "no-cache",
   Expires: "0",
+  Vary: "Authorization, MCP-Protocol-Version",
   "X-Content-Type-Options": "nosniff",
   "MCP-Server-Version": STORE_MCP_DISCOVERY_VERSION,
+  "MCP-Schema-Epoch": STORE_MCP_DISCOVERY_VERSION,
 };
 const annotations = {
   readOnlyHint: true,
@@ -509,6 +511,18 @@ export async function handleStoreMcp(
   }
   if (request.method !== "POST") {
     return new Response(null, { status: 405, headers: { ...HEADERS, Allow: "POST, OPTIONS" } });
+  }
+
+  const diagnosticPayload = await request
+    .clone()
+    .json()
+    .catch(() => null) as { method?: string } | null;
+  if (diagnosticPayload?.method === "initialize" || diagnosticPayload?.method === "tools/list") {
+    console.info("[StoreMCP discovery]", {
+      method: diagnosticPayload.method,
+      schemaEpoch: STORE_MCP_DISCOVERY_VERSION,
+      hasDevelopScope: authorization.scopes.includes("store.develop"),
+    });
   }
 
   const adapter = (options.adapterFactory ?? createStoreAdminAdapter)(authorization.tenantId);
