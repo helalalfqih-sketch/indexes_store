@@ -4,6 +4,8 @@ const REPOSITORY = "helalalfqih-sketch/indexes_store";
 const DEFAULT_BRANCH = "main";
 const MAX_FILE_BYTES = 200_000;
 const MAX_SEARCH_RESULTS = 50;
+const MAX_PUBLIC_SEARCH_FILES = 400;
+const PUBLIC_SOURCE_EXTENSIONS = /\\.(?:ts|tsx|js|jsx|json|md|css|scss|html|yml|yaml)$/i;
 
 type GitHubFile = {
   type?: string;
@@ -16,9 +18,7 @@ type GitHubFile = {
 };
 
 function githubToken() {
-  const token = process.env.STORE_MCP_GITHUB_TOKEN?.trim();
-  if (!token) throw new Error("STORE_MCP_GITHUB_NOT_CONFIGURED");
-  return token;
+  return process.env.STORE_MCP_GITHUB_TOKEN?.trim() || null;
 }
 
 function safePath(value: string) {
@@ -49,11 +49,16 @@ function safeBranch(value: string) {
 }
 
 async function github(path: string, init: RequestInit = {}) {
+  const method = (init.method || "GET").toUpperCase();
+  const token = githubToken();
+  if (!token && !["GET", "HEAD"].includes(method)) {
+    throw new Error("STORE_MCP_GITHUB_WRITE_NOT_CONFIGURED");
+  }
   const response = await fetch(`${GITHUB_API}${path}`, {
     ...init,
     headers: {
       Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${githubToken()}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       "X-GitHub-Api-Version": "2022-11-28",
       ...(init.headers ?? {}),
     },
@@ -62,6 +67,94 @@ async function github(path: string, init: RequestInit = {}) {
   const data = text ? (JSON.parse(text) as unknown) : null;
   if (!response.ok) throw new Error(`GITHUB_${response.status}`);
   return data;
+}
+
+type GitHubTreeItem = {
+  path?: string;
+  type?: string;
+  sha?: string;
+  size?: number;
+};
+
+async function publicSourceSearch(terms: string[], limit = MAX_SEARCH_RESULTS) {
+  const tree = (await github(
+    `/repos/${REPOSITORY}/git/trees/${encodeURIComponent(DEFAULT_BRANCH)}?recursive=1`,
+  )) as { tree?: GitHubTreeItem[] };
+  const candidates = (tree.tree ?? [])
+    .filter((item) => {
+      const path = item.path ?? "";
+      return (
+        item.type === "blob" &&
+        Boolean(path) &&
+        (item.size ?? 0) <= MAX_FILE_BYTES &&
+        PUBLIC_SOURCE_EXTENSIONS.test(path) &&
+        !/(^|\/)(\.env|\.vercel|node_modules|\.git)(\/|$)/i.test(path) &&
+        !/(secret|credential|private[-_.]?key|service[-_.]?role)/i.test(path)
+      );
+    })
+    .sort((a, b) => {
+      const aSrc = a.path?.startsWith("src/") ? 0 : 1;
+      const bSrc = b.path?.startsWith("src/") ? 0 : 1;
+      return aSrc - bSrc || String(a.path).localeCompare(String(b.path));
+    })
+    .slice(0, MAX_PUBLIC_SEARCH_FILES);
+
+  const loweredTerms = terms.map((term) => term.toLocaleLowerCase());
+  const matches = new Map<string, Record<string, unknown>>();
+  const chunkSize = 12;
+
+  for (let index = 0; index < candidates.length && matches.size < limit; index += chunkSize) {
+    const batch = candidates.slice(index, index + chunkSize);
+    await Promise.all(
+      batch.map(async (item) => {
+        if (matches.size >= limit || !item.path) return;
+        const rawPath = item.path.split("/").map(encodeURIComponent).join("/");
+        const response = await fetch(
+          `https://raw.githubusercontent.com/${REPOSITORY}/${DEFAULT_BRANCH}/${rawPath}`,
+          { headers: { Accept: "text/plain" } },
+        );
+        if (!response.ok) return;
+        const source = await response.text();
+        const lowered = source.toLocaleLowerCase();
+        const signalIndex = loweredTerms.findIndex((term) => lowered.includes(term));
+        if (signalIndex < 0) return;
+        matches.set(item.path, {
+          name: item.path.split("/").pop() ?? item.path,
+          path: item.path,
+          sha: item.sha,
+          htmlUrl: `https://github.com/${REPOSITORY}/blob/${DEFAULT_BRANCH}/${item.path}`,
+          matchedSignal: terms[signalIndex],
+        });
+      }),
+    );
+  }
+
+  return [...matches.values()].slice(0, limit);
+}
+
+async function searchSourceTerms(terms: string[], limit = MAX_SEARCH_RESULTS) {
+  if (!githubToken()) return publicSourceSearch(terms, limit);
+
+  const matches = new Map<string, Record<string, unknown>>();
+  for (const term of terms) {
+    const data = (await github(
+      `/search/code?q=${encodeURIComponent(`${term} repo:${REPOSITORY}`)}&per_page=${Math.min(limit, 50)}`,
+    )) as { items?: Array<Record<string, unknown>> };
+    for (const item of data.items ?? []) {
+      const path = String(item.path ?? "");
+      if (!path || matches.has(path)) continue;
+      matches.set(path, {
+        name: item.name,
+        path,
+        sha: item.sha,
+        htmlUrl: item.html_url,
+        matchedSignal: term,
+      });
+      if (matches.size >= limit) break;
+    }
+    if (matches.size >= limit) break;
+  }
+  return [...matches.values()].slice(0, limit);
 }
 
 function decodeFile(file: GitHubFile) {
