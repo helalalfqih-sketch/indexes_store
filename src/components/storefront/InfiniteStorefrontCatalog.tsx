@@ -4,11 +4,8 @@ import { fetchCatalogPage } from "@/lib/actions/catalog-page.actions";
 import { mapProductionProductToDesignProduct } from "@/components/storefront/adapters";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { ProductGridSkeleton } from "@/components/storefront/SkeletonLoader";
-import {
-  STORE_BRANDS,
-  RATING_OPTIONS,
-  type PriceRangePreset,
-} from "@/components/storefront/CategoryBar";
+import type { PriceRangePreset } from "@/components/storefront/CategoryBar";
+import { STORE_BRANDS, RATING_OPTIONS } from "@/components/storefront/filter-options";
 import type { Currency, Product, SortOption } from "@/components/storefront/types";
 
 const PAGE_SIZE = 24;
@@ -158,14 +155,15 @@ export function InfiniteStorefrontCatalog({
     inStockOnly,
   ]);
 
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = query;
   useEffect(() => {
     const target = loadMoreRef.current;
-    if (!target || !query.hasNextPage) return;
+    if (!target || !hasNextPage) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && query.hasNextPage && !query.isFetchingNextPage) {
-          void query.fetchNextPage();
+        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
         }
       },
       { rootMargin: "900px 0px" },
@@ -173,7 +171,7 @@ export function InfiniteStorefrontCatalog({
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (query.isLoading) return <ProductGridSkeleton count={8} />;
 

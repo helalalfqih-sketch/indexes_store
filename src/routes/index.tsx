@@ -30,12 +30,8 @@ import { SheinPromoGrid } from "@/components/storefront/SheinPromoGrid";
 import { FlashDealsSection } from "@/components/storefront/FlashDealsSection";
 import { AppDownloadModal } from "@/components/storefront/AppDownloadModal";
 import { AppInstallBanner } from "@/components/app-install-banner";
-import {
-  CategoryBar,
-  type PriceRangePreset,
-  STORE_BRANDS,
-  RATING_OPTIONS,
-} from "@/components/storefront/CategoryBar";
+import { CategoryBar, type PriceRangePreset } from "@/components/storefront/CategoryBar";
+import { STORE_BRANDS, RATING_OPTIONS } from "@/components/storefront/filter-options";
 import { BestOffersSection } from "@/components/storefront/BestOffersSection";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { TrustBar } from "@/components/storefront/TrustBar";
