@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import serverlessChromium from "@sparticuz/chromium";
-import { chromium as playwright, type Browser, type Page } from "playwright-core";
+import { chromium as playwright, type Browser, type BrowserContext, type Page } from "playwright-core";
 import { createHash } from "node:crypto";
 
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
@@ -110,7 +110,7 @@ async function withPage<T>(
 ) {
   const url = allowedUrl(value);
   const browser = await launchBrowser();
-  let context: Awaited<ReturnType<Browser["newContext"]>> | undefined;
+  let context: BrowserContext | undefined;
   try {
     let page: Page;
     try {
