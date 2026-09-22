@@ -5,7 +5,8 @@ import { createHash } from "node:crypto";
 
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
 const PREVIEW_HOST_RE = /^indexes-store-[a-z0-9-]+\.vercel\.app$/i;
-const SAFE_SELECTOR_RE = /^(?:#[A-Za-z][\w-]{0,80}|\[data-testid="[A-Za-z0-9_.:-]{1,80}"\])$/;
+const SAFE_SELECTOR_RE =
+  /^(?:#[A-Za-z][\w-]{0,80}|(?:(?:button|a|input|select|textarea))?\[(?:data-testid|aria-label|name|title)="[^"\\]{1,120}"\])$/u;
 const MAX_ELEMENTS = 400;
 const MAX_EVENTS = 100;
 const MAX_SCREENSHOT_BYTES = 4_000_000;
@@ -26,17 +27,33 @@ function allowedUrl(value: string) {
 }
 
 async function launchBrowser() {
-  try {
-    if (process.env.VERCEL) {
-      return await playwright.launch({
-        args: serverlessChromium.args,
-        executablePath: await serverlessChromium.executablePath(),
-        headless: true,
-      });
+  if (!process.env.VERCEL) {
+    try {
+      return await playwright.launch({ headless: true });
+    } catch {
+      throw new Error("BROWSER_LOCAL_RUNTIME_UNAVAILABLE");
     }
-    return await playwright.launch({ headless: true });
+  }
+
+  let executablePath: string;
+  try {
+    executablePath = await serverlessChromium.executablePath();
   } catch {
-    throw new Error("BROWSER_RUNTIME_UNAVAILABLE");
+    throw new Error("BROWSER_EXECUTABLE_UNAVAILABLE");
+  }
+
+  if (!executablePath) {
+    throw new Error("BROWSER_EXECUTABLE_UNAVAILABLE");
+  }
+
+  try {
+    return await playwright.launch({
+      args: serverlessChromium.args,
+      executablePath,
+      headless: true,
+    });
+  } catch {
+    throw new Error("BROWSER_LAUNCH_FAILED");
   }
 }
 
