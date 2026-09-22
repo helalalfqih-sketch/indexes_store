@@ -5,7 +5,7 @@ import { mapProductionProductToDesignProduct } from "@/components/storefront/ada
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { ProductGridSkeleton } from "@/components/storefront/SkeletonLoader";
 import type { PriceRangePreset } from "@/components/storefront/CategoryBar";
-import { STORE_BRANDS, RATING_OPTIONS } from "@/components/storefront/filter-options";
+import { matchesProductFilters, sortProducts } from "@/components/storefront/product-filters";
 import type { Currency, Product, SortOption } from "@/components/storefront/types";
 
 const PAGE_SIZE = 24;
@@ -82,38 +82,13 @@ export function InfiniteStorefrontCatalog({
     const list = products.filter((product) => {
       if (excluded.has(product.id)) return false;
 
-      const matchPrice =
-        priceRange === "all" ||
-        (priceRange === "under-20k" && product.priceYER < 20_000) ||
-        (priceRange === "20k-50k" && product.priceYER >= 20_000 && product.priceYER <= 50_000) ||
-        (priceRange === "over-50k" && product.priceYER > 50_000) ||
-        (priceRange === "custom" &&
-          (customMinPrice === undefined || product.priceYER >= customMinPrice) &&
-          (customMaxPrice === undefined || product.priceYER <= customMaxPrice));
-
-      const matchBrand =
-        selectedBrands.length === 0 ||
-        selectedBrands.some((brandId) => {
-          const brand = STORE_BRANDS.find((item) => item.id === brandId);
-          if (!brand) return false;
-          if (product.brand?.trim()) {
-            const value = product.brand.trim().toLowerCase();
-            return (
-              value === brand.id.toLowerCase() ||
-              value === brand.name.toLowerCase() ||
-              brand.keywords.some((keyword) => value.includes(keyword.toLowerCase()))
-            );
-          }
-          const name = product.name.toLowerCase();
-          return brand.keywords.some((keyword) => name.includes(keyword.toLowerCase()));
-        });
-
-      const matchRating =
-        selectedRatings.length === 0 ||
-        selectedRatings.some((ratingId) => {
-          const option = RATING_OPTIONS.find((item) => item.id === ratingId);
-          return option ? product.rating >= option.minRating : false;
-        });
+      const matchesFilters = matchesProductFilters(product, {
+        priceRange,
+        customMinPrice,
+        customMaxPrice,
+        selectedBrands,
+        selectedRatings,
+      });
 
       const matchDeals =
         !dealsOnly ||
@@ -123,25 +98,10 @@ export function InfiniteStorefrontCatalog({
 
       const matchStock = !inStockOnly || product.inStock !== false;
 
-      return matchPrice && matchBrand && matchRating && matchDeals && matchStock;
+      return matchesFilters && matchDeals && matchStock;
     });
 
-    switch (sortBy) {
-      case "price-high":
-        return [...list].sort((a, b) => b.priceYER - a.priceYER);
-      case "price-low":
-        return [...list].sort((a, b) => a.priceYER - b.priceYER);
-      case "best-selling":
-        return [...list].sort((a, b) => b.reviewsCount - a.reviewsCount);
-      case "newest":
-        return [...list].sort(
-          (a, b) => Number(Boolean(b.isNewArrival)) - Number(Boolean(a.isNewArrival)),
-        );
-      case "rating":
-        return [...list].sort((a, b) => b.rating - a.rating);
-      default:
-        return list;
-    }
+    return sortProducts(list, sortBy);
   }, [
     products,
     excluded,

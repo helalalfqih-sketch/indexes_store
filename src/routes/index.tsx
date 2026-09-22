@@ -31,7 +31,7 @@ import { FlashDealsSection } from "@/components/storefront/FlashDealsSection";
 import { AppDownloadModal } from "@/components/storefront/AppDownloadModal";
 import { AppInstallBanner } from "@/components/app-install-banner";
 import { CategoryBar, type PriceRangePreset } from "@/components/storefront/CategoryBar";
-import { STORE_BRANDS, RATING_OPTIONS } from "@/components/storefront/filter-options";
+import { matchesProductFilters, sortProducts } from "@/components/storefront/product-filters";
 import { BestOffersSection } from "@/components/storefront/BestOffersSection";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { TrustBar } from "@/components/storefront/TrustBar";
@@ -353,55 +353,17 @@ function HomePage() {
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchPrice =
-        priceRange === "all" ||
-        (priceRange === "under-20k" && p.priceYER < 20_000) ||
-        (priceRange === "20k-50k" && p.priceYER >= 20_000 && p.priceYER <= 50_000) ||
-        (priceRange === "over-50k" && p.priceYER > 50_000) ||
-        (priceRange === "custom" &&
-          (customMinPrice === undefined || p.priceYER >= customMinPrice) &&
-          (customMaxPrice === undefined || p.priceYER <= customMaxPrice));
-      const matchBrand =
-        selectedBrands.length === 0 ||
-        selectedBrands.some((brandId) => {
-          const brandObj = STORE_BRANDS.find((b) => b.id === brandId);
-          if (!brandObj) return false;
-          // If a real brand field exists on the product, check it directly
-          if (p.brand && typeof p.brand === "string" && p.brand.trim().length > 0) {
-            const pb = p.brand.trim().toLowerCase();
-            return (
-              pb === brandObj.id.toLowerCase() ||
-              pb === brandObj.name.toLowerCase() ||
-              brandObj.keywords.some((k) => pb.includes(k.toLowerCase()))
-            );
-          }
-          // Only fallback to product name matching if no brand field is set
-          const nameLower = p.name.toLowerCase();
-          return brandObj.keywords.some((k) => nameLower.includes(k.toLowerCase()));
-        });
-      const matchRating =
-        selectedRatings.length === 0 ||
-        selectedRatings.some((ratingId) => {
-          const ratingOpt = RATING_OPTIONS.find((r) => r.id === ratingId);
-          if (!ratingOpt) return false;
-          return p.rating >= ratingOpt.minRating;
-        });
-      return matchCategory && matchSearch && matchPrice && matchBrand && matchRating;
+      const matchesFilters = matchesProductFilters(p, {
+        priceRange,
+        customMinPrice,
+        customMaxPrice,
+        selectedBrands,
+        selectedRatings,
+      });
+      return matchCategory && matchSearch && matchesFilters;
     });
 
-    switch (sortBy) {
-      case "price-high":
-        return [...list].sort((a, b) => b.priceYER - a.priceYER);
-      case "price-low":
-        return [...list].sort((a, b) => a.priceYER - b.priceYER);
-      case "best-selling":
-        return [...list].sort((a, b) => b.reviewsCount - a.reviewsCount);
-      case "newest":
-        return [...list].sort((a, b) => (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0));
-      case "default":
-      default:
-        return list;
-    }
+    return sortProducts(list, sortBy);
   }, [
     products,
     selectedCategory,
