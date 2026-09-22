@@ -106,8 +106,21 @@ export interface StoreDevelopmentAdapter {
 export function createStoreDevelopmentAdapter(): StoreDevelopmentAdapter {
   return {
     async repositoryInfo() {
+      const configured = Boolean(process.env.STORE_MCP_GITHUB_TOKEN?.trim());
+      if (!configured) {
+        return {
+          repository: REPOSITORY,
+          defaultBranch: DEFAULT_BRANCH,
+          configured: false,
+          mode: "branch-and-pr-only",
+          directMainWrites: false,
+          secretsReadable: false,
+          blocker: "SOURCE_GITHUB_NOT_CONFIGURED",
+        };
+      }
       const repo = (await github(`/repos/${REPOSITORY}`)) as Record<string, unknown>;
       return {
+        configured: true,
         repository: REPOSITORY,
         defaultBranch: repo.default_branch,
         private: repo.private,
