@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Smartphone, Download, Sparkles, CheckCircle2, Apple } from 'lucide-react';
+import { X, Smartphone, Download, CheckCircle2, Apple } from 'lucide-react';
 import { StoreLogo } from './StoreLogo';
 
 interface AppDownloadModalProps {
@@ -46,28 +46,16 @@ export const AppDownloadModal: React.FC<AppDownloadModalProps> = ({ isOpen, onCl
               <StoreLogo variant="icon" className="h-16 w-16 shadow-2xl" />
             </div>
             <span className="inline-block rounded-full bg-[#F93A00] px-3 py-1 text-xs font-black tracking-wider text-white">
-              عروض حصرية لمستخدمي التطبيق
+              تطبيق إندكس ستور
             </span>
-            <h2 className="mt-2 text-2xl font-black">حمّل تطبيق إندكس ستور</h2>
+            <h2 className="mt-2 text-2xl font-black">ثبّت تطبيق إندكس ستور</h2>
             <p className="mt-1 text-xs sm:text-sm text-neutral-300">
-              تصفح فائق السرعة، إشعارات تتبع الشحن المباشرة، وكوبونات حصرية
+              وصول سريع إلى المتجر من جهازك
             </p>
           </div>
 
           {/* Body with QR Code & Stores */}
           <div className="p-6 sm:p-8 space-y-6">
-            {/* Promo Code Box */}
-            <div className="flex items-center justify-between rounded-2xl border border-dashed border-[#F93A00]/50 bg-[#FFF1EB] p-4">
-              <div className="flex items-center gap-3">
-                <Sparkles className="h-5 w-5 text-[#F93A00]" />
-                <div>
-                  <div className="text-xs font-bold text-neutral-700">خصم 15% على أول طلب من التطبيق</div>
-                  <div className="font-mono text-sm font-black text-[#F93A00]">كود: APP15</div>
-                </div>
-              </div>
-              <span className="text-[11px] font-bold text-neutral-500">ينسخ تلقائياً</span>
-            </div>
-
             {/* QR Code Section */}
             <div className="flex flex-col sm:flex-row items-center gap-6 rounded-2xl bg-neutral-50 dark:bg-neutral-900/50 p-5 border border-neutral-100 dark:border-neutral-800">
               {/* QR representation */}
