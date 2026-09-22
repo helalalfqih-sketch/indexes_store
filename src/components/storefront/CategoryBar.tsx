@@ -286,6 +286,9 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                 return (
                   <button
                     key={preset.id}
+                    type="button"
+                    aria-label={preset.label}
+                    aria-pressed={isSelected}
                     onClick={() => {
                       if (onSelectPriceRange) {
                         onSelectPriceRange(preset.id);
@@ -309,6 +312,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCustomDrawerOpen(!isCustomDrawerOpen)}
+                aria-label="نطاق مخصص"
+                aria-expanded={isCustomDrawerOpen}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
                   selectedPriceRange === "custom"
                     ? "bg-[#2F6BFF] border-[#2F6BFF] text-white shadow-sm"
@@ -338,6 +343,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                   : "bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]"
               }`}
               title="تبديل الترتيب بين المنخفض والمرتفع"
+              aria-label="سعر منخفض/مرتفع"
             >
               <ArrowUpDown className="w-3 h-3 text-[#2F6BFF]" />
               <span className="hidden sm:inline">
@@ -359,6 +365,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
             {/* Dropdown Menu Trigger for Full Sorting Options */}
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              aria-label={`ترتيب المنتجات: ${currentSortObj.label}`}
+              aria-expanded={isDropdownOpen}
               className={`flex items-center gap-1.5 border px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                 selectedSort !== "default"
                   ? "bg-[#2F6BFF] text-white border-[#2F6BFF]"
@@ -427,6 +435,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                   : "bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]"
               }`}
               title="فلترة حسب العلامة التجارية"
+              aria-label="العلامة"
+              aria-expanded={isBrandDrawerOpen}
             >
               <Award className="w-3 h-3" />
               <span className="hidden sm:inline">العلامة</span>
@@ -453,6 +463,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                   : "bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]"
               }`}
               title="فلترة حسب التقييم"
+              aria-label="التقييم"
+              aria-expanded={isRatingDrawerOpen}
             >
               <Star className="w-3 h-3" />
               <span className="hidden sm:inline">التقييم</span>

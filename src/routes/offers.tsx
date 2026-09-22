@@ -12,7 +12,10 @@ export const Route = createFileRoute("/offers")({
   head: () => ({
     meta: [
       { title: "العروض والخصومات — اندكس ستور" },
-      { name: "description", content: "تصفح عروض اندكس ستور وقارن الأسعار الحالية والسابقة لكل منتج." },
+      {
+        name: "description",
+        content: "تصفح عروض اندكس ستور وقارن الأسعار الحالية والسابقة لكل منتج.",
+      },
       { name: "robots", content: "index, follow" },
       { property: "og:title", content: "العروض والخصومات — اندكس ستور" },
       { property: "og:description", content: "تصفح العروض والأسعار الحالية في اندكس ستور" },
@@ -77,7 +80,6 @@ function OfferRow({ product }: { product: Product }) {
   // P1: Hide zero reviews/rating — show "جديد" instead
   const hasReviews = product.reviews > 0 && product.rating > 0;
 
-
   return (
     <Link
       to="/product/$slug"
@@ -101,7 +103,9 @@ function OfferRow({ product }: { product: Product }) {
 
       <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5 text-showcase-foreground">
         <div className="space-y-1">
-          <h3 className="line-clamp-2 text-xs font-bold leading-tight group-hover:text-primary transition">{product.name}</h3>
+          <h3 className="line-clamp-2 text-xs font-bold leading-tight group-hover:text-primary transition">
+            {product.name}
+          </h3>
           <div className="flex items-center gap-1 text-[10px] text-showcase-foreground/55">
             {hasReviews ? (
               <>
@@ -110,7 +114,9 @@ function OfferRow({ product }: { product: Product }) {
                 <span>({product.reviews})</span>
               </>
             ) : (
-              <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">جديد</span>
+              <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+                جديد
+              </span>
             )}
           </div>
         </div>
@@ -122,7 +128,9 @@ function OfferRow({ product }: { product: Product }) {
                 {formatPrice(product.oldPrice!)}
               </span>
             )}
-            <span className="text-sm font-black text-primary font-mono">{formatPrice(product.price)}</span>
+            <span className="text-sm font-black text-primary font-mono">
+              {formatPrice(product.price)}
+            </span>
           </div>
           <button
             type="button"
@@ -152,7 +160,8 @@ function OffersPage() {
     if (activeFilter === "all") return deals;
     if (activeFilter === "big_discount") {
       return deals.filter((p) => {
-        if (!p.oldPrice || !Number.isFinite(p.oldPrice) || p.oldPrice <= p.price || p.price <= 0) return false;
+        if (!p.oldPrice || !Number.isFinite(p.oldPrice) || p.oldPrice <= p.price || p.price <= 0)
+          return false;
         const disc = Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100);
         return disc >= 20;
       });
@@ -176,7 +185,9 @@ function OffersPage() {
       {/* Enterprise Glass Banner with Live Offer Flame */}
       <section
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-[32px] glass-dark p-5 text-showcase-foreground"
-        style={{ boxShadow: "inset 0 1px 0 rgba(184,126,82,0.45), 0 14px 40px -18px rgba(0,0,0,0.7)" }}
+        style={{
+          boxShadow: "inset 0 1px 0 rgba(184,126,82,0.45), 0 14px 40px -18px rgba(0,0,0,0.7)",
+        }}
       >
         <div className="flex items-center gap-3">
           <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/10 bg-primary/20 shadow-[0_0_28px_-4px_hsl(var(--primary)/0.65)]">
@@ -189,7 +200,9 @@ function OffersPage() {
                 مباشر 🔴
               </span>
             </h1>
-            <p className="text-xs text-showcase-foreground/70">تصفح العروض وقارن السعر الحالي والسابق لكل منتج</p>
+            <p className="text-xs text-showcase-foreground/70">
+              تصفح العروض وقارن السعر الحالي والسابق لكل منتج
+            </p>
           </div>
         </div>
 

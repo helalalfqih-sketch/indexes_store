@@ -748,7 +748,7 @@ function HomePage() {
                       onToggleFavorite={handleToggleFavorite}
                       onAddToCart={(prod) => handleAddToCart(prod, 1)}
                       onSelectProduct={handleSelectProduct}
-                      onViewAll={() => handleSelectCategoryWithLoading("all")}
+                      onViewAll={() => navigate({ to: "/offers" })}
                     />
                   </div>
                 );
@@ -816,8 +816,16 @@ function HomePage() {
                               المميزة والأكثر طلباً في المتجر:
                             </p>
                             <button
+                              type="button"
+                              aria-label="عرض جميع المنتجات المتوفرة"
                               onClick={() => {
                                 setSearchQuery("");
+                                setPriceRange("all");
+                                setCustomMinPrice(undefined);
+                                setCustomMaxPrice(undefined);
+                                setSelectedBrands([]);
+                                setSelectedRatings([]);
+                                setSortBy("default");
                                 handleSelectCategoryWithLoading("all");
                               }}
                               className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-black px-5 py-2 text-xs font-black text-white hover:bg-neutral-800 transition-colors shadow"
