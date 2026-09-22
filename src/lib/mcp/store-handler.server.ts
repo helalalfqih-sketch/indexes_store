@@ -19,8 +19,11 @@ const RESOURCE_METADATA = `${STORE_MCP_AUDIENCE.replace(
   "",
 )}/.well-known/oauth-protected-resource/api/mcp/store`;
 const HEADERS = {
-  "Cache-Control": "private, no-store",
+  "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+  Pragma: "no-cache",
+  Expires: "0",
   "X-Content-Type-Options": "nosniff",
+  "MCP-Server-Version": "2.1.0",
 };
 const annotations = {
   readOnlyHint: true,
@@ -85,7 +88,7 @@ function createServer(
   scopes: string[],
 ) {
   const server = new McpServer(
-    { name: "indexes-store-control-plane", version: "2.0.0" },
+    { name: "indexes-store-control-plane", version: "2.1.0" },
     {
       instructions:
         "Private, tenant-bound Store administration plus guarded source development. Store data remains read-only. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
