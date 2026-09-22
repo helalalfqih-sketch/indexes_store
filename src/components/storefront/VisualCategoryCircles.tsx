@@ -35,14 +35,12 @@ export const CATEGORIES_META: CategoryMeta[] = [
     id: "smartwatches",
     name: "ساعات ذكية",
     icon: Watch,
-    badge: "خصم 40%",
     gradient: "from-blue-600 to-indigo-700 text-white",
   },
   {
     id: "audio",
     name: "سماعات وصوتيات",
     icon: Headphones,
-    badge: "الأكثر طلباً",
     gradient: "from-purple-600 to-violet-800 text-white",
   },
   {
@@ -55,14 +53,12 @@ export const CATEGORIES_META: CategoryMeta[] = [
     id: "home_appliances",
     name: "أجهزة ومنزل",
     icon: Home,
-    badge: "جديد",
     gradient: "from-amber-600 to-orange-700 text-white",
   },
   {
     id: "perfumes",
     name: "عطور وبخور",
     icon: Sparkles,
-    badge: "فاخر",
     gradient: "from-rose-600 to-pink-700 text-white",
   },
   {
@@ -171,6 +167,9 @@ export const VisualCategoryCircles: React.FC<VisualCategoryCirclesProps> = ({
           return (
             <button
               key={cat.id}
+              type="button"
+              aria-label={`تصفح قسم: ${cat.name}`}
+              aria-pressed={isSelected}
               onClick={() => onSelectCategory(cat.id)}
               className="group flex w-full flex-col items-center transition-transform active:scale-95 focus-visible:outline-none sm:w-auto sm:flex-shrink-0"
             >

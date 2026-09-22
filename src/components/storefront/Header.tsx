@@ -418,6 +418,9 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="w-full max-w-7xl mx-auto mt-1 pt-0.5 border-t border-[var(--color-border-subtle)] flex items-center justify-between overflow-x-auto snap-x snap-mandatory no-scrollbar text-[11px] sm:text-xs font-bold gap-3 sm:gap-6 text-[var(--color-text-secondary)] whitespace-nowrap px-1">
           <button
             onClick={() => onSelectCategory('all')}
+            type="button"
+            aria-label="جميع الفئات"
+            aria-pressed={selectedCategory === 'all'}
             className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'all' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
@@ -426,6 +429,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('smartwatches')}
+            type="button"
+            aria-label="ساعات ذكية"
+            aria-pressed={selectedCategory === 'smartwatches'}
             className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'smartwatches' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
@@ -434,6 +440,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('audio')}
+            type="button"
+            aria-label="سماعات وصوتيات"
+            aria-pressed={selectedCategory === 'audio'}
             className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'audio' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
@@ -442,6 +451,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('accessories')}
+            type="button"
+            aria-label="شواحن وإكسسوارات"
+            aria-pressed={selectedCategory === 'accessories'}
             className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'accessories' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
@@ -450,6 +462,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('home_appliances')}
+            type="button"
+            aria-label="أجهزة ومنزل"
+            aria-pressed={selectedCategory === 'home_appliances'}
             className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'home_appliances' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
@@ -458,6 +473,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('perfumes')}
+            type="button"
+            aria-label="عطور وبخور"
+            aria-pressed={selectedCategory === 'perfumes'}
             className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'perfumes' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
@@ -466,19 +484,23 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => onSelectCategory('automotive')}
+            type="button"
+            aria-label="مستلزمات السيارات"
+            aria-pressed={selectedCategory === 'automotive'}
             className={`shrink-0 snap-start py-0.5 transition-colors hover:text-black dark:hover:text-white ${
               selectedCategory === 'automotive' ? 'text-[#F93A00] font-black border-b-2 border-[#F93A00]' : ''
             }`}
           >
             مستلزمات السيارات
           </button>
-          <button
-            onClick={() => onSelectCategory('all')}
+          <a
+            href="/offers"
+            aria-label="عروض اليوم"
             className="py-0.5 text-[#F93A00] font-black flex items-center gap-1 hover:underline"
           >
             <Flame className="w-3.5 h-3.5" />
             عروض اليوم
-          </button>
+          </a>
         </div>
       )}
     </header>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Bell, Camera, ChevronDown, Heart, Mail, Search, ShoppingCart } from "lucide-react";
+import { Bell, ChevronDown, Heart, Mail, Search, ShoppingCart } from "lucide-react";
 
 interface MobileReferenceHeaderProps {
   searchQuery: string;
@@ -73,15 +73,6 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           >
             <Search className="h-[18px] w-[18px] stroke-[2]" />
           </button>
-          <button
-            type="button"
-            aria-label="البحث بالكاميرا"
-            disabled
-            title="البحث بالكاميرا غير متاح حاليًا"
-            className="grid h-9 w-8 shrink-0 place-items-center text-black"
-          >
-            <Camera className="h-[17px] w-[17px] stroke-[1.8]" />
-          </button>
         </div>
 
         <button
@@ -126,6 +117,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           <button
             type="button"
             key={category.id}
+            aria-label={category.label}
             onClick={() => onSelectCategory?.(category.id)}
             className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${index === 0 ? "font-black text-white" : "text-white/75"}`}
           >

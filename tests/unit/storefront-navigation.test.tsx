@@ -39,9 +39,7 @@ describe("storefront navigation actions", () => {
     fireEvent.click(screen.getByRole("button", { name: "تنفيذ البحث" }));
     fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
     expect(search).toHaveBeenCalledTimes(2);
-    expect(
-      (screen.getByRole("button", { name: "البحث بالكاميرا" }) as HTMLButtonElement).disabled,
-    ).toBe(true);
+    expect(screen.queryByRole("button", { name: "البحث بالكاميرا" })).toBeNull();
   });
 
   it("opens categories through the page handler without navigating to empty search", () => {
