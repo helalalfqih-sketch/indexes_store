@@ -74,6 +74,7 @@ function result(data: Record<string, unknown>) {
 function safeErrorCode(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   if (message === "STORE_MCP_GITHUB_NOT_CONFIGURED") return "SOURCE_GITHUB_NOT_CONFIGURED";
+  if (message === "STORE_MCP_GITHUB_WRITE_NOT_CONFIGURED") return "SOURCE_GITHUB_WRITE_NOT_CONFIGURED";
   if (message.startsWith("GITHUB_")) return message;
   if (message === "BROWSER_URL_FORBIDDEN") return "BROWSER_URL_FORBIDDEN";
   if (
