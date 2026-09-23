@@ -333,6 +333,11 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="ar" dir="rtl">
       <head>
         <HeadContent />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7800647895658942"
+          crossOrigin="anonymous"
+        />
       </head>
       <body>
         {children}

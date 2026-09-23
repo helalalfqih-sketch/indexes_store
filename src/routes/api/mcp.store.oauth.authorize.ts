@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { validateStoreClient } from "@/lib/mcp/store-oauth.server";
+import { normalizeStoreScope, validateStoreClient } from "@/lib/mcp/store-oauth.server";
 
 export const Route = createFileRoute("/api/mcp/store/oauth/authorize")({
   server: {
@@ -11,19 +11,14 @@ export const Route = createFileRoute("/api/mcp/store/oauth/authorize")({
           const redirectUri = url.searchParams.get("redirect_uri") || "";
           const state = url.searchParams.get("state") || "";
           const challenge = url.searchParams.get("code_challenge") || "";
-          const requestedScope = url.searchParams.get("scope") || "store.read";
+          const requestedScope = normalizeStoreScope(url.searchParams.get("scope") || "store.read");
           if (
             url.searchParams.get("response_type") !== "code" ||
             url.searchParams.get("code_challenge_method") !== "S256" ||
             !state ||
             !challenge ||
             !clientId ||
-            !redirectUri ||
-            !requestedScope
-              .split(" ")
-              .every((scope) =>
-                ["store.read", "store.test", "store.develop", "offline_access"].includes(scope),
-              )
+            !redirectUri
           ) {
             throw new Error("INVALID_REQUEST");
           }
@@ -34,10 +29,26 @@ export const Route = createFileRoute("/api/mcp/store/oauth/authorize")({
           }
           next.searchParams.set("scope", requestedScope);
           return Response.redirect(next, 302);
-        } catch {
+        } catch (error) {
+          const code = error instanceof Error ? error.message : "";
+          const unavailable = code === "STORE_MCP_OAUTH_NOT_CONFIGURED";
+          const reason = unavailable
+            ? "authorization_unavailable"
+            : code === "INVALID_SCOPE"
+              ? "unsupported_scope"
+              : ["INVALID_CLIENT", "UNAUTHORIZED", "INVALID_REDIRECT_URI"].includes(code)
+                ? "client_registration_invalid"
+                : "authorization_parameters_invalid";
           return Response.json(
-            { error: "invalid_request" },
-            { status: 400, headers: { "Cache-Control": "no-store" } },
+            {
+              error: unavailable
+                ? "temporarily_unavailable"
+                : code === "INVALID_SCOPE"
+                  ? "invalid_scope"
+                  : "invalid_request",
+              reason,
+            },
+            { status: unavailable ? 503 : 400, headers: { "Cache-Control": "no-store" } },
           );
         }
       },
