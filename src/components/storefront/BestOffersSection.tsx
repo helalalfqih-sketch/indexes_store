@@ -158,13 +158,13 @@ export const BestOffersSection: React.FC<BestOffersSectionProps> = ({
       <div className="px-4 sm:px-6 flex flex-wrap justify-between items-center gap-2 mb-3 dir-rtl">
         <div className="flex items-center gap-3">
           <h3 className="text-xl sm:text-2xl font-black flex items-center gap-2 text-[var(--color-text-primary)]">
-            <span>صفقات خاطفة</span>
+            <span>عروض المتجر</span>
             <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 fill-amber-400 animate-pulse" />
           </h3>
 
           {/* Flash Timer Pills (Rendered only when active timed deal exists) */}
           {timeLeft && (timeLeft.hours > 0 || timeLeft.minutes > 0 || timeLeft.seconds > 0) && (
-            <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/10 to-amber-500/5 border border-amber-500/30 px-2.5 py-1 rounded-full text-xs font-mono font-bold text-amber-400 shadow-sm">
+            <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/10 to-amber-500/5 border border-amber-500/30 px-2.5 py-1 rounded-full text-sm font-mono font-bold text-amber-400 shadow-sm">
               <Clock className="w-3.5 h-3.5 text-amber-400 animate-spin-slow" />
               <span>
                 {String(timeLeft.hours).padStart(2, "0")}:
@@ -180,7 +180,7 @@ export const BestOffersSection: React.FC<BestOffersSectionProps> = ({
           onClick={onViewAll}
           type="button"
           aria-label="عرض كل العروض"
-          className="text-[#2F6BFF] text-xs sm:text-sm flex items-center gap-1 font-bold hover:underline cursor-pointer group"
+          className="text-[var(--color-primary-ui)] text-sm sm:text-sm flex items-center gap-1 font-bold hover:underline cursor-pointer group"
         >
           <span>عرض كل العروض</span>
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -194,7 +194,7 @@ export const BestOffersSection: React.FC<BestOffersSectionProps> = ({
         <button
           type="button"
           onClick={() => handleScroll("right")}
-          className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--color-surface-1)]/95 backdrop-blur-md border border-[var(--color-border-default)] text-[var(--color-text-primary)] flex items-center justify-center shadow-lg hover:bg-[#2F6BFF] hover:text-white hover:border-[#2F6BFF] transition-all cursor-pointer opacity-90 hover:opacity-100 active:scale-95"
+          className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--color-surface-1)]/95 backdrop-blur-md border border-[var(--color-border-default)] text-[var(--color-text-primary)] flex items-center justify-center shadow-lg hover:bg-[var(--color-primary-ui)] hover:text-white hover:border-[var(--color-primary-ui)] transition-all cursor-pointer opacity-90 hover:opacity-100 active:scale-95"
           aria-label="التمرير لليمين"
           title="التمرير لليمين"
         >
@@ -205,7 +205,7 @@ export const BestOffersSection: React.FC<BestOffersSectionProps> = ({
         <button
           type="button"
           onClick={() => handleScroll("left")}
-          className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--color-surface-1)]/95 backdrop-blur-md border border-[var(--color-border-default)] text-[var(--color-text-primary)] flex items-center justify-center shadow-lg hover:bg-[#2F6BFF] hover:text-white hover:border-[#2F6BFF] transition-all cursor-pointer opacity-90 hover:opacity-100 active:scale-95"
+          className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--color-surface-1)]/95 backdrop-blur-md border border-[var(--color-border-default)] text-[var(--color-text-primary)] flex items-center justify-center shadow-lg hover:bg-[var(--color-primary-ui)] hover:text-white hover:border-[var(--color-primary-ui)] transition-all cursor-pointer opacity-90 hover:opacity-100 active:scale-95"
           aria-label="التمرير لليسار"
           title="التمرير لليسار"
         >
@@ -271,7 +271,7 @@ export const BestOffersSection: React.FC<BestOffersSectionProps> = ({
                 aria-label={`الانتقال للعرض ${idx + 1}`}
                 className={`transition-all cursor-pointer ${
                   activeIndex === idx
-                    ? "w-6 h-1.5 bg-[#2F6BFF] rounded-full shadow-sm shadow-blue-500/30"
+                    ? "w-6 h-1.5 bg-[var(--color-primary-ui)] rounded-full shadow-sm shadow-blue-500/30"
                     : "w-1.5 h-1.5 bg-[var(--color-border-subtle)] hover:bg-[var(--color-text-secondary)] rounded-full"
                 }`}
               />

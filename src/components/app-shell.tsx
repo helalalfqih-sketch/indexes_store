@@ -11,7 +11,6 @@ import {
   Bell,
   Grid2X2,
   Menu,
-  ScanLine,
   Search,
   ShoppingBag,
   ShoppingCart,
@@ -46,9 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         className={hideStorefrontChrome ? "w-full" : "mx-auto w-full max-w-md lg:max-w-[1024px]"}
         style={{
           paddingBottom:
-            isProductPage || hideStorefrontChrome
-              ? 0
-              : "calc(104px + env(safe-area-inset-bottom))",
+            isProductPage || hideStorefrontChrome ? 0 : "calc(104px + env(safe-area-inset-bottom))",
         }}
       >
         {children}
@@ -82,7 +79,7 @@ function TopBar() {
     <motion.header
       dir="ltr"
       style={{ background, borderColor }}
-      className="sticky top-0 z-40 mx-auto grid h-16 w-full max-w-md grid-cols-[44px_44px_1fr_44px_44px] items-center gap-2 border-b px-3.5 pt-2 shadow-[var(--shadow-sm)] backdrop-blur-xl lg:h-[72px] lg:max-w-[1024px] lg:grid-cols-[48px_48px_1fr_48px_48px] lg:gap-3 lg:px-5"
+      className="sticky top-0 z-40 mx-auto grid h-16 w-full max-w-md grid-cols-[44px_1fr_44px_44px] items-center gap-2 border-b px-3.5 pt-2 shadow-[var(--shadow-sm)] backdrop-blur-xl lg:h-[72px] lg:max-w-[1024px] lg:grid-cols-[48px_1fr_48px_48px] lg:gap-3 lg:px-5"
     >
       <button
         type="button"
@@ -92,14 +89,6 @@ function TopBar() {
       >
         <Menu className="h-5 w-5" />
       </button>
-      <Link
-        to="/search"
-        search={{ q: "" }}
-        aria-label="المسح الضوئي"
-        className="press grid h-11 w-11 place-items-center rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] lg:h-12 lg:w-12"
-      >
-        <ScanLine className="h-5 w-5" />
-      </Link>
       <Link
         to="/search"
         search={{ q: "" }}

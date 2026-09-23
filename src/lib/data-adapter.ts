@@ -111,6 +111,7 @@ export type LegacyProductShape = {
   gtin14?: string | null;
   mpn?: string | null;
   featured?: boolean;
+  createdAt?: string;
   isDeal?: boolean;
   dealStart?: string | null;
   dealEnd?: string | null;
@@ -146,6 +147,7 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
   rating: p.rating,
   reviews: p.reviews_count,
   categoryId: p.category_id ?? "",
+  createdAt: p.created_at,
   badge: explicitBadge(p),
   videoPlaybackId: p.video_playback_id ?? undefined,
   modelUrl: p.model_3d_url ?? p.model_url ?? null,

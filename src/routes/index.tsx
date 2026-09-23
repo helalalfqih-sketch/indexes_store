@@ -1,7 +1,7 @@
+import { isCurrentOffer } from "@/components/storefront/catalog-selection";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { X } from "lucide-react";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product as ProductionProduct } from "@/lib/store-data";
 import { useCart } from "@/lib/cart-store";
@@ -25,26 +25,18 @@ import { MainMenu } from "@/components/main-menu";
 import { MobileReferenceHeader } from "@/components/storefront/MobileReferenceHeader";
 import { ShippingBanner } from "@/components/storefront/ShippingBanner";
 import { SalesHero } from "@/components/storefront/SalesHero";
-import { VisualCategoryCircles } from "@/components/storefront/VisualCategoryCircles";
+import { InfiniteStorefrontCatalog } from "@/components/storefront/InfiniteStorefrontCatalog";
 import { SheinPromoGrid } from "@/components/storefront/SheinPromoGrid";
-import { FlashDealsSection } from "@/components/storefront/FlashDealsSection";
 import { AppDownloadModal } from "@/components/storefront/AppDownloadModal";
-import { AppInstallBanner } from "@/components/app-install-banner";
 import { CategoryBar, type PriceRangePreset } from "@/components/storefront/CategoryBar";
-import { matchesProductFilters, sortProducts } from "@/components/storefront/product-filters";
 import { BestOffersSection } from "@/components/storefront/BestOffersSection";
-import { ProductCard } from "@/components/storefront/ProductCard";
 import { TrustBar } from "@/components/storefront/TrustBar";
 import { StoreFooter } from "@/components/storefront/StoreFooter";
 import { BottomNav } from "@/components/storefront/BottomNav";
 import { FloatingWhatsAppButton } from "@/components/storefront/FloatingWhatsAppButton";
 import { useAppearance } from "@/components/appearance-provider";
 import { mapPublishedStorefrontSettings } from "@/lib/adapters/storefront-settings.adapter";
-import {
-  ProductCardSkeleton,
-  HeroCarouselSkeleton,
-  ProductGridSkeleton,
-} from "@/components/storefront/SkeletonLoader";
+import { HeroCarouselSkeleton, ProductGridSkeleton } from "@/components/storefront/SkeletonLoader";
 
 import { ProductDetailModal } from "@/components/storefront/ProductDetailModal";
 import { CinematicProductDeconstruction } from "@/components/storefront/CinematicProductDeconstruction";
@@ -265,15 +257,12 @@ function HomePage() {
   const [priceRange, setPriceRange] = useState<PriceRangePreset>("all");
   const [customMinPrice, setCustomMinPrice] = useState<number | undefined>();
   const [customMaxPrice, setCustomMaxPrice] = useState<number | undefined>();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
 
   // Category change loading feedback
   const handleSelectCategoryWithLoading = (catId: string) => {
-    setIsLoading(true);
     setSelectedCategory(catId);
-    setTimeout(() => setIsLoading(false), 250);
   };
 
   const [compareList, setCompareList] = useState<DesignProduct[]>([]);
@@ -340,56 +329,31 @@ function HomePage() {
     [notifications],
   );
 
+  const [dealsOnly, setDealsOnly] = useState(false);
+  const hasCatalogFilters =
+    selectedCategory !== "all" ||
+    Boolean(searchQuery.trim()) ||
+    priceRange !== "all" ||
+    selectedBrands.length > 0 ||
+    selectedRatings.length > 0 ||
+    sortBy !== "default" ||
+    dealsOnly;
+  const heroProducts =
+    mappedSettings.hero.enabled && !hasCatalogFilters
+      ? products.filter((product) => product.isFeatured).slice(0, 3)
+      : [];
+  const heroIds = heroProducts.map((product) => product.id);
   const bestOffers = useMemo(
-    () => products.filter((p) => p.isBestOffer || (p.discountBadge && p.discountBadge.length > 0)),
-    [products],
+    () =>
+      products
+        .filter((product) => isCurrentOffer(product))
+        .slice(0, mappedSettings.sections.deals.limit),
+    [products, mappedSettings.sections.deals.limit],
   );
-
-  const filteredProducts = useMemo(() => {
-    const list = products.filter((p) => {
-      const matchCategory = selectedCategory === "all" || p.category === selectedCategory;
-      const matchSearch =
-        !searchQuery ||
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilters = matchesProductFilters(p, {
-        priceRange,
-        customMinPrice,
-        customMaxPrice,
-        selectedBrands,
-        selectedRatings,
-      });
-      return matchCategory && matchSearch && matchesFilters;
-    });
-
-    return sortProducts(list, sortBy);
-  }, [
-    products,
-    selectedCategory,
-    searchQuery,
-    sortBy,
-    priceRange,
-    customMinPrice,
-    customMaxPrice,
-    selectedBrands,
-    selectedRatings,
-  ]);
-
-  const [visibleProductCount, setVisibleProductCount] = useState(12);
-  useEffect(() => {
-    setVisibleProductCount(12);
-  }, [
-    selectedCategory,
-    searchQuery,
-    sortBy,
-    priceRange,
-    customMinPrice,
-    customMaxPrice,
-    selectedBrands,
-    selectedRatings,
-  ]);
-  const visibleProducts = filteredProducts.slice(0, visibleProductCount);
+  const showOffers =
+    mappedSettings.sections.deals.enabled && !hasCatalogFilters && bestOffers.length > 0;
+  const displayedOffers = bestOffers.filter((product) => !heroIds.includes(product.id));
+  const offerIds = [...heroIds, ...(showOffers ? displayedOffers.map((p) => p.id) : [])];
 
   // Track recently viewed products (max 10) and open the full cinematic product route.
   // The modal remains as a safe fallback for legacy products that do not have a slug.
@@ -422,7 +386,7 @@ function HomePage() {
 
     const raw = rawProductMap.get(product.id) || {
       id: product.id,
-      slug: product.id,
+      slug: product.slug || product.id,
       checkoutProductRef:
         product.checkoutProductRef ?? checkoutProductRefFromCatalogProduct(product),
       shopifyVariantId: product.shopifyVariantId ?? null,
@@ -430,7 +394,7 @@ function HomePage() {
       description: product.description,
       price: product.priceYER,
       oldPrice: product.originalPriceYER > product.priceYER ? product.originalPriceYER : undefined,
-      stock: product.inStock ? 50 : 0,
+      stock: product.inStock ? Math.max(1, product.stockCount ?? 1) : 0,
       image: product.image,
       rating: product.rating,
       reviews: product.reviewsCount,
@@ -490,10 +454,6 @@ function HomePage() {
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Keep the install prompt and full desktop header off the reference mobile layout. */}
         <div className="hidden md:block">
-          <AppInstallBanner />
-        </div>
-
-        <div className="hidden md:block">
           {/* 1. Sticky Header */}
           <Header
             searchQuery={searchQuery}
@@ -522,6 +482,7 @@ function HomePage() {
         </div>
 
         <MobileReferenceHeader
+          selectedCategory={selectedCategory}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onSubmitSearch={() => navigate({ to: "/search", search: { q: searchQuery.trim() } })}
@@ -555,7 +516,7 @@ function HomePage() {
                     </h1>
                     {/* SHEIN Campaign & Promotional Collage Grid */}
                     <SheinPromoGrid
-                      products={products}
+                      products={heroProducts}
                       currency={currency}
                       onShopNow={() =>
                         document
@@ -566,84 +527,37 @@ function HomePage() {
                       onSelectProduct={handleSelectProduct}
                     />
 
-                    {/* Mobile reference-style offer strip using real store products. */}
-                    <section
-                      className="mx-2 overflow-hidden border-y border-[#f3d4d9] bg-[#fff6f7] p-2.5 shadow-none md:hidden"
-                      aria-label="عرض العملاء الجدد"
-                    >
-                      <div className="mb-2 flex items-center justify-between text-[13px] font-black text-[#e64a4a]">
-                        <span>للمستخدمين الجدد فقط</span>
-                        <span>شحن مجاني 🚚</span>
-                      </div>
-                      <div className="grid grid-cols-[1.05fr_0.95fr_0.95fr] items-center gap-2">
-                        <div className="rounded-lg bg-white/80 p-2 text-center">
-                          <span className="text-[10px] text-neutral-500">تطبق الشروط</span>
-                          <strong className="mt-1 block text-xl font-black text-[#4b9f3a]">
-                            5000
-                          </strong>
-                          <span className="text-[10px] text-neutral-500">رصيد ترحيبي</span>
-                        </div>
-                        {products.slice(0, 2).map((product) => (
-                          <button
-                            type="button"
-                            key={`new-user-${product.id}`}
-                            onClick={() => handleSelectProduct(product)}
-                            className="overflow-hidden rounded-lg bg-white shadow-sm"
-                          >
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              loading="lazy"
-                              className="h-[76px] w-full object-contain"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </section>
-
-                    {/* SHEIN Visual Category Circles */}
-                    <VisualCategoryCircles
-                      selectedCategoryId={selectedCategory}
-                      onSelectCategory={handleSelectCategoryWithLoading}
-                      products={products}
-                    />
-
                     {/* Mobile reference-style product tabs. */}
                     <div
-                      className="mx-2 mt-2 grid grid-cols-4 gap-0 border-y border-neutral-200 bg-white p-0 text-[11px] font-black md:hidden"
-                      role="tablist"
+                      className="mx-2 mt-2 grid grid-cols-4 gap-0 border-y border-neutral-200 bg-white p-0 text-sm font-bold md:hidden"
+                      role="group"
                       aria-label="تصفية المنتجات السريعة"
                     >
-                      {["من أجلك", "مداخل جديدة", "تخفيضات", "الأكثر مبيعاً"].map(
-                        (label, index) => (
-                          <button
-                            type="button"
-                            key={label}
-                            onClick={() =>
-                              document
-                                .getElementById("store-products")
-                                ?.scrollIntoView({ behavior: "smooth" })
-                            }
-                            className={`rounded-md px-1 py-2 ${index === 0 ? "bg-black text-white" : "text-neutral-700"}`}
-                            role="tab"
-                          >
-                            {label}
-                          </button>
-                        ),
-                      )}
-                    </div>
-
-                    {/* SHEIN Flash Deals Section with live countdown */}
-                    <div className="hidden md:block">
-                      <FlashDealsSection
-                        products={bestOffers.length ? bestOffers : products}
-                        currency={currency}
-                        onSelectProduct={handleSelectProduct}
-                        onAddToCart={(prod) => {
-                          handleAddToCart(prod, 1);
-                          showToast(`تمت إضافة ${prod.name} إلى السلة ⚡`);
-                        }}
-                      />
+                      {["من أجلك", "وصل حديثًا", "تخفيضات", "الأكثر مبيعاً"].map((label, index) => (
+                        <button
+                          type="button"
+                          key={label}
+                          onClick={() => {
+                            setDealsOnly(index === 2);
+                            setSortBy(
+                              index === 1 ? "newest" : index === 3 ? "best-selling" : "default",
+                            );
+                            document
+                              .getElementById("store-products")
+                              ?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                          className={`rounded-md px-1 py-2 ${(index === 2 ? dealsOnly : !dealsOnly && sortBy === (["default", "newest", "default", "best-selling"] as const)[index]) ? "bg-[var(--color-primary-ui)] text-white" : "text-neutral-700"}`}
+                          aria-pressed={
+                            index === 2
+                              ? dealsOnly
+                              : !dealsOnly &&
+                                sortBy ===
+                                  (["default", "newest", "default", "best-selling"] as const)[index]
+                          }
+                        >
+                          {label}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 );
@@ -666,7 +580,7 @@ function HomePage() {
               case "categories":
                 if (!mappedSettings.sections.categories.enabled) return null;
                 return (
-                  <div key="categories" data-section="categories" className="hidden md:block">
+                  <div key="categories" data-section="categories">
                     <CategoryBar
                       selectedCategoryId={selectedCategory}
                       onSelectCategory={handleSelectCategoryWithLoading}
@@ -689,26 +603,19 @@ function HomePage() {
                 );
 
               case "deals":
-                if (!mappedSettings.sections.deals.enabled) return null;
-                if (selectedCategory !== "all" || searchQuery) return null;
+                if (!showOffers || !displayedOffers.length) return null;
                 return (
-                  <div key="deals" className="hidden md:block">
-                    <BestOffersSection
-                      key="deals"
-                      bestOffers={
-                        bestOffers.length
-                          ? bestOffers.slice(0, mappedSettings.sections.deals.limit)
-                          : products.slice(0, mappedSettings.sections.deals.limit)
-                      }
-                      currency={currency}
-                      favorites={favorites}
-                      isLoading={isLoading || catalogLoading}
-                      onToggleFavorite={handleToggleFavorite}
-                      onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                      onSelectProduct={handleSelectProduct}
-                      onViewAll={() => navigate({ to: "/offers" })}
-                    />
-                  </div>
+                  <BestOffersSection
+                    key="deals"
+                    bestOffers={displayedOffers}
+                    currency={currency}
+                    favorites={favorites}
+                    isLoading={catalogLoading}
+                    onToggleFavorite={handleToggleFavorite}
+                    onAddToCart={(prod) => handleAddToCart(prod, 1)}
+                    onSelectProduct={handleSelectProduct}
+                    onViewAll={() => navigate({ to: "/offers" })}
+                  />
                 );
 
               case "ai_search":
@@ -718,125 +625,34 @@ function HomePage() {
                 return null;
 
               case "latest":
-                if (!mappedSettings.sections.latest.enabled) return null;
                 return (
-                  <div key="latest">
-                    {/* Product Catalog Grid Section */}
-                    <section id="store-products" className="scroll-mt-24 px-2 py-5 sm:px-6">
-                      <div className="dir-rtl mb-6 hidden flex-col justify-between gap-3 border-b border-[var(--color-border-default)] pb-4 sm:flex-row sm:items-center md:flex">
-                        <div>
-                          <h3 className="text-xl font-bold text-[var(--color-text-primary)] sm:text-2xl">
-                            {selectedCategory === "all"
-                              ? searchQuery
-                                ? `نتائج البحث عن "${searchQuery}"`
-                                : mappedSettings.sections.latest.title || "جميع المنتجات المتوفرة"
-                              : "منتجات القسم المختار"}
-                          </h3>
-                          <p className="mt-1 text-xs text-[var(--color-text-secondary)] sm:text-sm">
-                            عرض {filteredProducts.length} منتجًا بالسعر والتوفر المسجلين في المتجر
-                          </p>
-                        </div>
-                        {sortBy !== "default" ? (
-                          <div className="flex items-center gap-2 self-start sm:self-center">
-                            <div className="inline-flex items-center gap-1.5 rounded-full border border-[#2F6BFF]/40 bg-[#2F6BFF]/15 px-3 py-1.5 text-xs font-black text-[#2F6BFF] shadow-sm">
-                              <span className="h-2 w-2 animate-pulse rounded-full bg-[#2F6BFF]" />
-                              <span>
-                                الترتيب المطبق:{" "}
-                                {sortBy === "price-high"
-                                  ? "الأعلى سعراً"
-                                  : sortBy === "price-low"
-                                    ? "الأقل سعراً"
-                                    : sortBy === "best-selling"
-                                      ? "الأكثر مبيعاً"
-                                      : "الأحدث وصولاً"}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setSortBy("default")}
-                                className="cursor-pointer rounded-full p-1 text-[#2F6BFF] transition-colors hover:bg-rose-500/20 hover:text-rose-500"
-                                title="إلغاء الترتيب والإعادة للافتراضي"
-                                aria-label="إلغاء الترتيب"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-
-                      {isLoading || catalogLoading ? (
-                        <ProductGridSkeleton count={8} />
-                      ) : filteredProducts.length === 0 ? (
-                        <div className="space-y-6">
-                          <div className="rounded-2xl border border-dashed border-[#F93A00]/40 bg-[#FFF1EB] dark:bg-neutral-900 p-5 text-center">
-                            <p className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white">
-                              لا توجد منتجات مسجلة في هذا التصنيف حالياً، جلبنا لك هذه المنتجات
-                              المميزة والأكثر طلباً في المتجر:
-                            </p>
-                            <button
-                              type="button"
-                              aria-label="عرض جميع المنتجات المتوفرة"
-                              onClick={() => {
-                                setSearchQuery("");
-                                setPriceRange("all");
-                                setCustomMinPrice(undefined);
-                                setCustomMaxPrice(undefined);
-                                setSelectedBrands([]);
-                                setSelectedRatings([]);
-                                setSortBy("default");
-                                handleSelectCategoryWithLoading("all");
-                              }}
-                              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-black px-5 py-2 text-xs font-black text-white hover:bg-neutral-800 transition-colors shadow"
-                            >
-                              عرض جميع المنتجات المتوفرة
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-                            {(products.length > 0 ? products.slice(0, 8) : []).map((product) => (
-                              <ProductCard
-                                key={product.id}
-                                product={product}
-                                currency={currency}
-                                isFavorite={favorites.includes(product.id)}
-                                onToggleFavorite={handleToggleFavorite}
-                                onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                                onSelectProduct={handleSelectProduct}
-                                variant="grid"
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-                            {visibleProducts.map((product, index) => (
-                              <ProductCard
-                                key={product.id}
-                                product={product}
-                                currency={currency}
-                                isFavorite={favorites.includes(product.id)}
-                                onToggleFavorite={handleToggleFavorite}
-                                onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                                onSelectProduct={handleSelectProduct}
-                                variant="grid"
-                                index={index}
-                              />
-                            ))}
-                          </div>
-                          {visibleProducts.length < filteredProducts.length && (
-                            <button
-                              type="button"
-                              onClick={() => setVisibleProductCount((count) => count + 12)}
-                              className="mx-auto mt-5 block border border-black bg-white px-8 py-2.5 text-xs font-black text-black"
-                            >
-                              عرض المزيد من المنتجات
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </section>
-                  </div>
+                  <section
+                    key="latest"
+                    id="store-products"
+                    aria-label="كتالوج المنتجات"
+                    className="scroll-mt-24 px-2 py-5 sm:px-6"
+                  >
+                    <h2 className="mb-4 text-xl font-bold">
+                      {searchQuery ? `نتائج البحث عن "${searchQuery}"` : "جميع المنتجات"}
+                    </h2>
+                    <InfiniteStorefrontCatalog
+                      selectedCategoryId={selectedCategory}
+                      searchQuery={searchQuery}
+                      sortBy={sortBy}
+                      priceRange={priceRange}
+                      customMinPrice={customMinPrice}
+                      customMaxPrice={customMaxPrice}
+                      selectedBrands={selectedBrands}
+                      selectedRatings={selectedRatings}
+                      dealsOnly={dealsOnly}
+                      currency={currency}
+                      favorites={favorites}
+                      excludeIds={offerIds}
+                      onToggleFavorite={handleToggleFavorite}
+                      onAddToCart={(prod) => handleAddToCart(prod, 1)}
+                      onSelectProduct={handleSelectProduct}
+                    />
+                  </section>
                 );
 
               case "trustBadges":

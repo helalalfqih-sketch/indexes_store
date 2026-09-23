@@ -56,7 +56,7 @@ export function sortProducts(products: Product[], sort: SortOption | "rating"): 
       return [...products].sort((a, b) => b.reviewsCount - a.reviewsCount);
     case "newest":
       return [...products].sort(
-        (a, b) => Number(Boolean(b.isNewArrival)) - Number(Boolean(a.isNewArrival)),
+        (a, b) => (Date.parse(b.createdAt ?? "") || 0) - (Date.parse(a.createdAt ?? "") || 0),
       );
     case "rating":
       return [...products].sort((a, b) => b.rating - a.rating);

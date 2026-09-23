@@ -1,3 +1,5 @@
+import { STOREFRONT_CATEGORIES } from "./categories";
+import { uniqueProducts, isCurrentOffer } from "./catalog-selection";
 import { useEffect, useMemo, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchCatalogPage } from "@/lib/actions/catalog-page.actions";
@@ -50,13 +52,17 @@ export function InfiniteStorefrontCatalog({
 }: InfiniteStorefrontCatalogProps) {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  const usesDisplayCategory = STOREFRONT_CATEGORIES.some(
+    (category) => category.id === selectedCategoryId,
+  );
   const query = useInfiniteQuery({
     queryKey: ["storefront", "catalog", "infinite", selectedCategoryId, searchQuery],
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) =>
       fetchCatalogPage({
         search: searchQuery.trim() || undefined,
-        categoryId: selectedCategoryId !== "all" ? selectedCategoryId : undefined,
+        categoryId:
+          !usesDisplayCategory && selectedCategoryId !== "all" ? selectedCategoryId : undefined,
         first: PAGE_SIZE,
         after: pageParam,
       }),
@@ -70,8 +76,10 @@ export function InfiniteStorefrontCatalog({
 
   const products = useMemo(
     () =>
-      (query.data?.pages.flatMap((page) => page.items) ?? []).map((product) =>
-        mapProductionProductToDesignProduct(product),
+      uniqueProducts(
+        (query.data?.pages.flatMap((page) => page.items) ?? []).map((product) =>
+          mapProductionProductToDesignProduct(product),
+        ),
       ),
     [query.data],
   );
@@ -81,6 +89,12 @@ export function InfiniteStorefrontCatalog({
   const filteredProducts = useMemo(() => {
     const list = products.filter((product) => {
       if (excluded.has(product.id)) return false;
+      if (
+        usesDisplayCategory &&
+        selectedCategoryId !== "all" &&
+        product.category !== selectedCategoryId
+      )
+        return false;
 
       const matchesFilters = matchesProductFilters(product, {
         priceRange,
@@ -90,11 +104,7 @@ export function InfiniteStorefrontCatalog({
         selectedRatings,
       });
 
-      const matchDeals =
-        !dealsOnly ||
-        product.isBestOffer ||
-        Boolean(product.discountBadge) ||
-        product.originalPriceYER > product.priceYER;
+      const matchDeals = !dealsOnly || isCurrentOffer(product);
 
       const matchStock = !inStockOnly || product.inStock !== false;
 
@@ -104,6 +114,8 @@ export function InfiniteStorefrontCatalog({
     return sortProducts(list, sortBy);
   }, [
     products,
+    usesDisplayCategory,
+    selectedCategoryId,
     excluded,
     sortBy,
     priceRange,
@@ -172,7 +184,7 @@ export function InfiniteStorefrontCatalog({
       </div>
 
       {!query.hasNextPage && products.length > 0 ? (
-        <p className="pb-2 text-center text-[11px] text-neutral-400">تم عرض جميع المنتجات</p>
+        <p className="pb-2 text-center text-sm text-neutral-400">تم عرض جميع المنتجات</p>
       ) : null}
     </>
   );

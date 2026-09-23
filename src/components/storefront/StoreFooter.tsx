@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { STORE_INFO } from "./constants";
-import { MessageCircle, MapPin, Truck, Package, Facebook, Instagram, PhoneCall } from "lucide-react";
+import {
+  MessageCircle,
+  MapPin,
+  Truck,
+  Package,
+  Facebook,
+  Instagram,
+  PhoneCall,
+} from "lucide-react";
 import { StoreLogo } from "./StoreLogo";
-import { InfiniteStorefrontCatalog } from "./InfiniteStorefrontCatalog";
-import { useCart } from "@/lib/cart-store";
-import { useFavorites } from "@/lib/use-favorites";
-import type { Product as DesignProduct } from "./types";
-import type { Product as StoreProduct } from "@/lib/store-data";
 
 export interface StoreFooterProps {
   onOpenTracker: () => void;
@@ -49,41 +51,6 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
   onOpenSupport,
   footerConfig,
 }) => {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const navigate = useNavigate();
-  const addToCart = useCart((state) => state.add);
-  const { favorites, toggleFavorite } = useFavorites();
-  const [alreadyRenderedIds, setAlreadyRenderedIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (pathname !== "/") return;
-    const frame = requestAnimationFrame(() => {
-      const ids = Array.from(document.querySelectorAll<HTMLElement>("[data-storefront-product-id]"))
-        .map((node) => node.dataset.storefrontProductId)
-        .filter((id): id is string => Boolean(id));
-      setAlreadyRenderedIds([...new Set(ids)]);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [pathname]);
-
-  const handleAddToCart = (product: DesignProduct) => {
-    const storeProduct: StoreProduct = {
-      id: product.id,
-      slug: product.slug || product.id,
-      name: product.name,
-      description: product.description,
-      price: product.priceYER,
-      oldPrice:
-        product.originalPriceYER > product.priceYER ? product.originalPriceYER : undefined,
-      stock: product.inStock === false ? 0 : Math.max(1, product.stockCount ?? 1),
-      image: product.image,
-      rating: product.rating,
-      reviews: product.reviewsCount,
-      categoryId: product.category,
-    } as StoreProduct;
-    addToCart(storeProduct, 1);
-  };
-
   const waNumber = footerConfig?.whatsappPhone || footerConfig?.phone || STORE_INFO.whatsappNumber;
   const whatsappUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(
     "السلام عليكم، أود الاستفسار عن منتجات متجر إندكس",
@@ -99,29 +66,6 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
 
   return (
     <>
-      {pathname === "/" ? (
-        <section className="px-2 pb-3 sm:px-6" aria-label="جميع منتجات المتجر">
-          <InfiniteStorefrontCatalog
-            selectedCategoryId="all"
-            searchQuery=""
-            sortBy="default"
-            priceRange="all"
-            selectedBrands={[]}
-            selectedRatings={[]}
-            currency="YER"
-            favorites={favorites}
-            excludeIds={alreadyRenderedIds}
-            onToggleFavorite={(product) => toggleFavorite(product.id)}
-            onAddToCart={handleAddToCart}
-            onSelectProduct={(product) => {
-              if (product.slug) {
-                navigate({ to: "/product/$slug", params: { slug: product.slug } });
-              }
-            }}
-          />
-        </section>
-      ) : null}
-
       <motion.footer
         initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -139,7 +83,9 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
             >
               <span>
                 للطلب والاستفسار (واتساب):{" "}
-                <strong className="dir-ltr inline-block text-[var(--color-text-primary)]">{waNumber}</strong>
+                <strong className="dir-ltr inline-block text-[var(--color-text-primary)]">
+                  {waNumber}
+                </strong>
               </span>
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-emerald-500/40 bg-emerald-500/20 text-emerald-500">
                 <MessageCircle className="h-4 w-4" />
@@ -148,7 +94,8 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
 
             <div className="flex items-center justify-end gap-2.5 text-xs text-[var(--color-text-secondary)] sm:text-sm">
               <span>
-                العنوان: <strong className="text-[var(--color-text-primary)]">{storeAddress}</strong>
+                العنوان:{" "}
+                <strong className="text-[var(--color-text-primary)]">{storeAddress}</strong>
               </span>
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-purple-500/40 bg-purple-500/20 text-purple-400">
                 <MapPin className="h-4 w-4" />
@@ -168,8 +115,8 @@ export const StoreFooter: React.FC<StoreFooterProps> = ({
               className="flex w-full items-center justify-end gap-2.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] sm:text-sm"
             >
               <span>
-                <strong className="underline decoration-[#2F6BFF]">تتبع طلبك</strong>{" "}
-                - برقم الطلب وآخر 4 أرقام من هاتفك
+                <strong className="underline decoration-[#2F6BFF]">تتبع طلبك</strong> - برقم الطلب
+                وآخر 4 أرقام من هاتفك
               </span>
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-blue-500/40 bg-blue-500/20 text-blue-500">
                 <Package className="h-4 w-4" />

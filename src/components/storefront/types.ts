@@ -26,6 +26,7 @@ export interface Product {
   isBestOffer?: boolean;
   isBestSeller?: boolean;
   isNewArrival?: boolean;
+  createdAt?: string;
   isFeatured?: boolean;
   brand?: string;
   specs?: Record<string, string>;
