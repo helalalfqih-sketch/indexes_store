@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { listProducts } from "@/lib/catalog.functions";
 import type { ProductDTO } from "@/lib/domain/product";
 
 const tenantIdSchema = z.string().uuid();
@@ -96,6 +95,28 @@ function buildCatalogCsv(products: ProductDTO[], baseUrl: string): string {
 }
 
 async function catalogResponse(request: Request, tenantId: string): Promise<Response> {
+  if (tenantId === "shopify") {
+    try {
+      const [{ storefront }, { buildShopifyMetaFeed }] = await Promise.all([
+        import("@/lib/shopify/catalog.functions"),
+        import("@/lib/shopify/meta-feed.server"),
+      ]);
+      const feed = await buildShopifyMetaFeed(storefront, new URL(request.url).origin);
+      return new Response(request.method === "HEAD" ? null : feed.csv, {
+        headers: {
+          ...RESPONSE_HEADERS,
+          "X-Catalog-Source": "shopify",
+          "X-Catalog-Items": String(feed.itemCount),
+          "X-Catalog-Skipped-Variants": String(feed.skippedVariants),
+        },
+      });
+    } catch {
+      return new Response("Shopify catalog temporarily unavailable", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+      });
+    }
+  }
   const parsedTenantId = tenantIdSchema.safeParse(tenantId);
   if (!parsedTenantId.success) {
     return new Response("Catalog not found", {
@@ -105,6 +126,7 @@ async function catalogResponse(request: Request, tenantId: string): Promise<Resp
   }
 
   try {
+    const { listProducts } = await import("@/lib/catalog.functions");
     const products = await listProducts({ data: { tenantId: parsedTenantId.data } });
     const baseUrl = new URL(request.url).origin;
     const csv = buildCatalogCsv(products, baseUrl);
