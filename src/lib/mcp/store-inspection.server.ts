@@ -1,12 +1,13 @@
 /* eslint-disable prettier/prettier */
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
+const STORE_ORIGINS = new Set([STORE_ORIGIN, "https://indexes-store-rosy.vercel.app"]);
 const MAX_HTML_BYTES = 1_500_000;
 const MAX_LINKS = 300;
 const MAX_ELEMENTS = 500;
 
 function allowedUrl(value: string) {
   const url = new URL(value, STORE_ORIGIN);
-  if (url.origin !== STORE_ORIGIN || !["http:", "https:"].includes(url.protocol)) {
+  if (!STORE_ORIGINS.has(url.origin) || url.protocol !== "https:" || url.username || url.password) {
     throw new Error("SITE_URL_FORBIDDEN");
   }
   return url;
@@ -74,14 +75,21 @@ function pageSignals(html: string) {
   };
 }
 
-async function fetchHtml(url: URL) {
+async function fetchHtml(url: URL, redirects = 0): Promise<{ html: string; status: number; finalUrl: string }> {
   const response = await fetch(url, {
     headers: {
       Accept: "text/html,application/xhtml+xml",
       "User-Agent": "IndexesStoreControlPlane/2.0",
     },
-    redirect: "follow",
+    redirect: "manual",
   });
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get("location");
+    if (!location || redirects >= 5) throw new Error("SITE_REDIRECT_BLOCKED");
+    const target = allowedUrl(new URL(location, url).toString());
+    if (target.origin !== url.origin) throw new Error("SITE_REDIRECT_BLOCKED");
+    return fetchHtml(target, redirects + 1);
+  }
   const contentType = response.headers.get("content-type") || "";
   if (!response.ok) throw new Error(`SITE_HTTP_${response.status}`);
   if (!contentType.includes("text/html")) throw new Error("SITE_NOT_HTML");
@@ -138,7 +146,7 @@ export function createStoreInspectionAdapter(): StoreInspectionAdapter {
           try {
             const target = new URL(href, url);
             resolved = target.toString();
-            internal = target.origin === STORE_ORIGIN;
+            internal = target.origin === url.origin;
           } catch {
             resolved = null;
           }
@@ -210,7 +218,7 @@ export function createStoreInspectionAdapter(): StoreInspectionAdapter {
                 return null;
               }
             })
-            .filter((target): target is URL => Boolean(target && target.origin === STORE_ORIGIN));
+            .filter((target): target is URL => Boolean(target && target.origin === start.origin));
           for (const target of links) {
             target.hash = "";
             if (!seen.has(target.toString()) && queue.length < 100) queue.push(target.toString());
