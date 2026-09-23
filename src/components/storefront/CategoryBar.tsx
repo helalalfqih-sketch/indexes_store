@@ -172,7 +172,34 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
     selectedSort !== "default";
 
   return (
-    <div className="px-3 sm:px-6 py-2 space-y-3">
+    <div
+      data-element-key="catalog-filters"
+      data-qa-filter-state={JSON.stringify({
+        category: selectedCategoryId,
+        sort: selectedSort,
+        brand: selectedBrands,
+        rating: selectedRatings,
+        minPrice:
+          selectedPriceRange === "under-20k"
+            ? 0
+            : selectedPriceRange === "20k-50k"
+              ? 20000
+              : selectedPriceRange === "over-50k"
+                ? 50000
+                : selectedPriceRange === "custom"
+                  ? customMinPrice
+                  : null,
+        maxPrice:
+          selectedPriceRange === "under-20k"
+            ? 20000
+            : selectedPriceRange === "20k-50k"
+              ? 50000
+              : selectedPriceRange === "custom"
+                ? customMaxPrice
+                : null,
+      })}
+      className="px-3 sm:px-6 py-2 space-y-3"
+    >
       {/* 1. Category Horizontal Scroll Row on Mobile & Desktop */}
       <div
         className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 scroll-smooth dir-rtl"
@@ -184,6 +211,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
           return (
             <button
               key={cat.id}
+              data-element-key={`filter-category-${cat.id}`}
+              data-qa-action="local"
               type="button"
               aria-label={`تصفية الفئة: ${cat.name}`}
               aria-pressed={isSelected}

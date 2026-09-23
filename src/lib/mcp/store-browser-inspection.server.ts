@@ -1,4 +1,5 @@
 /* eslint-disable prettier/prettier */
+import { readQaState, diffQaState } from "./store-qa-state";
 import serverlessChromium from "@sparticuz/chromium";
 import { chromium as playwright, type Browser, type BrowserContext, type Page } from "playwright-core";
 import { createHash } from "node:crypto";
@@ -110,7 +111,7 @@ async function navigatePage(page: Page, target: URL) {
   throw new Error("BROWSER_NAVIGATION_FAILED");
 }
 
-async function withPage<T>(
+export async function withPage<T>(
   value: string,
   viewport: { width: number; height: number },
   run: (page: Page, browser: Browser) => Promise<T>,
@@ -213,7 +214,8 @@ export interface StoreBrowserInspectionAdapter {
   screenshot(url: string, device: "desktop" | "mobile"): Promise<Record<string, unknown>>;
   safeClick(input: {
     url: string;
-    selector: string;
+    selector?: string;
+    elementKey?: string;
     device: "desktop" | "mobile";
   }): Promise<Record<string, unknown>>;
   trialNavigation(input: {
@@ -367,12 +369,18 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
 
     async safeClick(input) {
       const targetOrigin = allowedUrl(input.url).origin;
-      if (!SAFE_SELECTOR_RE.test(input.selector)) throw new Error("SAFE_SELECTOR_FORBIDDEN");
+      if ((!input.selector && !input.elementKey) || (input.selector && !SAFE_SELECTOR_RE.test(input.selector))) throw new Error("SAFE_SELECTOR_FORBIDDEN");
       const viewport =
         input.device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
       return withPage(input.url, viewport, async (page) => {
         // Desktop controls can remain in the mobile DOM while hidden.
-        const locator = page.locator(`${input.selector}:visible`).first();
+        const beforeState = await readQaState(page);
+        const keyedIndex = input.elementKey ? beforeState.elements.findIndex(e => e.element_key === input.elementKey) : -1;
+        if (input.elementKey && keyedIndex < 0) throw new Error("ELEMENT_KEY_NOT_FOUND");
+        const locator = input.elementKey
+          ? page.locator("section,article,[role],a,button,input,select,textarea,[data-element-key],[data-testid]").nth(keyedIndex)
+          : page.locator(`${input.selector}:visible`);
+        if (await locator.count() !== 1) throw new Error("SAFE_CLICK_TARGET_AMBIGUOUS");
         try {
           await locator.waitFor({ state: "visible", timeout: 5_000 });
         } catch {
@@ -392,6 +400,7 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
             type,
             text: text.slice(0, 200),
             insideForm: Boolean(form),
+            localAction: element.getAttribute("data-qa-action") === "local",
             formAction: form?.getAttribute("action") ?? null,
           };
         });
@@ -399,6 +408,8 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
         const forbiddenText =
           /(شراء|اطلب|تأكيد|دفع|checkout|place order|submit|delete|remove|حذف|ارسال|إرسال)/i;
         if (
+          !info.localAction ||
+          info.tag !== "button" ||
           info.insideForm ||
           info.type === "submit" ||
           forbiddenText.test(info.text) ||
@@ -408,11 +419,28 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
         }
 
         const before = page.url();
+        const blockedRequests: Array<{method:string;path:string}> = [];
+        const errors: string[] = [];
+        const network: Array<{status:number;path:string}> = [];
+        // Installed before the action; fresh context has no customer session.
+        await page.context().route("**/*", async route => {
+          const req = route.request();
+          const u = new URL(req.url());
+          if (!["GET", "HEAD"].includes(req.method()) || u.origin !== targetOrigin) {
+            if (blockedRequests.length < 100) blockedRequests.push({method:req.method(),path:u.pathname});
+            await route.abort(); return;
+          }
+          await route.continue();
+        });
+        page.on("pageerror", () => { if(errors.length < 100) errors.push("PAGE_ERROR"); });
+        page.on("console", msg => { if(msg.type() === "error" && errors.length < 100) errors.push("CONSOLE_ERROR"); });
+        page.on("response", response => { if(response.status() >= 400 && network.length < 100) network.push({status:response.status(),path:new URL(response.url()).pathname}); });
         await locator.click({ timeout: 10_000 });
         await page.waitForLoadState("domcontentloaded", { timeout: 3_000 }).catch(() => undefined);
         await page.waitForTimeout(500);
         const after = page.url();
         if (new URL(after).origin !== targetOrigin) throw new Error("SAFE_CLICK_LEFT_STORE_ORIGIN");
+        const afterState = await readQaState(page);
         return {
           before,
           after,
@@ -420,7 +448,13 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
           navigationChanged: before !== after,
           elementsAfter: await readRenderedElements(page),
           title: await page.title(),
-          inspectionMode: "safe-click-read-only",
+          before_state: beforeState,
+          after_state: afterState,
+          state_diff: diffQaState(beforeState, afterState),
+          interaction_errors: errors, interaction_network: network, blocked_requests: blockedRequests,
+          outcome: blockedRequests.length ? "BLOCKED" : "OBSERVED",
+          observation_window_ms: 500,
+          inspectionMode: "isolated-safe-click",
         };
       });
     },

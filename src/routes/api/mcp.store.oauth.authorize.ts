@@ -21,7 +21,9 @@ export const Route = createFileRoute("/api/mcp/store/oauth/authorize")({
             !redirectUri ||
             !requestedScope
               .split(" ")
-              .every((scope) => ["store.read", "store.develop", "offline_access"].includes(scope))
+              .every((scope) =>
+                ["store.read", "store.test", "store.develop", "offline_access"].includes(scope),
+              )
           ) {
             throw new Error("INVALID_REQUEST");
           }
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/api/mcp/store/oauth/authorize")({
           for (const key of ["client_id", "redirect_uri", "state", "code_challenge"]) {
             next.searchParams.set(key, url.searchParams.get(key)!);
           }
+          next.searchParams.set("scope", requestedScope);
           return Response.redirect(next, 302);
         } catch {
           return Response.json(

@@ -14,6 +14,26 @@ const verifier = "a".repeat(64);
 const challenge = createHash("sha256").update(verifier).digest("base64url");
 
 describe("store MCP OAuth", () => {
+  it("preserves explicitly approved test scope through refresh without adding develop", () => {
+    const clientId = registerStoreClient([redirectUri]);
+    const code = issueStoreCode({
+      sub: "admin",
+      tenantId: "tenant-a",
+      clientId,
+      redirectUri,
+      challenge,
+      scope: "store.read store.test offline_access",
+    });
+    const tokens = exchangeStoreCode(code, clientId, redirectUri, verifier);
+    expect(verifyStoreAccessToken(tokens.accessToken).scopes).toEqual([
+      "store.read",
+      "store.test",
+      "offline_access",
+    ]);
+    expect(
+      verifyStoreAccessToken(exchangeStoreRefreshToken(tokens.refreshToken).accessToken).scopes,
+    ).toEqual(["store.read", "store.test", "offline_access"]);
+  });
   beforeEach(() => {
     process.env.STORE_MCP_OAUTH_SECRET = "test-secret-that-is-longer-than-thirty-two-characters";
   });
@@ -35,14 +55,14 @@ describe("store MCP OAuth", () => {
     expect(verifyStoreAccessToken(tokens.accessToken)).toEqual({
       sub: "admin-user",
       tenantId: "11111111-1111-4111-8111-111111111111",
-      scopes: ["store.read", "store.develop", "offline_access"],
+      scopes: ["store.read"],
     });
     expect(
       verifyStoreAccessToken(exchangeStoreRefreshToken(tokens.refreshToken).accessToken),
     ).toEqual({
       sub: "admin-user",
       tenantId: "11111111-1111-4111-8111-111111111111",
-      scopes: ["store.read", "store.develop", "offline_access"],
+      scopes: ["store.read"],
     });
   });
 

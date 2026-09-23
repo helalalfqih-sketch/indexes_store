@@ -2,6 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
+import { inspectQa, fullStoreAudit } from "./store-qa.server";
 import { createStoreAdminAdapter, type StoreAdminAdapter } from "./store-admin.server";
 import {
   createStoreDevelopmentAdapter,
@@ -132,6 +133,18 @@ function createServer(
       { title, description, inputSchema, annotations, _meta: { securitySchemes } },
       (input) => safeRead(() => read(input)),
     );
+
+  const testTool = <T extends z.ZodRawShape>(name: string, title: string, description: string, inputSchema: z.ZodObject<T>, run: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>) =>
+    server.registerTool(name, {title,description,inputSchema,annotations:writeAnnotations,_meta:{securitySchemes:[{type:"oauth2",scopes:["store.read","store.test"]}]}}, input => {
+      if (!scopes.includes("store.test")) return {isError:true,content:[{type:"text" as const,text:"Missing required OAuth scope: store.test"}]};
+      return safeRead(()=>run(input));
+    });
+  const qaSchema = z.object({url:z.string().url().default("https://indexes-store.vercel.app/"),device:z.enum(["desktop","mobile"]).default("desktop")}).strict();
+  for (const [name,mode] of [["inspect_ui_tree","tree"],["inspect_product_grid","products"],["inspect_filter_state","filters"]] as const) {
+    tool(name,name,"V3 foundation: one isolated page/viewport. Reports missing instrumentation and unimplemented checks explicitly; never infers full-store coverage.",qaSchema,({url,device})=>inspectQa(url,device,mode));
+  }
+
+  tool("full_store_audit","Run bounded Store QA matrix","Five routes at desktop/mobile with explicit time-budget blockers and unimplemented checks. Not a completeness or quality guarantee.",z.object({url:z.string().url().default("https://indexes-store.vercel.app/")}).strict(),({url})=>fullStoreAudit(url));
 
   tool(
     "store_health",
@@ -331,7 +344,7 @@ function createServer(
     ({ url, device }) => browserInspection.screenshot(url, device),
   );
 
-  tool(
+  testTool(
     "trial_navigation",
     "Trial safe Store navigation",
     "Click one same-origin link by exact href or accessible text and report the resulting URL. Does not submit forms or click buttons.",
@@ -363,18 +376,19 @@ function createServer(
       }),
   );
 
-  tool(
+  testTool(
     "try_safe_click",
     "Try safe Store click",
     "Click one explicitly selected Store element only when it is outside forms, is not a submit control, has no purchase/delete/send intent, and cannot leave the Store origin.",
     z
       .object({
         url: z.string().url().default("https://indexes-store.vercel.app/"),
-        selector: z.string().trim().min(1).max(200),
+        selector: z.string().trim().min(1).max(200).optional(),
+        element_key: z.string().trim().min(1).max(300).optional(),
         device: z.enum(["desktop", "mobile"]).default("desktop"),
       })
       .strict(),
-    ({ url, selector, device }) => browserInspection.safeClick({ url, selector, device }),
+    ({ url, selector, element_key, device }) => browserInspection.safeClick({ url, selector, elementKey:element_key, device }),
   );
 
   developmentRead(

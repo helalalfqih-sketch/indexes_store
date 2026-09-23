@@ -17,6 +17,7 @@ export const Route = createFileRoute("/api/mcp/store/oauth/approve")({
             clientId: body.client_id,
             redirectUri: body.redirect_uri,
             challenge: body.code_challenge,
+            scope: body.scope || "store.read",
           });
           const redirect = new URL(body.redirect_uri);
           redirect.searchParams.set("code", code);
