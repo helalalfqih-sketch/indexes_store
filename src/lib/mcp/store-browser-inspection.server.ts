@@ -318,8 +318,15 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
         if (!href) return { found: true, navigable: false, startUrl: page.url(), destination: null };
         const destination = allowedUrl(new URL(href, page.url()).toString());
         const before = page.url();
-        await locator.click({ timeout: 10_000 });
-        await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => undefined);
+        if (destination.origin !== new URL(before).origin) throw new Error("NAVIGATION_ORIGIN_FORBIDDEN");
+        if (!/^\/(?:$|search\/?$|offers\/?$|account\/?$|product\/[^/]+\/?$)/.test(destination.pathname)) throw new Error("NAVIGATION_ROUTE_NOT_AUDITED");
+        await page.context().route("**/*", async route => {
+          const request = route.request();
+          if (!["GET", "HEAD"].includes(request.method()) || new URL(request.url()).origin !== destination.origin) { await route.abort(); return; }
+          await route.continue();
+        });
+        // Navigate to the inspected href instead of executing an arbitrary link handler.
+        await navigatePage(page, destination);
         return {
           found: true,
           navigable: true,
