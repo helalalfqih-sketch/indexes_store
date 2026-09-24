@@ -97,6 +97,10 @@ describe("private store MCP", () => {
       expect(tools.map((tool) => tool.name).sort()).toEqual(
         [
           "audit_log",
+          "inspect_ui_tree",
+          "inspect_product_grid",
+          "inspect_filter_state",
+          "full_store_audit",
           "get_product",
           "inspect_catalog",
           "inspect_inventory",
@@ -130,6 +134,7 @@ describe("private store MCP", () => {
         ].sort(),
       );
       const byName = new Map(tools.map((tool) => [tool.name, tool]));
+      expect((await client.callTool({name:"try_safe_click",arguments:{selector:'button[aria-label="test"]'}})).isError).toBe(true);
       expect(byName.get("store_health")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("read_source_file")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("patch_source_file")?.annotations?.readOnlyHint).toBe(false);

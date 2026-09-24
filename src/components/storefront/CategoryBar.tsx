@@ -172,7 +172,34 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
     selectedSort !== "default";
 
   return (
-    <div className="px-3 sm:px-6 py-2 space-y-3">
+    <div
+      data-element-key="catalog-filters"
+      data-qa-filter-state={JSON.stringify({
+        category: selectedCategoryId,
+        sort: selectedSort,
+        brand: selectedBrands,
+        rating: selectedRatings,
+        minPrice:
+          selectedPriceRange === "under-20k"
+            ? 0
+            : selectedPriceRange === "20k-50k"
+              ? 20000
+              : selectedPriceRange === "over-50k"
+                ? 50000
+                : selectedPriceRange === "custom"
+                  ? customMinPrice
+                  : null,
+        maxPrice:
+          selectedPriceRange === "under-20k"
+            ? 20000
+            : selectedPriceRange === "20k-50k"
+              ? 50000
+              : selectedPriceRange === "custom"
+                ? customMaxPrice
+                : null,
+      })}
+      className="px-3 sm:px-6 py-2 space-y-3"
+    >
       {/* 1. Category Horizontal Scroll Row on Mobile & Desktop */}
       <div
         className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 scroll-smooth dir-rtl"
@@ -184,6 +211,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
           return (
             <button
               key={cat.id}
+              data-element-key={`filter-category-${cat.id}`}
+              data-qa-action="local"
               type="button"
               aria-label={`تصفية الفئة: ${cat.name}`}
               aria-pressed={isSelected}
@@ -234,6 +263,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                 return (
                   <button
                     key={preset.id}
+                    data-element-key={`filter-price-${preset.id}`}
+                    data-qa-action="local"
                     type="button"
                     aria-label={preset.label}
                     aria-pressed={isSelected}
@@ -261,6 +292,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                 type="button"
                 onClick={() => setIsCustomDrawerOpen(!isCustomDrawerOpen)}
                 aria-label="نطاق مخصص"
+                data-element-key="filter-custom-range"
+                data-qa-action="local"
                 aria-expanded={isCustomDrawerOpen}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
                   selectedPriceRange === "custom"
@@ -292,6 +325,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               }`}
               title="تبديل الترتيب بين المنخفض والمرتفع"
               aria-label="سعر منخفض/مرتفع"
+              data-element-key="filter-price-sort"
+              data-qa-action="local"
             >
               <ArrowUpDown className="w-3 h-3 text-[#2F6BFF]" />
               <span className="hidden sm:inline">
@@ -314,6 +349,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               aria-label={`ترتيب المنتجات: ${currentSortObj.label}`}
+              data-element-key="filter-sort-menu"
+              data-qa-action="local"
               aria-expanded={isDropdownOpen}
               className={`flex items-center gap-1.5 border px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                 selectedSort !== "default"
@@ -345,6 +382,9 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                     return (
                       <button
                         key={opt.id}
+                        data-element-key={`filter-sort-${opt.id}`}
+                        data-qa-action="local"
+                        aria-pressed={isOptSelected}
                         onClick={() => {
                           onSelectSort(opt.id);
                           setIsDropdownOpen(false);
@@ -384,6 +424,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               }`}
               title="فلترة حسب العلامة التجارية"
               aria-label="العلامة"
+              data-element-key="filter-brand-menu"
+              data-qa-action="local"
               aria-expanded={isBrandDrawerOpen}
             >
               <Award className="w-3 h-3" />
@@ -412,6 +454,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               }`}
               title="فلترة حسب التقييم"
               aria-label="التقييم"
+              data-element-key="filter-rating-menu"
+              data-qa-action="local"
               aria-expanded={isRatingDrawerOpen}
             >
               <Star className="w-3 h-3" />
@@ -515,6 +559,9 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 
             <button
               onClick={handleResetAllFilters}
+              data-element-key="filter-reset"
+              data-qa-action="local"
+              aria-label="إعادة ضبط جميع الفلاتر"
               className="text-[11px] font-extrabold text-rose-400 hover:text-rose-300 transition-colors cursor-pointer flex items-center gap-1 mr-auto"
             >
               <RotateCcw className="w-3 h-3" />
@@ -552,6 +599,9 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                   return (
                     <button
                       key={brand.id}
+                      data-element-key={`filter-brand-${brand.id}`}
+                      data-qa-action="local"
+                      aria-pressed={isSelected}
                       type="button"
                       onClick={() => handleToggleBrand(brand.id)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
@@ -609,6 +659,9 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                   return (
                     <button
                       key={ratingOpt.id}
+                      data-element-key={`filter-rating-${ratingOpt.id}`}
+                      data-qa-action="local"
+                      aria-pressed={isSelected}
                       type="button"
                       onClick={() => handleToggleRating(ratingOpt.id)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-bold transition-all cursor-pointer text-right ${

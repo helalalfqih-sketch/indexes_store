@@ -41,6 +41,14 @@ export function ProductCard({
   return (
     <article
       data-storefront-product-id={product.id}
+      data-element-key="product-card"
+      data-product-name={product.name}
+      data-price-yer={product.priceYER}
+      data-previous-price-yer={hasRealDiscount ? product.originalPriceYER : undefined}
+      data-product-brand={product.brand}
+      data-product-rating={product.rating}
+      data-product-stock={product.stockCount}
+      data-product-category={product.category}
       className={`${widthClass} group min-w-0 cursor-pointer bg-white text-black`}
       onClick={() => onSelectProduct(product)}
       dir="rtl"
@@ -61,6 +69,7 @@ export function ProductCard({
         ) : null}
         <button
           type="button"
+          data-element-key="product-favorite"
           aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
           onClick={(event) => {
             event.stopPropagation();
@@ -91,6 +100,7 @@ export function ProductCard({
           </div>
           <button
             type="button"
+            data-element-key="product-add-to-cart"
             disabled={!isAvailable || added}
             onClick={(event) => {
               event.stopPropagation();
