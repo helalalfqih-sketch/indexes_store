@@ -15,6 +15,23 @@ closed until an explicit server-side tenant-selection flow is implemented.
 `STORE_MCP_OAUTH_SECRET` is the required server-only signing secret. The Store connector does not use
 WhatsApp credentials or WhatsApp authentication helpers.
 
+### OAuth client registration compatibility
+
+ChatGPT performs dynamic client registration once per connection and reuses the resulting
+public `client_id`. New Store registrations are signed, persistent identifiers, not access
+tokens. Discovery-version updates must not rotate the client kind or signing key to force
+tool rediscovery. Existing `store_client`, `store_client_v2`, and `store_client_v3` registrations
+remain accepted only with a valid current signature, exact registered redirect URI, and their
+original expiry. Expired legacy registrations and credentials signed with another key are
+not revived. Access tokens, refresh tokens, and authorization codes still expire normally;
+PKCE, admin consent, tenant binding, and approved scopes are unchanged.
+
+Authorization errors retain `client_registration_invalid` and add a sanitized
+`registration_issue` (`invalid_signature`, `unsupported_version`, `redirect_mismatch`, or
+`expired`). No client IDs, tokens, state, cookies, or signing keys are returned or logged.
+If an expired or invalidly signed cached registration remains after an upgrade, the client
+must register again; refreshing an old authorization URL cannot repair that registration.
+
 ## V2 guarded development control plane
 
 The connector also advertises the optional `store.develop` OAuth scope. Development tools are
@@ -93,4 +110,3 @@ must consume this exact SHA and independently re-check the gates immediately bef
 `verify_production_source` provides post-release read-only verification of the current `main` SHA,
 its GitHub check runs, and combined commit status. It does not claim that Vercel production is healthy;
 runtime/site health must still be verified independently with Store health and browser inspection tools.
-

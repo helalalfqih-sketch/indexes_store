@@ -54,6 +54,7 @@ type AdapterFactory = (tenantId: string) => StoreAdminAdapter;
 type DevelopmentAdapterFactory = () => StoreDevelopmentAdapter;
 type InspectionAdapterFactory = () => StoreInspectionAdapter;
 type BrowserInspectionAdapterFactory = () => StoreBrowserInspectionAdapter;
+type QaAdapter = { inspect: typeof inspectQa; audit: typeof fullStoreAudit };
 
 function bearer(request: Request, authorize: Authorize): Authorization | null {
   const match = /^Bearer (.+)$/.exec(request.headers.get("authorization") || "");
@@ -113,6 +114,7 @@ function createServer(
   inspection: StoreInspectionAdapter,
   browserInspection: StoreBrowserInspectionAdapter,
   scopes: string[],
+  qa: QaAdapter,
 ) {
   const server = new McpServer(
     { name: "indexes-store-control-plane", version: STORE_MCP_DISCOVERY_VERSION },
@@ -141,10 +143,10 @@ function createServer(
     });
   const qaSchema = z.object({url:z.string().url().default("https://indexes-store.vercel.app/"),device:z.enum(["desktop","mobile"]).default("desktop")}).strict();
   for (const [name,mode] of [["inspect_ui_tree","tree"],["inspect_product_grid","products"],["inspect_filter_state","filters"]] as const) {
-    tool(name,name,"V3 foundation: one isolated page/viewport. Reports missing instrumentation and unimplemented checks explicitly; never infers full-store coverage.",qaSchema,({url,device})=>inspectQa(url,device,mode));
+    tool(name,name,"V3 foundation: one isolated page/viewport. Reports missing instrumentation and unimplemented checks explicitly; never infers full-store coverage.",qaSchema,({url,device})=>qa.inspect(url,device,mode));
   }
 
-  tool("full_store_audit","Run bounded Store QA matrix","Five routes at desktop/mobile with explicit time-budget blockers and unimplemented checks. Not a completeness or quality guarantee.",z.object({url:z.string().url().default("https://indexes-store.vercel.app/")}).strict(),({url})=>fullStoreAudit(url));
+  tool("full_store_audit","Run bounded Store QA matrix","Five routes at desktop/mobile with explicit time-budget blockers and unimplemented checks. Not a completeness or quality guarantee.",z.object({url:z.string().url().default("https://indexes-store.vercel.app/")}).strict(),({url})=>qa.audit(url));
 
   tool(
     "store_health",
@@ -516,6 +518,7 @@ export async function handleStoreMcp(
     developmentAdapterFactory?: DevelopmentAdapterFactory;
     inspectionAdapterFactory?: InspectionAdapterFactory;
     browserInspectionAdapterFactory?: BrowserInspectionAdapterFactory;
+    qaAdapter?: QaAdapter;
   } = {},
 ) {
   if (request.method === "OPTIONS") {
@@ -563,7 +566,8 @@ export async function handleStoreMcp(
   const inspection = (options.inspectionAdapterFactory ?? createStoreInspectionAdapter)();
   const browserInspection =
     (options.browserInspectionAdapterFactory ?? createStoreBrowserInspectionAdapter)();
-  const server = createServer(adapter, development, inspection, browserInspection, authorization.scopes);
+  const server = createServer(adapter, development, inspection, browserInspection, authorization.scopes,
+    options.qaAdapter ?? { inspect: inspectQa, audit: fullStoreAudit });
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

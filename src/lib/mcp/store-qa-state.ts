@@ -35,11 +35,41 @@ export async function readQaState(page: Page) {
     candidates.forEach((k) => {
       if (k) counts.set(k, (counts.get(k) || 0) + 1);
     });
+    const attributeSelector = (name: string, value: string) =>
+      `[${name}="${value.replace(/[^a-zA-Z0-9_-]/g, (c) => `\\${c.codePointAt(0)!.toString(16)} `)}"]`;
+    const explicitSelector = (el: Element) => {
+      for (const name of ["data-element-key", "data-testid", "id"]) {
+        const value = el.getAttribute(name);
+        if (value) return attributeSelector(name, value);
+      }
+      return null;
+    };
+    const keySelector = (el: Element) => {
+      let selector = explicitSelector(el);
+      if (!selector) return null;
+      const card = el.closest("[data-storefront-product-id]");
+      const section = el.closest("section[id],[data-qa-section]");
+      if (card) {
+        const cardSelector = attributeSelector(
+          "data-storefront-product-id",
+          card.getAttribute("data-storefront-product-id")!,
+        );
+        selector = card === el ? cardSelector + selector : `${cardSelector} ${selector}`;
+      }
+      if (section && section !== el && section !== card) {
+        const sectionSelector = section.hasAttribute("data-qa-section")
+          ? attributeSelector("data-qa-section", section.getAttribute("data-qa-section")!)
+          : attributeSelector("id", section.id);
+        selector = `${sectionSelector} ${selector}`;
+      }
+      return document.querySelectorAll(selector).length === 1 ? selector : null;
+    };
     const elements = all.slice(0, 1000).map((el, i) => {
       const r = el.getBoundingClientRect();
       const key = candidates[i];
       return {
         element_key: key && counts.get(key) === 1 ? key : null,
+        key_selector: key && counts.get(key) === 1 ? keySelector(el) : null,
         key_status: !key ? "MISSING" : counts.get(key) === 1 ? "STABLE" : "AMBIGUOUS",
         tag: el.tagName.toLowerCase(),
         role: el.getAttribute("role"),

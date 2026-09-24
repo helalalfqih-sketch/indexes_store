@@ -5,11 +5,12 @@ export async function inspectQa(
   url: string,
   device: "desktop" | "mobile",
   mode: "tree" | "products" | "filters" | "audit",
+  browse: typeof withPage = withPage,
 ) {
   const viewport =
     device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
   try {
-    return await withPage(url, viewport, async (page) => {
+    return await browse(url, viewport, async (page) => {
       const state = await readQaState(page);
       if (mode === "tree") return { device, ...state };
       if (mode === "products")
@@ -45,7 +46,7 @@ export async function inspectQa(
 }
 
 /** Bounded release matrix. A time-budget cutoff is evidence of BLOCKED, never PASS. */
-export async function fullStoreAudit(url: string) {
+export async function fullStoreAudit(url: string, browse: typeof withPage = withPage) {
   const start = Date.now();
   const base = new URL(url);
   const pages = [];
@@ -60,7 +61,12 @@ export async function fullStoreAudit(url: string) {
         }));
         pages.push({ path, device, checks });
       } else {
-        const report = await inspectQa(new URL(path, base.origin).toString(), device, "audit");
+        const report = await inspectQa(
+          new URL(path, base.origin).toString(),
+          device,
+          "audit",
+          browse,
+        );
         pages.push({ path, device, checks: "checks" in report ? report.checks : [] });
       }
     }

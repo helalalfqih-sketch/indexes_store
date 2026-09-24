@@ -7,6 +7,16 @@ export const STORE_MCP_AUDIENCE = `${STORE_ORIGIN}/api/mcp/store`;
 export const STORE_MCP_SCOPE = "store.read store.test store.develop offline_access";
 export const STORE_MCP_DISCOVERY_VERSION = "3.0.0";
 const STORE_CLIENT_KIND = "store_client_v3";
+// Discovery/schema revisions must not revoke existing public OAuth clients.
+const STORE_CLIENT_KINDS = new Set(["store_client", "store_client_v2", STORE_CLIENT_KIND]);
+
+export class StoreClientRegistrationError extends Error {
+  constructor(
+    readonly issue: "invalid_signature" | "unsupported_version" | "redirect_mismatch" | "expired",
+  ) {
+    super("INVALID_CLIENT");
+  }
+}
 
 export function normalizeStoreScope(value: string = "store.read") {
   const scopes = [...new Set(value.split(/\s+/).filter(Boolean))];
@@ -32,7 +42,7 @@ function sign(payload: Record<string, unknown>) {
   return `${body}.${signature}`;
 }
 
-function verify(token: string): Record<string, unknown> {
+function verifySignature(token: string): Record<string, unknown> {
   const [body, signature, extra] = token.split(".");
   if (!body || !signature || extra) throw new Error("UNAUTHORIZED");
   const expected = createHmac("sha256", secret()).update(body).digest();
@@ -44,7 +54,19 @@ function verify(token: string): Record<string, unknown> {
     string,
     unknown
   >;
-  if (typeof payload.exp !== "number" || payload.exp < Math.floor(Date.now() / 1000)) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("UNAUTHORIZED");
+  }
+  return payload;
+}
+
+function verify(token: string): Record<string, unknown> {
+  const payload = verifySignature(token);
+  if (
+    typeof payload.exp !== "number" ||
+    !Number.isFinite(payload.exp) ||
+    payload.exp <= Math.floor(Date.now() / 1000)
+  ) {
     throw new Error("UNAUTHORIZED");
   }
   return payload;
@@ -84,19 +106,41 @@ export function registerStoreClient(redirectUris: string[]) {
   return sign({
     kind: STORE_CLIENT_KIND,
     redirect_uris: redirectUris,
-    exp: Math.floor(Date.now() / 1000) + 86400 * 30,
+    // Public registration is reused by ChatGPT; it is not a bearer credential.
+    registration_version: 1,
+    issued_at: Math.floor(Date.now() / 1000),
   });
 }
 
 export function validateStoreClient(clientId: string, redirectUri: string) {
   validateRedirectUri(redirectUri);
-  const payload = verify(clientId);
+  let payload: Record<string, unknown>;
+  try {
+    payload = verifySignature(clientId);
+  } catch (error) {
+    if (error instanceof Error && error.message === "STORE_MCP_OAUTH_NOT_CONFIGURED") throw error;
+    throw new StoreClientRegistrationError("invalid_signature");
+  }
+  if (typeof payload.kind !== "string" || !STORE_CLIENT_KINDS.has(payload.kind)) {
+    throw new StoreClientRegistrationError("unsupported_version");
+  }
+  if (!Array.isArray(payload.redirect_uris) || !payload.redirect_uris.includes(redirectUri)) {
+    throw new StoreClientRegistrationError("redirect_mismatch");
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const persistent =
+    payload.kind === STORE_CLIENT_KIND &&
+    payload.registration_version === 1 &&
+    Number.isSafeInteger(payload.issued_at) &&
+    Number(payload.issued_at) > 0 &&
+    Number(payload.issued_at) <= now &&
+    payload.exp === undefined;
+  // Keep legacy expiry semantics; only new, explicitly versioned registrations persist.
   if (
-    payload.kind !== STORE_CLIENT_KIND ||
-    !Array.isArray(payload.redirect_uris) ||
-    !payload.redirect_uris.includes(redirectUri)
+    !persistent &&
+    (typeof payload.exp !== "number" || !Number.isFinite(payload.exp) || payload.exp <= now)
   ) {
-    throw new Error("INVALID_CLIENT");
+    throw new StoreClientRegistrationError("expired");
   }
 }
 

@@ -21,7 +21,7 @@
     "test:integration": "vitest run tests/unit/p0-security.test.ts",
     "test:security": "vitest run tests/unit/p0-security.test.ts",
     "check:duplication": "jscpd src mobile/lib --config .jscpd.json",
-    "test:e2e": "playwright test tests/e2e/seo-routes.spec.ts tests/e2e/favorites-hydration.spec.ts tests/e2e/cart-hydration.spec.ts",
+    "test:e2e": "playwright test tests/e2e/seo-routes.spec.ts tests/e2e/favorites-hydration.spec.ts tests/e2e/cart-hydration.spec.ts tests/e2e/mcp-v3.spec.ts",
     "test:accessibility": "playwright test tests/e2e/accessibility.spec.ts",
     "test:coverage": "vitest run --coverage"
   },

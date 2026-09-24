@@ -69,6 +69,7 @@ export function ProductCard({
         ) : null}
         <button
           type="button"
+          data-element-key="product-favorite"
           aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
           onClick={(event) => {
             event.stopPropagation();
@@ -99,6 +100,7 @@ export function ProductCard({
           </div>
           <button
             type="button"
+            data-element-key="product-add-to-cart"
             disabled={!isAvailable || added}
             onClick={(event) => {
               event.stopPropagation();

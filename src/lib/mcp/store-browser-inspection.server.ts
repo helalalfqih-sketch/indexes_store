@@ -230,11 +230,11 @@ export interface StoreBrowserInspectionAdapter {
   }): Promise<Record<string, unknown>>;
 }
 
-export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAdapter {
+export function createStoreBrowserInspectionAdapter(browse: typeof withPage = withPage): StoreBrowserInspectionAdapter {
   return {
     async inspectRenderedPage(url, device) {
       const viewport = device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
-      return withPage(url, viewport, async (page) => {
+      return browse(url, viewport, async (page) => {
         const data = await readRenderedElements(page);
         return {
           url: page.url(),
@@ -250,7 +250,7 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
 
     async inspectConsole(url) {
       const events: Array<Record<string, unknown>> = [];
-      return withPage(
+      return browse(
         url,
         { width: 1440, height: 1000 },
         async (page) => ({
@@ -275,7 +275,7 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
     async inspectNetwork(url) {
       const failures: Array<Record<string, unknown>> = [];
       const badResponses: Array<Record<string, unknown>> = [];
-      return withPage(
+      return browse(
         url,
         { width: 1440, height: 1000 },
         async (page) => ({ url: page.url(), failedRequests: failures, badResponses }),
@@ -306,7 +306,7 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
     },
 
     async trialNavigation(input) {
-      return withPage(input.url, { width: 1440, height: 1000 }, async (page) => {
+      return browse(input.url, { width: 1440, height: 1000 }, async (page) => {
         if (!input.href && !input.text) throw new Error("NAVIGATION_TARGET_REQUIRED");
         const locator = input.href
           ? page.locator(`a[href="${input.href.replace(/"/g, '\\"')}"]`).first()
@@ -379,13 +379,13 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
       if ((!input.selector && !input.elementKey) || (input.selector && !SAFE_SELECTOR_RE.test(input.selector))) throw new Error("SAFE_SELECTOR_FORBIDDEN");
       const viewport =
         input.device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
-      return withPage(input.url, viewport, async (page) => {
+      return browse(input.url, viewport, async (page) => {
         // Desktop controls can remain in the mobile DOM while hidden.
         const beforeState = await readQaState(page);
-        const keyedIndex = input.elementKey ? beforeState.elements.findIndex(e => e.element_key === input.elementKey) : -1;
-        if (input.elementKey && keyedIndex < 0) throw new Error("ELEMENT_KEY_NOT_FOUND");
+        const keyedTarget = input.elementKey ? beforeState.elements.find(e => e.element_key === input.elementKey) : undefined;
+        if (input.elementKey && !keyedTarget?.key_selector) throw new Error("ELEMENT_KEY_NOT_FOUND");
         const locator = input.elementKey
-          ? page.locator("section,article,[role],a,button,input,select,textarea,[data-element-key],[data-testid]").nth(keyedIndex)
+          ? page.locator(keyedTarget!.key_selector!)
           : page.locator(`${input.selector}:visible`);
         if (await locator.count() !== 1) throw new Error("SAFE_CLICK_TARGET_AMBIGUOUS");
         try {
@@ -468,7 +468,7 @@ export function createStoreBrowserInspectionAdapter(): StoreBrowserInspectionAda
 
     async screenshot(url, device) {
       const viewport = device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
-      return withPage(url, viewport, async (page) => {
+      return browse(url, viewport, async (page) => {
         const image = await page.screenshot({ fullPage: true, type: "png" });
         if (image.length > MAX_SCREENSHOT_BYTES) throw new Error("SCREENSHOT_TOO_LARGE");
         return {
