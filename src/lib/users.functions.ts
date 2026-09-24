@@ -1,3 +1,6 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseAuthContext } from "@/integrations/supabase/auth-middleware";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,13 +10,7 @@ import { resolveTenantId } from "@/lib/saas/tenant-context";
 export type TenantRole = "owner" | "manager" | "marketing" | "employee" | "staff" | "viewer";
 
 export type PermissionKey =
-  | "products"
-  | "orders"
-  | "inventory"
-  | "deals"
-  | "cms"
-  | "settings"
-  | "analytics";
+  "products" | "orders" | "inventory" | "deals" | "cms" | "settings" | "analytics";
 
 export const ALL_PERMISSIONS: Array<{ key: PermissionKey; label: string; icon: string }> = [
   { key: "products", label: "إدارة المنتجات والتصنيفات", icon: "Package" },
@@ -81,9 +78,12 @@ export class ConfigurationError extends Error {
  * Utility: Check if current session user has specific tenant permission (Fail-Closed).
  * Used by Server Functions, route guards, services, and tests.
  */
-export async function checkTenantPermission(permission: PermissionKey, context?: any): Promise<boolean> {
+export async function checkTenantPermission(
+  permission: PermissionKey,
+  context?: Partial<SupabaseAuthContext>,
+): Promise<boolean> {
   let userId: string | undefined = context?.userId;
-  let client = context?.supabase || supabase;
+  const client = context?.supabase || supabase;
 
   if (!userId) {
     const { data: authUser } = await supabase.auth.getUser();
@@ -109,12 +109,9 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
 
   // 1. Platform admin check (user_roles table)
   try {
-    const { data: roles } = await client
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
+    const { data: roles } = await client.from("user_roles").select("role").eq("user_id", userId);
 
-    if (roles?.some((r: any) => r.role === "admin")) return true;
+    if (roles?.some((r) => r.role === "admin")) return true;
   } catch {
     throw new ServiceUnavailableError("Permission check failed during admin role verification");
   }
@@ -149,20 +146,23 @@ export async function checkTenantPermission(permission: PermissionKey, context?:
   }
 
   if (member.role === "owner" || member.role === "manager") return true;
-  const perms = (member.permissions as PermissionKey[]) || ROLE_PRESETS[member.role as TenantRole] || [];
+  const perms =
+    (member.permissions as PermissionKey[]) || ROLE_PRESETS[member.role as TenantRole] || [];
   if (perms.includes(permission)) return true;
 
   throw new PermissionDeniedError(`Insufficient permissions for action '${permission}'`);
 }
 
 export type PermissionCheckInput = {
-  db?: any;
+  db?: SupabaseClient<Database>;
   userId: string;
   tenantId: string;
   permission: PermissionKey;
 };
 
-export async function requireTenantPermission(input: PermissionCheckInput): Promise<{ role: TenantRole; permissions: PermissionKey[] }> {
+export async function requireTenantPermission(
+  input: PermissionCheckInput,
+): Promise<{ role: TenantRole; permissions: PermissionKey[] }> {
   const { db, userId, tenantId, permission } = input;
   const client = db || supabase;
 
@@ -189,8 +189,10 @@ export async function requireTenantPermission(input: PermissionCheckInput): Prom
     throw new PermissionDeniedError("Not a tenant member");
   }
 
-  const perms = (member.permissions as PermissionKey[]) || ROLE_PRESETS[member.role as TenantRole] || [];
-  const allowed = member.role === "owner" || member.role === "manager" || perms.includes(permission);
+  const perms =
+    (member.permissions as PermissionKey[]) || ROLE_PRESETS[member.role as TenantRole] || [];
+  const allowed =
+    member.role === "owner" || member.role === "manager" || perms.includes(permission);
 
   if (!allowed) {
     throw new PermissionDeniedError("Insufficient permission");
@@ -208,7 +210,7 @@ export async function requireTenantPermission(input: PermissionCheckInput): Prom
 export const listTenantMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase: authDb, userId } = context as any;
+    const { supabase: authDb, userId } = context;
 
     // Resolve tenant from authenticated context
     const tenantId = await resolveTenantId(authDb, { userId });
@@ -235,16 +237,19 @@ export const listTenantMembers = createServerFn({ method: "GET" })
       throw new ServiceUnavailableError(`Failed to list tenant members: ${error.message}`);
     }
 
-    // Fetch associated profiles
-    const userIds = members.map((m: any) => m.user_id);
-    const { data: profiles } = await authDb
+    // Only expose profiles of members returned by the authorized tenant query.
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const userIds = members.map((m) => m.user_id);
+    const { data: profiles, error: profileError } = await getSupabaseAdmin()
       .from("profiles")
       .select("id, full_name, avatar_url, phone")
       .in("id", userIds.length > 0 ? userIds : ["00000000-0000-0000-0000-000000000000"]);
 
-    const profileMap = new Map(profiles?.map((p: any) => [p.id, p]));
+    if (profileError) throw new ServiceUnavailableError("Failed to load member profiles");
 
-    return members.map((m: any) => ({
+    const profileMap = new Map(profiles?.map((p) => [p.id, p]));
+
+    return members.map((m) => ({
       ...m,
       role: m.role as TenantRole,
       permissions: (m.permissions as PermissionKey[]) || ROLE_PRESETS[m.role as TenantRole] || [],
@@ -255,14 +260,18 @@ export const listTenantMembers = createServerFn({ method: "GET" })
 /** Server Fn: Update user role and permissions in tenant (Requires auth + owner/authorized manager) */
 export const updateMemberRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(z.object({
-    memberId: z.string().uuid(),
-    targetUserId: z.string().uuid(),
-    newRole: z.enum(["owner", "manager", "marketing", "employee", "staff", "viewer"]),
-    permissions: z.array(z.enum(["products", "orders", "inventory", "deals", "cms", "settings", "analytics"])).optional(),
-  }))
+  .validator(
+    z.object({
+      memberId: z.string().uuid(),
+      targetUserId: z.string().uuid(),
+      newRole: z.enum(["owner", "manager", "marketing", "employee", "staff", "viewer"]),
+      permissions: z
+        .array(z.enum(["products", "orders", "inventory", "deals", "cms", "settings", "analytics"]))
+        .optional(),
+    }),
+  )
   .handler(async ({ data: { memberId, targetUserId, newRole, permissions }, context }) => {
-    const { supabase: authDb, userId } = context as any;
+    const { supabase: authDb, userId } = context;
 
     // Resolve tenant from authenticated context
     const tenantId = await resolveTenantId(authDb, { userId });
@@ -300,7 +309,14 @@ export const updateMemberRole = createServerFn({ method: "POST" })
     // 1. A user cannot self-promote
     if (userId === targetUserId && newRole !== targetMember.role) {
       // Self-modification: only allow keeping the same role (e.g., updating permissions)
-      const ROLE_RANK: Record<string, number> = { viewer: 0, staff: 1, employee: 1, marketing: 2, manager: 3, owner: 4 };
+      const ROLE_RANK: Record<string, number> = {
+        viewer: 0,
+        staff: 1,
+        employee: 1,
+        marketing: 2,
+        manager: 3,
+        owner: 4,
+      };
       if ((ROLE_RANK[newRole] || 0) > (ROLE_RANK[targetMember.role] || 0)) {
         throw new PermissionDeniedError("لا يمكنك ترقية نفسك.");
       }
@@ -308,7 +324,9 @@ export const updateMemberRole = createServerFn({ method: "POST" })
 
     // 2. An owner cannot be modified by a non-owner
     if (targetMember.role === "owner" && callerAuth.role !== "owner") {
-      throw new PermissionDeniedError("لا يمكن تعديل دور المالك (Owner) إلا بواسطة مالك المتجر نفسه.");
+      throw new PermissionDeniedError(
+        "لا يمكن تعديل دور المالك (Owner) إلا بواسطة مالك المتجر نفسه.",
+      );
     }
 
     // 3. A manager cannot promote anyone to owner
@@ -335,7 +353,9 @@ export const updateMemberRole = createServerFn({ method: "POST" })
       }
 
       if (!otherOwners || otherOwners.length === 0) {
-        throw new PermissionDeniedError("لا يمكن تخفيض دور المالك الوحيد. يجب تعيين مالك آخر أولاً.");
+        throw new PermissionDeniedError(
+          "لا يمكن تخفيض دور المالك الوحيد. يجب تعيين مالك آخر أولاً.",
+        );
       }
     }
 
@@ -344,8 +364,8 @@ export const updateMemberRole = createServerFn({ method: "POST" })
     const { error } = await authDb
       .from("tenant_members")
       .update({
-        role: newRole as any,
-        permissions: nextPermissions as any,
+        role: newRole as Database["public"]["Enums"]["tenant_role"],
+        permissions: nextPermissions,
       })
       .eq("id", memberId)
       .eq("tenant_id", tenantId);
@@ -356,9 +376,14 @@ export const updateMemberRole = createServerFn({ method: "POST" })
     await authDb.from("tenant_audit_logs").insert({
       tenant_id: tenantId,
       actor_id: userId,
-      actor_email: (context as any).claims?.email || null,
+      actor_email: context.claims?.email || null,
       action: "member_role_update",
-      details: { member_id: memberId, target_user_id: targetUserId, new_role: newRole, permissions: nextPermissions },
+      details: {
+        member_id: memberId,
+        target_user_id: targetUserId,
+        new_role: newRole,
+        permissions: nextPermissions,
+      },
     });
 
     return { ok: true };
@@ -367,11 +392,13 @@ export const updateMemberRole = createServerFn({ method: "POST" })
 /** Server Fn: Remove member from tenant (Requires auth + owner/authorized manager) */
 export const removeTenantMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(z.object({
-    memberId: z.string().uuid(),
-  }))
+  .validator(
+    z.object({
+      memberId: z.string().uuid(),
+    }),
+  )
   .handler(async ({ data: { memberId }, context }) => {
-    const { supabase: authDb, userId } = context as any;
+    const { supabase: authDb, userId } = context;
 
     // Resolve tenant from authenticated context
     const tenantId = await resolveTenantId(authDb, { userId });
@@ -409,14 +436,18 @@ export const removeTenantMember = createServerFn({ method: "POST" })
       throw new PermissionDeniedError("فقط المالك يمكنه حذف مدير.");
     }
 
-    const { error } = await authDb.from("tenant_members").delete().eq("id", memberId).eq("tenant_id", tenantId);
+    const { error } = await authDb
+      .from("tenant_members")
+      .delete()
+      .eq("id", memberId)
+      .eq("tenant_id", tenantId);
     if (error) throw new ServiceUnavailableError(`Failed to remove member: ${error.message}`);
 
     // Audit log
     await authDb.from("tenant_audit_logs").insert({
       tenant_id: tenantId,
       actor_id: userId,
-      actor_email: (context as any).claims?.email || null,
+      actor_email: context.claims?.email || null,
       action: "member_remove",
       details: { member_id: memberId, user_id: member.user_id },
     });

@@ -1625,6 +1625,8 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      bootstrap_first_admin: { Args: { target_user: string }; Returns: boolean };
+      consume_ai_request: { Args: Record<string, never>; Returns: boolean };
       can_manage_tenant: {
         Args: { _tenant_id: string; _user_id: string };
         Returns: boolean;
@@ -1699,7 +1701,7 @@ export type Database = {
         "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled" | "refunded";
       payment_status: "pending" | "paid" | "failed" | "refunded" | "cod";
       tenant_plan: "free" | "pro" | "enterprise";
-      tenant_role: "owner" | "staff" | "viewer";
+      tenant_role: "owner" | "manager" | "staff" | "viewer";
       tenant_status: "active" | "suspended" | "pending";
       notification_type:
         | "order_new"
@@ -1837,7 +1839,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "customer"],
       tenant_plan: ["free", "pro", "enterprise"],
-      tenant_role: ["owner", "staff", "viewer"],
+      tenant_role: ["owner", "manager", "staff", "viewer"],
       tenant_status: ["active", "suspended", "pending"],
       notification_type: [
         "order_new",

@@ -1,15 +1,16 @@
+import { authorizeAI, readBoundedJson } from "@/lib/ai-access.server";
 import { createFileRoute } from "@tanstack/react-router";
-import { generateText, NoObjectGeneratedError, Output } from "ai";
+import { generateText, NoObjectGeneratedError, Output, type UserContent } from "ai";
 import { z } from "zod";
-import { createLovableGateway } from "@/lib/ai-gateway.server";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { createVertex } from "@ai-sdk/google-vertex";
 import { resolveActiveAIProvider } from "@/lib/ai-provider.server";
 
 const InputSchema = z.object({
-  hint: z.string().default(""),
+  hint: z.string().max(4000).default(""),
   language: z.enum(["ar", "en"]).default("ar"),
-  images: z.array(z.string()).max(6).default([]), // data URLs or https
+  images: z
+    .array(z.string().max(2 * 1024 * 1024))
+    .max(6)
+    .default([]), // data URLs or https
 });
 
 const OutputSchema = z.object({
@@ -31,19 +32,18 @@ export const Route = createFileRoute("/api/ai/analyze-product")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const denied = await authorizeAI(request);
+        if (denied) return denied;
         let payload: z.infer<typeof InputSchema>;
         try {
-          payload = InputSchema.parse(await request.json());
+          payload = InputSchema.parse(await readBoundedJson(request));
         } catch (e) {
           return Response.json({ error: "Invalid input", detail: String(e) }, { status: 400 });
         }
 
         const resolved = await resolveActiveAIProvider();
         if (!resolved || !resolved.model) {
-          return Response.json(
-            { error: "No AI provider configured" },
-            { status: 500 },
-          );
+          return Response.json({ error: "No AI provider configured" }, { status: 500 });
         }
         const model = resolved.model;
 
@@ -53,7 +53,7 @@ export const Route = createFileRoute("/api/ai/analyze-product")({
             ? "أنت مساعد ذكي لإنشاء بطاقات منتجات لمتجر يمني اسمه اندكس ستور. اكتب بالعربية الفصحى المبسطة. اقترح تصنيفاً واحداً من: المطبخ، التنظيم والتخزين، الجمال والعناية، الصحة والمساج، العدد والأدوات، السيارات، الرياضة واللياقة، الرحلات والخارجية، الأطفال والألعاب، الإلكترونيات، المنزل والديكور، الإضاءة والطاقة، الحيوانات الأليفة، متنوعات. أنشئ slug إنجليزي قصير (kebab-case). السعر بالريال اليمني (YER)."
             : "You are an AI assistant that creates rich product listings for a modern ecommerce store. Suggest a category, short kebab-case slug, and price range in USD.";
 
-        const userContent: any[] = [
+        const userContent: UserContent = [
           {
             type: "text",
             text:
@@ -69,7 +69,7 @@ export const Route = createFileRoute("/api/ai/analyze-product")({
                 const mimeType = matches[1];
                 const base64Data = matches[2];
                 return {
-                  type: "image",
+                  type: "image" as const,
                   image: Buffer.from(base64Data, "base64"),
                   mimeType,
                 };
@@ -77,12 +77,12 @@ export const Route = createFileRoute("/api/ai/analyze-product")({
             }
             try {
               return {
-                type: "image",
+                type: "image" as const,
                 image: new URL(src),
               };
             } catch {
               return {
-                type: "text",
+                type: "text" as const,
                 text: `[رابط صورة: ${src}]`,
               };
             }
@@ -92,17 +92,17 @@ export const Route = createFileRoute("/api/ai/analyze-product")({
         try {
           const { output } = await generateText({
             model,
+            maxOutputTokens: 2048,
+            maxRetries: 0,
             system: systemMsg,
             output: Output.object({ schema: OutputSchema }),
-            messages: [
-              { role: "user", content: userContent },
-            ],
+            messages: [{ role: "user", content: userContent }],
           });
           return Response.json(output);
         } catch (error) {
           if (NoObjectGeneratedError.isInstance(error)) {
             return Response.json(
-              { error: "AI response did not match schema", raw: (error as any).text },
+              { error: "AI response did not match schema", raw: error.text },
               { status: 502 },
             );
           }

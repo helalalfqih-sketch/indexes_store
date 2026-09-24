@@ -1,3 +1,4 @@
+import { uniqueCatalogSlug } from "@/lib/catalog-slug";
 /**
  * Admin-only server function: import products from a remote CSV catalog.
  * Upserts on (tenant_id, external_id). Uses context.supabase (RLS as admin/tenant member).
@@ -244,14 +245,10 @@ export const adminImportCatalogFromUrl = createServerFn({ method: "POST" })
     const records: PreparedProduct[] = [];
 
     for (const row of validRows) {
-      let slug = slugify(row.title, row.externalId ?? `product-${row.rowNumber}`);
-      let uniq = slug;
-      let i = 2;
-      while (seenSlugs.has(uniq)) {
-        uniq = `${slug}-${i++}`.slice(0, 60);
-      }
-      seenSlugs.add(uniq);
-      slug = uniq;
+      const slug = uniqueCatalogSlug(
+        slugify(row.title, row.externalId ?? `product-${row.rowNumber}`),
+        seenSlugs,
+      );
 
       const videoItems = row.media.filter((m) => m.type === "video");
       const importedVideoUrl = videoItems[0]?.url ?? null;

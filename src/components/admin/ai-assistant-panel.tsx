@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Sparkles, Loader2, RefreshCw, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -46,9 +47,16 @@ type AnalyzeResponse = {
 
 async function callAnalyze(hint: string, images: string[]): Promise<AnalyzeResponse> {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error("يرجى تسجيل الدخول لاستخدام مساعد المنتجات");
   const res = await fetch(`${base}/api/ai/analyze-product`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
     body: JSON.stringify({ hint, language: "ar", images: images.slice(0, 6) }),
   });
   if (!res.ok) {
