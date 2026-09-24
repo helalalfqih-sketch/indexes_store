@@ -65,8 +65,10 @@ function browserInspectionFixture(): StoreBrowserInspectionAdapter {
   };
 }
 
-async function connected() {
+async function connected(scopes = ["store.read", "store.develop"]) {
   const adapter = fixture();
+  const development = developmentFixture();
+  const browserInspection = browserInspectionFixture();
   const client = new Client({ name: "store-mcp-test", version: "1.0.0" });
   const transport = new StreamableHTTPClientTransport(
     new URL("https://indexes-store.vercel.app/api/mcp/store"),
@@ -74,22 +76,69 @@ async function connected() {
       requestInit: { headers: { Authorization: "Bearer test" } },
       fetch: (url, init) =>
         handleStoreMcp(new Request(url, init), {
-          authorize: () => ({ sub: "admin", tenantId: "tenant-a", scopes: ["store.read", "store.develop"] }),
+          authorize: () => ({ sub: "admin", tenantId: "tenant-a", scopes }),
           adapterFactory: (tenantId) => {
             expect(tenantId).toBe("tenant-a");
             return adapter;
           },
-          developmentAdapterFactory: () => developmentFixture(),
+          developmentAdapterFactory: () => development,
           inspectionAdapterFactory: () => inspectionFixture(),
-          browserInspectionAdapterFactory: () => browserInspectionFixture(),
+          browserInspectionAdapterFactory: () => browserInspection,
         }),
     },
   );
   await client.connect(transport);
-  return { client, adapter };
+  return { client, adapter, development, browserInspection };
 }
 
 describe("private store MCP", () => {
+  it.each([
+    { name: "try_safe_click", arguments: { selector: 'button[aria-label="test"]' }, required: "store.test", scopes: ["store.read", "store.develop", "offline_access"], requested: "store.read store.test store.develop offline_access" },
+    { name: "trial_navigation", arguments: { href: "/offers" }, required: "store.test", scopes: ["store.read"], requested: "store.read store.test" },
+    { name: "development_repository", arguments: {}, required: "store.develop", scopes: ["store.read", "store.test"], requested: "store.read store.test store.develop" },
+    { name: "create_development_branch", arguments: { branch: "agent/scope-test", confirmed: true }, required: "store.develop", scopes: ["store.read"], requested: "store.read store.develop" },
+  ])("challenges for missing OAuth scope before $name executes", async ({ name, arguments: args, required, scopes, requested }) => {
+    const originalScopes = [...scopes];
+    const { client, adapter, development, browserInspection } = await connected(scopes);
+    try {
+      const response = await client.callTool({ name, arguments: args });
+      expect(response.isError).toBe(true);
+      expect(response.structuredContent).toEqual({ error: "INSUFFICIENT_SCOPE", required_scopes: ["store.read", required] });
+      expect(response._meta?.["mcp/www_authenticate"]).toEqual([
+        `Bearer resource_metadata="https://indexes-store.vercel.app/.well-known/oauth-protected-resource/api/mcp/store", error="insufficient_scope", error_description="Additional consent is required for ${required}", scope="${requested}"`,
+      ]);
+      expect(browserInspection.safeClick).not.toHaveBeenCalled();
+      expect(browserInspection.trialNavigation).not.toHaveBeenCalled();
+      expect(development.repositoryInfo).not.toHaveBeenCalled();
+      expect(development.createBranch).not.toHaveBeenCalled();
+      // Asking for consent never changes the current grant or blocks read tools.
+      expect(scopes).toEqual(originalScopes);
+      expect((await client.callTool({ name, arguments: args })).isError).toBe(true);
+      expect((await client.callTool({ name: "store_health", arguments: {} })).isError).not.toBe(true);
+      expect(adapter.health).toHaveBeenCalledOnce();
+    } finally {
+      await client.close();
+    }
+  });
+
+  it("runs a test tool without an OAuth challenge when its scope is granted", async () => {
+    const { client, browserInspection } = await connected(["store.read", "store.test"]);
+    try {
+      const { tools } = await client.listTools();
+      for (const name of ["try_safe_click", "trial_navigation"]) {
+        expect(tools.find((tool) => tool.name === name)?._meta?.securitySchemes).toEqual([
+          { type: "oauth2", scopes: ["store.read", "store.test"] },
+        ]);
+      }
+      const response = await client.callTool({ name: "try_safe_click", arguments: { selector: 'button[aria-label="test"]' } });
+      expect(response.isError).not.toBe(true);
+      expect(response._meta?.["mcp/www_authenticate"]).toBeUndefined();
+      expect(browserInspection.safeClick).toHaveBeenCalledOnce();
+    } finally {
+      await client.close();
+    }
+  });
+
   it("exposes only tenant-bound read tools", async () => {
     const { client } = await connected();
     try {
