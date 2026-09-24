@@ -116,6 +116,7 @@ function HomePage() {
             columns={2}
             gap={3}
             className="sf-product-grid"
+            role="status"
             aria-label="جار تحميل المنتجات"
             aria-busy="true"
           >

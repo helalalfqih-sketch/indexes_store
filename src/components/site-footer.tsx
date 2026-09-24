@@ -51,9 +51,7 @@ export function SiteFooter(_props: { isHome?: boolean }) {
               <MessageCircle aria-hidden="true" /> تواصل عبر واتساب
             </a>
           )}
-          <Link to="/pages/$slug" params={{ slug: "privacy" }}>
-            سياسة الخصوصية
-          </Link>
+          <Link to="/privacy-policy">سياسة الخصوصية</Link>
         </VStack>
       </HStack>
     </footer>

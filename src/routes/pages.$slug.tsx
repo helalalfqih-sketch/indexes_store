@@ -3,6 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, ArrowRight, ShieldCheck, Home, Loader2 } from "lucide-react";
 import { getPublicCmsPage, sanitizeHtml } from "@/lib/pages.functions";
+import { VStack } from "@astryxdesign/core/VStack";
+import { useAppearance } from "@/components/appearance-provider";
+import { mapPublishedStorefrontSettings } from "@/lib/adapters/storefront-settings.adapter";
 
 type PublicCmsLoaderData = { page: Awaited<ReturnType<typeof getPublicCmsPage>> | null };
 
@@ -12,11 +15,18 @@ const BUILT_IN_PAGE_ROUTES: Partial<Record<string, "/terms" | "/privacy-policy">
 };
 
 export const Route = createFileRoute("/pages/$slug")({
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }) => {
     const page = (loaderData as PublicCmsLoaderData | undefined)?.page;
     if (!page) {
       return {
-        meta: [{ title: "الصفحة غير موجودة — اندكس ستور" }],
+        meta: [
+          {
+            title:
+              params.slug === "about-us"
+                ? "تعرف على المتجر — اندكس ستور"
+                : "الصفحة غير موجودة — اندكس ستور",
+          },
+        ],
       };
     }
     return {
@@ -58,6 +68,8 @@ function PublicCmsPageComponent() {
       </div>
     );
   }
+
+  if (!page && slug === "about-us") return <StoreInformationPage />;
 
   if (!page) {
     return (
@@ -117,5 +129,48 @@ function PublicCmsPageComponent() {
         />
       </article>
     </div>
+  );
+}
+
+function StoreInformationPage() {
+  const { settings } = useAppearance();
+  const { contact } = mapPublishedStorefrontSettings(settings);
+  const phone = contact.whatsappPhone.replace(/\D/g, "");
+  return (
+    <VStack as="section" className="sf-page sf-information-page" gap={5}>
+      <header className="sf-page-heading">
+        <h1>تعرف على {contact.storeName}</h1>
+      </header>
+      <VStack as="article" className="sf-panel" gap={4}>
+        <h2>{contact.storeName}</h2>
+        <p>
+          تصفح المنتجات والأسعار المنشورة في المتجر، وأضف اختياراتك إلى السلة لإكمال الطلب عبر
+          واتساب.
+        </p>
+        {contact.address && (
+          <section>
+            <h2>عنوان المتجر</h2>
+            <p>{contact.address}</p>
+          </section>
+        )}
+        {contact.deliveryInfoText && <p>{contact.deliveryInfoText}</p>}
+        {phone && (
+          <a
+            className="sf-primary-button"
+            href={`https://wa.me/${phone}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            تواصل مع المتجر عبر واتساب
+          </a>
+        )}
+        <Link to="/search" className="sf-secondary-button">
+          تصفح المنتجات
+        </Link>
+        <Link to="/pages/faq" className="sf-text-button">
+          مركز المساعدة
+        </Link>
+      </VStack>
+    </VStack>
   );
 }

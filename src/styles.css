@@ -700,3 +700,4 @@ body {
   .sf-hero-product > .sf-hero-caption { max-width: 17rem; text-align: center; }
   .sf-hero-name { -webkit-line-clamp: 1; }
 }
+.sf-footer-brand small { color: var(--sf-white); }
