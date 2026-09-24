@@ -356,8 +356,6 @@ function RootComponent() {
   const cleanPath = pathname.replace(/^\/app/, "");
   const isAdmin = cleanPath === "/admin" || cleanPath.startsWith("/admin/");
   const isBare =
-    cleanPath === "/" ||
-    cleanPath === "" ||
     cleanPath === "/immersive-store" ||
     cleanPath.startsWith("/immersive-store/") ||
     cleanPath === "/auth" ||

@@ -1,1089 +1,171 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { X } from "lucide-react";
-import type { LegacyProductShape } from "@/lib/data-adapter";
-import type { Product as ProductionProduct } from "@/lib/store-data";
-import { useCart } from "@/lib/cart-store";
-import { useFavorites } from "@/lib/use-favorites";
-import { bestSellersQuery, offersQuery } from "@/lib/queries/catalog";
-import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
-
-import {
-  Product as DesignProduct,
-  CartItem,
-  Currency,
-  ActiveTab,
-  OrderStatus,
-  NotificationItem,
-  SortOption,
-} from "@/components/storefront/types";
-import { mapProductionProductToDesignProduct } from "@/components/storefront/adapters";
-
-import { Header } from "@/components/storefront/Header";
-import { MainMenu } from "@/components/main-menu";
-import { MobileReferenceHeader } from "@/components/storefront/MobileReferenceHeader";
-import { ShippingBanner } from "@/components/storefront/ShippingBanner";
-import { SalesHero } from "@/components/storefront/SalesHero";
-import { VisualCategoryCircles } from "@/components/storefront/VisualCategoryCircles";
-import { SheinPromoGrid } from "@/components/storefront/SheinPromoGrid";
-import { FlashDealsSection } from "@/components/storefront/FlashDealsSection";
-import { AppDownloadModal } from "@/components/storefront/AppDownloadModal";
-import { AppInstallBanner } from "@/components/app-install-banner";
-import { CategoryBar, type PriceRangePreset } from "@/components/storefront/CategoryBar";
-import { matchesProductFilters, sortProducts } from "@/components/storefront/product-filters";
-import { BestOffersSection } from "@/components/storefront/BestOffersSection";
-import { ProductCard } from "@/components/storefront/ProductCard";
-import { TrustBar } from "@/components/storefront/TrustBar";
-import { StoreFooter } from "@/components/storefront/StoreFooter";
-import { BottomNav } from "@/components/storefront/BottomNav";
-import { FloatingWhatsAppButton } from "@/components/storefront/FloatingWhatsAppButton";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { HStack } from "@astryxdesign/core/HStack";
+import { VStack } from "@astryxdesign/core/VStack";
+import { Grid } from "@astryxdesign/core/Grid";
+import { ArrowLeft, Package, MessageCircle, Truck } from "lucide-react";
+import { ProductCard } from "@/components/product-card";
 import { useAppearance } from "@/components/appearance-provider";
+import { fetchCatalogPage } from "@/lib/actions/catalog-page.actions";
+import { formatPrice } from "@/lib/store-data";
+import type { LegacyProductShape } from "@/lib/data-adapter";
 import { mapPublishedStorefrontSettings } from "@/lib/adapters/storefront-settings.adapter";
-import {
-  ProductCardSkeleton,
-  HeroCarouselSkeleton,
-  ProductGridSkeleton,
-} from "@/components/storefront/SkeletonLoader";
-
-import { ProductDetailModal } from "@/components/storefront/ProductDetailModal";
-import { CinematicProductDeconstruction } from "@/components/storefront/CinematicProductDeconstruction";
-import { CartDrawer } from "@/components/storefront/CartDrawer";
-import { CheckoutModal } from "@/components/storefront/CheckoutModal";
-import { OrderTrackerModal } from "@/components/storefront/OrderTrackerModal";
-import { NotificationsModal } from "@/components/storefront/NotificationsModal";
-import { WishlistDrawer } from "@/components/storefront/WishlistDrawer";
-import { ProductCompareModal } from "@/components/storefront/ProductCompareModal";
-import { ToastNotification } from "@/components/storefront/ToastNotification";
-import { RecentlyViewedStrip } from "@/components/storefront/RecentlyViewedStrip";
-import { ProductStoryModal } from "@/components/storefront/ProductStoryModal";
-import { ProductUniverseModal } from "@/components/storefront/ProductUniverseModal";
-import { CartShareModal } from "@/components/storefront/CartShareModal";
-import { CustomerSupportHub } from "@/components/storefront/CustomerSupportHub";
-import type { SupportContext } from "@/components/storefront/CustomerSupportHub";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  AddToCartAnimationOverlay,
-  type FlyingCartItem,
-} from "@/components/storefront/AddToCartAnimation";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "متجر إندكس — INDEXES STORE | التسوق الإلكتروني الفاخر في اليمن" },
+      { title: "اندكس ستور | INDEXES STORE" },
       {
         name: "description",
         content:
-          "اكتشف أحدث الإلكترونيات والمنتجات الأصلية في متجر إندكس: تسوق فاخر، عروض حصرية، توصيل سريع لجميع المحافظات.",
-      },
-      { property: "og:title", content: "متجر إندكس — INDEXES STORE" },
-      {
-        property: "og:description",
-        content: "عروض حصرية تصل إلى 50% وشحن مجاني للطلبات فوق 30,000 ريال.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      {
-        name: "impact-site-verification",
-        value: "7a93fca2-24d7-4478-b1c6-865114269bdf",
-        content: "7a93fca2-24d7-4478-b1c6-865114269bdf",
+          "تصفح منتجات اندكس ستور وأسعارها، وأضف اختياراتك إلى السلة لإكمال طلبك عبر واتساب.",
       },
     ],
   }),
-  errorComponent: () => (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center dir-rtl">
-      <p className="text-lg font-bold text-rose-500">تعذر تحميل المنتجات مؤقتًا</p>
-      <p className="text-sm text-[var(--color-text-secondary)]">
-        حاول تحديث الصفحة أو العودة لاحقًا.
-      </p>
-      <button
-        type="button"
-        onClick={() => window.location.reload()}
-        className="mt-2 rounded-xl bg-[#2F6BFF] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#2458D8]"
-      >
-        إعادة المحاولة
-      </button>
-    </div>
-  ),
-  pendingComponent: HomeSkeleton,
   component: HomePage,
 });
 
-function HomeSkeleton() {
-  return (
-    <div
-      dir="rtl"
-      className="min-h-screen space-y-6 bg-[var(--color-bg,#08090B)] p-4 text-[var(--color-text-primary,#F5F7FA)]"
-    >
-      <HeroCarouselSkeleton />
-      <ProductGridSkeleton count={8} />
-    </div>
-  );
-}
-
 function HomePage() {
-  const { settings: rawAppearanceSettings } = useAppearance();
-  const mappedSettings = useMemo(
-    () => mapPublishedStorefrontSettings(rawAppearanceSettings),
-    [rawAppearanceSettings],
-  );
-
-  const { data: bestSellers = [], isLoading: bestSellersLoading } = useQuery(bestSellersQuery(12));
-  const { data: dailyDeals = [], isLoading: dailyDealsLoading } = useQuery(offersQuery(8));
-  const catalogLoading = bestSellersLoading || dailyDealsLoading;
-
-  // Map production products to AI Studio design products
-  const rawProductList = useMemo(() => {
-    const unique = new Map<string, LegacyProductShape>();
-    [...dailyDeals, ...bestSellers].forEach((product) => unique.set(product.id, product));
-    return [...unique.values()];
-  }, [dailyDeals, bestSellers]);
-
-  const rawProductMap = useMemo(() => {
-    const map = new Map<string, LegacyProductShape>();
-    (rawProductList as LegacyProductShape[]).forEach((p) => {
-      map.set(p.id, p);
-    });
-    return map;
-  }, [rawProductList]);
-
-  const products: DesignProduct[] = useMemo(() => {
-    return (rawProductList as (LegacyProductShape | ProductionProduct)[]).map((p) =>
-      mapProductionProductToDesignProduct(p),
-    );
-  }, [rawProductList]);
-
-  // Real production cart & favorites hooks
-  const cartStoreItems = useCart((s) => s.items);
-  const cartStoreCount = cartStoreItems.reduce((count, item) => count + item.qty, 0);
-  const addToCartStore = useCart((s) => s.add);
-  const setQtyCartStore = useCart((s) => s.setQty);
-  const removeFromCartStore = useCart((s) => s.remove);
-
-  const { favorites, toggleFavorite } = useFavorites();
-
-  // Map Zustand cart lines to design CartItem[] for CartDrawer & CheckoutModal views
-  const cartItems: CartItem[] = useMemo(() => {
-    return cartStoreItems.map((item) => {
-      const foundRaw = rawProductMap.get(item.productId);
-      const designProd = foundRaw
-        ? mapProductionProductToDesignProduct(foundRaw)
-        : {
-            id: item.productId,
-            checkoutProductRef:
-              item.checkoutProductRef ??
-              checkoutProductRefFromCatalogProduct({
-                id: item.productId,
-                shopify_variant_id: item.variantId,
-              }),
-            shopifyVariantId: item.variantId ?? null,
-            name: item.name,
-            subtitle: item.name,
-            description: item.name,
-            priceYER: item.price,
-            originalPriceYER: item.price,
-            rating: 0,
-            reviewsCount: 0,
-            image: item.image,
-            category: "all",
-            inStock: true,
-          };
-      return {
-        product: designProd,
-        quantity: item.qty,
-      };
-    });
-  }, [cartStoreItems, rawProductMap]);
-
-  // Theme State
-  // Keep the first render deterministic on server and client; restore the saved theme after mount.
-  const [theme, setTheme] = useState<"dark" | "light">("light");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("indexes_store_theme");
-    if (saved === "dark" || saved === "light") {
-      setTheme(saved);
-    } else if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark");
-    }
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    if (theme === "light") {
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-    }
-    localStorage.setItem("indexes_store_theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
-
-  // Admin navigation via TanStack router — the /admin route has its own AdminGate
-  const navigate = useNavigate();
-  const handleOpenAdmin = useCallback(() => navigate({ to: "/admin" }), [navigate]);
-
-  // Admin role check: verify confirmed role 'admin' or 'owner' in Supabase user_roles
-  const [isAdminUser, setIsAdminUser] = useState<boolean>(false);
-  useEffect(() => {
-    if (!supabase) return;
-    const checkAdminRole = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        const session = data.session;
-        if (!session?.user) {
-          setIsAdminUser(false);
-          return;
-        }
-        const { data: roleRows } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id);
-        const roles = (roleRows ?? []).map((r: { role: string }) => r.role);
-        setIsAdminUser(roles.includes("admin") || roles.includes("owner"));
-      } catch {
-        setIsAdminUser(false);
-      }
-    };
-    checkAdminRole();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      checkAdminRole();
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  // UI State
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const currency: Currency = "YER";
-  const [activeTab, setActiveTab] = useState<ActiveTab>("home");
-  const [sortBy, setSortBy] = useState<SortOption>("default");
-  const [priceRange, setPriceRange] = useState<PriceRangePreset>("all");
-  const [customMinPrice, setCustomMinPrice] = useState<number | undefined>();
-  const [customMaxPrice, setCustomMaxPrice] = useState<number | undefined>();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
-
-  // Category change loading feedback
-  const handleSelectCategoryWithLoading = (catId: string) => {
-    setIsLoading(true);
-    setSelectedCategory(catId);
-    setTimeout(() => setIsLoading(false), 250);
-  };
-
-  const [compareList, setCompareList] = useState<DesignProduct[]>([]);
-  const [userOrders, setUserOrders] = useState<OrderStatus[]>([]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: "notif-1",
-      title: "مرحباً بك في متجر إندكس 🎉",
-      message: "استمتع بتجربة تسوق فريدة وشحن مجاني للطلبات فوق 30,000 ريال.",
-      time: "منذ قليل",
-      read: false,
-      type: "offer",
-    },
-  ]);
-
-  // Toast Notification State
-  const [toasts, setToasts] = useState<
-    { id: string; type: "success" | "error" | "info"; message: string }[]
-  >([]);
-
-  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
-    const id = "toast-" + Date.now();
-    setToasts((prev) => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
-  };
-
-  const handleDismissToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  // Modal / Drawer States
-  const [selectedProductModal, setSelectedProductModal] = useState<DesignProduct | null>(null);
-  const [isDeconstructionOpen, setIsDeconstructionOpen] = useState<boolean>(false);
-  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
-  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
-  const [isTrackerModalOpen, setIsTrackerModalOpen] = useState(false);
-  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [isWishlistDrawerOpen, setIsWishlistDrawerOpen] = useState(false);
-  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
-  const [isProductStoryOpen, setIsProductStoryOpen] = useState(false);
-  const [isProductUniverseOpen, setIsProductUniverseOpen] = useState(false);
-  const [isCartShareOpen, setIsCartShareOpen] = useState(false);
-  const [isSupportHubOpen, setIsSupportHubOpen] = useState(false);
-  const [isAppDownloadModalOpen, setIsAppDownloadModalOpen] = useState(false);
-  const [supportContext, setSupportContext] = useState<SupportContext>("home");
-  const [recentlyViewed, setRecentlyViewed] = useState<DesignProduct[]>([]);
-
-  const [appliedCouponDiscount, setAppliedCouponDiscount] = useState(0);
-
-  // AddToCart animation state
-  const [activeFlyingItems, setActiveFlyingItems] = useState<FlyingCartItem[]>([]);
-  const [lastAddedProduct, setLastAddedProduct] = useState<{
-    product: DesignProduct;
-    quantity: number;
-    selectedColor?: string;
-    timestamp: number;
-  } | null>(null);
-  const flyingIdRef = useRef(0);
-
-  const unreadNotificationsCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications],
-  );
-
-  const bestOffers = useMemo(
-    () => products.filter((p) => p.isBestOffer || (p.discountBadge && p.discountBadge.length > 0)),
-    [products],
-  );
-
-  const filteredProducts = useMemo(() => {
-    const list = products.filter((p) => {
-      const matchCategory = selectedCategory === "all" || p.category === selectedCategory;
-      const matchSearch =
-        !searchQuery ||
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilters = matchesProductFilters(p, {
-        priceRange,
-        customMinPrice,
-        customMaxPrice,
-        selectedBrands,
-        selectedRatings,
-      });
-      return matchCategory && matchSearch && matchesFilters;
-    });
-
-    return sortProducts(list, sortBy);
-  }, [
-    products,
-    selectedCategory,
-    searchQuery,
-    sortBy,
-    priceRange,
-    customMinPrice,
-    customMaxPrice,
-    selectedBrands,
-    selectedRatings,
-  ]);
-
-  const [visibleProductCount, setVisibleProductCount] = useState(12);
-  useEffect(() => {
-    setVisibleProductCount(12);
-  }, [
-    selectedCategory,
-    searchQuery,
-    sortBy,
-    priceRange,
-    customMinPrice,
-    customMaxPrice,
-    selectedBrands,
-    selectedRatings,
-  ]);
-  const visibleProducts = filteredProducts.slice(0, visibleProductCount);
-
-  // Track recently viewed products (max 10) and open the full cinematic product route.
-  // The modal remains as a safe fallback for legacy products that do not have a slug.
-  const handleSelectProduct = (product: DesignProduct) => {
-    setRecentlyViewed((prev) => {
-      const filtered = prev.filter((p) => p.id !== product.id);
-      return [product, ...filtered].slice(0, 10);
-    });
-
-    if (product.slug) {
-      navigate({ to: "/product/$slug", params: { slug: product.slug } });
-      return;
-    }
-
-    setSelectedProductModal(product);
-  };
-
-  // Handlers using real production cart and favorites
-  const handleToggleFavorite = (product: DesignProduct) => {
-    toggleFavorite(product.id);
-  };
-
-  const handleAddToCart = (product: DesignProduct, quantity: number = 1, e?: React.MouseEvent) => {
-    // Trigger flying particle animation & toast
-    const id = `flying-${Date.now()}-${flyingIdRef.current++}`;
-    const startX = e?.clientX || window.innerWidth / 2;
-    const startY = e?.clientY || window.innerHeight / 2;
-    setActiveFlyingItems((prev) => [...prev, { id, product, startX, startY }]);
-    setLastAddedProduct({ product, quantity, timestamp: Date.now() });
-
-    const raw = rawProductMap.get(product.id) || {
-      id: product.id,
-      slug: product.id,
-      checkoutProductRef:
-        product.checkoutProductRef ?? checkoutProductRefFromCatalogProduct(product),
-      shopifyVariantId: product.shopifyVariantId ?? null,
-      name: product.name,
-      description: product.description,
-      price: product.priceYER,
-      oldPrice: product.originalPriceYER > product.priceYER ? product.originalPriceYER : undefined,
-      stock: product.inStock ? 50 : 0,
-      image: product.image,
-      rating: product.rating,
-      reviews: product.reviewsCount,
-      categoryId: product.category,
-    };
-    addToCartStore(raw, quantity);
-  };
-
-  const handleUpdateCartQuantity = (productId: string, quantity: number) => {
-    setQtyCartStore(productId, quantity);
-  };
-
-  const handleRemoveCartItem = (productId: string) => {
-    removeFromCartStore(productId);
-  };
-
-  const handleOrderPlaced = (newOrder: OrderStatus) => {
-    setUserOrders((prev) => [newOrder, ...prev]);
-
-    setNotifications((prev) => [
-      {
-        id: `notif-${Date.now()}`,
-        title: `تم ثبت طلبك برقم #${newOrder.orderNumber}`,
-        message: "تم حفظ طلبك وسيتم التواصل معك لتأكيد التوصيل.",
-        time: "الآن",
-        read: false,
-        type: "order",
-      },
-      ...prev,
-    ]);
-  };
-
-  const handleMarkAllNotificationsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const handleBottomNavTabChange = (tab: ActiveTab) => {
-    setActiveTab(tab);
-    if (tab === "cart") {
-      setIsCartDrawerOpen(true);
-    } else if (tab === "account") {
-      navigate({ to: "/account" });
-    } else if (tab === "search") {
-      window.scrollTo({ top: 400, behavior: "smooth" });
-    } else if (tab === ("categories" as ActiveTab)) {
-      setIsMenuOpen(true);
-    }
-  };
-
+  const { settings } = useAppearance();
+  const { contact } = mapPublishedStorefrontSettings(settings);
+  const query = useInfiniteQuery({
+    queryKey: ["storefront", "catalog", "reference-v1", "all"],
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam }) => fetchCatalogPage({ first: 24, after: pageParam }),
+    getNextPageParam: (page) => (page.hasNextPage ? page.endCursor : undefined),
+    staleTime: 60_000,
+  });
+  const products = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const feature = products[0];
   return (
-    <div className="dir-rtl relative flex min-h-screen flex-col overflow-x-hidden bg-white pb-20 text-right font-sans text-black transition-colors duration-200 selection:bg-black selection:text-white md:bg-[var(--color-bg,#08090B)] md:pb-28 md:text-[var(--color-text-primary,#F5F7FA)]">
-      {/* Global Toast Notifications */}
-      <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
-      <MainMenu open={isMenuOpen} onOpenChange={setIsMenuOpen} />
-
-      {/* Foreground Store Content */}
-      <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Keep the install prompt and full desktop header off the reference mobile layout. */}
-        <div className="hidden md:block">
-          <AppInstallBanner />
-        </div>
-
-        <div className="hidden md:block">
-          {/* 1. Sticky Header */}
-          <Header
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            cartCount={cartStoreCount}
-            unreadNotificationsCount={unreadNotificationsCount}
-            wishlistCount={favorites.length}
-            compareCount={compareList.length}
-            products={products}
-            currency={currency}
-            theme={theme}
-            onToggleTheme={toggleTheme}
-            onOpenCart={() => setIsCartDrawerOpen(true)}
-            onOpenNotifications={() => setIsNotificationsModalOpen(true)}
-            onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
-            onOpenCompare={() => setIsCompareModalOpen(true)}
-            onOpenMenu={() => setIsMenuOpen(true)}
-            onOpenTracker={() => setIsTrackerModalOpen(true)}
-            onOpenAdmin={handleOpenAdmin}
-            isAdminUser={isAdminUser}
-            onSelectProduct={handleSelectProduct}
-            onOpenAppDownload={() => setIsAppDownloadModalOpen(true)}
-            selectedCategory={selectedCategory}
-            onSelectCategory={handleSelectCategoryWithLoading}
-          />
-        </div>
-
-        <MobileReferenceHeader
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onSubmitSearch={() => navigate({ to: "/search", search: { q: searchQuery.trim() } })}
-          cartCount={cartStoreCount}
-          unreadNotificationsCount={unreadNotificationsCount}
-          onOpenCart={() => setIsCartDrawerOpen(true)}
-          onOpenNotifications={() => setIsNotificationsModalOpen(true)}
-          onOpenMenu={() => setIsMenuOpen(true)}
-          onOpenWishlist={() => setIsWishlistDrawerOpen(true)}
-          onSelectCategory={handleSelectCategoryWithLoading}
-        />
-
-        {/* 2. Top Shipping Announcement Banner */}
-        <div className="hidden md:block">
-          <ShippingBanner
-            onOpenShippingInfo={() => setIsTrackerModalOpen(true)}
-            shippingConfig={mappedSettings.shipping}
-          />
-        </div>
-
-        {/* Main Container - Extended width for SHEIN high-density layout */}
-        <main className="flex-grow w-full max-w-[1700px] mx-auto pb-28 sm:pb-32">
-          {mappedSettings.sections.sectionOrder.map((sectionKey) => {
-            switch (sectionKey) {
-              case "hero":
-                if (!mappedSettings.hero.enabled) return null;
-                return (
-                  <div key="hero-shein-block" className="space-y-2">
-                    <h1 className="sr-only">
-                      {mappedSettings.hero.title || "اندكس ستور - التسوق الإلكتروني في اليمن"}
-                    </h1>
-                    {/* SHEIN Campaign & Promotional Collage Grid */}
-                    <SheinPromoGrid
-                      products={products}
-                      currency={currency}
-                      onShopNow={() =>
-                        document
-                          .getElementById("store-products")
-                          ?.scrollIntoView({ behavior: "smooth" })
-                      }
-                      onSelectCategory={handleSelectCategoryWithLoading}
-                      onSelectProduct={handleSelectProduct}
-                    />
-
-                    {/* Mobile reference-style offer strip using real store products. */}
-                    <section
-                      className="mx-2 overflow-hidden border-y border-[#f3d4d9] bg-[#fff6f7] p-2.5 shadow-none md:hidden"
-                      aria-label="عرض العملاء الجدد"
-                    >
-                      <div className="mb-2 flex items-center justify-between text-[13px] font-black text-[#e64a4a]">
-                        <span>للمستخدمين الجدد فقط</span>
-                        <span>شحن مجاني 🚚</span>
-                      </div>
-                      <div className="grid grid-cols-[1.05fr_0.95fr_0.95fr] items-center gap-2">
-                        <div className="rounded-lg bg-white/80 p-2 text-center">
-                          <span className="text-[10px] text-neutral-500">تطبق الشروط</span>
-                          <strong className="mt-1 block text-xl font-black text-[#4b9f3a]">
-                            5000
-                          </strong>
-                          <span className="text-[10px] text-neutral-500">رصيد ترحيبي</span>
-                        </div>
-                        {products.slice(0, 2).map((product) => (
-                          <button
-                            type="button"
-                            key={`new-user-${product.id}`}
-                            onClick={() => handleSelectProduct(product)}
-                            className="overflow-hidden rounded-lg bg-white shadow-sm"
-                          >
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              loading="lazy"
-                              className="h-[76px] w-full object-contain"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </section>
-
-                    {/* SHEIN Visual Category Circles */}
-                    <VisualCategoryCircles
-                      selectedCategoryId={selectedCategory}
-                      onSelectCategory={handleSelectCategoryWithLoading}
-                      products={products}
-                    />
-
-                    {/* Mobile reference-style product tabs. */}
-                    <div
-                      className="mx-2 mt-2 grid grid-cols-4 gap-0 border-y border-neutral-200 bg-white p-0 text-[11px] font-black md:hidden"
-                      role="tablist"
-                      aria-label="تصفية المنتجات السريعة"
-                    >
-                      {["من أجلك", "مداخل جديدة", "تخفيضات", "الأكثر مبيعاً"].map(
-                        (label, index) => (
-                          <button
-                            type="button"
-                            key={label}
-                            onClick={() =>
-                              document
-                                .getElementById("store-products")
-                                ?.scrollIntoView({ behavior: "smooth" })
-                            }
-                            className={`rounded-md px-1 py-2 ${index === 0 ? "bg-black text-white" : "text-neutral-700"}`}
-                            role="tab"
-                          >
-                            {label}
-                          </button>
-                        ),
-                      )}
-                    </div>
-
-                    {/* SHEIN Flash Deals Section with live countdown */}
-                    <div className="hidden md:block">
-                      <FlashDealsSection
-                        products={bestOffers.length ? bestOffers : products}
-                        currency={currency}
-                        onSelectProduct={handleSelectProduct}
-                        onAddToCart={(prod) => {
-                          handleAddToCart(prod, 1);
-                          showToast(`تمت إضافة ${prod.name} إلى السلة ⚡`);
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-
-              case "discovery":
-                return null;
-
-              case "recently_viewed":
-                if (recentlyViewed.length === 0) return null;
-                return (
-                  <RecentlyViewedStrip
-                    key="recently_viewed"
-                    products={recentlyViewed}
-                    currency={currency}
-                    onSelectProduct={handleSelectProduct}
-                    onClearHistory={() => setRecentlyViewed([])}
-                  />
-                );
-
-              case "categories":
-                if (!mappedSettings.sections.categories.enabled) return null;
-                return (
-                  <div key="categories" data-section="categories" className="hidden md:block">
-                    <CategoryBar
-                      selectedCategoryId={selectedCategory}
-                      onSelectCategory={handleSelectCategoryWithLoading}
-                      selectedSort={sortBy}
-                      onSelectSort={(sortOption) => setSortBy(sortOption)}
-                      selectedPriceRange={priceRange}
-                      customMinPrice={customMinPrice}
-                      customMaxPrice={customMaxPrice}
-                      onSelectPriceRange={(range, min, max) => {
-                        setPriceRange(range);
-                        setCustomMinPrice(min);
-                        setCustomMaxPrice(max);
-                      }}
-                      selectedBrands={selectedBrands}
-                      onSelectBrands={setSelectedBrands}
-                      selectedRatings={selectedRatings}
-                      onSelectRatings={setSelectedRatings}
-                    />
-                  </div>
-                );
-
-              case "deals":
-                if (!mappedSettings.sections.deals.enabled) return null;
-                if (selectedCategory !== "all" || searchQuery) return null;
-                return (
-                  <div key="deals" className="hidden md:block">
-                    <BestOffersSection
-                      key="deals"
-                      bestOffers={
-                        bestOffers.length
-                          ? bestOffers.slice(0, mappedSettings.sections.deals.limit)
-                          : products.slice(0, mappedSettings.sections.deals.limit)
-                      }
-                      currency={currency}
-                      favorites={favorites}
-                      isLoading={isLoading || catalogLoading}
-                      onToggleFavorite={handleToggleFavorite}
-                      onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                      onSelectProduct={handleSelectProduct}
-                      onViewAll={() => navigate({ to: "/offers" })}
-                    />
-                  </div>
-                );
-
-              case "ai_search":
-                return null;
-
-              case "cinematic":
-                return null;
-
-              case "latest":
-                if (!mappedSettings.sections.latest.enabled) return null;
-                return (
-                  <div key="latest">
-                    {/* Product Catalog Grid Section */}
-                    <section id="store-products" className="scroll-mt-24 px-2 py-5 sm:px-6">
-                      <div className="dir-rtl mb-6 hidden flex-col justify-between gap-3 border-b border-[var(--color-border-default)] pb-4 sm:flex-row sm:items-center md:flex">
-                        <div>
-                          <h3 className="text-xl font-bold text-[var(--color-text-primary)] sm:text-2xl">
-                            {selectedCategory === "all"
-                              ? searchQuery
-                                ? `نتائج البحث عن "${searchQuery}"`
-                                : mappedSettings.sections.latest.title || "جميع المنتجات المتوفرة"
-                              : "منتجات القسم المختار"}
-                          </h3>
-                          <p className="mt-1 text-xs text-[var(--color-text-secondary)] sm:text-sm">
-                            عرض {filteredProducts.length} منتجًا بالسعر والتوفر المسجلين في المتجر
-                          </p>
-                        </div>
-                        {sortBy !== "default" ? (
-                          <div className="flex items-center gap-2 self-start sm:self-center">
-                            <div className="inline-flex items-center gap-1.5 rounded-full border border-[#2F6BFF]/40 bg-[#2F6BFF]/15 px-3 py-1.5 text-xs font-black text-[#2F6BFF] shadow-sm">
-                              <span className="h-2 w-2 animate-pulse rounded-full bg-[#2F6BFF]" />
-                              <span>
-                                الترتيب المطبق:{" "}
-                                {sortBy === "price-high"
-                                  ? "الأعلى سعراً"
-                                  : sortBy === "price-low"
-                                    ? "الأقل سعراً"
-                                    : sortBy === "best-selling"
-                                      ? "الأكثر مبيعاً"
-                                      : "الأحدث وصولاً"}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setSortBy("default")}
-                                className="cursor-pointer rounded-full p-1 text-[#2F6BFF] transition-colors hover:bg-rose-500/20 hover:text-rose-500"
-                                title="إلغاء الترتيب والإعادة للافتراضي"
-                                aria-label="إلغاء الترتيب"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-
-                      {isLoading || catalogLoading ? (
-                        <ProductGridSkeleton count={8} />
-                      ) : filteredProducts.length === 0 ? (
-                        <div className="space-y-6">
-                          <div className="rounded-2xl border border-dashed border-[#F93A00]/40 bg-[#FFF1EB] dark:bg-neutral-900 p-5 text-center">
-                            <p className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white">
-                              لا توجد منتجات مسجلة في هذا التصنيف حالياً، جلبنا لك هذه المنتجات
-                              المميزة والأكثر طلباً في المتجر:
-                            </p>
-                            <button
-                              type="button"
-                              aria-label="عرض جميع المنتجات المتوفرة"
-                              onClick={() => {
-                                setSearchQuery("");
-                                setPriceRange("all");
-                                setCustomMinPrice(undefined);
-                                setCustomMaxPrice(undefined);
-                                setSelectedBrands([]);
-                                setSelectedRatings([]);
-                                setSortBy("default");
-                                handleSelectCategoryWithLoading("all");
-                              }}
-                              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-black px-5 py-2 text-xs font-black text-white hover:bg-neutral-800 transition-colors shadow"
-                            >
-                              عرض جميع المنتجات المتوفرة
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-                            {(products.length > 0 ? products.slice(0, 8) : []).map((product) => (
-                              <ProductCard
-                                key={product.id}
-                                product={product}
-                                currency={currency}
-                                isFavorite={favorites.includes(product.id)}
-                                onToggleFavorite={handleToggleFavorite}
-                                onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                                onSelectProduct={handleSelectProduct}
-                                variant="grid"
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-                            {visibleProducts.map((product, index) => (
-                              <ProductCard
-                                key={product.id}
-                                product={product}
-                                currency={currency}
-                                isFavorite={favorites.includes(product.id)}
-                                onToggleFavorite={handleToggleFavorite}
-                                onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                                onSelectProduct={handleSelectProduct}
-                                variant="grid"
-                                index={index}
-                              />
-                            ))}
-                          </div>
-                          {visibleProducts.length < filteredProducts.length && (
-                            <button
-                              type="button"
-                              onClick={() => setVisibleProductCount((count) => count + 12)}
-                              className="mx-auto mt-5 block border border-black bg-white px-8 py-2.5 text-xs font-black text-black"
-                            >
-                              عرض المزيد من المنتجات
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </section>
-                  </div>
-                );
-
-              case "trustBadges":
-                if (!mappedSettings.sections.trustBadges.enabled) return null;
-                return (
-                  <TrustBar key="trustBadges" trustBadges={mappedSettings.sections.trustBadges} />
-                );
-
-              case "loyalty":
-                return null;
-
-              default:
-                return null;
-            }
-          })}
-
-          {/* Footer */}
-          <StoreFooter
-            onOpenTracker={() => setIsTrackerModalOpen(true)}
-            onOpenAdmin={handleOpenAdmin}
-            onOpenSupport={() => setIsSupportHubOpen(true)}
-            isAdminUser={isAdminUser}
-            footerConfig={mappedSettings.contact}
-          />
-        </main>
-
-        {/* 12. Bottom Navigation Bar */}
-        <BottomNav
-          activeTab={activeTab}
-          setActiveTab={handleBottomNavTabChange}
-          cartCount={cartStoreCount}
-        />
-
-        {/* Keep the reference mobile canvas clean; WhatsApp remains available in the footer and desktop support hub. */}
-        <div className="hidden md:block">
-          <FloatingWhatsAppButton
-            isOpen={isSupportHubOpen}
-            onToggle={() => setIsSupportHubOpen((open) => !open)}
-          />
-        </div>
-
-        {/* Modals & Drawers */}
-        <ProductDetailModal
-          product={selectedProductModal}
-          currency={currency}
-          isFavorite={selectedProductModal ? favorites.includes(selectedProductModal.id) : false}
-          onClose={() => setSelectedProductModal(null)}
-          onAddToCart={(prod, qty) => {
-            handleAddToCart(prod, qty);
-            showToast(`تمت إضافة ${prod.name} إلى السلة بنجاح 🛒`);
-          }}
-          onToggleFavorite={(p) => {
-            handleToggleFavorite(p);
-            const isFavNow = !favorites.includes(p.id);
-            showToast(
-              isFavNow ? `تمت إضافة ${p.name} إلى المفضلة ❤️` : `تمت إزالة ${p.name} من المفضلة`,
-            );
-          }}
-          onAddToCompare={(prod) => {
-            if (!compareList.some((c) => c.id === prod.id)) {
-              setCompareList((prev) => [...prev, prod]);
-              showToast(`تمت إضافة ${prod.name} إلى المقارنة ⚖️`);
-            } else {
-              showToast("هذا المنتج مضاف بالفعل في قائمة المقارنة", "info");
-            }
-            setIsCompareModalOpen(true);
-          }}
-          onOpenDeconstruction={() => setIsDeconstructionOpen(true)}
-        />
-
-        {/* Product Story Modal */}
-        <ProductStoryModal
-          product={selectedProductModal}
-          currency={currency}
-          isOpen={isProductStoryOpen}
-          onClose={() => setIsProductStoryOpen(false)}
-          onAddToCart={(prod) => {
-            handleAddToCart(prod, 1);
-            showToast(`تمت إضافة ${prod.name} إلى السلة بنجاح 🛒`);
-          }}
-        />
-
-        {/* Product Universe Modal (3D WebGL Product Explorer) */}
-        {isProductUniverseOpen && (
-          <ProductUniverseModal
-            isOpen={isProductUniverseOpen}
-            onClose={() => setIsProductUniverseOpen(false)}
-            products={products}
-            currency={currency}
-            favorites={favorites}
-            onToggleFavorite={handleToggleFavorite}
-            onAddToCart={(prod, qty) => {
-              handleAddToCart(prod, qty ?? 1);
-              showToast(`تمت إضافة ${prod.name} إلى السلة بنجاح 🛒`);
-            }}
-            onSelectProductDetails={handleSelectProduct}
-          />
+    <VStack className="sf-home sf-container" gap={4}>
+      <HStack className="sf-announcement" gap={4} wrap="wrap" justify="between">
+        <span>
+          <Truck aria-hidden="true" />
+          {contact.deliveryInfoText || "معلومات التوصيل عند إتمام الطلب"}
+        </span>
+        <span>
+          <MessageCircle aria-hidden="true" /> أكمل طلبك عبر واتساب
+        </span>
+      </HStack>
+      <section className="sf-hero" aria-label="اكتشف المتجر">
+        <HStack className="sf-hero-inner" gap={4} align="center">
+          <VStack gap={3} className="sf-hero-copy">
+            <p>{contact.storeName}</p>
+            <h1>
+              اختياراتك
+              <br />
+              <em>في مكان واحد</em>
+            </h1>
+            <p className="sf-hero-description">تصفح المنتجات، اختر ما يناسبك، وأكمل طلبك بسهولة.</p>
+            <a href="#store-products" className="sf-primary-button">
+              تسوق الآن <ArrowLeft aria-hidden="true" />
+            </a>
+          </VStack>
+          {feature ? (
+            <Link
+              to="/product/$slug"
+              params={{ slug: feature.slug }}
+              className="sf-hero-product"
+              aria-label={`عرض ${feature.name}`}
+            >
+              <img src={feature.image} alt={feature.name} fetchPriority="high" />
+              <span>
+                {feature.name}
+                <strong>{formatPrice(feature.price)}</strong>
+              </span>
+            </Link>
+          ) : (
+            <span className="sf-hero-placeholder">
+              <ShoppingCartHero />
+            </span>
+          )}
+        </HStack>
+      </section>
+      {products.length > 1 && (
+        <Grid columns={3} gap={3} className="sf-promo-grid">
+          {products.slice(1, 4).map((product, index) => (
+            <Link
+              to="/product/$slug"
+              params={{ slug: product.slug }}
+              key={product.id}
+              className={`sf-promo sf-promo-${index}`}
+            >
+              <VStack gap={2}>
+                <small>اكتشف من المتجر</small>
+                <h2>{product.name}</h2>
+                <strong>{formatPrice(product.price)}</strong>
+                <span>
+                  عرض المنتج <ArrowLeft aria-hidden="true" />
+                </span>
+              </VStack>
+              <img src={product.image} alt="" loading="lazy" />
+            </Link>
+          ))}
+        </Grid>
+      )}
+      <section id="store-products" className="sf-catalog" aria-labelledby="catalog-heading">
+        <HStack justify="between" align="center" gap={3} className="sf-section-heading">
+          <h2 id="catalog-heading">منتجات المتجر</h2>
+          <Link to="/search" search={{ q: "" }}>
+            البحث والتصفية <ArrowLeft aria-hidden="true" />
+          </Link>
+        </HStack>
+        {query.isPending ? (
+          <Grid
+            columns={2}
+            gap={3}
+            className="sf-product-grid"
+            aria-label="جار تحميل المنتجات"
+            aria-busy="true"
+          >
+            {Array.from({ length: 8 }, (_, index) => (
+              <VStack key={index} className="sf-product-skeleton" gap={3}>
+                <span />
+                <span />
+                <span />
+              </VStack>
+            ))}
+          </Grid>
+        ) : query.isError ? (
+          <VStack className="sf-empty" gap={3} role="alert">
+            <Package aria-hidden="true" />
+            <h3>تعذر تحميل المنتجات</h3>
+            <p>تحقق من اتصالك ثم أعد المحاولة.</p>
+            <button className="sf-secondary-button" onClick={() => void query.refetch()}>
+              إعادة المحاولة
+            </button>
+          </VStack>
+        ) : products.length === 0 ? (
+          <VStack className="sf-empty" gap={3}>
+            <Package aria-hidden="true" />
+            <h3>لا توجد منتجات متاحة حاليًا</h3>
+            <p>ستظهر المنتجات المنشورة هنا فور توفرها.</p>
+          </VStack>
+        ) : (
+          <Grid columns={2} gap={3} className="sf-product-grid">
+            {products.map((product, index) => (
+              <ProductCard key={product.id} product={product} eager={index < 4} />
+            ))}
+          </Grid>
         )}
-
-        {/* Cart Share Modal */}
-        <CartShareModal
-          isOpen={isCartShareOpen}
-          onClose={() => setIsCartShareOpen(false)}
-          cartItems={cartItems}
-          catalogProducts={products}
-          onApplyRecoveredCart={(items) =>
-            items.forEach((i) => handleAddToCart(i.product, i.quantity))
-          }
-        />
-
-        {/* Customer Support Hub */}
-        <CustomerSupportHub
-          isOpen={isSupportHubOpen}
-          onClose={() => setIsSupportHubOpen(false)}
-          activeContext={supportContext}
-          currentProduct={selectedProductModal}
-          cartItems={cartItems}
-          currency={currency}
-          whatsappNumber={mappedSettings.contact.whatsappPhone}
-          phone={mappedSettings.contact.phone}
-          onOpenTracker={() => {
-            setIsSupportHubOpen(false);
-            setIsTrackerModalOpen(true);
-          }}
-          onOpenSearch={() => {
-            setIsSupportHubOpen(false);
-            window.scrollTo({ top: 400, behavior: "smooth" });
-          }}
-        />
-
-        {/* Cinematic 3D Product Deconstruction Modal */}
-        {isDeconstructionOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/90 backdrop-blur-xl animate-fadeIn">
-            <div className="relative w-full max-w-6xl max-h-[96vh]">
-              <CinematicProductDeconstruction
-                onClose={() => setIsDeconstructionOpen(false)}
-                productName={selectedProductModal?.name || "ساعة ذكية AMOLED Ultra 8"}
-                productImage={selectedProductModal?.image}
-                category={selectedProductModal?.category}
-                product={selectedProductModal || undefined}
-              />
-            </div>
-          </div>
+        {query.hasNextPage && (
+          <button
+            className="sf-load-more sf-secondary-button"
+            disabled={query.isFetchingNextPage}
+            onClick={() => void query.fetchNextPage()}
+          >
+            {query.isFetchingNextPage ? "جار تحميل المزيد..." : "عرض المزيد من المنتجات"}
+          </button>
         )}
-
-        <CartDrawer
-          currency={currency}
-          isOpen={isCartDrawerOpen}
-          onClose={() => setIsCartDrawerOpen(false)}
-          cartItems={cartItems}
-          onUpdateQuantity={handleUpdateCartQuantity}
-          onRemoveItem={handleRemoveCartItem}
-          onOpenShareCart={() => setIsCartShareOpen(true)}
-          favorites={favorites}
-          catalogProducts={products}
-          onSaveForLater={(item) => {
-            toggleFavorite(item.product.id);
-            handleRemoveCartItem(item.product.id);
-            showToast(`تم حفظ ${item.product.name} لوقت لاحق`);
-          }}
-          onAddRecommended={(product) => {
-            handleAddToCart(product, 1);
-            showToast(`تمت إضافة ${product.name} إلى السلة`);
-          }}
-          onCheckout={(discount) => {
-            setAppliedCouponDiscount(discount);
-            setIsCartDrawerOpen(false);
-            setIsCheckoutModalOpen(true);
-          }}
-        />
-
-        <CheckoutModal
-          currency={currency}
-          isOpen={isCheckoutModalOpen}
-          onClose={() => setIsCheckoutModalOpen(false)}
-          cartItems={cartItems}
-          couponDiscountPercent={appliedCouponDiscount}
-          onOrderPlaced={handleOrderPlaced}
-        />
-
-        <OrderTrackerModal
-          isOpen={isTrackerModalOpen}
-          onClose={() => setIsTrackerModalOpen(false)}
-          allOrders={userOrders}
-          currency={currency}
-        />
-
-        <NotificationsModal
-          isOpen={isNotificationsModalOpen}
-          onClose={() => setIsNotificationsModalOpen(false)}
-          notifications={notifications}
-          onMarkAllAsRead={handleMarkAllNotificationsRead}
-        />
-
-        <WishlistDrawer
-          isOpen={isWishlistDrawerOpen}
-          favorites={favorites}
-          products={products}
-          currency={currency}
-          onClose={() => setIsWishlistDrawerOpen(false)}
-          onToggleFavorite={handleToggleFavorite}
-          onAddToCart={(p, qty) => {
-            handleAddToCart(p, qty);
-            showToast(`تمت إضافة ${p.name} إلى السلة بنجاح 🛒`);
-          }}
-          onSelectProduct={(p) => {
-            setIsWishlistDrawerOpen(false);
-            setSelectedProductModal(p);
-          }}
-        />
-
-        <ProductCompareModal
-          isOpen={isCompareModalOpen}
-          compareList={compareList}
-          products={products}
-          currency={currency}
-          onClose={() => setIsCompareModalOpen(false)}
-          onRemoveFromCompare={(id) => {
-            setCompareList((prev) => prev.filter((item) => item.id !== id));
-            showToast("تمت إزالة المنتج من المقارنة");
-          }}
-          onAddToCart={(p, qty) => {
-            handleAddToCart(p, qty);
-            showToast(`تمت إضافة ${p.name} إلى السلة بنجاح 🛒`);
-          }}
-        />
-
-        {/* App Download QR & Store Modal */}
-        <AppDownloadModal
-          isOpen={isAppDownloadModalOpen}
-          onClose={() => setIsAppDownloadModalOpen(false)}
-        />
-
-        {/* Flying Cart Item & Toast Overlay */}
-        <AddToCartAnimationOverlay
-          activeFlyingItems={activeFlyingItems}
-          onAnimationComplete={(id) =>
-            setActiveFlyingItems((prev) => prev.filter((item) => item.id !== id))
-          }
-          onOpenCart={() => setIsCartDrawerOpen(true)}
-          lastAddedProduct={lastAddedProduct}
-        />
-      </div>
-    </div>
+      </section>
+    </VStack>
   );
 }
 
+function ShoppingCartHero() {
+  return <Package aria-hidden="true" />;
+}
 import type { HeroConfig } from "@/lib/domain/appearance";
 import { ProductSphereHero } from "@/components/product-sphere-hero";
 import { ImmersiveProductExperience } from "@/components/immersive/ImmersiveProductExperience";

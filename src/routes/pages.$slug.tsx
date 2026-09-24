@@ -4,13 +4,15 @@ import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, ArrowRight, ShieldCheck, Home, Loader2 } from "lucide-react";
 import { getPublicCmsPage, sanitizeHtml } from "@/lib/pages.functions";
 
-const BUILT_IN_PAGE_ROUTES: Record<string, "/terms" | "/privacy-policy"> = {
+type PublicCmsLoaderData = { page: Awaited<ReturnType<typeof getPublicCmsPage>> | null };
+
+const BUILT_IN_PAGE_ROUTES: Partial<Record<string, "/terms" | "/privacy-policy">> = {
   terms: "/terms",
   "privacy-policy": "/privacy-policy",
 };
 
 export const Route = createFileRoute("/pages/$slug")({
-  head: ({ loaderData }: any) => {
+  head: ({ loaderData }) => {
     const page = loaderData?.page;
     if (!page) {
       return {
@@ -27,7 +29,7 @@ export const Route = createFileRoute("/pages/$slug")({
       ],
     };
   },
-  loader: async ({ params }) => {
+  loader: async ({ params }): Promise<PublicCmsLoaderData> => {
     const builtInRoute = BUILT_IN_PAGE_ROUTES[params.slug];
     if (builtInRoute) throw redirect({ to: builtInRoute });
     try {
@@ -83,7 +85,7 @@ function PublicCmsPageComponent() {
 
   return (
     <div
-      className="mx-auto max-w-4xl px-4 py-10"
+      className="sf-page sf-information-page"
       dir="rtl"
       style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}
     >
@@ -97,7 +99,7 @@ function PublicCmsPageComponent() {
       </nav>
 
       {/* Article Container */}
-      <article className="rounded-3xl border border-border bg-surface p-6 sm:p-10 shadow-sm space-y-6">
+      <article className="sf-panel space-y-6">
         <header className="border-b border-border/80 pb-6">
           <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
             {page.title}

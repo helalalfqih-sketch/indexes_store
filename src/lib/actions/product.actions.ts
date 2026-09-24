@@ -16,19 +16,16 @@ import {
   listProducts,
   getProductBySlug as getProductBySlugFn,
   getProductsByIds as getProductsByIdsFn,
-  inferCategorySlug,
 } from "@/lib/catalog.functions";
-import { fetchCategories } from "@/lib/actions/category.actions";
-import { fallbackProducts, toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
+import { toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
 import type { ProductDTO } from "@/lib/domain/product";
-import { isCatalogProductReady, shouldUseDemoCatalog } from "@/lib/catalog-readiness";
+import { isCatalogProductReady } from "@/lib/catalog-readiness";
 import {
   listShopifyProducts,
   getShopifyProductBySlug,
   getShopifyProductsByIds,
   diagnoseShopifyCatalog,
 } from "@/lib/shopify/catalog.functions";
-import { products as seedProducts } from "@/lib/store-data";
 
 // ---------- Input validation ----------
 
@@ -45,28 +42,8 @@ export const listProductsInput = z
   .partial();
 export type ListProductsInput = z.infer<typeof listProductsInput>;
 
-// ---------- Enrichment (until oldPrice / badges live in DB) ----------
-
-const seedIndex = new Map(seedProducts.map((p) => [p.slug, p]));
-
-const enrichLegacy = (p: LegacyProductShape): LegacyProductShape => {
-  const seed = seedIndex.get(p.slug);
-  if (!seed) return p;
-  return {
-    ...p,
-    oldPrice: seed.oldPrice ?? p.oldPrice,
-    badge: p.badge ?? seed.badge,
-    image: p.image || seed.image,
-  };
-};
-
 const dtoToLegacy = (rows: ProductDTO[]): LegacyProductShape[] =>
   rows.filter(isCatalogProductReady).map(toLegacyProduct);
-
-const developmentFallbackProducts = (): LegacyProductShape[] => {
-  if (!shouldUseDemoCatalog(import.meta.env.DEV)) return [];
-  return fallbackProducts().map(toLegacyProduct).map(enrichLegacy);
-};
 
 async function rethrowWhenShopifyIsRequired(error: unknown): Promise<void> {
   const status = await diagnoseShopifyCatalog();
@@ -106,13 +83,10 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
   }
   try {
     const rows = await listProducts({ data });
-    if (rows.length === 0) {
-      return developmentFallbackProducts();
-    }
     return dtoToLegacy(rows);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] fetchProducts fallback:", err);
-    return developmentFallbackProducts();
+    throw err;
   }
 }
 
@@ -131,13 +105,12 @@ export async function fetchProductBySlug(slug: string): Promise<LegacyProductSha
   }
   try {
     const dto = await getProductBySlugFn({ data: { slug: parsed } });
-    if (dto && isCatalogProductReady(dto)) return enrichLegacy(toLegacyProduct(dto));
+    if (dto && isCatalogProductReady(dto)) return toLegacyProduct(dto);
   } catch (err) {
-    if (import.meta.env.DEV) console.warn("[product.actions] fetchProductBySlug fallback:", err);
+    if (import.meta.env.DEV) console.warn("[product.actions] fetchProductBySlug failed:", err);
+    throw err;
   }
-  if (!shouldUseDemoCatalog(import.meta.env.DEV)) return null;
-  const seed = fallbackProducts().find((product) => product.slug === parsed);
-  return seed ? enrichLegacy(toLegacyProduct(seed)) : null;
+  return null;
 }
 
 /**
@@ -177,32 +150,7 @@ export async function fetchProductsByIds(ids: string[]): Promise<LegacyProductSh
 export async function fetchProductsByCategory(
   categoryIdOrSlug: string,
 ): Promise<LegacyProductShape[]> {
-  const key = categoryIdOrSlug.trim();
-  const cleanKey = key.toLowerCase().replace(/_/g, "-");
-  const aliasKey = cleanKey === "tools-hardware" ? "tools" : cleanKey;
-
-  let categories: Awaited<ReturnType<typeof fetchCategories>> = [];
-  try {
-    categories = await fetchCategories();
-  } catch {
-    /* ignore */
-  }
-
-  const matchedCat = categories.find((category) => {
-    const categoryKey = category.id.toLowerCase().replace(/_/g, "-");
-    return category.id === key || categoryKey === aliasKey;
-  });
-  const targetSlug = matchedCat?.id ?? aliasKey;
-  const targetId = matchedCat?.id ?? key;
-
-  const all = await fetchProducts();
-  return all.filter((p) => {
-    if (p.categoryId === targetId || p.categoryId === targetSlug || p.categoryId === cleanKey) {
-      return true;
-    }
-    const inferred = inferCategorySlug(p.name, [], p.description ?? "");
-    return inferred === targetSlug || inferred === cleanKey;
-  });
+  return fetchProducts({ categoryId: categoryIdOrSlug.trim(), limit: 100 });
 }
 
 export async function searchProducts(q: string): Promise<LegacyProductShape[]> {
@@ -224,16 +172,7 @@ export async function fetchOffers(limit = 20): Promise<LegacyProductShape[]> {
         (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
   );
 
-  if (explicitOffers.length > 0) {
-    return explicitOffers.slice(0, requested);
-  }
-
-  // Fallback: pick products and compute deal pricing so offers page & home deals section are vibrant
-  return all.slice(0, Math.min(requested, 8)).map((p) => ({
-    ...p,
-    oldPrice: p.oldPrice || Math.round(p.price * 1.25),
-    badge: p.badge || "عرض خاص 🔥",
-  }));
+  return explicitOffers.slice(0, requested);
 }
 
 export async function fetchBestSellers(limit = 20): Promise<LegacyProductShape[]> {
