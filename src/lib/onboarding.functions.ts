@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Onboarding server functions — self-service tenant creation for signed-in users.
  *
@@ -111,7 +110,7 @@ export const completeOnboarding = createServerFn({ method: "POST" })
         slug: data.slug,
         name: data.name,
         owner_user_id: userId,
-        plan: data.plan ?? "free",
+        plan: "free",
         status: "active",
       })
       .select("*")

@@ -1,3 +1,5 @@
+import type { Product as StudioProduct } from "@/components/storefront/types";
+import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { Sparkles, Upload, X, Wand2, Save, RotateCcw, Loader2 } from "lucide-react";
@@ -72,9 +74,16 @@ function StudioPage() {
     });
     try {
       const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("يرجى تسجيل الدخول لاستخدام مساعد المنتجات");
       const res = await fetch(`${base}/api/ai/analyze-product`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ hint, language: lang, images }),
       });
       const data = await res.json();
@@ -313,7 +322,7 @@ function StudioPage() {
       {/* Evolution Studio 3D Interactive Modal */}
       {isEvolutionStudioOpen && (
         <IndexesEvolutionStudio
-          products={seedProducts as any}
+          products={seedProducts as unknown as StudioProduct[]}
           onClose={() => setIsEvolutionStudioOpen(false)}
           onApplyDraftToStore={(draft) => {
             saveActiveDraft(draft);
