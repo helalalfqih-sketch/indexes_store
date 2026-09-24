@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { normalizeStoreScope, validateStoreClient } from "@/lib/mcp/store-oauth.server";
+import {
+  normalizeStoreScope,
+  StoreClientRegistrationError,
+  validateStoreClient,
+} from "@/lib/mcp/store-oauth.server";
 
 export const Route = createFileRoute("/api/mcp/store/oauth/authorize")({
   server: {
@@ -47,6 +51,9 @@ export const Route = createFileRoute("/api/mcp/store/oauth/authorize")({
                   ? "invalid_scope"
                   : "invalid_request",
               reason,
+              ...(error instanceof StoreClientRegistrationError
+                ? { registration_issue: error.issue }
+                : {}),
             },
             { status: unavailable ? 503 : 400, headers: { "Cache-Control": "no-store" } },
           );

@@ -49,6 +49,7 @@ describe("store authorization endpoint", () => {
     expect(await response.json()).toEqual({
       error: "invalid_request",
       reason: "client_registration_invalid",
+      registration_issue: "invalid_signature",
     });
     expect(response.headers.get("cache-control")).toBe("no-store");
   });
