@@ -13,7 +13,7 @@ const BUILT_IN_PAGE_ROUTES: Partial<Record<string, "/terms" | "/privacy-policy">
 
 export const Route = createFileRoute("/pages/$slug")({
   head: ({ loaderData }) => {
-    const page = loaderData?.page;
+    const page = (loaderData as PublicCmsLoaderData | undefined)?.page;
     if (!page) {
       return {
         meta: [{ title: "الصفحة غير موجودة — اندكس ستور" }],

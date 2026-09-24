@@ -70,8 +70,8 @@ function HomePage() {
               aria-label={`عرض ${feature.name}`}
             >
               <img src={feature.image} alt={feature.name} fetchPriority="high" />
-              <span>
-                {feature.name}
+              <span className="sf-hero-caption">
+                <span className="sf-hero-name">{feature.name}</span>
                 <strong>{formatPrice(feature.price)}</strong>
               </span>
             </Link>

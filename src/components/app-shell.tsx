@@ -4,7 +4,7 @@ import { VStack } from "@astryxdesign/core/VStack";
 import { Theme } from "@astryxdesign/core/theme";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Grid2X2, Heart, Home, Search, ShoppingCart, Tag, User } from "lucide-react";
+import { Grid2X2, Heart, Home, Package, Search, ShoppingCart, Tag, User } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useCart, useHydrateCart } from "@/lib/cart-store";
 import { categoriesQuery } from "@/lib/queries/catalog";
@@ -79,6 +79,11 @@ function StorefrontHeader() {
           </Link>
           {categories.map((category) => (
             <Link key={category.id} to="/category/$id" params={{ id: category.id }}>
+              {category.imageUrl ? (
+                <img src={category.imageUrl} alt="" loading="lazy" />
+              ) : (
+                <Package aria-hidden="true" />
+              )}
               {category.name}
             </Link>
           ))}

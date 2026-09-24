@@ -67,7 +67,7 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
     });
     if (shopify.configured) {
       const readyShopifyProducts = dtoToLegacy(shopify.items);
-      if (readyShopifyProducts.length > 0) return readyShopifyProducts;
+      if (readyShopifyProducts.length > 0 || data.categoryId) return readyShopifyProducts;
 
       // A healthy Shopify connection does not guarantee that the returned
       // products are storefront-ready. For example, a product can still be

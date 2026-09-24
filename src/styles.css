@@ -635,7 +635,7 @@ body {
 .sf-cart-dialog::backdrop { background: color-mix(in srgb,var(--color-blue-950) 65%,transparent); }
 .sf-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-3); }
 .sf-dialog-header h1 { display: inline-flex; align-items: center; gap: var(--spacing-2); font-size: var(--text-heading-3-size,1.5rem); font-weight: 900; }
-.sf-cart-line > .astryx-stack { flex: 1; min-width: 0; }
+.sf-cart-line > :nth-child(2) { flex: 1; min-width: 0; }
 .sf-cart-line h2 { font-size: var(--text-body-small-size,.875rem); line-height: 1.6; font-weight: 700; }
 .sf-line-actions { display: flex; flex-direction: column; }
 .sf-quantity output { min-width: var(--spacing-6); text-align: center; font-weight: 700; }
@@ -656,3 +656,47 @@ body {
 .sf-promo h2 { color: var(--sf-navy); }
 .sf-cart-button svg, .sf-icon-button svg { width: var(--spacing-5); height: var(--spacing-5); }
 .sf-store .astryx-app-shell { background: var(--sf-white); }
+/* Explicit contrast for inline theme text within the navy storefront chrome. */
+.sf-brand, .sf-brand strong, .sf-brand small, .sf-hero-copy > p:first-child { color: var(--sf-white); }
+.sf-category-inner { scrollbar-width: none; }
+.sf-category-inner::-webkit-scrollbar { display: none; }
+/* Refined first-screen budget: retain all commerce actions, compact merchandising. */
+.sf-category-inner a > img, .sf-category-inner a > svg { width: var(--spacing-5); height: var(--spacing-5); object-fit: contain; flex-shrink: 0; }
+.sf-hero-product > .sf-hero-caption { display: flex; flex-direction: column; overflow: visible; width: 100%; gap: var(--spacing-1); -webkit-line-clamp: unset; color: var(--sf-white); }
+.sf-hero-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--sf-white); }
+.sf-hero-caption strong { display: block; white-space: nowrap; color: var(--sf-yellow); }
+.sf-delivery-overlay { position: fixed; inset: 0; z-index: 100; display: flex; justify-content: flex-end; background: color-mix(in srgb,var(--sf-navy) 65%,transparent); }
+.sf-delivery-backdrop { flex: 1; border: 0; background: transparent; cursor: pointer; }
+.sf-delivery-dialog { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 28rem; overflow: hidden; border-inline-start: var(--sf-line) solid var(--sf-border); box-shadow: var(--shadow-lg); }
+.sf-faq details { border-bottom: var(--sf-line) solid var(--sf-border); padding-block: var(--spacing-3); }
+@media (max-width:47.999rem) {
+  .sf-header-inner { padding-block: var(--spacing-2); gap: var(--spacing-2); }
+  .sf-brand > svg { width: var(--spacing-8); height: var(--spacing-8); }
+  .sf-category-inner { padding-block: var(--spacing-1); }
+  .sf-category-inner a { font-size: var(--text-caption-size,.75rem); padding-inline: var(--spacing-2); gap: var(--spacing-1); }
+  .sf-home { padding-block: var(--spacing-2); gap: var(--spacing-2); }
+  .sf-home .sf-announcement { display: none; }
+  .sf-hero-inner { min-height: 10rem; padding: var(--spacing-3); gap: var(--spacing-3); }
+  .sf-hero-copy { gap: var(--spacing-2); }
+  .sf-hero h1 { font-size: 1.5rem; line-height: 1.3; }
+  .sf-hero-copy > p:first-child { font-size: var(--text-caption-size,.75rem); }
+  .sf-hero-description { display: none; }
+  .sf-hero-product { gap: var(--spacing-1); }
+  .sf-hero-product img { max-height: 6.5rem; aspect-ratio: 1.2; }
+  .sf-hero-name { -webkit-line-clamp: 1; }
+  .sf-hero-product > .sf-hero-caption { font-size: var(--text-caption-size,.75rem); gap: 0; text-align: center; }
+  .sf-promo { padding: var(--spacing-2) var(--spacing-3); min-height: 5rem; gap: var(--spacing-2); }
+  .sf-promo > :first-child { gap: var(--spacing-1); min-width: 0; }
+  .sf-promo h2 { -webkit-line-clamp: 1; font-size: var(--text-body-small-size,.875rem); }
+  .sf-promo small { display: none; }
+  .sf-promo img { width: 4rem; height: 4rem; flex-shrink: 0; }
+  .sf-promo span { font-size: var(--text-caption-size,.75rem); }
+  .sf-section-heading { margin-block: var(--spacing-2); min-height: var(--spacing-8); }
+  .sf-section-heading h2 { font-size: var(--text-body-large-size,1.125rem); }
+  .sf-product-info { padding: var(--spacing-2); gap: var(--spacing-1); }
+}
+@media (min-width:48rem) {
+  .sf-hero-product { flex-direction: column; }
+  .sf-hero-product > .sf-hero-caption { max-width: 17rem; text-align: center; }
+  .sf-hero-name { -webkit-line-clamp: 1; }
+}

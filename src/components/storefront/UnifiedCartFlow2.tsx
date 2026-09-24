@@ -212,7 +212,14 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
           aria-modal="true"
           aria-label="بيانات التسليم"
         >
-          <div className="flex-1 cursor-pointer" onClick={props.onClose} />
+          <button
+            type="button"
+            className="sf-delivery-backdrop"
+            aria-label="إغلاق بيانات التسليم"
+            tabIndex={-1}
+            disabled={submitting}
+            onClick={onClose}
+          />
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
