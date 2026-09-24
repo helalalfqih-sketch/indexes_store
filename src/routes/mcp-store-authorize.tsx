@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/mcp-store-authorize")({
   validateSearch: (search: Record<string, unknown>) => ({
+    scope: String(search.scope || "store.read"),
     client_id: String(search.client_id || ""),
     redirect_uri: String(search.redirect_uri || ""),
     state: String(search.state || ""),
@@ -19,12 +20,11 @@ const capabilityGroups = [
   },
   {
     title: "فحص الواجهة والمتصفح",
-    items: [
-      "فحص الصفحات والعناصر والنماذج",
-      "فحص Desktop وMobile",
-      "Console وNetwork",
-      "تجربة تنقل ونقر آمن",
-    ],
+    items: ["فحص الصفحات والعناصر والنماذج", "فحص Desktop وMobile", "Console وNetwork"],
+  },
+  {
+    title: "اختبار تفاعل معزول",
+    items: ["نقر محلي معلّم للاختبار مع حالة قبل وبعد", "لا طلبات حقيقية أو إرسال واتساب"],
   },
   {
     title: "تطوير المصدر عبر GitHub",
@@ -84,20 +84,28 @@ function StoreMcpAuthorize() {
       <section className="mx-auto max-w-2xl rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
         <h1 className="text-2xl font-bold">ربط Indexes Store Admin</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          سيحصل ChatGPT على صلاحيات الفحص والتطوير المقيدة الموضحة أدناه.
+          الصلاحيات المطلوبة لهذا الاتصال: {query.scope}
         </p>
 
         <div className="mt-6 space-y-4">
-          {capabilityGroups.map((group) => (
-            <section key={group.title} className="rounded-xl border p-4">
-              <h2 className="font-semibold">{group.title}</h2>
-              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                {group.items.map((item) => (
-                  <li key={item}>✓ {item}</li>
-                ))}
-              </ul>
-            </section>
-          ))}
+          {capabilityGroups
+            .filter(
+              (group) =>
+                (group.title !== "تطوير المصدر عبر GitHub" ||
+                  query.scope.split(" ").includes("store.develop")) &&
+                (group.title !== "اختبار تفاعل معزول" ||
+                  query.scope.split(" ").includes("store.test")),
+            )
+            .map((group) => (
+              <section key={group.title} className="rounded-xl border p-4">
+                <h2 className="font-semibold">{group.title}</h2>
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  {group.items.map((item) => (
+                    <li key={item}>✓ {item}</li>
+                  ))}
+                </ul>
+              </section>
+            ))}
         </div>
 
         <div className="mt-5 rounded-xl border p-4 text-sm">

@@ -3,9 +3,16 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 export const STORE_ORIGIN = "https://indexes-store.vercel.app";
 export const STORE_OAUTH_ISSUER = `${STORE_ORIGIN}/api/mcp/store/oauth`;
 export const STORE_MCP_AUDIENCE = `${STORE_ORIGIN}/api/mcp/store`;
-export const STORE_MCP_SCOPE = "store.read store.develop offline_access";
-export const STORE_MCP_DISCOVERY_VERSION = "2.3.0";
+export const STORE_MCP_SCOPE = "store.read store.test store.develop offline_access";
+export const STORE_MCP_DISCOVERY_VERSION = "2.4.0";
 const STORE_CLIENT_KIND = "store_client_v3";
+
+export function normalizeStoreScope(value: string = "store.read") {
+  const scopes = [...new Set(value.split(/\s+/).filter(Boolean))];
+  if (!scopes.includes("store.read") || scopes.some((s) => !STORE_MCP_SCOPE.split(" ").includes(s)))
+    throw new Error("INVALID_SCOPE");
+  return scopes.join(" ");
+}
 
 const b64 = (value: Buffer | string) => Buffer.from(value).toString("base64url");
 
@@ -54,7 +61,7 @@ export const storeOauthMetadata = () => ({
   response_types_supported: ["code"],
   grant_types_supported: ["authorization_code", "refresh_token"],
   code_challenge_methods_supported: ["S256"],
-  scopes_supported: ["store.read", "store.develop", "offline_access"],
+  scopes_supported: ["store.read", "store.test", "store.develop", "offline_access"],
   token_endpoint_auth_methods_supported: ["none"],
   service_documentation: `${STORE_ORIGIN}/mcp-store-authorize?discovery=${STORE_MCP_DISCOVERY_VERSION}`,
 });
@@ -62,7 +69,7 @@ export const storeOauthMetadata = () => ({
 export const storeResourceMetadata = () => ({
   resource: STORE_MCP_AUDIENCE,
   authorization_servers: [STORE_OAUTH_ISSUER],
-  scopes_supported: ["store.read", "store.develop", "offline_access"],
+  scopes_supported: ["store.read", "store.test", "store.develop", "offline_access"],
   bearer_methods_supported: ["header"],
   resource_documentation: `${STORE_ORIGIN}/mcp-store-authorize?discovery=${STORE_MCP_DISCOVERY_VERSION}`,
 });
@@ -95,6 +102,7 @@ export function issueStoreCode(input: {
   clientId: string;
   redirectUri: string;
   challenge: string;
+  scope?: string;
 }) {
   return sign({
     kind: "store_code",
@@ -103,29 +111,29 @@ export function issueStoreCode(input: {
     client_id: input.clientId,
     redirect_uri: input.redirectUri,
     challenge: input.challenge,
-    scope: STORE_MCP_SCOPE,
+    scope: normalizeStoreScope(input.scope),
     exp: Math.floor(Date.now() / 1000) + 300,
   });
 }
 
-function accessToken(sub: string, tenantId: string) {
+function accessToken(sub: string, tenantId: string, scope: string) {
   return sign({
     kind: "store_access",
     sub,
     tenant_id: tenantId,
     aud: STORE_MCP_AUDIENCE,
-    scope: STORE_MCP_SCOPE,
+    scope: normalizeStoreScope(scope),
     exp: Math.floor(Date.now() / 1000) + 3600,
   });
 }
 
-function refreshToken(sub: string, tenantId: string) {
+function refreshToken(sub: string, tenantId: string, scope: string) {
   return sign({
     kind: "store_refresh",
     sub,
     tenant_id: tenantId,
     aud: STORE_MCP_AUDIENCE,
-    scope: STORE_MCP_SCOPE,
+    scope: normalizeStoreScope(scope),
     exp: Math.floor(Date.now() / 1000) + 86400 * 30,
   });
 }
@@ -149,8 +157,16 @@ export function exchangeStoreCode(
     throw new Error("INVALID_GRANT");
   }
   return {
-    accessToken: accessToken(payload.sub, payload.tenant_id),
-    refreshToken: refreshToken(payload.sub, payload.tenant_id),
+    accessToken: accessToken(
+      payload.sub,
+      payload.tenant_id,
+      normalizeStoreScope(String(payload.scope)),
+    ),
+    refreshToken: refreshToken(
+      payload.sub,
+      payload.tenant_id,
+      normalizeStoreScope(String(payload.scope)),
+    ),
   };
 }
 
@@ -159,15 +175,24 @@ export function exchangeStoreRefreshToken(token: string) {
   if (
     payload.kind !== "store_refresh" ||
     payload.aud !== STORE_MCP_AUDIENCE ||
-    payload.scope !== STORE_MCP_SCOPE ||
+    typeof payload.scope !== "string" ||
+    normalizeStoreScope(payload.scope) !== payload.scope ||
     typeof payload.sub !== "string" ||
     typeof payload.tenant_id !== "string"
   ) {
     throw new Error("INVALID_GRANT");
   }
   return {
-    accessToken: accessToken(payload.sub, payload.tenant_id),
-    refreshToken: refreshToken(payload.sub, payload.tenant_id),
+    accessToken: accessToken(
+      payload.sub,
+      payload.tenant_id,
+      normalizeStoreScope(String(payload.scope)),
+    ),
+    refreshToken: refreshToken(
+      payload.sub,
+      payload.tenant_id,
+      normalizeStoreScope(String(payload.scope)),
+    ),
   };
 }
 
@@ -176,7 +201,8 @@ export function verifyStoreAccessToken(token: string) {
   if (
     payload.kind !== "store_access" ||
     payload.aud !== STORE_MCP_AUDIENCE ||
-    payload.scope !== STORE_MCP_SCOPE ||
+    typeof payload.scope !== "string" ||
+    normalizeStoreScope(payload.scope) !== payload.scope ||
     typeof payload.sub !== "string" ||
     typeof payload.tenant_id !== "string"
   ) {
