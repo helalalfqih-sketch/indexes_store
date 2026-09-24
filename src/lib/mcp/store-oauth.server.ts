@@ -1,6 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { resolveStoreOAuthOrigin, STORE_PRODUCTION_ORIGIN } from "./store-oauth-origin";
 
-export const STORE_ORIGIN = "https://indexes-store.vercel.app";
+export const STORE_ORIGIN = resolveStoreOAuthOrigin(process.env.VERCEL_ENV, process.env.VERCEL_URL);
 export const STORE_OAUTH_ISSUER = `${STORE_ORIGIN}/api/mcp/store/oauth`;
 export const STORE_MCP_AUDIENCE = `${STORE_ORIGIN}/api/mcp/store`;
 export const STORE_MCP_SCOPE = "store.read store.test store.develop offline_access";
@@ -19,7 +20,10 @@ const b64 = (value: Buffer | string) => Buffer.from(value).toString("base64url")
 function secret() {
   const value = process.env.STORE_MCP_OAUTH_SECRET?.trim();
   if (!value || value.length < 32) throw new Error("STORE_MCP_OAUTH_NOT_CONFIGURED");
-  return createHash("sha256").update("indexes-store-mcp-oauth-v1").update(value).digest();
+  const hash = createHash("sha256").update("indexes-store-mcp-oauth-v1").update(value);
+  // Preserve existing production tokens; isolate preview clients, codes and tokens.
+  if (STORE_ORIGIN !== STORE_PRODUCTION_ORIGIN) hash.update(STORE_ORIGIN);
+  return hash.digest();
 }
 
 function sign(payload: Record<string, unknown>) {
