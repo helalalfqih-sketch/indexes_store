@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   exchangeStoreCode,
   exchangeStoreRefreshToken,
-  STORE_MCP_SCOPE,
+  verifyStoreAccessToken,
 } from "@/lib/mcp/store-oauth.server";
 
 function tokenResponse(tokens: { accessToken: string; refreshToken: string }) {
@@ -12,7 +12,7 @@ function tokenResponse(tokens: { accessToken: string; refreshToken: string }) {
       refresh_token: tokens.refreshToken,
       token_type: "Bearer",
       expires_in: 3600,
-      scope: STORE_MCP_SCOPE,
+      scope: verifyStoreAccessToken(tokens.accessToken).scopes.join(" "),
     },
     { headers: { "Cache-Control": "no-store", Pragma: "no-cache" } },
   );
