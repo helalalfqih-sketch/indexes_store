@@ -73,6 +73,24 @@ function result(data: Record<string, unknown>) {
   };
 }
 
+function insufficientScope(required: "store.test" | "store.develop", granted: string[]) {
+  // Request fresh consent for the missing scope while retaining known grants.
+  // This challenge never adds privileges to the current token or refresh grant.
+  const requested = STORE_MCP_SCOPE.split(" ").filter(
+    (scope) => scope === "store.read" || scope === required || granted.includes(scope),
+  ).join(" ");
+  return {
+    isError: true,
+    structuredContent: { error: "INSUFFICIENT_SCOPE", required_scopes: ["store.read", required] },
+    content: [{ type: "text" as const, text: `Missing required OAuth scope: ${required}. Reauthorize this connection to grant it.` }],
+    _meta: {
+      "mcp/www_authenticate": [
+        `Bearer resource_metadata="${RESOURCE_METADATA}", error="insufficient_scope", error_description="Additional consent is required for ${required}", scope="${requested}"`,
+      ],
+    },
+  };
+}
+
 function safeErrorCode(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   if (message === "STORE_MCP_GITHUB_NOT_CONFIGURED") return "SOURCE_GITHUB_NOT_CONFIGURED";
@@ -138,7 +156,7 @@ function createServer(
 
   const testTool = <T extends z.ZodRawShape>(name: string, title: string, description: string, inputSchema: z.ZodObject<T>, run: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>) =>
     server.registerTool(name, {title,description,inputSchema,annotations:writeAnnotations,_meta:{securitySchemes:[{type:"oauth2",scopes:["store.read","store.test"]}]}}, input => {
-      if (!scopes.includes("store.test")) return {isError:true,content:[{type:"text" as const,text:"Missing required OAuth scope: store.test"}]};
+      if (!scopes.includes("store.test")) return insufficientScope("store.test", scopes);
       return safeRead(()=>run(input));
     });
   const qaSchema = z.object({url:z.string().url().default("https://indexes-store.vercel.app/"),device:z.enum(["desktop","mobile"]).default("desktop")}).strict();
@@ -220,10 +238,7 @@ function createServer(
     action: () => Promise<Record<string, unknown>>,
   ) => {
     if (!scopes.includes("store.develop")) {
-      return {
-        isError: true,
-        content: [{ type: "text" as const, text: "Missing required OAuth scope: store.develop" }],
-      };
+      return insufficientScope("store.develop", scopes);
     }
     return safeRead(action);
   };
