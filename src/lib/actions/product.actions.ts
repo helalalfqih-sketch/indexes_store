@@ -20,6 +20,7 @@ import {
 import { toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
 import type { ProductDTO } from "@/lib/domain/product";
 import { isCatalogProductReady } from "@/lib/catalog-readiness";
+import { fetchCatalogPage } from "@/lib/actions/catalog-page.actions";
 import {
   listShopifyProducts,
   getShopifyProductBySlug,
@@ -161,18 +162,29 @@ export async function searchProducts(q: string): Promise<LegacyProductShape[]> {
 
 export async function fetchOffers(limit = 20): Promise<LegacyProductShape[]> {
   const requested = Math.max(1, Math.min(limit, 100));
-  // Offer badges and compare-at prices are already present in the newest catalog rows.
-  // Do not download the entire Shopify catalog just to render a small storefront section.
-  const all = await fetchProducts({ limit: Math.min(100, Math.max(requested * 2, 16)) });
-  const explicitOffers = all.filter(
-    (p) =>
-      p.isDeal ||
-      (typeof p.oldPrice === "number" && p.oldPrice > p.price) ||
-      (p.badge &&
-        (p.badge.includes("عرض") || p.badge.includes("خصم") || p.badge.includes("تخفيض"))),
-  );
-
-  return explicitOffers.slice(0, requested);
+  const offers = new Map<string, LegacyProductShape>();
+  const visitedCursors = new Set<string>();
+  let after: string | null = null;
+  // An empty first page of offers says nothing about later catalog pages.
+  // Stop only once the requested number is found or the source is exhausted.
+  while (offers.size < requested) {
+    const page = await fetchCatalogPage({ first: 99, after });
+    for (const product of page.items) {
+      if (
+        product.isDeal ||
+        (typeof product.oldPrice === "number" && product.oldPrice > product.price) ||
+        (product.badge && /عرض|خصم|تخفيض/.test(product.badge))
+      )
+        offers.set(product.id, product);
+    }
+    if (!page.hasNextPage) break;
+    if (!page.endCursor || visitedCursors.has(page.endCursor)) {
+      throw new Error("Catalog pagination did not advance");
+    }
+    visitedCursors.add(page.endCursor);
+    after = page.endCursor;
+  }
+  return [...offers.values()].slice(0, requested);
 }
 
 export async function fetchBestSellers(limit = 20): Promise<LegacyProductShape[]> {

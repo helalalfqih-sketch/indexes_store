@@ -99,6 +99,31 @@ describe("storefront catalog truth and pagination", () => {
     mocks.list.mockResolvedValue([product(id, { old_price: 7900 })]);
     expect((await fetchOffers())[0]).toMatchObject({ price: 6900, oldPrice: 7900 });
   });
+  it("finds real offers after a page containing no discounted products", async () => {
+    mocks.page
+      .mockResolvedValueOnce({
+        configured: true,
+        items: [product(id)],
+        hasNextPage: true,
+        endCursor: "next",
+      })
+      .mockResolvedValueOnce({
+        configured: true,
+        items: [product("later", { old_price: 7900 })],
+        hasNextPage: false,
+        endCursor: null,
+      });
+    expect(await fetchOffers()).toMatchObject([{ id: "later", price: 6900, oldPrice: 7900 }]);
+    expect(mocks.page).toHaveBeenLastCalledWith({
+      data: { first: 99, after: "next", search: undefined, categoryId: undefined },
+    });
+  });
+  it("does not report no offers if a subsequent catalog page fails", async () => {
+    mocks.page
+      .mockResolvedValueOnce({ configured: true, items: [], hasNextPage: true, endCursor: "next" })
+      .mockRejectedValueOnce(new Error("offline"));
+    await expect(fetchOffers()).rejects.toThrow("offline");
+  });
   it("keeps source failures distinct from an empty catalog", async () => {
     mocks.list.mockRejectedValue(new Error("offline"));
     await expect(fetchProducts()).rejects.toThrow("offline");
