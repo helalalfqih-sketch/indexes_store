@@ -165,7 +165,7 @@ export const seedDefaultPages = createServerFn({ method: "POST" })
 
   // Check existing pages
   const { data: existing } = await db.from("cms_pages").select("slug").eq("tenant_id", tenantId);
-  const existingSlugs = new Set(existing?.map((p) => p.slug) || []);
+  const existingSlugs = new Set(existing?.map((p: { slug: string }) => p.slug) || []);
 
   const toInsert = DEFAULT_CMS_PAGES.filter((p) => !existingSlugs.has(p.slug)).map((p) => ({
     tenant_id: tenantId,
