@@ -2,11 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveCurrentTenant } from "@/lib/saas/tenant-resolver";
-import {
-  checkTenantPermission,
-  requireTenantPermission,
-  PermissionDeniedError,
-} from "@/lib/users.functions";
+import { checkTenantPermission } from "@/lib/users.functions";
 
 export interface ReviewRow {
   id: string;
@@ -113,18 +109,16 @@ export const moderateReview = createServerFn({ method: "POST" })
     const { supabase, userId } = context as unknown as { supabase: any; userId: string };
     const tenantId = await resolveCurrentTenant(supabase, { userId });
 
-    try {
-      await requireTenantPermission({
-        db: supabase,
-        userId,
-        tenantId,
-        permission: "settings",
-      });
-    } catch (error) {
-      if (error instanceof PermissionDeniedError) {
-        return { success: false, message: "غير مصرح لك بمراجعة التقييمات" };
-      }
-      throw error;
+    const { data: allowed, error: permissionError } = await supabase.rpc(
+      "has_tenant_permission",
+      {
+        _tenant_id: tenantId,
+        _user_id: userId,
+        _required_role: "manager",
+      },
+    );
+    if (permissionError || !allowed) {
+      return { success: false, message: "غير مصرح لك بمراجعة التقييمات" };
     }
 
     const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -163,18 +157,16 @@ export const deleteReview = createServerFn({ method: "POST" })
     const { supabase, userId } = context as unknown as { supabase: any; userId: string };
     const tenantId = await resolveCurrentTenant(supabase, { userId });
 
-    try {
-      await requireTenantPermission({
-        db: supabase,
-        userId,
-        tenantId,
-        permission: "settings",
-      });
-    } catch (error) {
-      if (error instanceof PermissionDeniedError) {
-        return { success: false, message: "غير مصرح لك بحذف التقييمات" };
-      }
-      throw error;
+    const { data: allowed, error: permissionError } = await supabase.rpc(
+      "has_tenant_permission",
+      {
+        _tenant_id: tenantId,
+        _user_id: userId,
+        _required_role: "manager",
+      },
+    );
+    if (permissionError || !allowed) {
+      return { success: false, message: "غير مصرح لك بحذف التقييمات" };
     }
 
     const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
