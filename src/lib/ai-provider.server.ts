@@ -302,12 +302,13 @@ export const saveAIProviderFn = createServerFn({ method: "POST" })
       .single();
 
     if (error) throw new Error(error.message);
+    const insertedRow = inserted as any;
 
     if (vaultAvailable && newSecret) {
       try {
-        await setProviderVaultSecret(access.adminDb, inserted.id, newSecret);
+        await setProviderVaultSecret(access.adminDb, insertedRow.id, newSecret);
       } catch (error) {
-        await access.adminDb.from("ai_provider_configs" as any).delete().eq("id", inserted.id);
+        await access.adminDb.from("ai_provider_configs" as any).delete().eq("id", insertedRow.id);
         throw error;
       }
     }
@@ -315,7 +316,7 @@ export const saveAIProviderFn = createServerFn({ method: "POST" })
     const finalResult = await access.adminDb
       .from("ai_provider_configs" as any)
       .select("*")
-      .eq("id", inserted.id)
+      .eq("id", insertedRow.id)
       .single();
     if (finalResult.error) throw new Error(finalResult.error.message);
     return maskProviderConfig(finalResult.data);
