@@ -122,7 +122,12 @@ export async function getPrivilegedAgentDb(options: PrivilegedAgentOptions) {
 }
 
 export async function getAgentDb(ctx?: any) {
-  return ctx?.supabase || supabase;
+  if (ctx?.supabase) return ctx.supabase;
+  if (typeof process === "undefined") {
+    throw new Error("Agent database access requires an authenticated server context.");
+  }
+  const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return getSupabaseAdmin();
 }
 
 async function resolveAgentRole(db: any, userId: string, tenantId: string): Promise<AgentRole> {
@@ -222,7 +227,7 @@ export async function verifyApproval(
 }
 
 async function logAudit(
-  db: any,
+  _db: any,
   tenantId: string,
   userId: string,
   action: string,
@@ -230,7 +235,8 @@ async function logAudit(
   details?: any,
 ) {
   try {
-    await db.from("ai_agent_audit_logs").insert({
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await getSupabaseAdmin().from("ai_agent_audit_logs").insert({
       tenant_id: tenantId,
       session_id: sessionId || null,
       user_id: userId,
@@ -243,7 +249,7 @@ async function logAudit(
 }
 
 async function recordUsage(
-  db: any,
+  _db: any,
   tenantId: string,
   userId: string,
   sessionId: string | null,
@@ -252,8 +258,9 @@ async function recordUsage(
   try {
     const total = usage.promptTokens + usage.completionTokens;
     const cost = usage.promptTokens * 0.00000015 + usage.completionTokens * 0.0000006;
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    await db.from("ai_agent_usage").insert({
+    await getSupabaseAdmin().from("ai_agent_usage").insert({
       tenant_id: tenantId,
       session_id: sessionId,
       user_id: userId,

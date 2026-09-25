@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveTenantId } from "@/lib/saas/tenant-context";
 import { checkTenantPermission } from "@/lib/users.functions";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // Reserved slugs that cannot be used by CMS pages
 export const RESERVED_SLUGS = new Set([
@@ -72,9 +73,12 @@ export function slugify(text: string): string {
 }
 
 /** Server Fn: List CMS Pages for current tenant */
-export const listCmsPages = createServerFn({ method: "GET" }).handler(async () => {
-  const tenantId = await resolveTenantId(supabase);
-  const { data, error } = await supabase
+export const listCmsPages = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+  const db = (context as any).supabase;
+  const tenantId = await resolveTenantId(db, { userId: (context as any).userId });
+  const { data, error } = await db
     .from("cms_pages")
     .select("*")
     .eq("tenant_id", tenantId)
@@ -151,12 +155,17 @@ export const DEFAULT_CMS_PAGES = [
 ];
 
 /** Server Fn: Seed default pages if table is empty for current tenant */
-export const seedDefaultPages = createServerFn({ method: "POST" }).handler(async () => {
-  const tenantId = await resolveTenantId(supabase);
+export const seedDefaultPages = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+  const hasPerm = await checkTenantPermission("cms", context);
+  if (!hasPerm) throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة محتوى (CMS).");
+  const db = (context as any).supabase;
+  const tenantId = await resolveTenantId(db, { userId: (context as any).userId });
 
   // Check existing pages
-  const { data: existing } = await supabase.from("cms_pages").select("slug").eq("tenant_id", tenantId);
-  const existingSlugs = new Set(existing?.map((p) => p.slug) || []);
+  const { data: existing } = await db.from("cms_pages").select("slug").eq("tenant_id", tenantId);
+  const existingSlugs = new Set(existing?.map((p: { slug: string }) => p.slug) || []);
 
   const toInsert = DEFAULT_CMS_PAGES.filter((p) => !existingSlugs.has(p.slug)).map((p) => ({
     tenant_id: tenantId,
@@ -169,13 +178,14 @@ export const seedDefaultPages = createServerFn({ method: "POST" }).handler(async
   }));
 
   if (toInsert.length > 0) {
-    await supabase.from("cms_pages").insert(toInsert);
+    await db.from("cms_pages").insert(toInsert);
   }
   return { seeded: toInsert.length };
 });
 
 /** Server Fn: Save or update CMS Page with revision version snapshot */
 export const saveCmsPage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: {
     id?: string;
     slug: string;
@@ -193,7 +203,8 @@ export const saveCmsPage = createServerFn({ method: "POST" })
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة محتوى (CMS).");
     }
 
-    const tenantId = await resolveTenantId(supabase);
+    const db = (context as any).supabase;
+    const tenantId = await resolveTenantId(db, { userId: (context as any).userId });
     const cleanSlug = slugify(data.slug);
 
     if (RESERVED_SLUGS.has(cleanSlug)) {
@@ -219,19 +230,19 @@ export const saveCmsPage = createServerFn({ method: "POST" })
 
     if (pageId) {
       // Update existing
-      const { error } = await supabase.from("cms_pages").update(payload).eq("id", pageId).eq("tenant_id", tenantId);
+      const { error } = await db.from("cms_pages").update(payload).eq("id", pageId).eq("tenant_id", tenantId);
       if (error) throw new Error(error.message);
     } else {
       // Insert new
-      const { data: newPage, error } = await supabase.from("cms_pages").insert(payload).select("id").single();
+      const { data: newPage, error } = await db.from("cms_pages").insert(payload).select("id").single();
       if (error) throw new Error(error.message);
       pageId = newPage.id;
     }
 
     // Create page revision version
     if (pageId) {
-      const { data: userData } = await supabase.auth.getUser();
-      await supabase.from("cms_page_versions").insert({
+      const { data: userData } = await db.auth.getUser();
+      await db.from("cms_page_versions").insert({
         page_id: pageId,
         tenant_id: tenantId,
         title_snapshot: data.title,
@@ -241,7 +252,7 @@ export const saveCmsPage = createServerFn({ method: "POST" })
       });
 
       // Log audit trail
-      await supabase.from("tenant_audit_logs").insert({
+      await db.from("tenant_audit_logs").insert({
         tenant_id: tenantId,
         actor_id: userData.user?.id || null,
         actor_email: userData.user?.email || null,
@@ -255,10 +266,14 @@ export const saveCmsPage = createServerFn({ method: "POST" })
 
 /** Server Fn: Get version history for a CMS Page */
 export const getPageVersions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .validator((data: { pageId: string }) => data)
-  .handler(async ({ data: { pageId } }) => {
-    const tenantId = await resolveTenantId(supabase);
-    const { data, error } = await supabase
+  .handler(async ({ data: { pageId }, context }) => {
+    const hasPerm = await checkTenantPermission("cms", context);
+    if (!hasPerm) return [];
+    const db = (context as any).supabase;
+    const tenantId = await resolveTenantId(db, { userId: (context as any).userId });
+    const { data, error } = await db
       .from("cms_page_versions")
       .select("*")
       .eq("page_id", pageId)
@@ -272,6 +287,7 @@ export const getPageVersions = createServerFn({ method: "GET" })
 
 /** Server Fn: Restore a page to a previous version */
 export const restorePageVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: { versionId: string; pageId: string }) => data)
   .handler(async ({ data: { versionId, pageId }, context }) => {
     const hasPerm = await checkTenantPermission("cms", context);
@@ -279,8 +295,9 @@ export const restorePageVersion = createServerFn({ method: "POST" })
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة محتوى (CMS).");
     }
 
-    const tenantId = await resolveTenantId(supabase);
-    const { data: version } = await supabase
+    const db = (context as any).supabase;
+    const tenantId = await resolveTenantId(db, { userId: (context as any).userId });
+    const { data: version } = await db
       .from("cms_page_versions")
       .select("*")
       .eq("id", versionId)
@@ -289,7 +306,7 @@ export const restorePageVersion = createServerFn({ method: "POST" })
 
     if (!version) throw new Error("نسخة الصفحة غير موجودة");
 
-    const { error } = await supabase
+    const { error } = await db
       .from("cms_pages")
       .update({
         title: version.title_snapshot,
@@ -306,6 +323,7 @@ export const restorePageVersion = createServerFn({ method: "POST" })
 
 /** Server Fn: Delete CMS Page */
 export const deleteCmsPage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: { id: string }) => data)
   .handler(async ({ data: { id }, context }) => {
     const hasPerm = await checkTenantPermission("cms", context);
@@ -313,13 +331,14 @@ export const deleteCmsPage = createServerFn({ method: "POST" })
       throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة محتوى (CMS).");
     }
 
-    const tenantId = await resolveTenantId(supabase);
-    const { data: userData } = await supabase.auth.getUser();
+    const db = (context as any).supabase;
+    const tenantId = await resolveTenantId(db, { userId: (context as any).userId });
+    const { data: userData } = await db.auth.getUser();
 
-    const { error } = await supabase.from("cms_pages").delete().eq("id", id).eq("tenant_id", tenantId);
+    const { error } = await db.from("cms_pages").delete().eq("id", id).eq("tenant_id", tenantId);
     if (error) throw new Error(error.message);
 
-    await supabase.from("tenant_audit_logs").insert({
+    await db.from("tenant_audit_logs").insert({
       tenant_id: tenantId,
       actor_id: userData.user?.id || null,
       actor_email: userData.user?.email || null,

@@ -1,5 +1,14 @@
 import { getAgentDb } from "@/lib/ai-agent.functions";
 
+async function getJournalWriteDb(): Promise<any> {
+  const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return getSupabaseAdmin() as any;
+}
+
+async function getJournalReadDb(customDb?: any) {
+  return customDb || (await getAgentDb({}));
+}
+
 export interface AgentExecutionError {
   message: string;
   stack?: string;
@@ -24,7 +33,7 @@ export interface ExecutionJournalLog {
 export async function hasExecutionStartedLog(taskId: string, customDb?: any): Promise<boolean> {
   if (!taskId) return false;
   try {
-    const db = customDb || (await getAgentDb({}));
+    const db = await getJournalReadDb(customDb);
     const { count, error } = await db
       .from("agent_execution_logs")
       .select("id", { count: "exact", head: true })
@@ -41,9 +50,9 @@ export async function hasExecutionStartedLog(taskId: string, customDb?: any): Pr
   }
 }
 
-export async function logExecutionJournal(log: ExecutionJournalLog, customDb?: any): Promise<void> {
+export async function logExecutionJournal(log: ExecutionJournalLog, _customDb?: any): Promise<void> {
   try {
-    const db = customDb || (await getAgentDb({}));
+    const db = await getJournalWriteDb();
     const { error } = await db.from("agent_execution_logs").insert({
       task_id: log.taskId || null,
       tenant_id: log.tenantId || "default",
@@ -65,7 +74,7 @@ export async function logExecutionJournal(log: ExecutionJournalLog, customDb?: a
 
 export async function fetchExecutionJournalLogs(tenantId: string, limit = 50, customDb?: any): Promise<ExecutionJournalLog[]> {
   try {
-    const db = customDb || (await getAgentDb({}));
+    const db = await getJournalReadDb(customDb);
     let query = db
       .from("agent_execution_logs")
       .select("*")
@@ -112,9 +121,9 @@ export interface PersistentExecutionEvent {
   createdAt?: string;
 }
 
-export async function savePersistentExecutionEvent(event: PersistentExecutionEvent, customDb?: any): Promise<void> {
+export async function savePersistentExecutionEvent(event: PersistentExecutionEvent, _customDb?: any): Promise<void> {
   try {
-    const db = customDb || (await getAgentDb({}));
+    const db = await getJournalWriteDb();
     const { error } = await db.from("agent_execution_events").insert({
       session_id: event.sessionId,
       task_id: event.taskId || null,
@@ -137,7 +146,7 @@ export async function savePersistentExecutionEvent(event: PersistentExecutionEve
 
 export async function listSessionExecutionEvents(sessionId: string, limit = 100, customDb?: any): Promise<PersistentExecutionEvent[]> {
   try {
-    const db = customDb || (await getAgentDb({}));
+    const db = await getJournalReadDb(customDb);
     const { data, error } = await db
       .from("agent_execution_events")
       .select("*")

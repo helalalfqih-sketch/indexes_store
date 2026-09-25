@@ -115,8 +115,9 @@ export const agentToolRegistry: Record<string, ToolDefinition> = {
     name: "inspect_schema",
     description: "Inspect schema and column definitions for a Supabase table",
     inputSchema: z.object({ tableName: z.string() }),
-    execute: async ({ tableName }) => {
-      const db = await getAgentDb({});
+    execute: async ({ tableName }, context) => {
+      if (!context?.supabase) throw new Error("AUTHENTICATED_DB_CONTEXT_REQUIRED");
+      const db = await getAgentDb(context);
       const { data, error } = await db.from(tableName).select("*").limit(1);
       if (error) return { success: false, error: error.message };
       const sample = data?.[0] || {};
@@ -155,8 +156,9 @@ export const agentToolRegistry: Record<string, ToolDefinition> = {
     name: "query_table",
     description: "Perform safe read query on target database table",
     inputSchema: z.object({ tableName: z.string(), limit: z.number().optional() }),
-    execute: async ({ tableName, limit = 10 }) => {
-      const db = await getAgentDb({});
+    execute: async ({ tableName, limit = 10 }, context) => {
+      if (!context?.supabase) throw new Error("AUTHENTICATED_DB_CONTEXT_REQUIRED");
+      const db = await getAgentDb(context);
       const { data, error } = await db.from(tableName).select("*").limit(limit);
       if (error) return { success: false, error: error.message };
       return { tableName, rowsCount: data?.length || 0, rows: data };
@@ -275,8 +277,9 @@ export const agentToolRegistry: Record<string, ToolDefinition> = {
     name: "read_logs",
     description: "Fetch recent execution journal audit logs",
     inputSchema: z.object({ limit: z.number().optional() }),
-    execute: async ({ limit = 20 }) => {
-      const db = await getAgentDb({});
+    execute: async ({ limit = 20 }, context) => {
+      if (!context?.supabase) throw new Error("AUTHENTICATED_DB_CONTEXT_REQUIRED");
+      const db = await getAgentDb(context);
       const { data } = await db.from("agent_execution_logs").select("*").order("created_at", { ascending: false }).limit(limit);
       return { logs: data || [] };
     },
@@ -410,11 +413,24 @@ export function buildCanonicalAiSdkTools(
   context: any = {}
 ) {
   const aiTools: Record<string, any> = {};
+
+  // Planning-mode AI must never receive direct mutation primitives. Execution
+  // after human approval is handled by the separate approved-task path.
+  const modelMutationTools = new Set([
+    "write_file",
+    "delete_file",
+    "rename_file",
+    "create_migration",
+    "git_commit",
+    "git_rollback",
+  ]);
   
   const ROLE_RANK: Record<AgentRole, number> = { owner: 4, admin: 3, developer: 2, viewer: 1 };
   const userRank = ROLE_RANK[agentRole] || 0;
 
   for (const [name, tool] of Object.entries(agentToolRegistry)) {
+    if (modelMutationTools.has(name)) continue;
+
     // Assuming category dictates implicit risk/role for now.
     // In a full implementation, minimumRole would be on the ToolDefinition
     const requiredRank = ["FileSystem", "Git", "Testing"].includes(tool.category) ? 2 : 3; // developer vs admin
@@ -444,12 +460,13 @@ export function buildCanonicalAiSdkTools(
 
   // Double check that NO human-control approval tools leak into the SDK model's tools
   const blockedTools = [
-    "approve_execution_plan", 
-    "reject_execution_plan", 
-    "startApprovedExecution", 
-    "gitPush", 
-    "applyMigration", 
-    "deployProduction"
+    "approve_execution_plan",
+    "reject_execution_plan",
+    "startApprovedExecution",
+    "gitPush",
+    "applyMigration",
+    "deployProduction",
+    ...modelMutationTools,
   ];
 
   for (const blocked of blockedTools) {

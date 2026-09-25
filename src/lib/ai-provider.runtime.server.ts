@@ -3,7 +3,6 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createVertex } from "@ai-sdk/google-vertex";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createLovableGateway } from "@/lib/ai-gateway.server";
-import { supabase } from "@/integrations/supabase/client";
 
 export type AIProviderType = "gemini" | "lovable" | "openai" | "openrouter" | "vertex";
 
@@ -12,6 +11,7 @@ export interface AIProviderConfig {
   tenant_id: string | null;
   provider: AIProviderType;
   api_key: string | null;
+  vault_secret_id?: string | null;
   model: string;
   enabled: boolean;
   priority: number;
@@ -38,6 +38,24 @@ export function decryptApiKey(encrypted?: string | null): string | null {
   } catch {
     return encrypted;
   }
+}
+
+function isMissingProviderVaultRpc(error: any): boolean {
+  return Boolean(error && ["PGRST202", "42883"].includes(error.code ?? ""));
+}
+
+async function resolveStoredProviderSecret(adminDb: any, config: AIProviderConfig): Promise<string | null> {
+  if (config.vault_secret_id) {
+    const result = await adminDb.rpc("get_ai_provider_secret", { _config_id: config.id });
+    if (!result.error) return typeof result.data === "string" ? result.data : null;
+    if (!isMissingProviderVaultRpc(result.error)) {
+      throw new Error("AI provider Vault secret lookup failed");
+    }
+  }
+
+  // Staged-deployment compatibility only. The production migration scrubs
+  // api_key after moving the value into Supabase Vault.
+  return decryptApiKey(config.api_key);
 }
 
 export function validateProviderModel(provider: string, rawModelName?: string | null): string {
@@ -144,17 +162,26 @@ export async function resolveActiveAIProvider(options?: {
   providerId?: string;
 }): Promise<ResolvedAIProvider | null> {
   try {
-    let query = supabase
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const adminDb = getSupabaseAdmin();
+    const tenantId = options?.tenantId || null;
+
+    let query = adminDb
       .from("ai_provider_configs" as any)
       .select("*")
       .eq("enabled", true)
       .order("priority", { ascending: true });
 
+    if (tenantId) {
+      query = query.or(`tenant_id.eq.${tenantId},tenant_id.is.null`);
+    } else {
+      query = query.is("tenant_id", null);
+    }
+
     if (options?.providerId) query = query.eq("id", options.providerId);
 
     const { data: configs, error } = await query;
     if (!error && configs?.length) {
-      const tenantId = options?.tenantId || null;
       const sorted = [...configs].sort((a: any, b: any) => {
         if (tenantId && a.tenant_id === tenantId && b.tenant_id !== tenantId) return -1;
         if (tenantId && b.tenant_id === tenantId && a.tenant_id !== tenantId) return 1;
@@ -163,10 +190,11 @@ export async function resolveActiveAIProvider(options?: {
 
       for (const config of sorted as unknown as AIProviderConfig[]) {
         try {
+          const storedSecret = await resolveStoredProviderSecret(adminDb, config);
           return {
             model: createModelFromConfig(
               config.provider,
-              decryptApiKey(config.api_key),
+              storedSecret,
               config.model,
               config.base_url,
             ),

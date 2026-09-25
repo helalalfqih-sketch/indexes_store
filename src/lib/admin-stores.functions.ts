@@ -16,10 +16,20 @@ async function requirePlatformAdmin(
   db: any,
   userId: string,
 ): Promise<{ ok: boolean; email: string | null }> {
-  const { data: isAdmin } = await db.rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (!isAdmin) return { ok: false, email: null };
+  const { data: role, error } = await db
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (error || !role) return { ok: false, email: null };
   const { data: userData } = await db.auth.getUser();
   return { ok: true, email: userData?.user?.email ?? null };
+}
+
+async function getPlatformAdminDb() {
+  const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return getSupabaseAdmin();
 }
 
 const tenantIdSchema = z.object({ tenantId: z.string().uuid() });
@@ -30,7 +40,8 @@ export const listStoresAdmin = createServerFn({ method: "GET" })
     const { supabase, userId } = context as unknown as { supabase: any; userId: string };
     const gate = await requirePlatformAdmin(supabase, userId);
     if (!gate.ok) return [];
-    return adminStore.listStoresWithStats(supabase);
+    const adminDb = await getPlatformAdminDb();
+    return adminStore.listStoresWithStats(adminDb);
   });
 
 export const getStoreDetailsAdmin = createServerFn({ method: "GET" })
@@ -40,7 +51,8 @@ export const getStoreDetailsAdmin = createServerFn({ method: "GET" })
     const { supabase, userId } = context as unknown as { supabase: any; userId: string };
     const gate = await requirePlatformAdmin(supabase, userId);
     if (!gate.ok) return null;
-    return adminStore.getStoreDetails(supabase, data.tenantId);
+    const adminDb = await getPlatformAdminDb();
+    return adminStore.getStoreDetails(adminDb, data.tenantId);
   });
 
 export const updateStoreStatusAdmin = createServerFn({ method: "POST" })
@@ -53,10 +65,11 @@ export const updateStoreStatusAdmin = createServerFn({ method: "POST" })
     const gate = await requirePlatformAdmin(supabase, userId);
     if (!gate.ok) return { success: false, message: "غير مسموح: صلاحية مدير المنصّة مطلوبة" };
 
-    const res = await adminStore.updateStoreStatus(supabase, data.tenantId, data.status);
+    const adminDb = await getPlatformAdminDb();
+    const res = await adminStore.updateStoreStatus(adminDb, data.tenantId, data.status);
     if (!res.ok) return { success: false, message: res.message };
 
-    await adminStore.logAudit(supabase, {
+    await adminStore.logAudit(adminDb, {
       tenantId: data.tenantId,
       actorId: userId,
       actorEmail: gate.email,
@@ -81,10 +94,11 @@ export const updateStorePlanAdmin = createServerFn({ method: "POST" })
     const gate = await requirePlatformAdmin(supabase, userId);
     if (!gate.ok) return { success: false, message: "غير مسموح: صلاحية مدير المنصّة مطلوبة" };
 
-    const res = await adminStore.updateStorePlan(supabase, data.tenantId, data.plan, data.periodEnd ?? null);
+    const adminDb = await getPlatformAdminDb();
+    const res = await adminStore.updateStorePlan(adminDb, data.tenantId, data.plan, data.periodEnd ?? null);
     if (!res.ok) return { success: false, message: res.message };
 
-    await adminStore.logAudit(supabase, {
+    await adminStore.logAudit(adminDb, {
       tenantId: data.tenantId,
       actorId: userId,
       actorEmail: gate.email,
@@ -104,10 +118,11 @@ export const updateStoreProfileAdmin = createServerFn({ method: "POST" })
     const gate = await requirePlatformAdmin(supabase, userId);
     if (!gate.ok) return { success: false, message: "غير مسموح: صلاحية مدير المنصّة مطلوبة" };
 
-    const res = await upsertStoreProfile(supabase, data.tenantId, data.profile);
+    const adminDb = await getPlatformAdminDb();
+    const res = await upsertStoreProfile(adminDb, data.tenantId, data.profile);
     if (!res.ok) return { success: false, message: res.message };
 
-    await adminStore.logAudit(supabase, {
+    await adminStore.logAudit(adminDb, {
       tenantId: data.tenantId,
       actorId: userId,
       actorEmail: gate.email,
@@ -132,10 +147,11 @@ export const upsertStoreMemberAdmin = createServerFn({ method: "POST" })
     const gate = await requirePlatformAdmin(supabase, userId);
     if (!gate.ok) return { success: false, message: "غير مسموح: صلاحية مدير المنصّة مطلوبة" };
 
-    const res = await adminStore.upsertStoreMember(supabase, data.tenantId, data.userId, data.role);
+    const adminDb = await getPlatformAdminDb();
+    const res = await adminStore.upsertStoreMember(adminDb, data.tenantId, data.userId, data.role);
     if (!res.ok) return { success: false, message: res.message };
 
-    await adminStore.logAudit(supabase, {
+    await adminStore.logAudit(adminDb, {
       tenantId: data.tenantId,
       actorId: userId,
       actorEmail: gate.email,
@@ -153,10 +169,11 @@ export const removeStoreMemberAdmin = createServerFn({ method: "POST" })
     const gate = await requirePlatformAdmin(supabase, userId);
     if (!gate.ok) return { success: false, message: "غير مسموح: صلاحية مدير المنصّة مطلوبة" };
 
-    const res = await adminStore.removeStoreMember(supabase, data.tenantId, data.userId);
+    const adminDb = await getPlatformAdminDb();
+    const res = await adminStore.removeStoreMember(adminDb, data.tenantId, data.userId);
     if (!res.ok) return { success: false, message: res.message };
 
-    await adminStore.logAudit(supabase, {
+    await adminStore.logAudit(adminDb, {
       tenantId: data.tenantId,
       actorId: userId,
       actorEmail: gate.email,

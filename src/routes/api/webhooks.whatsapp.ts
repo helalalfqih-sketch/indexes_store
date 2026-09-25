@@ -26,15 +26,8 @@ function verifyMetaSignature(rawBody: string, signatureHeader: string | null): b
 // ── Service Role DB (Narrow Gateway — only after HMAC + integration verified) ──
 
 async function getWebhookServiceDb() {
-  try {
-    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = getSupabaseAdmin();
-    if (admin) return admin;
-  } catch {
-    // fallback to anon client
-  }
-  const { supabase } = await import("@/integrations/supabase/client");
-  return supabase;
+  const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return getSupabaseAdmin();
 }
 
 // ── Tenant Resolution (Strict — No Fallback) ──────────────────────────────

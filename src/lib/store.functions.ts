@@ -133,7 +133,8 @@ export const listStoreMembers = createServerFn({ method: "GET" })
     const tenantId = await resolveCurrentTenant(supabase, { userId });
     const allowed = await requireTenantRole(supabase, tenantId, userId, "viewer");
     if (!allowed) return [];
-    return storeService.listStoreMembers(supabase, tenantId);
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return storeService.listStoreMembers(getSupabaseAdmin(), tenantId);
   });
 
 /** Applicable commission rules + earnings history reads (Phase 7 prep). */

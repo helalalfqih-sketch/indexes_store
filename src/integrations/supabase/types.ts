@@ -1210,6 +1210,7 @@ export type Database = {
           content: string | null;
           is_verified_purchase: boolean;
           is_approved: boolean;
+          moderation_status: "pending" | "approved" | "rejected";
           helpful_count: number;
           images: Json;
           created_at: string;
@@ -1226,6 +1227,7 @@ export type Database = {
           content?: string | null;
           is_verified_purchase?: boolean;
           is_approved?: boolean;
+          moderation_status?: "pending" | "approved" | "rejected";
           helpful_count?: number;
           images?: Json;
           created_at?: string;
@@ -1242,6 +1244,7 @@ export type Database = {
           content?: string | null;
           is_verified_purchase?: boolean;
           is_approved?: boolean;
+          moderation_status?: "pending" | "approved" | "rejected";
           helpful_count?: number;
           images?: Json;
           created_at?: string;
@@ -1627,6 +1630,7 @@ export type Database = {
     Functions: {
       bootstrap_first_admin: { Args: { target_user: string }; Returns: boolean };
       consume_ai_request: { Args: Record<string, never>; Returns: boolean };
+      consume_ai_request_for_user: { Args: { target_user: string }; Returns: boolean };
       can_manage_tenant: {
         Args: { _tenant_id: string; _user_id: string };
         Returns: boolean;
