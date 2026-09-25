@@ -459,6 +459,18 @@ describe("P0 Security Suite — Remaining Trust Boundaries", () => {
     expect(source).toContain('budget = await db.rpc("consume_ai_request")');
   });
 
+  it("makes legacy agent task state explicitly service-only", () => {
+    const sql = fs.readFileSync(migrationPath, "utf-8");
+    for (const table of ["ai_agent_tasks", "ai_task_memory"]) {
+      expect(sql).toContain(`REVOKE ALL ON TABLE public.${table} FROM PUBLIC, anon, authenticated;`);
+      expect(sql).toContain(
+        `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.${table} TO service_role;`,
+      );
+    }
+    expect(sql).toContain('DROP POLICY IF EXISTS "ai_agent_tasks_tenant_isolation"');
+    expect(sql).toContain('DROP POLICY IF EXISTS "ai_task_memory_tenant_isolation"');
+  });
+
   it("uses the live reviews table and keeps moderation server-only", () => {
     const sql = fs.readFileSync(migrationPath, "utf-8");
     const source = fs.readFileSync(
