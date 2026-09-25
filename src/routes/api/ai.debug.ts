@@ -1,31 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { resolveActiveAIProvider } from "@/lib/ai-provider.server";
-import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * Provider diagnostics are intentionally not exposed over a public HTTP route.
+ * The page used to reveal the active provider/model without authentication and
+ * could bypass tenant scoping by resolving a global provider.
+ */
+export function disabledAiDebugResponse(): Response {
+  return Response.json(
+    { error: "Not found" },
+    {
+      status: 404,
+      headers: {
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
+    },
+  );
+}
 
 export const Route = createFileRoute("/api/ai/debug")({
   server: {
     handlers: {
-      GET: async () => {
-        let providersCount = 0;
-        try {
-          const { count } = await supabase
-            .from("ai_provider_configs" as any)
-            .select("*", { count: "exact", head: true })
-            .eq("enabled", true);
-          providersCount = count || 0;
-        } catch (e) {
-          console.warn("[AI_DEBUG_COUNT_ERROR]", e);
-        }
-
-        const resolved = await resolveActiveAIProvider();
-
-        return Response.json({
-          providersFound: providersCount,
-          activeProvider: resolved?.provider || null,
-          model: resolved?.modelName || null,
-          source: resolved?.source || null,
-        });
-      },
+      GET: disabledAiDebugResponse,
     },
   },
 });
