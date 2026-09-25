@@ -336,6 +336,26 @@ describe("P0 Security Suite — UI State & Polling Constraints", () => {
 });
 
 
+describe("P0 Security Suite — Public AI Surface", () => {
+  it("keeps repository agent and provider diagnostics off the public HTTP surface", () => {
+    const agentRoute = fs.readFileSync(
+      path.resolve(__dirname, "../../src/routes/api/ai.agent.ts"),
+      "utf-8",
+    );
+    const debugRoute = fs.readFileSync(
+      path.resolve(__dirname, "../../src/routes/api/ai.debug.ts"),
+      "utf-8",
+    );
+
+    expect(agentRoute).toContain("disabledAiAgentResponse");
+    expect(agentRoute).toContain('status: 404');
+    expect(debugRoute).toContain("disabledAiDebugResponse");
+    expect(debugRoute).toContain('status: 404');
+    expect(debugRoute).not.toContain("resolveActiveAIProvider");
+    expect(debugRoute).not.toContain("ai_provider_configs");
+  });
+});
+
 describe("P0 Security Suite — Remaining Trust Boundaries", () => {
   const migrationPath = path.resolve(
     __dirname,
