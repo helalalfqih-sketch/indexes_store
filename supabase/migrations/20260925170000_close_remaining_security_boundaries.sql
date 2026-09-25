@@ -1353,6 +1353,212 @@ CREATE POLICY "P0 AI task memory service only"
   USING (true)
   WITH CHECK (true);
 
+-- ---------------------------------------------------------------------------
+-- 12. Move AI provider credentials from reversible ENC:Base64 storage into
+--     Supabase Vault. Existing rows are migrated transactionally, the legacy
+--     api_key column is scrubbed, and only service_role can resolve or rotate
+--     the encrypted secret.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_provider_configs
+  ADD COLUMN IF NOT EXISTS vault_secret_id uuid;
+
+DO $provider_vault_fk$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conrelid = 'public.ai_provider_configs'::regclass
+      AND conname = 'ai_provider_configs_vault_secret_id_fkey'
+  ) THEN
+    ALTER TABLE public.ai_provider_configs
+      ADD CONSTRAINT ai_provider_configs_vault_secret_id_fkey
+      FOREIGN KEY (vault_secret_id)
+      REFERENCES vault.secrets(id)
+      ON DELETE SET NULL;
+  END IF;
+END
+$provider_vault_fk$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS ai_provider_configs_vault_secret_id_key
+  ON public.ai_provider_configs(vault_secret_id)
+  WHERE vault_secret_id IS NOT NULL;
+
+REVOKE ALL ON TABLE vault.secrets FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE vault.decrypted_secrets FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_ai_provider_secret(_config_id uuid)
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $function$
+  SELECT decrypted.decrypted_secret
+  FROM public.ai_provider_configs AS config
+  JOIN vault.decrypted_secrets AS decrypted
+    ON decrypted.id = config.vault_secret_id
+  WHERE config.id = _config_id;
+$function$;
+
+REVOKE ALL ON FUNCTION public.get_ai_provider_secret(uuid)
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_ai_provider_secret(uuid)
+  TO service_role;
+
+CREATE OR REPLACE FUNCTION public.set_ai_provider_secret(
+  _config_id uuid,
+  _secret text
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $function$
+DECLARE
+  secret_id uuid;
+BEGIN
+  IF _secret IS NULL OR btrim(_secret) = '' THEN
+    RAISE EXCEPTION 'AI provider secret must not be empty'
+      USING ERRCODE = '22023';
+  END IF;
+
+  SELECT config.vault_secret_id
+    INTO secret_id
+  FROM public.ai_provider_configs AS config
+  WHERE config.id = _config_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'AI provider configuration not found'
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  IF secret_id IS NULL THEN
+    secret_id := vault.create_secret(
+      _secret,
+      'indexes_ai_provider_' || _config_id::text,
+      'Indexes Store AI provider credential'
+    );
+
+    UPDATE public.ai_provider_configs
+    SET vault_secret_id = secret_id,
+        api_key = NULL,
+        updated_at = now()
+    WHERE id = _config_id;
+  ELSE
+    PERFORM vault.update_secret(secret_id, _secret);
+
+    UPDATE public.ai_provider_configs
+    SET api_key = NULL,
+        updated_at = now()
+    WHERE id = _config_id;
+  END IF;
+
+  RETURN secret_id;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.set_ai_provider_secret(uuid, text)
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.set_ai_provider_secret(uuid, text)
+  TO service_role;
+
+CREATE OR REPLACE FUNCTION public.cleanup_ai_provider_vault_secret()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $function$
+BEGIN
+  IF OLD.vault_secret_id IS NOT NULL THEN
+    DELETE FROM vault.secrets
+    WHERE id = OLD.vault_secret_id;
+  END IF;
+  RETURN OLD;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.cleanup_ai_provider_vault_secret()
+  FROM PUBLIC, anon, authenticated, service_role;
+
+DROP TRIGGER IF EXISTS cleanup_ai_provider_vault_secret
+  ON public.ai_provider_configs;
+CREATE TRIGGER cleanup_ai_provider_vault_secret
+AFTER DELETE ON public.ai_provider_configs
+FOR EACH ROW
+EXECUTE FUNCTION public.cleanup_ai_provider_vault_secret();
+
+DO $migrate_provider_secrets$
+DECLARE
+  config record;
+  decoded text;
+  plain_secret text;
+  secret_id uuid;
+  legacy_prefix constant text := 'indexes-ai-secret-key-salt-2026:';
+BEGIN
+  FOR config IN
+    SELECT id, api_key
+    FROM public.ai_provider_configs
+    WHERE vault_secret_id IS NULL
+      AND api_key IS NOT NULL
+      AND btrim(api_key) <> ''
+    FOR UPDATE
+  LOOP
+    IF config.api_key LIKE 'ENC:%' THEN
+      BEGIN
+        decoded := convert_from(
+          decode(substr(config.api_key, 5), 'base64'),
+          'UTF8'
+        );
+      EXCEPTION WHEN others THEN
+        RAISE EXCEPTION
+          'AI provider credential migration failed for config %: invalid legacy encoding',
+          config.id;
+      END;
+
+      IF left(decoded, length(legacy_prefix)) <> legacy_prefix THEN
+        RAISE EXCEPTION
+          'AI provider credential migration failed for config %: unexpected legacy prefix',
+          config.id;
+      END IF;
+
+      plain_secret := substr(decoded, length(legacy_prefix) + 1);
+    ELSE
+      plain_secret := config.api_key;
+    END IF;
+
+    IF plain_secret IS NULL OR btrim(plain_secret) = '' THEN
+      RAISE EXCEPTION
+        'AI provider credential migration failed for config %: empty secret',
+        config.id;
+    END IF;
+
+    secret_id := vault.create_secret(
+      plain_secret,
+      'indexes_ai_provider_' || config.id::text,
+      'Indexes Store AI provider credential'
+    );
+
+    UPDATE public.ai_provider_configs
+    SET vault_secret_id = secret_id,
+        api_key = NULL,
+        updated_at = now()
+    WHERE id = config.id;
+  END LOOP;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.ai_provider_configs
+    WHERE api_key IS NOT NULL
+      AND btrim(api_key) <> ''
+  ) THEN
+    RAISE EXCEPTION
+      'AI provider credential migration did not scrub every legacy api_key';
+  END IF;
+END
+$migrate_provider_secrets$;
+
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
