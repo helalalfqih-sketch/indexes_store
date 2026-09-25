@@ -21,9 +21,18 @@ export async function authorizeAI(request: Request): Promise<Response | null> {
     if (error || !data.user) return Response.json({ error: "Unauthorized" }, { status: 401 });
     await checkTenantPermission("products", { supabase: db, userId: data.user.id });
     const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const budget = await getSupabaseAdmin().rpc("consume_ai_request_for_user", {
+    let budget = await getSupabaseAdmin().rpc("consume_ai_request_for_user", {
       target_user: data.user.id,
     });
+
+    // Deployment is code-first and the database cutover is applied separately.
+    // Preserve availability only while the new RPC is genuinely absent. After
+    // the migration, the legacy RPC loses authenticated EXECUTE, so this path
+    // cannot become an authorization bypass.
+    if (budget.error && ["PGRST202", "42883"].includes(budget.error.code ?? "")) {
+      budget = await db.rpc("consume_ai_request");
+    }
+
     if (budget.error) return Response.json({ error: "AI budget unavailable" }, { status: 503 });
     if (budget.data !== true)
       return Response.json({ error: "Daily AI limit reached" }, { status: 429 });
