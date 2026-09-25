@@ -226,6 +226,15 @@ describe("Whapi upstream guardrails", () => {
     assert.equal(mock.calls[1].url, "https://gate.whapi.cloud/chats?count=1&offset=0");
     assert.ok(mock.calls.every((call) => call.init?.method === "GET"));
   });
+  it("accepts a bounded chat page larger than the generic one MiB response limit", async () => {
+    const largeChatPage = { chats: [{ id: "967700000000@s.whatsapp.net", metadata: "x".repeat(1024 * 1024 + 64) }] };
+    const mock = upstream([healthy(), largeChatPage]);
+    assert.deepEqual(
+      await readWhapi(input("resource=chats&count=1"), { token: "test", fetcher: mock.fetcher }),
+      largeChatPage,
+    );
+    assert.equal(mock.calls[1].url, "https://gate.whapi.cloud/chats?count=1&offset=0");
+  });
   it("falls back to the global message query when a group-specific history page is empty", async () => {
     const groupId = "120363424962689313@g.us";
     const mock = upstream([
