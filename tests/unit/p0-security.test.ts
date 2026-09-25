@@ -459,6 +459,36 @@ describe("P0 Security Suite — Remaining Trust Boundaries", () => {
     expect(source).toContain('budget = await db.rpc("consume_ai_request")');
   });
 
+  it("moves AI provider credentials into Supabase Vault and scrubs legacy keys", () => {
+    const sql = fs.readFileSync(migrationPath, "utf-8");
+    const providerSource = fs.readFileSync(
+      path.resolve(__dirname, "../../src/lib/ai-provider.server.ts"),
+      "utf-8",
+    );
+    const runtimeSource = fs.readFileSync(
+      path.resolve(__dirname, "../../src/lib/ai-provider.runtime.server.ts"),
+      "utf-8",
+    );
+
+    expect(sql).toContain("ADD COLUMN IF NOT EXISTS vault_secret_id uuid");
+    expect(sql).toContain("vault.create_secret");
+    expect(sql).toContain("vault.update_secret");
+    expect(sql).toContain("CREATE OR REPLACE FUNCTION public.get_ai_provider_secret");
+    expect(sql).toContain("CREATE OR REPLACE FUNCTION public.set_ai_provider_secret");
+    expect(sql).toContain("GRANT EXECUTE ON FUNCTION public.get_ai_provider_secret(uuid)");
+    expect(sql).toContain("TO service_role");
+    expect(sql).toContain("api_key = NULL");
+    expect(sql).toContain("AI provider credential migration did not scrub every legacy api_key");
+    expect(sql).toContain(
+      "REVOKE ALL ON TABLE vault.decrypted_secrets FROM PUBLIC, anon, authenticated",
+    );
+
+    expect(providerSource).toContain('adminDb.rpc("set_ai_provider_secret"');
+    expect(providerSource).toContain('adminDb.rpc("get_ai_provider_secret"');
+    expect(providerSource).toContain("delete safe.vault_secret_id");
+    expect(runtimeSource).toContain('adminDb.rpc("get_ai_provider_secret"');
+  });
+
   it("makes legacy agent task state explicitly service-only", () => {
     const sql = fs.readFileSync(migrationPath, "utf-8");
     for (const table of ["ai_agent_tasks", "ai_task_memory"]) {
