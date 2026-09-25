@@ -427,10 +427,16 @@ describe("P0 Security Suite — Remaining Trust Boundaries", () => {
       path.resolve(__dirname, "../../src/lib/store.functions.ts"),
       "utf-8",
     );
+    const tenantsSource = fs.readFileSync(
+      path.resolve(__dirname, "../../src/lib/tenants.functions.ts"),
+      "utf-8",
+    );
 
     expect(usersSource).toContain('await import("@/integrations/supabase/client.server")');
     expect(usersSource).toContain("const adminDb = getSupabaseAdmin()");
     expect(adminStoresSource).toContain("const adminDb = await getPlatformAdminDb()");
     expect(storeSource).toContain("storeService.listStoreMembers(getSupabaseAdmin(), tenantId)");
+    expect(tenantsSource).toContain("const adminDb = await getPlatformAdminDb()");
+    expect(tenantsSource).toContain("tenantService.usage(adminDb, t.id)");
   });
 });
