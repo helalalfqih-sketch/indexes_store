@@ -366,6 +366,21 @@ describe("P0 Security Suite — Remaining Trust Boundaries", () => {
     expect(fs.existsSync(migrationPath)).toBe(true);
   });
 
+  it("contains exactly one canonical security transaction with no SQL after COMMIT", () => {
+    const sql = fs.readFileSync(migrationPath, "utf-8");
+    const commitLines = sql
+      .split("\n")
+      .filter((line) => line.trim() === "COMMIT;");
+    expect(commitLines).toHaveLength(1);
+    expect(sql.trimEnd().endsWith("COMMIT;")).toBe(true);
+
+    const policyNames = Array.from(
+      sql.matchAll(/CREATE\s+POLICY\s+"([^"]+)"/gi),
+      (match) => match[1],
+    );
+    expect(new Set(policyNames).size).toBe(policyNames.length);
+  });
+
   it("keeps UUID guards syntactically closed", () => {
     const sql = fs.readFileSync(migrationPath, "utf-8");
     const uuidGuard =
