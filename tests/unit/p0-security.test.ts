@@ -459,6 +459,24 @@ describe("P0 Security Suite — Remaining Trust Boundaries", () => {
     expect(source).toContain('budget = await db.rpc("consume_ai_request")');
   });
 
+  it("uses the live reviews table and keeps moderation server-only", () => {
+    const sql = fs.readFileSync(migrationPath, "utf-8");
+    const source = fs.readFileSync(
+      path.resolve(__dirname, "../../src/lib/reviews.functions.ts"),
+      "utf-8",
+    );
+
+    expect(source).toContain('.from("reviews")');
+    expect(source).not.toContain("product_reviews");
+    expect(source).toContain('await import("@/integrations/supabase/client.server")');
+    expect(sql).toContain('CREATE POLICY "P0 customer reviews insert"');
+    expect(sql).toContain("moderation_status = 'pending'");
+    expect(sql).toContain("is_verified_purchase = false");
+    expect(sql).toContain("helpful_count = 0");
+    expect(sql).toContain("REVOKE ALL ON TABLE public.reviews FROM PUBLIC, anon, authenticated");
+    expect(sql).not.toContain('CREATE POLICY "Staff manage reviews"');
+  });
+
   it("keeps AI planning tools read-only and database tools caller-scoped", () => {
     const source = fs.readFileSync(
       path.resolve(__dirname, "../../src/services/ai-agent/agent.tools-registry.ts"),
