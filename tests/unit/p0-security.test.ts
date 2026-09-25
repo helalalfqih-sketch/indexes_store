@@ -376,6 +376,27 @@ describe("P0 Security Suite — Remaining Trust Boundaries", () => {
     );
   });
 
+  it("requires staff-or-higher for direct catalog mutations", () => {
+    const sql = fs.readFileSync(migrationPath, "utf-8");
+    for (const policy of [
+      "Staff insert categories",
+      "Staff update categories",
+      "Staff delete categories",
+      "Staff insert products",
+      "Staff update products",
+      "Staff delete products",
+      "Staff insert product_media",
+      "Staff update product_media",
+      "Staff delete product_media",
+      "Staff insert inventory",
+    ]) {
+      expect(sql).toContain(`CREATE POLICY "${policy}"`);
+    }
+    expect(sql).toContain(
+      "public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)",
+    );
+  });
+
   it("enforces order and branch tenant consistency at the table boundary", () => {
     const sql = fs.readFileSync(migrationPath, "utf-8");
     expect(sql).toContain("CREATE OR REPLACE FUNCTION public.guard_order_branch_tenant()");
