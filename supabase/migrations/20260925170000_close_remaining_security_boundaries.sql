@@ -588,9 +588,7 @@ CREATE POLICY "P0 execution events authenticated read"
         AND session.user_id = (SELECT auth.uid())
     )
     OR CASE
-      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
-
-      THEN public.can_manage_tenant(tenant_id::uuid, (SELECT auth.uid()))
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}      THEN public.can_manage_tenant(tenant_id::uuid, (SELECT auth.uid()))
       ELSE false
     END
   );
@@ -695,6 +693,3637 @@ CREATE POLICY "P0 AI plans staff delete"
   USING (
     CASE
       WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans service access"
+  ON public.ai_agent_plans
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Media metadata can be read publicly only when linked to a published product.
+-- Tenant members may read their media; mutations require staff or higher.
+ALTER TABLE public.media_files ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated manage media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public insert media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public to read media files" ON public.media_files;
+DROP POLICY IF EXISTS "P0 published media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 tenant media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media insert" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media update" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media delete" ON public.media_files;
+DROP POLICY IF EXISTS "P0 media service access" ON public.media_files;
+REVOKE ALL ON TABLE public.media_files FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.media_files TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO service_role;
+CREATE POLICY "P0 published media read"
+  ON public.media_files
+  FOR SELECT TO anon
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 tenant media read"
+  ON public.media_files
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+    OR EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 staff media insert"
+  ON public.media_files
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+    AND (created_by IS NULL OR created_by = (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff media update"
+  ON public.media_files
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff media delete"
+  ON public.media_files
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 media service access"
+  ON public.media_files
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Audit logs are append-only for authenticated staff and cannot be forged for
+-- another actor/tenant. Service-role retains full operational access.
+ALTER TABLE public.tenant_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage audit logs" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff read" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff append" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit service access" ON public.tenant_audit_logs;
+REVOKE ALL ON TABLE public.tenant_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.tenant_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tenant_audit_logs TO service_role;
+CREATE POLICY "P0 audit staff read"
+  ON public.tenant_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 audit staff append"
+  ON public.tenant_audit_logs
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    actor_id = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 audit service access"
+  ON public.tenant_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Public CMS reads remain available only for published pages. Administrative
+-- reads/writes are tenant scoped and staff gated.
+ALTER TABLE public.cms_pages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all authenticated users to manage cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "Allow public to read published cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 public published CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 tenant CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS insert" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS update" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS delete" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 CMS service access" ON public.cms_pages;
+REVOKE ALL ON TABLE public.cms_pages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.cms_pages TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO service_role;
+CREATE POLICY "P0 public published CMS read"
+  ON public.cms_pages
+  FOR SELECT TO anon
+  USING (is_published = true);
+CREATE POLICY "P0 tenant CMS read"
+  ON public.cms_pages
+  FOR SELECT TO authenticated
+  USING (
+    is_published = true
+    OR public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff CMS insert"
+  ON public.cms_pages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS update"
+  ON public.cms_pages
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS delete"
+  ON public.cms_pages
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 CMS service access"
+  ON public.cms_pages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.cms_page_versions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage cms page versions"
+  ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions read" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions insert" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 CMS versions service access" ON public.cms_page_versions;
+REVOKE ALL ON TABLE public.cms_page_versions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.cms_page_versions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_page_versions TO service_role;
+CREATE POLICY "P0 staff CMS versions read"
+  ON public.cms_page_versions
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS versions insert"
+  ON public.cms_page_versions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    edited_by = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 CMS versions service access"
+  ON public.cms_page_versions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- System runtime logs contain stack traces/context and are service-role only.
+-- Server endpoints now perform their own authentication/authorization.
+ALTER TABLE public.system_live_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "authenticated_delete_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "anyone_insert_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_update_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_read_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "P0 system live logs service only" ON public.system_live_logs;
+REVOKE ALL ON TABLE public.system_live_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.system_live_logs TO service_role;
+CREATE POLICY "P0 system live logs service only"
+  ON public.system_live_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 8. Protect AI integrity tables: audit/usage records are server-authored;
+--    workspace memory remains tenant-readable but staff-writable.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_audit_tenant_access" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit read" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit service write" ON public.ai_agent_audit_logs;
+REVOKE ALL ON TABLE public.ai_agent_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_audit_logs TO service_role;
+CREATE POLICY "P0 AI audit read"
+  ON public.ai_agent_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI audit service write"
+  ON public.ai_agent_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_usage_tenant_access" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage read" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage service write" ON public.ai_agent_usage;
+REVOKE ALL ON TABLE public.ai_agent_usage FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_usage TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_usage TO service_role;
+CREATE POLICY "P0 AI usage read"
+  ON public.ai_agent_usage
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI usage service write"
+  ON public.ai_agent_usage
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_memory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_memory_tenant_access" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory tenant read" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff insert" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff update" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff delete" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory service access" ON public.ai_agent_memory;
+REVOKE ALL ON TABLE public.ai_agent_memory FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO service_role;
+CREATE POLICY "P0 AI memory tenant read"
+  ON public.ai_agent_memory
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI memory staff insert"
+  ON public.ai_agent_memory
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff update"
+  ON public.ai_agent_memory
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  )
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff delete"
+  ON public.ai_agent_memory
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory service access"
+  ON public.ai_agent_memory
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 9. Remove unnecessary anonymous grants and make ownership policies explicit
+--    for AI sessions/messages while preserving public active-tenant lookup.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_sessions_user_access" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own select" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own insert" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own update" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own delete" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions service access" ON public.ai_agent_sessions;
+REVOKE ALL ON TABLE public.ai_agent_sessions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO service_role;
+CREATE POLICY "P0 AI sessions own select"
+  ON public.ai_agent_sessions
+  FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions own insert"
+  ON public.ai_agent_sessions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own update"
+  ON public.ai_agent_sessions
+  FOR UPDATE TO authenticated
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own delete"
+  ON public.ai_agent_sessions
+  FOR DELETE TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions service access"
+  ON public.ai_agent_sessions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_messages_user_access" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own select" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own insert" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own update" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own delete" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages service access" ON public.ai_agent_messages;
+REVOKE ALL ON TABLE public.ai_agent_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO service_role;
+CREATE POLICY "P0 AI messages own select"
+  ON public.ai_agent_messages
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own insert"
+  ON public.ai_agent_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own update"
+  ON public.ai_agent_messages
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own delete"
+  ON public.ai_agent_messages
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages service access"
+  ON public.ai_agent_messages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Active tenant metadata is needed to resolve the public storefront, but
+-- anonymous mutation privileges are never needed.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON TABLE public.tenants FROM PUBLIC, anon;
+GRANT SELECT ON TABLE public.tenants TO anon;
+
+-- WhatsApp inbox messages are written by trusted integrations. Browser users
+-- need only staff-scoped reads; configuration management remains staff-scoped.
+REVOKE ALL ON TABLE public.whatsapp_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.whatsapp_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_messages TO service_role;
+
+REVOKE ALL ON TABLE public.whatsapp_configs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO service_role;
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
+
+      THEN public.can_manage_tenant(tenant_id::uuid, (SELECT auth.uid()))
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 execution events service only"
+  ON public.agent_execution_events
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.agent_execution_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "admin read execution logs" ON public.agent_execution_logs;
+DROP POLICY IF EXISTS "P0 execution logs authenticated read" ON public.agent_execution_logs;
+DROP POLICY IF EXISTS "P0 execution logs service only" ON public.agent_execution_logs;
+REVOKE ALL ON TABLE public.agent_execution_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.agent_execution_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.agent_execution_logs TO service_role;
+CREATE POLICY "P0 execution logs authenticated read"
+  ON public.agent_execution_logs
+  FOR SELECT TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}      THEN public.can_manage_tenant(tenant_id::uuid, (SELECT auth.uid()))
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 execution logs service only"
+  ON public.agent_execution_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- AI plans previously used PUBLIC ALL/true. Preserve authenticated tenant
+-- workflows, but only members can read and staff-or-higher can mutate.
+ALTER TABLE public.ai_agent_plans ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all access to ai_agent_plans" ON public.ai_agent_plans;
+DROP POLICY IF EXISTS "P0 AI plans tenant read" ON public.ai_agent_plans;
+DROP POLICY IF EXISTS "P0 AI plans staff insert" ON public.ai_agent_plans;
+DROP POLICY IF EXISTS "P0 AI plans staff update" ON public.ai_agent_plans;
+DROP POLICY IF EXISTS "P0 AI plans staff delete" ON public.ai_agent_plans;
+DROP POLICY IF EXISTS "P0 AI plans service access" ON public.ai_agent_plans;
+REVOKE ALL ON TABLE public.ai_agent_plans FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_plans TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_plans TO service_role;
+CREATE POLICY "P0 AI plans tenant read"
+  ON public.ai_agent_plans
+  FOR SELECT TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.can_manage_tenant(tenant_id::uuid, (SELECT auth.uid()))
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff insert"
+  ON public.ai_agent_plans
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff update"
+  ON public.ai_agent_plans
+  FOR UPDATE TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  )
+  WITH CHECK (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff delete"
+  ON public.ai_agent_plans
+  FOR DELETE TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans service access"
+  ON public.ai_agent_plans
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Media metadata can be read publicly only when linked to a published product.
+-- Tenant members may read their media; mutations require staff or higher.
+ALTER TABLE public.media_files ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated manage media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public insert media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public to read media files" ON public.media_files;
+DROP POLICY IF EXISTS "P0 published media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 tenant media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media insert" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media update" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media delete" ON public.media_files;
+DROP POLICY IF EXISTS "P0 media service access" ON public.media_files;
+REVOKE ALL ON TABLE public.media_files FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.media_files TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO service_role;
+CREATE POLICY "P0 published media read"
+  ON public.media_files
+  FOR SELECT TO anon
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 tenant media read"
+  ON public.media_files
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+    OR EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 staff media insert"
+  ON public.media_files
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+    AND (created_by IS NULL OR created_by = (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff media update"
+  ON public.media_files
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff media delete"
+  ON public.media_files
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 media service access"
+  ON public.media_files
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Audit logs are append-only for authenticated staff and cannot be forged for
+-- another actor/tenant. Service-role retains full operational access.
+ALTER TABLE public.tenant_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage audit logs" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff read" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff append" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit service access" ON public.tenant_audit_logs;
+REVOKE ALL ON TABLE public.tenant_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.tenant_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tenant_audit_logs TO service_role;
+CREATE POLICY "P0 audit staff read"
+  ON public.tenant_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 audit staff append"
+  ON public.tenant_audit_logs
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    actor_id = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 audit service access"
+  ON public.tenant_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Public CMS reads remain available only for published pages. Administrative
+-- reads/writes are tenant scoped and staff gated.
+ALTER TABLE public.cms_pages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all authenticated users to manage cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "Allow public to read published cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 public published CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 tenant CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS insert" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS update" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS delete" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 CMS service access" ON public.cms_pages;
+REVOKE ALL ON TABLE public.cms_pages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.cms_pages TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO service_role;
+CREATE POLICY "P0 public published CMS read"
+  ON public.cms_pages
+  FOR SELECT TO anon
+  USING (is_published = true);
+CREATE POLICY "P0 tenant CMS read"
+  ON public.cms_pages
+  FOR SELECT TO authenticated
+  USING (
+    is_published = true
+    OR public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff CMS insert"
+  ON public.cms_pages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS update"
+  ON public.cms_pages
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS delete"
+  ON public.cms_pages
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 CMS service access"
+  ON public.cms_pages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.cms_page_versions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage cms page versions"
+  ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions read" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions insert" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 CMS versions service access" ON public.cms_page_versions;
+REVOKE ALL ON TABLE public.cms_page_versions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.cms_page_versions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_page_versions TO service_role;
+CREATE POLICY "P0 staff CMS versions read"
+  ON public.cms_page_versions
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS versions insert"
+  ON public.cms_page_versions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    edited_by = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 CMS versions service access"
+  ON public.cms_page_versions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- System runtime logs contain stack traces/context and are service-role only.
+-- Server endpoints now perform their own authentication/authorization.
+ALTER TABLE public.system_live_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "authenticated_delete_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "anyone_insert_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_update_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_read_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "P0 system live logs service only" ON public.system_live_logs;
+REVOKE ALL ON TABLE public.system_live_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.system_live_logs TO service_role;
+CREATE POLICY "P0 system live logs service only"
+  ON public.system_live_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 8. Protect AI integrity tables: audit/usage records are server-authored;
+--    workspace memory remains tenant-readable but staff-writable.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_audit_tenant_access" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit read" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit service write" ON public.ai_agent_audit_logs;
+REVOKE ALL ON TABLE public.ai_agent_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_audit_logs TO service_role;
+CREATE POLICY "P0 AI audit read"
+  ON public.ai_agent_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI audit service write"
+  ON public.ai_agent_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_usage_tenant_access" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage read" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage service write" ON public.ai_agent_usage;
+REVOKE ALL ON TABLE public.ai_agent_usage FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_usage TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_usage TO service_role;
+CREATE POLICY "P0 AI usage read"
+  ON public.ai_agent_usage
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI usage service write"
+  ON public.ai_agent_usage
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_memory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_memory_tenant_access" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory tenant read" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff insert" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff update" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff delete" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory service access" ON public.ai_agent_memory;
+REVOKE ALL ON TABLE public.ai_agent_memory FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO service_role;
+CREATE POLICY "P0 AI memory tenant read"
+  ON public.ai_agent_memory
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI memory staff insert"
+  ON public.ai_agent_memory
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff update"
+  ON public.ai_agent_memory
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  )
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff delete"
+  ON public.ai_agent_memory
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory service access"
+  ON public.ai_agent_memory
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 9. Remove unnecessary anonymous grants and make ownership policies explicit
+--    for AI sessions/messages while preserving public active-tenant lookup.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_sessions_user_access" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own select" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own insert" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own update" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own delete" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions service access" ON public.ai_agent_sessions;
+REVOKE ALL ON TABLE public.ai_agent_sessions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO service_role;
+CREATE POLICY "P0 AI sessions own select"
+  ON public.ai_agent_sessions
+  FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions own insert"
+  ON public.ai_agent_sessions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own update"
+  ON public.ai_agent_sessions
+  FOR UPDATE TO authenticated
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own delete"
+  ON public.ai_agent_sessions
+  FOR DELETE TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions service access"
+  ON public.ai_agent_sessions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_messages_user_access" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own select" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own insert" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own update" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own delete" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages service access" ON public.ai_agent_messages;
+REVOKE ALL ON TABLE public.ai_agent_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO service_role;
+CREATE POLICY "P0 AI messages own select"
+  ON public.ai_agent_messages
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own insert"
+  ON public.ai_agent_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own update"
+  ON public.ai_agent_messages
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own delete"
+  ON public.ai_agent_messages
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages service access"
+  ON public.ai_agent_messages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Active tenant metadata is needed to resolve the public storefront, but
+-- anonymous mutation privileges are never needed.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON TABLE public.tenants FROM PUBLIC, anon;
+GRANT SELECT ON TABLE public.tenants TO anon;
+
+-- WhatsApp inbox messages are written by trusted integrations. Browser users
+-- need only staff-scoped reads; configuration management remains staff-scoped.
+REVOKE ALL ON TABLE public.whatsapp_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.whatsapp_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_messages TO service_role;
+
+REVOKE ALL ON TABLE public.whatsapp_configs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO service_role;
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
+
+      THEN public.can_manage_tenant(tenant_id::uuid, (SELECT auth.uid()))
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 execution logs service only"
+  ON public.agent_execution_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- AI plans previously used PUBLIC ALL/true. Preserve authenticated tenant
+-- workflows, but only members can read and staff-or-higher can mutate.
+ALTER TABLE public.ai_agent_plans ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all access to ai_agent_plans" ON public.ai_agent_plans;
+DROP POLICY IF EXISTS "P0 AI plans tenant read" ON public.ai_agent_plans;
+DROP POLICY IF EXISTS "P0 AI plans staff insert" ON public.ai_agent_plans;
+DROP POLICY IF EXISTS "P0 AI plans staff update" ON public.ai_agent_plans;
+DROP POLICY IF EXISTS "P0 AI plans staff delete" ON public.ai_agent_plans;
+DROP POLICY IF EXISTS "P0 AI plans service access" ON public.ai_agent_plans;
+REVOKE ALL ON TABLE public.ai_agent_plans FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_plans TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_plans TO service_role;
+CREATE POLICY "P0 AI plans tenant read"
+  ON public.ai_agent_plans
+  FOR SELECT TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}      THEN public.can_manage_tenant(tenant_id::uuid, (SELECT auth.uid()))
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff insert"
+  ON public.ai_agent_plans
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff update"
+  ON public.ai_agent_plans
+  FOR UPDATE TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  )
+  WITH CHECK (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff delete"
+  ON public.ai_agent_plans
+  FOR DELETE TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans service access"
+  ON public.ai_agent_plans
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Media metadata can be read publicly only when linked to a published product.
+-- Tenant members may read their media; mutations require staff or higher.
+ALTER TABLE public.media_files ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated manage media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public insert media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public to read media files" ON public.media_files;
+DROP POLICY IF EXISTS "P0 published media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 tenant media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media insert" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media update" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media delete" ON public.media_files;
+DROP POLICY IF EXISTS "P0 media service access" ON public.media_files;
+REVOKE ALL ON TABLE public.media_files FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.media_files TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO service_role;
+CREATE POLICY "P0 published media read"
+  ON public.media_files
+  FOR SELECT TO anon
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 tenant media read"
+  ON public.media_files
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+    OR EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 staff media insert"
+  ON public.media_files
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+    AND (created_by IS NULL OR created_by = (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff media update"
+  ON public.media_files
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff media delete"
+  ON public.media_files
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 media service access"
+  ON public.media_files
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Audit logs are append-only for authenticated staff and cannot be forged for
+-- another actor/tenant. Service-role retains full operational access.
+ALTER TABLE public.tenant_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage audit logs" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff read" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff append" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit service access" ON public.tenant_audit_logs;
+REVOKE ALL ON TABLE public.tenant_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.tenant_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tenant_audit_logs TO service_role;
+CREATE POLICY "P0 audit staff read"
+  ON public.tenant_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 audit staff append"
+  ON public.tenant_audit_logs
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    actor_id = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 audit service access"
+  ON public.tenant_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Public CMS reads remain available only for published pages. Administrative
+-- reads/writes are tenant scoped and staff gated.
+ALTER TABLE public.cms_pages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all authenticated users to manage cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "Allow public to read published cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 public published CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 tenant CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS insert" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS update" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS delete" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 CMS service access" ON public.cms_pages;
+REVOKE ALL ON TABLE public.cms_pages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.cms_pages TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO service_role;
+CREATE POLICY "P0 public published CMS read"
+  ON public.cms_pages
+  FOR SELECT TO anon
+  USING (is_published = true);
+CREATE POLICY "P0 tenant CMS read"
+  ON public.cms_pages
+  FOR SELECT TO authenticated
+  USING (
+    is_published = true
+    OR public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff CMS insert"
+  ON public.cms_pages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS update"
+  ON public.cms_pages
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS delete"
+  ON public.cms_pages
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 CMS service access"
+  ON public.cms_pages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.cms_page_versions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage cms page versions"
+  ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions read" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions insert" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 CMS versions service access" ON public.cms_page_versions;
+REVOKE ALL ON TABLE public.cms_page_versions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.cms_page_versions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_page_versions TO service_role;
+CREATE POLICY "P0 staff CMS versions read"
+  ON public.cms_page_versions
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS versions insert"
+  ON public.cms_page_versions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    edited_by = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 CMS versions service access"
+  ON public.cms_page_versions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- System runtime logs contain stack traces/context and are service-role only.
+-- Server endpoints now perform their own authentication/authorization.
+ALTER TABLE public.system_live_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "authenticated_delete_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "anyone_insert_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_update_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_read_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "P0 system live logs service only" ON public.system_live_logs;
+REVOKE ALL ON TABLE public.system_live_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.system_live_logs TO service_role;
+CREATE POLICY "P0 system live logs service only"
+  ON public.system_live_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 8. Protect AI integrity tables: audit/usage records are server-authored;
+--    workspace memory remains tenant-readable but staff-writable.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_audit_tenant_access" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit read" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit service write" ON public.ai_agent_audit_logs;
+REVOKE ALL ON TABLE public.ai_agent_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_audit_logs TO service_role;
+CREATE POLICY "P0 AI audit read"
+  ON public.ai_agent_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI audit service write"
+  ON public.ai_agent_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_usage_tenant_access" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage read" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage service write" ON public.ai_agent_usage;
+REVOKE ALL ON TABLE public.ai_agent_usage FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_usage TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_usage TO service_role;
+CREATE POLICY "P0 AI usage read"
+  ON public.ai_agent_usage
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI usage service write"
+  ON public.ai_agent_usage
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_memory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_memory_tenant_access" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory tenant read" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff insert" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff update" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff delete" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory service access" ON public.ai_agent_memory;
+REVOKE ALL ON TABLE public.ai_agent_memory FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO service_role;
+CREATE POLICY "P0 AI memory tenant read"
+  ON public.ai_agent_memory
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI memory staff insert"
+  ON public.ai_agent_memory
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff update"
+  ON public.ai_agent_memory
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  )
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff delete"
+  ON public.ai_agent_memory
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory service access"
+  ON public.ai_agent_memory
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 9. Remove unnecessary anonymous grants and make ownership policies explicit
+--    for AI sessions/messages while preserving public active-tenant lookup.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_sessions_user_access" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own select" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own insert" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own update" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own delete" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions service access" ON public.ai_agent_sessions;
+REVOKE ALL ON TABLE public.ai_agent_sessions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO service_role;
+CREATE POLICY "P0 AI sessions own select"
+  ON public.ai_agent_sessions
+  FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions own insert"
+  ON public.ai_agent_sessions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own update"
+  ON public.ai_agent_sessions
+  FOR UPDATE TO authenticated
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own delete"
+  ON public.ai_agent_sessions
+  FOR DELETE TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions service access"
+  ON public.ai_agent_sessions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_messages_user_access" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own select" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own insert" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own update" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own delete" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages service access" ON public.ai_agent_messages;
+REVOKE ALL ON TABLE public.ai_agent_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO service_role;
+CREATE POLICY "P0 AI messages own select"
+  ON public.ai_agent_messages
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own insert"
+  ON public.ai_agent_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own update"
+  ON public.ai_agent_messages
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own delete"
+  ON public.ai_agent_messages
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages service access"
+  ON public.ai_agent_messages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Active tenant metadata is needed to resolve the public storefront, but
+-- anonymous mutation privileges are never needed.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON TABLE public.tenants FROM PUBLIC, anon;
+GRANT SELECT ON TABLE public.tenants TO anon;
+
+-- WhatsApp inbox messages are written by trusted integrations. Browser users
+-- need only staff-scoped reads; configuration management remains staff-scoped.
+REVOKE ALL ON TABLE public.whatsapp_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.whatsapp_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_messages TO service_role;
+
+REVOKE ALL ON TABLE public.whatsapp_configs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO service_role;
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
+
+      THEN public.can_manage_tenant(tenant_id::uuid, (SELECT auth.uid()))
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff insert"
+  ON public.ai_agent_plans
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff update"
+  ON public.ai_agent_plans
+  FOR UPDATE TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  )
+  WITH CHECK (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff delete"
+  ON public.ai_agent_plans
+  FOR DELETE TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans service access"
+  ON public.ai_agent_plans
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Media metadata can be read publicly only when linked to a published product.
+-- Tenant members may read their media; mutations require staff or higher.
+ALTER TABLE public.media_files ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated manage media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public insert media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public to read media files" ON public.media_files;
+DROP POLICY IF EXISTS "P0 published media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 tenant media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media insert" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media update" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media delete" ON public.media_files;
+DROP POLICY IF EXISTS "P0 media service access" ON public.media_files;
+REVOKE ALL ON TABLE public.media_files FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.media_files TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO service_role;
+CREATE POLICY "P0 published media read"
+  ON public.media_files
+  FOR SELECT TO anon
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 tenant media read"
+  ON public.media_files
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+    OR EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 staff media insert"
+  ON public.media_files
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+    AND (created_by IS NULL OR created_by = (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff media update"
+  ON public.media_files
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff media delete"
+  ON public.media_files
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 media service access"
+  ON public.media_files
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Audit logs are append-only for authenticated staff and cannot be forged for
+-- another actor/tenant. Service-role retains full operational access.
+ALTER TABLE public.tenant_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage audit logs" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff read" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff append" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit service access" ON public.tenant_audit_logs;
+REVOKE ALL ON TABLE public.tenant_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.tenant_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tenant_audit_logs TO service_role;
+CREATE POLICY "P0 audit staff read"
+  ON public.tenant_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 audit staff append"
+  ON public.tenant_audit_logs
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    actor_id = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 audit service access"
+  ON public.tenant_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Public CMS reads remain available only for published pages. Administrative
+-- reads/writes are tenant scoped and staff gated.
+ALTER TABLE public.cms_pages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all authenticated users to manage cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "Allow public to read published cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 public published CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 tenant CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS insert" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS update" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS delete" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 CMS service access" ON public.cms_pages;
+REVOKE ALL ON TABLE public.cms_pages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.cms_pages TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO service_role;
+CREATE POLICY "P0 public published CMS read"
+  ON public.cms_pages
+  FOR SELECT TO anon
+  USING (is_published = true);
+CREATE POLICY "P0 tenant CMS read"
+  ON public.cms_pages
+  FOR SELECT TO authenticated
+  USING (
+    is_published = true
+    OR public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff CMS insert"
+  ON public.cms_pages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS update"
+  ON public.cms_pages
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS delete"
+  ON public.cms_pages
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 CMS service access"
+  ON public.cms_pages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.cms_page_versions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage cms page versions"
+  ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions read" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions insert" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 CMS versions service access" ON public.cms_page_versions;
+REVOKE ALL ON TABLE public.cms_page_versions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.cms_page_versions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_page_versions TO service_role;
+CREATE POLICY "P0 staff CMS versions read"
+  ON public.cms_page_versions
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS versions insert"
+  ON public.cms_page_versions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    edited_by = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 CMS versions service access"
+  ON public.cms_page_versions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- System runtime logs contain stack traces/context and are service-role only.
+-- Server endpoints now perform their own authentication/authorization.
+ALTER TABLE public.system_live_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "authenticated_delete_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "anyone_insert_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_update_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_read_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "P0 system live logs service only" ON public.system_live_logs;
+REVOKE ALL ON TABLE public.system_live_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.system_live_logs TO service_role;
+CREATE POLICY "P0 system live logs service only"
+  ON public.system_live_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 8. Protect AI integrity tables: audit/usage records are server-authored;
+--    workspace memory remains tenant-readable but staff-writable.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_audit_tenant_access" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit read" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit service write" ON public.ai_agent_audit_logs;
+REVOKE ALL ON TABLE public.ai_agent_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_audit_logs TO service_role;
+CREATE POLICY "P0 AI audit read"
+  ON public.ai_agent_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI audit service write"
+  ON public.ai_agent_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_usage_tenant_access" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage read" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage service write" ON public.ai_agent_usage;
+REVOKE ALL ON TABLE public.ai_agent_usage FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_usage TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_usage TO service_role;
+CREATE POLICY "P0 AI usage read"
+  ON public.ai_agent_usage
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI usage service write"
+  ON public.ai_agent_usage
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_memory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_memory_tenant_access" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory tenant read" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff insert" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff update" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff delete" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory service access" ON public.ai_agent_memory;
+REVOKE ALL ON TABLE public.ai_agent_memory FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO service_role;
+CREATE POLICY "P0 AI memory tenant read"
+  ON public.ai_agent_memory
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI memory staff insert"
+  ON public.ai_agent_memory
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff update"
+  ON public.ai_agent_memory
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  )
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff delete"
+  ON public.ai_agent_memory
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory service access"
+  ON public.ai_agent_memory
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 9. Remove unnecessary anonymous grants and make ownership policies explicit
+--    for AI sessions/messages while preserving public active-tenant lookup.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_sessions_user_access" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own select" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own insert" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own update" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own delete" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions service access" ON public.ai_agent_sessions;
+REVOKE ALL ON TABLE public.ai_agent_sessions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO service_role;
+CREATE POLICY "P0 AI sessions own select"
+  ON public.ai_agent_sessions
+  FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions own insert"
+  ON public.ai_agent_sessions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own update"
+  ON public.ai_agent_sessions
+  FOR UPDATE TO authenticated
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own delete"
+  ON public.ai_agent_sessions
+  FOR DELETE TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions service access"
+  ON public.ai_agent_sessions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_messages_user_access" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own select" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own insert" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own update" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own delete" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages service access" ON public.ai_agent_messages;
+REVOKE ALL ON TABLE public.ai_agent_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO service_role;
+CREATE POLICY "P0 AI messages own select"
+  ON public.ai_agent_messages
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own insert"
+  ON public.ai_agent_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own update"
+  ON public.ai_agent_messages
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own delete"
+  ON public.ai_agent_messages
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages service access"
+  ON public.ai_agent_messages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Active tenant metadata is needed to resolve the public storefront, but
+-- anonymous mutation privileges are never needed.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON TABLE public.tenants FROM PUBLIC, anon;
+GRANT SELECT ON TABLE public.tenants TO anon;
+
+-- WhatsApp inbox messages are written by trusted integrations. Browser users
+-- need only staff-scoped reads; configuration management remains staff-scoped.
+REVOKE ALL ON TABLE public.whatsapp_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.whatsapp_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_messages TO service_role;
+
+REVOKE ALL ON TABLE public.whatsapp_configs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO service_role;
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff update"
+  ON public.ai_agent_plans
+  FOR UPDATE TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  )
+  WITH CHECK (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff delete"
+  ON public.ai_agent_plans
+  FOR DELETE TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans service access"
+  ON public.ai_agent_plans
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Media metadata can be read publicly only when linked to a published product.
+-- Tenant members may read their media; mutations require staff or higher.
+ALTER TABLE public.media_files ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated manage media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public insert media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public to read media files" ON public.media_files;
+DROP POLICY IF EXISTS "P0 published media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 tenant media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media insert" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media update" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media delete" ON public.media_files;
+DROP POLICY IF EXISTS "P0 media service access" ON public.media_files;
+REVOKE ALL ON TABLE public.media_files FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.media_files TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO service_role;
+CREATE POLICY "P0 published media read"
+  ON public.media_files
+  FOR SELECT TO anon
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 tenant media read"
+  ON public.media_files
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+    OR EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 staff media insert"
+  ON public.media_files
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+    AND (created_by IS NULL OR created_by = (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff media update"
+  ON public.media_files
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff media delete"
+  ON public.media_files
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 media service access"
+  ON public.media_files
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Audit logs are append-only for authenticated staff and cannot be forged for
+-- another actor/tenant. Service-role retains full operational access.
+ALTER TABLE public.tenant_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage audit logs" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff read" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff append" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit service access" ON public.tenant_audit_logs;
+REVOKE ALL ON TABLE public.tenant_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.tenant_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tenant_audit_logs TO service_role;
+CREATE POLICY "P0 audit staff read"
+  ON public.tenant_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 audit staff append"
+  ON public.tenant_audit_logs
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    actor_id = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 audit service access"
+  ON public.tenant_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Public CMS reads remain available only for published pages. Administrative
+-- reads/writes are tenant scoped and staff gated.
+ALTER TABLE public.cms_pages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all authenticated users to manage cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "Allow public to read published cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 public published CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 tenant CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS insert" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS update" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS delete" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 CMS service access" ON public.cms_pages;
+REVOKE ALL ON TABLE public.cms_pages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.cms_pages TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO service_role;
+CREATE POLICY "P0 public published CMS read"
+  ON public.cms_pages
+  FOR SELECT TO anon
+  USING (is_published = true);
+CREATE POLICY "P0 tenant CMS read"
+  ON public.cms_pages
+  FOR SELECT TO authenticated
+  USING (
+    is_published = true
+    OR public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff CMS insert"
+  ON public.cms_pages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS update"
+  ON public.cms_pages
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS delete"
+  ON public.cms_pages
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 CMS service access"
+  ON public.cms_pages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.cms_page_versions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage cms page versions"
+  ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions read" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions insert" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 CMS versions service access" ON public.cms_page_versions;
+REVOKE ALL ON TABLE public.cms_page_versions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.cms_page_versions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_page_versions TO service_role;
+CREATE POLICY "P0 staff CMS versions read"
+  ON public.cms_page_versions
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS versions insert"
+  ON public.cms_page_versions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    edited_by = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 CMS versions service access"
+  ON public.cms_page_versions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- System runtime logs contain stack traces/context and are service-role only.
+-- Server endpoints now perform their own authentication/authorization.
+ALTER TABLE public.system_live_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "authenticated_delete_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "anyone_insert_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_update_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_read_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "P0 system live logs service only" ON public.system_live_logs;
+REVOKE ALL ON TABLE public.system_live_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.system_live_logs TO service_role;
+CREATE POLICY "P0 system live logs service only"
+  ON public.system_live_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 8. Protect AI integrity tables: audit/usage records are server-authored;
+--    workspace memory remains tenant-readable but staff-writable.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_audit_tenant_access" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit read" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit service write" ON public.ai_agent_audit_logs;
+REVOKE ALL ON TABLE public.ai_agent_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_audit_logs TO service_role;
+CREATE POLICY "P0 AI audit read"
+  ON public.ai_agent_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI audit service write"
+  ON public.ai_agent_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_usage_tenant_access" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage read" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage service write" ON public.ai_agent_usage;
+REVOKE ALL ON TABLE public.ai_agent_usage FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_usage TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_usage TO service_role;
+CREATE POLICY "P0 AI usage read"
+  ON public.ai_agent_usage
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI usage service write"
+  ON public.ai_agent_usage
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_memory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_memory_tenant_access" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory tenant read" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff insert" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff update" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff delete" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory service access" ON public.ai_agent_memory;
+REVOKE ALL ON TABLE public.ai_agent_memory FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO service_role;
+CREATE POLICY "P0 AI memory tenant read"
+  ON public.ai_agent_memory
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI memory staff insert"
+  ON public.ai_agent_memory
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff update"
+  ON public.ai_agent_memory
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  )
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff delete"
+  ON public.ai_agent_memory
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory service access"
+  ON public.ai_agent_memory
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 9. Remove unnecessary anonymous grants and make ownership policies explicit
+--    for AI sessions/messages while preserving public active-tenant lookup.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_sessions_user_access" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own select" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own insert" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own update" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own delete" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions service access" ON public.ai_agent_sessions;
+REVOKE ALL ON TABLE public.ai_agent_sessions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO service_role;
+CREATE POLICY "P0 AI sessions own select"
+  ON public.ai_agent_sessions
+  FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions own insert"
+  ON public.ai_agent_sessions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own update"
+  ON public.ai_agent_sessions
+  FOR UPDATE TO authenticated
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own delete"
+  ON public.ai_agent_sessions
+  FOR DELETE TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions service access"
+  ON public.ai_agent_sessions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_messages_user_access" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own select" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own insert" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own update" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own delete" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages service access" ON public.ai_agent_messages;
+REVOKE ALL ON TABLE public.ai_agent_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO service_role;
+CREATE POLICY "P0 AI messages own select"
+  ON public.ai_agent_messages
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own insert"
+  ON public.ai_agent_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own update"
+  ON public.ai_agent_messages
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own delete"
+  ON public.ai_agent_messages
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages service access"
+  ON public.ai_agent_messages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Active tenant metadata is needed to resolve the public storefront, but
+-- anonymous mutation privileges are never needed.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON TABLE public.tenants FROM PUBLIC, anon;
+GRANT SELECT ON TABLE public.tenants TO anon;
+
+-- WhatsApp inbox messages are written by trusted integrations. Browser users
+-- need only staff-scoped reads; configuration management remains staff-scoped.
+REVOKE ALL ON TABLE public.whatsapp_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.whatsapp_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_messages TO service_role;
+
+REVOKE ALL ON TABLE public.whatsapp_configs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO service_role;
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  )
+  WITH CHECK (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff delete"
+  ON public.ai_agent_plans
+  FOR DELETE TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans service access"
+  ON public.ai_agent_plans
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Media metadata can be read publicly only when linked to a published product.
+-- Tenant members may read their media; mutations require staff or higher.
+ALTER TABLE public.media_files ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated manage media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public insert media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public to read media files" ON public.media_files;
+DROP POLICY IF EXISTS "P0 published media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 tenant media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media insert" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media update" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media delete" ON public.media_files;
+DROP POLICY IF EXISTS "P0 media service access" ON public.media_files;
+REVOKE ALL ON TABLE public.media_files FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.media_files TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO service_role;
+CREATE POLICY "P0 published media read"
+  ON public.media_files
+  FOR SELECT TO anon
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 tenant media read"
+  ON public.media_files
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+    OR EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 staff media insert"
+  ON public.media_files
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+    AND (created_by IS NULL OR created_by = (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff media update"
+  ON public.media_files
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff media delete"
+  ON public.media_files
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 media service access"
+  ON public.media_files
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Audit logs are append-only for authenticated staff and cannot be forged for
+-- another actor/tenant. Service-role retains full operational access.
+ALTER TABLE public.tenant_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage audit logs" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff read" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff append" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit service access" ON public.tenant_audit_logs;
+REVOKE ALL ON TABLE public.tenant_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.tenant_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tenant_audit_logs TO service_role;
+CREATE POLICY "P0 audit staff read"
+  ON public.tenant_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 audit staff append"
+  ON public.tenant_audit_logs
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    actor_id = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 audit service access"
+  ON public.tenant_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Public CMS reads remain available only for published pages. Administrative
+-- reads/writes are tenant scoped and staff gated.
+ALTER TABLE public.cms_pages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all authenticated users to manage cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "Allow public to read published cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 public published CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 tenant CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS insert" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS update" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS delete" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 CMS service access" ON public.cms_pages;
+REVOKE ALL ON TABLE public.cms_pages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.cms_pages TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO service_role;
+CREATE POLICY "P0 public published CMS read"
+  ON public.cms_pages
+  FOR SELECT TO anon
+  USING (is_published = true);
+CREATE POLICY "P0 tenant CMS read"
+  ON public.cms_pages
+  FOR SELECT TO authenticated
+  USING (
+    is_published = true
+    OR public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff CMS insert"
+  ON public.cms_pages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS update"
+  ON public.cms_pages
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS delete"
+  ON public.cms_pages
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 CMS service access"
+  ON public.cms_pages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.cms_page_versions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage cms page versions"
+  ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions read" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions insert" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 CMS versions service access" ON public.cms_page_versions;
+REVOKE ALL ON TABLE public.cms_page_versions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.cms_page_versions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_page_versions TO service_role;
+CREATE POLICY "P0 staff CMS versions read"
+  ON public.cms_page_versions
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS versions insert"
+  ON public.cms_page_versions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    edited_by = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 CMS versions service access"
+  ON public.cms_page_versions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- System runtime logs contain stack traces/context and are service-role only.
+-- Server endpoints now perform their own authentication/authorization.
+ALTER TABLE public.system_live_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "authenticated_delete_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "anyone_insert_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_update_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_read_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "P0 system live logs service only" ON public.system_live_logs;
+REVOKE ALL ON TABLE public.system_live_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.system_live_logs TO service_role;
+CREATE POLICY "P0 system live logs service only"
+  ON public.system_live_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 8. Protect AI integrity tables: audit/usage records are server-authored;
+--    workspace memory remains tenant-readable but staff-writable.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_audit_tenant_access" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit read" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit service write" ON public.ai_agent_audit_logs;
+REVOKE ALL ON TABLE public.ai_agent_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_audit_logs TO service_role;
+CREATE POLICY "P0 AI audit read"
+  ON public.ai_agent_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI audit service write"
+  ON public.ai_agent_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_usage_tenant_access" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage read" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage service write" ON public.ai_agent_usage;
+REVOKE ALL ON TABLE public.ai_agent_usage FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_usage TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_usage TO service_role;
+CREATE POLICY "P0 AI usage read"
+  ON public.ai_agent_usage
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI usage service write"
+  ON public.ai_agent_usage
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_memory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_memory_tenant_access" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory tenant read" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff insert" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff update" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff delete" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory service access" ON public.ai_agent_memory;
+REVOKE ALL ON TABLE public.ai_agent_memory FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO service_role;
+CREATE POLICY "P0 AI memory tenant read"
+  ON public.ai_agent_memory
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI memory staff insert"
+  ON public.ai_agent_memory
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff update"
+  ON public.ai_agent_memory
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  )
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff delete"
+  ON public.ai_agent_memory
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory service access"
+  ON public.ai_agent_memory
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 9. Remove unnecessary anonymous grants and make ownership policies explicit
+--    for AI sessions/messages while preserving public active-tenant lookup.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_sessions_user_access" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own select" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own insert" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own update" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own delete" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions service access" ON public.ai_agent_sessions;
+REVOKE ALL ON TABLE public.ai_agent_sessions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO service_role;
+CREATE POLICY "P0 AI sessions own select"
+  ON public.ai_agent_sessions
+  FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions own insert"
+  ON public.ai_agent_sessions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own update"
+  ON public.ai_agent_sessions
+  FOR UPDATE TO authenticated
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own delete"
+  ON public.ai_agent_sessions
+  FOR DELETE TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions service access"
+  ON public.ai_agent_sessions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_messages_user_access" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own select" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own insert" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own update" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own delete" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages service access" ON public.ai_agent_messages;
+REVOKE ALL ON TABLE public.ai_agent_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO service_role;
+CREATE POLICY "P0 AI messages own select"
+  ON public.ai_agent_messages
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own insert"
+  ON public.ai_agent_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own update"
+  ON public.ai_agent_messages
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own delete"
+  ON public.ai_agent_messages
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages service access"
+  ON public.ai_agent_messages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Active tenant metadata is needed to resolve the public storefront, but
+-- anonymous mutation privileges are never needed.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON TABLE public.tenants FROM PUBLIC, anon;
+GRANT SELECT ON TABLE public.tenants TO anon;
+
+-- WhatsApp inbox messages are written by trusted integrations. Browser users
+-- need only staff-scoped reads; configuration management remains staff-scoped.
+REVOKE ALL ON TABLE public.whatsapp_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.whatsapp_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_messages TO service_role;
+
+REVOKE ALL ON TABLE public.whatsapp_configs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO service_role;
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
+
+      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans staff delete"
+  ON public.ai_agent_plans
+  FOR DELETE TO authenticated
+  USING (
+    CASE
+      WHEN tenant_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}      THEN public.has_tenant_permission(
+        tenant_id::uuid,
+        (SELECT auth.uid()),
+        'staff'::public.tenant_role
+      )
+      ELSE false
+    END
+  );
+CREATE POLICY "P0 AI plans service access"
+  ON public.ai_agent_plans
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Media metadata can be read publicly only when linked to a published product.
+-- Tenant members may read their media; mutations require staff or higher.
+ALTER TABLE public.media_files ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated manage media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public insert media files" ON public.media_files;
+DROP POLICY IF EXISTS "Allow public to read media files" ON public.media_files;
+DROP POLICY IF EXISTS "P0 published media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 tenant media read" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media insert" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media update" ON public.media_files;
+DROP POLICY IF EXISTS "P0 staff media delete" ON public.media_files;
+DROP POLICY IF EXISTS "P0 media service access" ON public.media_files;
+REVOKE ALL ON TABLE public.media_files FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.media_files TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.media_files TO service_role;
+CREATE POLICY "P0 published media read"
+  ON public.media_files
+  FOR SELECT TO anon
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 tenant media read"
+  ON public.media_files
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+    OR EXISTS (
+      SELECT 1
+      FROM public.product_media AS link
+      JOIN public.products AS product
+        ON product.id = link.product_id
+       AND product.tenant_id = link.tenant_id
+      WHERE link.media_id = media_files.id
+        AND link.tenant_id = media_files.tenant_id
+        AND product.is_published = true
+    )
+  );
+CREATE POLICY "P0 staff media insert"
+  ON public.media_files
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+    AND (created_by IS NULL OR created_by = (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff media update"
+  ON public.media_files
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff media delete"
+  ON public.media_files
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 media service access"
+  ON public.media_files
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Audit logs are append-only for authenticated staff and cannot be forged for
+-- another actor/tenant. Service-role retains full operational access.
+ALTER TABLE public.tenant_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage audit logs" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff read" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit staff append" ON public.tenant_audit_logs;
+DROP POLICY IF EXISTS "P0 audit service access" ON public.tenant_audit_logs;
+REVOKE ALL ON TABLE public.tenant_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.tenant_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tenant_audit_logs TO service_role;
+CREATE POLICY "P0 audit staff read"
+  ON public.tenant_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 audit staff append"
+  ON public.tenant_audit_logs
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    actor_id = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 audit service access"
+  ON public.tenant_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Public CMS reads remain available only for published pages. Administrative
+-- reads/writes are tenant scoped and staff gated.
+ALTER TABLE public.cms_pages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all authenticated users to manage cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "Allow public to read published cms pages" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 public published CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 tenant CMS read" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS insert" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS update" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 staff CMS delete" ON public.cms_pages;
+DROP POLICY IF EXISTS "P0 CMS service access" ON public.cms_pages;
+REVOKE ALL ON TABLE public.cms_pages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.cms_pages TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_pages TO service_role;
+CREATE POLICY "P0 public published CMS read"
+  ON public.cms_pages
+  FOR SELECT TO anon
+  USING (is_published = true);
+CREATE POLICY "P0 tenant CMS read"
+  ON public.cms_pages
+  FOR SELECT TO authenticated
+  USING (
+    is_published = true
+    OR public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 staff CMS insert"
+  ON public.cms_pages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS update"
+  ON public.cms_pages
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS delete"
+  ON public.cms_pages
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 CMS service access"
+  ON public.cms_pages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.cms_page_versions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow authenticated users to manage cms page versions"
+  ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions read" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 staff CMS versions insert" ON public.cms_page_versions;
+DROP POLICY IF EXISTS "P0 CMS versions service access" ON public.cms_page_versions;
+REVOKE ALL ON TABLE public.cms_page_versions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.cms_page_versions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cms_page_versions TO service_role;
+CREATE POLICY "P0 staff CMS versions read"
+  ON public.cms_page_versions
+  FOR SELECT TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "P0 staff CMS versions insert"
+  ON public.cms_page_versions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    edited_by = (SELECT auth.uid())
+    AND public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 CMS versions service access"
+  ON public.cms_page_versions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- System runtime logs contain stack traces/context and are service-role only.
+-- Server endpoints now perform their own authentication/authorization.
+ALTER TABLE public.system_live_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "authenticated_delete_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "anyone_insert_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_update_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "authenticated_read_live_logs" ON public.system_live_logs;
+DROP POLICY IF EXISTS "P0 system live logs service only" ON public.system_live_logs;
+REVOKE ALL ON TABLE public.system_live_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.system_live_logs TO service_role;
+CREATE POLICY "P0 system live logs service only"
+  ON public.system_live_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 8. Protect AI integrity tables: audit/usage records are server-authored;
+--    workspace memory remains tenant-readable but staff-writable.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_audit_tenant_access" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit read" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit service write" ON public.ai_agent_audit_logs;
+REVOKE ALL ON TABLE public.ai_agent_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_audit_logs TO service_role;
+CREATE POLICY "P0 AI audit read"
+  ON public.ai_agent_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI audit service write"
+  ON public.ai_agent_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_usage_tenant_access" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage read" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage service write" ON public.ai_agent_usage;
+REVOKE ALL ON TABLE public.ai_agent_usage FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_usage TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_usage TO service_role;
+CREATE POLICY "P0 AI usage read"
+  ON public.ai_agent_usage
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI usage service write"
+  ON public.ai_agent_usage
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_memory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_memory_tenant_access" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory tenant read" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff insert" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff update" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff delete" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory service access" ON public.ai_agent_memory;
+REVOKE ALL ON TABLE public.ai_agent_memory FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO service_role;
+CREATE POLICY "P0 AI memory tenant read"
+  ON public.ai_agent_memory
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI memory staff insert"
+  ON public.ai_agent_memory
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff update"
+  ON public.ai_agent_memory
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  )
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff delete"
+  ON public.ai_agent_memory
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory service access"
+  ON public.ai_agent_memory
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 9. Remove unnecessary anonymous grants and make ownership policies explicit
+--    for AI sessions/messages while preserving public active-tenant lookup.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_sessions_user_access" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own select" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own insert" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own update" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own delete" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions service access" ON public.ai_agent_sessions;
+REVOKE ALL ON TABLE public.ai_agent_sessions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO service_role;
+CREATE POLICY "P0 AI sessions own select"
+  ON public.ai_agent_sessions
+  FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions own insert"
+  ON public.ai_agent_sessions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own update"
+  ON public.ai_agent_sessions
+  FOR UPDATE TO authenticated
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own delete"
+  ON public.ai_agent_sessions
+  FOR DELETE TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions service access"
+  ON public.ai_agent_sessions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_messages_user_access" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own select" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own insert" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own update" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own delete" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages service access" ON public.ai_agent_messages;
+REVOKE ALL ON TABLE public.ai_agent_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO service_role;
+CREATE POLICY "P0 AI messages own select"
+  ON public.ai_agent_messages
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own insert"
+  ON public.ai_agent_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own update"
+  ON public.ai_agent_messages
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own delete"
+  ON public.ai_agent_messages
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages service access"
+  ON public.ai_agent_messages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Active tenant metadata is needed to resolve the public storefront, but
+-- anonymous mutation privileges are never needed.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON TABLE public.tenants FROM PUBLIC, anon;
+GRANT SELECT ON TABLE public.tenants TO anon;
+
+-- WhatsApp inbox messages are written by trusted integrations. Browser users
+-- need only staff-scoped reads; configuration management remains staff-scoped.
+REVOKE ALL ON TABLE public.whatsapp_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.whatsapp_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_messages TO service_role;
+
+REVOKE ALL ON TABLE public.whatsapp_configs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO service_role;
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
 
       THEN public.has_tenant_permission(
         tenant_id::uuid,
