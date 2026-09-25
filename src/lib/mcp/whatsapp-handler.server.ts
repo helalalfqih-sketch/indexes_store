@@ -70,7 +70,42 @@ async function server() {
         _meta: { securitySchemes },
       },
       async ({ count, offset }) => {
-        const data = await readWhapi({ resource, count, offset });
+        const raw = await readWhapi({ resource, count, offset });
+        // The provider's chat objects can contain large nested metadata (avatars,
+        // previews and last-message payloads). The MCP list tool only needs stable
+        // identifiers and compact navigation metadata; returning the raw envelope
+        // can exceed connector response limits even when count is small.
+        const data =
+          resource === "chats" && raw && typeof raw === "object" && !Array.isArray(raw)
+            ? (() => {
+                const page = raw as Record<string, unknown>;
+                const chats = Array.isArray(page.chats)
+                  ? page.chats.map((value) => {
+                      const chat =
+                        value && typeof value === "object" && !Array.isArray(value)
+                          ? (value as Record<string, unknown>)
+                          : {};
+                      return {
+                        id: typeof chat.id === "string" ? chat.id : null,
+                        name: typeof chat.name === "string" ? chat.name : null,
+                        type: typeof chat.type === "string" ? chat.type : null,
+                        timestamp:
+                          typeof chat.timestamp === "number" || typeof chat.timestamp === "string"
+                            ? chat.timestamp
+                            : null,
+                        unreadCount:
+                          typeof chat.unread_count === "number" ? chat.unread_count : null,
+                      };
+                    })
+                  : [];
+                return {
+                  chats,
+                  count: typeof page.count === "number" ? page.count : chats.length,
+                  total: typeof page.total === "number" ? page.total : null,
+                  offset,
+                };
+              })()
+            : raw;
         return {
           structuredContent: { data },
           content: [{ type: "text" as const, text: JSON.stringify(data) }],
