@@ -1,8 +1,8 @@
 import { getAgentDb } from "@/lib/ai-agent.functions";
 
-async function getJournalWriteDb() {
+async function getJournalWriteDb(): Promise<any> {
   const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return getSupabaseAdmin();
+  return getSupabaseAdmin() as any;
 }
 
 async function getJournalReadDb(customDb?: any) {
