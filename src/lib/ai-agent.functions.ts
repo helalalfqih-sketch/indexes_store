@@ -122,7 +122,12 @@ export async function getPrivilegedAgentDb(options: PrivilegedAgentOptions) {
 }
 
 export async function getAgentDb(ctx?: any) {
-  return ctx?.supabase || supabase;
+  if (ctx?.supabase) return ctx.supabase;
+  if (typeof process === "undefined") {
+    throw new Error("Agent database access requires an authenticated server context.");
+  }
+  const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return getSupabaseAdmin();
 }
 
 async function resolveAgentRole(db: any, userId: string, tenantId: string): Promise<AgentRole> {
