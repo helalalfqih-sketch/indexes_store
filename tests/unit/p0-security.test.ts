@@ -411,7 +411,8 @@ describe("P0 Security Suite — Remaining Trust Boundaries", () => {
     );
     expect(source).toContain('await import("@/integrations/supabase/client.server")');
     expect(source).toContain('.rpc("consume_ai_request_for_user"');
-    expect(source).not.toContain('.rpc("consume_ai_request")');
+    expect(source).toContain('["PGRST202", "42883"].includes');
+    expect(source).toContain('budget = await db.rpc("consume_ai_request")');
   });
 
   it("uses server-only clients for cross-member administration after authorization", () => {
