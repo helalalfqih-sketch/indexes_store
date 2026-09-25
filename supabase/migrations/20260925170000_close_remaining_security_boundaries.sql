@@ -1325,6 +1325,34 @@ CREATE POLICY "P0 reviews service access"
   USING (true)
   WITH CHECK (true);
 
+-- ---------------------------------------------------------------------------
+-- 11. Agent task state/memory had logically cross-tenant legacy policies but
+--     no grants. Make the intended server-only boundary explicit so a future
+--     GRANT cannot silently reactivate those predicates.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_tasks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_agent_tasks_tenant_isolation" ON public.ai_agent_tasks;
+DROP POLICY IF EXISTS "P0 AI agent tasks service only" ON public.ai_agent_tasks;
+REVOKE ALL ON TABLE public.ai_agent_tasks FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_tasks TO service_role;
+CREATE POLICY "P0 AI agent tasks service only"
+  ON public.ai_agent_tasks
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_task_memory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_task_memory_tenant_isolation" ON public.ai_task_memory;
+DROP POLICY IF EXISTS "P0 AI task memory service only" ON public.ai_task_memory;
+REVOKE ALL ON TABLE public.ai_task_memory FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_task_memory TO service_role;
+CREATE POLICY "P0 AI task memory service only"
+  ON public.ai_task_memory
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
