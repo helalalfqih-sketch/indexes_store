@@ -1627,6 +1627,7 @@ export type Database = {
     Functions: {
       bootstrap_first_admin: { Args: { target_user: string }; Returns: boolean };
       consume_ai_request: { Args: Record<string, never>; Returns: boolean };
+      consume_ai_request_for_user: { Args: { target_user: string }; Returns: boolean };
       can_manage_tenant: {
         Args: { _tenant_id: string; _user_id: string };
         Returns: boolean;
