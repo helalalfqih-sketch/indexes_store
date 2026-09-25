@@ -227,7 +227,9 @@ describe("Whapi upstream guardrails", () => {
     assert.ok(mock.calls.every((call) => call.init?.method === "GET"));
   });
   it("accepts a bounded chat page larger than the generic one MiB response limit", async () => {
-    const largeChatPage = { chats: [{ id: "967700000000@s.whatsapp.net", metadata: "x".repeat(1024 * 1024 + 64) }] };
+    const largeChatPage = {
+      chats: [{ id: "967700000000@s.whatsapp.net", metadata: "x".repeat(1024 * 1024 + 64) }],
+    };
     const mock = upstream([healthy(), largeChatPage]);
     assert.deepEqual(
       await readWhapi(input("resource=chats&count=1"), { token: "test", fetcher: mock.fetcher }),
