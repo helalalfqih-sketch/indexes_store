@@ -439,6 +439,26 @@ describe("P0 Security Suite — Remaining Trust Boundaries", () => {
     expect(source).toContain('budget = await db.rpc("consume_ai_request")');
   });
 
+  it("keeps AI planning tools read-only and database tools caller-scoped", () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, "../../src/services/ai-agent/agent.tools-registry.ts"),
+      "utf-8",
+    );
+    for (const tool of [
+      "write_file",
+      "delete_file",
+      "rename_file",
+      "create_migration",
+      "git_commit",
+      "git_rollback",
+    ]) {
+      expect(source).toContain(`"${tool}"`);
+    }
+    expect(source).toContain("if (modelMutationTools.has(name)) continue");
+    expect(source).toContain('throw new Error("AUTHENTICATED_DB_CONTEXT_REQUIRED")');
+    expect(source).not.toContain("const db = await getAgentDb({});");
+  });
+
   it("uses server-only clients for cross-member administration after authorization", () => {
     const usersSource = fs.readFileSync(
       path.resolve(__dirname, "../../src/lib/users.functions.ts"),
