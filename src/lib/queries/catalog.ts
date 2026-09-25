@@ -9,12 +9,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { fetchCategories } from "@/lib/actions/category.actions";
 import { fetchBestSellers, fetchOffers, fetchProducts } from "@/lib/actions/product.actions";
-import {
-  fallbackProducts,
-  toLegacyProduct,
-  type LegacyProductShape,
-  type LegacyCategoryShape,
-} from "@/lib/data-adapter";
+import { type LegacyProductShape, type LegacyCategoryShape } from "@/lib/data-adapter";
 
 /**
  * Product availability changes in Shopify must reach the storefront quickly.
@@ -35,36 +30,7 @@ const CATALOG_POLICY = {
  * Increment when catalog persistence semantics change. This deliberately
  * invalidates old persisted React Query catalog snapshots after deployment.
  */
-const CATALOG_CACHE_VERSION = "v3" as const;
-
-/**
- * Server-rendered fallback content.
- *
- * The home route uses non-suspense React Query hooks. Without placeholder data,
- * SSR rendered an empty catalog ("0 products") before Shopify completed on the
- * client, which search engines could index. These seeded rows are replaced by
- * fresh Shopify data immediately because refetchOnMount is always enabled.
- */
-const seededCatalog = (): LegacyProductShape[] => {
-  if (!import.meta.env.DEV) return [];
-  return fallbackProducts()
-    .map(toLegacyProduct)
-    .filter((product) => typeof product.price === "number" && product.price > 0);
-};
-
-const seededBestSellers = (limit: number): LegacyProductShape[] =>
-  [...seededCatalog()].sort((a, b) => b.rating * b.reviews - a.rating * a.reviews).slice(0, limit);
-
-const seededOffers = (limit: number): LegacyProductShape[] => {
-  const seeded = seededCatalog();
-  const offers = seeded.filter(
-    (product) =>
-      product.isDeal ||
-      (typeof product.oldPrice === "number" && product.oldPrice > product.price) ||
-      Boolean(product.badge),
-  );
-  return (offers.length ? offers : seeded).slice(0, limit);
-};
+const CATALOG_CACHE_VERSION = "v4" as const;
 
 async function fetchWiderCatalog(limit: number): Promise<LegacyProductShape[]> {
   // Many newly imported Shopify products may temporarily have a 0 price while
@@ -79,7 +45,7 @@ export const catalogKeys = {
   categories: ["catalog", CATALOG_CACHE_VERSION, "categories"] as const,
   bestSellers: (limit: number) =>
     ["catalog", CATALOG_CACHE_VERSION, "best-sellers", limit] as const,
-  offers: ["catalog", CATALOG_CACHE_VERSION, "offers"] as const,
+  offers: (limit: number) => ["catalog", CATALOG_CACHE_VERSION, "offers", limit] as const,
   products: (limit: number) => ["catalog", CATALOG_CACHE_VERSION, "products", limit] as const,
   globePool: (perPage: number) =>
     ["catalog", CATALOG_CACHE_VERSION, "globe-pool", perPage] as const,
@@ -99,18 +65,16 @@ export const bestSellersQuery = (limit = 4) =>
       const items = (await fetchBestSellers(limit)) as LegacyProductShape[];
       return items.length ? items : fetchWiderCatalog(limit);
     },
-    placeholderData: () => seededBestSellers(limit),
     ...CATALOG_POLICY,
   });
 
 export const offersQuery = (limit = 6) =>
   queryOptions({
-    queryKey: catalogKeys.offers,
+    queryKey: catalogKeys.offers(limit),
     queryFn: async () => {
       const items = (await fetchOffers(limit)) as LegacyProductShape[];
-      return items.length ? items : fetchWiderCatalog(limit);
+      return items;
     },
-    placeholderData: () => seededOffers(limit),
     ...CATALOG_POLICY,
   });
 
@@ -121,7 +85,6 @@ export const productsQuery = (limit = 12) =>
       const items = (await fetchProducts({ limit })) as LegacyProductShape[];
       return items.length ? items : fetchWiderCatalog(limit);
     },
-    placeholderData: () => seededCatalog().slice(0, limit),
     ...CATALOG_POLICY,
   });
 
@@ -137,6 +100,5 @@ export const globePoolQuery = (perPage = 100) =>
       // The globe oversamples naturally because perPage defaults to 100.
       return fetchProducts({ limit: perPage }) as Promise<LegacyProductShape[]>;
     },
-    placeholderData: () => seededCatalog().slice(0, perPage),
     ...CATALOG_POLICY,
   });

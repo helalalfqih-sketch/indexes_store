@@ -98,18 +98,19 @@ export const listProducts = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const db = publicClient();
     const tenantId = await resolvePublicTenant(db, data.tenantId ?? null);
-    const products = await productsRepo.list(db, {
-      tenantId,
-      categoryId: data.categoryId,
-      search: data.search,
-    });
-
-    if (data.offset != null && data.limit) {
-      return products.slice(data.offset, data.offset + data.limit);
+    let categoryId = data.categoryId;
+    if (categoryId && !z.string().uuid().safeParse(categoryId).success) {
+      const category = await categoriesRepo.getBySlug(db, categoryId, tenantId);
+      if (!category?.is_active) return [];
+      categoryId = category.id;
     }
-    if (data.offset != null) return products.slice(data.offset);
-    if (data.limit) return products.slice(0, data.limit);
-    return products;
+    return productsRepo.list(db, {
+      tenantId,
+      categoryId,
+      search: data.search,
+      limit: data.limit,
+      offset: data.offset,
+    });
   });
 
 export const getProductBySlug = createServerFn({ method: "GET" })

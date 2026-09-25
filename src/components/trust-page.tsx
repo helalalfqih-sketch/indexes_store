@@ -9,7 +9,7 @@ interface TrustPageProps {
 
 export function TrustPage({ title, description, children }: TrustPageProps) {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10" dir="rtl">
+    <main className="sf-page sf-information-page" dir="rtl">
       <nav
         className="mb-6 flex items-center gap-2 text-xs text-muted-foreground"
         aria-label="مسار الصفحة"
@@ -20,7 +20,7 @@ export function TrustPage({ title, description, children }: TrustPageProps) {
         <span aria-hidden="true">/</span>
         <span className="font-bold text-foreground">{title}</span>
       </nav>
-      <article className="space-y-6 rounded-3xl border border-border bg-surface p-6 shadow-sm sm:p-10">
+      <article className="sf-panel space-y-6">
         <header className="border-b border-border/80 pb-6">
           <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
             {title}

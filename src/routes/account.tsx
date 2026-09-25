@@ -51,20 +51,22 @@ function AccountPage() {
   if (loading) return <Skeleton />;
   if (!customer)
     return (
-      <main
-        className="mx-auto w-full max-w-xl px-4 py-6 sm:py-10"
-        dir="rtl"
-      >
-        <section className="w-full space-y-5 rounded-3xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-5 text-center shadow-[var(--shadow-md)] sm:p-6">
+      <section className="sf-page sf-account-page" dir="rtl">
+        <section className="sf-panel sf-account-welcome space-y-5 text-center">
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[var(--color-primary-ui-soft)] text-[var(--color-primary-ui)]">
             <User />
           </span>
           <div>
-            <h1 className="text-2xl font-black leading-[1.6]">حساب العميل</h1>
+            <h1 className="text-2xl font-black leading-[1.6]">حسابي</h1>
             <p className="mt-2 text-sm leading-[1.7] text-[var(--color-text-secondary)]">
-              سجّل الدخول الآمن عبر Shopify لمشاهدة طلباتك وعناوينك الحقيقية.
+              سجّل الدخول لمراجعة طلباتك وعناوين التسليم.
             </p>
           </div>
+          <nav className="sf-account-links" aria-label="خدمات الحساب">
+            <Link to="/track">تتبع طلبك</Link>
+            <Link to="/favorites">المفضلة</Link>
+            <Link to="/pages/faq">مركز المساعدة</Link>
+          </nav>
           {error && (
             <p role="alert" className="text-sm text-destructive">
               {error}
@@ -77,14 +79,11 @@ function AccountPage() {
             <LogIn />
             تسجيل الدخول أو إنشاء حساب
           </a>
-          <p className="text-sm leading-[1.7] text-[var(--color-text-secondary)]">
-            يظهر Google داخل صفحة Shopify فقط إذا كان مفعّلًا في إعدادات حسابات العملاء.
-          </p>
         </section>
-      </main>
+      </section>
     );
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6" dir="rtl">
+    <section className="sf-page sf-account-page space-y-6" dir="rtl">
       <header className="flex items-center gap-4 rounded-3xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-5 shadow-[var(--shadow-sm)]">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[var(--color-primary-ui-soft)] text-[var(--color-primary-ui)]">
           <User />
@@ -168,10 +167,10 @@ function AccountPage() {
             ))}
           </ul>
         ) : (
-          <Empty text="لا توجد عناوين محفوظة في Shopify." />
+          <Empty text="لا توجد عناوين محفوظة." />
         )}
       </Section>
-    </main>
+    </section>
   );
 }
 
@@ -203,10 +202,10 @@ function Empty({ text }: { text: string }) {
 }
 function Skeleton() {
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6" aria-busy="true">
+    <section className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6" aria-busy="true">
       <div className="h-24 animate-pulse rounded-3xl bg-[var(--color-surface-2)]" />
       <div className="h-44 animate-pulse rounded-3xl bg-[var(--color-surface-2)]" />
       <Loader2 className="mx-auto animate-spin text-[var(--color-primary-ui)]" />
-    </main>
+    </section>
   );
 }

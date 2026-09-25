@@ -3,18 +3,30 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, ArrowRight, ShieldCheck, Home, Loader2 } from "lucide-react";
 import { getPublicCmsPage, sanitizeHtml } from "@/lib/pages.functions";
+import { VStack } from "@astryxdesign/core/VStack";
+import { useAppearance } from "@/components/appearance-provider";
+import { mapPublishedStorefrontSettings } from "@/lib/adapters/storefront-settings.adapter";
 
-const BUILT_IN_PAGE_ROUTES: Record<string, "/terms" | "/privacy-policy"> = {
+type PublicCmsLoaderData = { page: Awaited<ReturnType<typeof getPublicCmsPage>> | null };
+
+const BUILT_IN_PAGE_ROUTES: Partial<Record<string, "/terms" | "/privacy-policy">> = {
   terms: "/terms",
   "privacy-policy": "/privacy-policy",
 };
 
 export const Route = createFileRoute("/pages/$slug")({
-  head: ({ loaderData }: any) => {
-    const page = loaderData?.page;
+  head: ({ loaderData, params }) => {
+    const page = (loaderData as PublicCmsLoaderData | undefined)?.page;
     if (!page) {
       return {
-        meta: [{ title: "الصفحة غير موجودة — اندكس ستور" }],
+        meta: [
+          {
+            title:
+              params.slug === "about-us"
+                ? "تعرف على المتجر — اندكس ستور"
+                : "الصفحة غير موجودة — اندكس ستور",
+          },
+        ],
       };
     }
     return {
@@ -27,7 +39,7 @@ export const Route = createFileRoute("/pages/$slug")({
       ],
     };
   },
-  loader: async ({ params }) => {
+  loader: async ({ params }): Promise<PublicCmsLoaderData> => {
     const builtInRoute = BUILT_IN_PAGE_ROUTES[params.slug];
     if (builtInRoute) throw redirect({ to: builtInRoute });
     try {
@@ -57,6 +69,8 @@ function PublicCmsPageComponent() {
     );
   }
 
+  if (!page && slug === "about-us") return <StoreInformationPage />;
+
   if (!page) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center" dir="rtl">
@@ -83,7 +97,7 @@ function PublicCmsPageComponent() {
 
   return (
     <div
-      className="mx-auto max-w-4xl px-4 py-10"
+      className="sf-page sf-information-page"
       dir="rtl"
       style={{ fontFamily: "Tajawal, system-ui, sans-serif" }}
     >
@@ -97,7 +111,7 @@ function PublicCmsPageComponent() {
       </nav>
 
       {/* Article Container */}
-      <article className="rounded-3xl border border-border bg-surface p-6 sm:p-10 shadow-sm space-y-6">
+      <article className="sf-panel space-y-6">
         <header className="border-b border-border/80 pb-6">
           <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
             {page.title}
@@ -115,5 +129,48 @@ function PublicCmsPageComponent() {
         />
       </article>
     </div>
+  );
+}
+
+function StoreInformationPage() {
+  const { settings } = useAppearance();
+  const { contact } = mapPublishedStorefrontSettings(settings);
+  const phone = contact.whatsappPhone.replace(/\D/g, "");
+  return (
+    <VStack as="section" className="sf-page sf-information-page" gap={5}>
+      <header className="sf-page-heading">
+        <h1>تعرف على {contact.storeName}</h1>
+      </header>
+      <VStack as="article" className="sf-panel" gap={4}>
+        <h2>{contact.storeName}</h2>
+        <p>
+          تصفح المنتجات والأسعار المنشورة في المتجر، وأضف اختياراتك إلى السلة لإكمال الطلب عبر
+          واتساب.
+        </p>
+        {contact.address && (
+          <section>
+            <h2>عنوان المتجر</h2>
+            <p>{contact.address}</p>
+          </section>
+        )}
+        {contact.deliveryInfoText && <p>{contact.deliveryInfoText}</p>}
+        {phone && (
+          <a
+            className="sf-primary-button"
+            href={`https://wa.me/${phone}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            تواصل مع المتجر عبر واتساب
+          </a>
+        )}
+        <Link to="/search" className="sf-secondary-button">
+          تصفح المنتجات
+        </Link>
+        <Link to="/pages/faq" className="sf-text-button">
+          مركز المساعدة
+        </Link>
+      </VStack>
+    </VStack>
   );
 }

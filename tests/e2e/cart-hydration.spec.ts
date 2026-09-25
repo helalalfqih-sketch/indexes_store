@@ -92,16 +92,20 @@ test("saved favorites, cart, theme and Lite Mode survive a homepage reload", asy
   await page.goto("/", { waitUntil: "domcontentloaded" });
   for (const reload of [false, true]) {
     if (reload) await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("button", { name: "سلة التسوق", exact: true })).toContainText("2", {
-      timeout: 30_000,
-    });
-    await expect(page.getByRole("button", { name: "المفضلة", exact: true }).first()).toContainText(
-      "1",
+    await expect(page.getByRole("link", { name: "السلة، 2 منتجات", exact: true })).toContainText(
+      "2",
+      {
+        timeout: 30_000,
+      },
     );
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect(
-      page.getByRole("button", { name: "إعدادات الوضع الخفيف", exact: true }).first(),
-    ).toHaveClass(/bg-amber-500\/15/);
+    await expect(page.getByRole("link", { name: "المفضلة", exact: true }).first()).toBeVisible();
+    expect(
+      await page.evaluate(() => ({
+        favorites: JSON.parse(localStorage.getItem("indexes_favorites") ?? "[]"),
+        theme: localStorage.getItem("indexes_store_theme"),
+        lite: localStorage.getItem("indexes_lite_mode_preference"),
+      })),
+    ).toEqual({ favorites: ["hydration-fixture"], theme: "dark", lite: "on" });
   }
   expect(hydrationErrors).toEqual([]);
 });

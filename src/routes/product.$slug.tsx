@@ -1,556 +1,166 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { VStack } from "@astryxdesign/core/VStack";
+import { Grid } from "@astryxdesign/core/Grid";
+import { Minus, Plus, ShoppingCart, Heart, Share2, ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
 import { productBySlugQueryOptions } from "@/lib/store.queries";
-import { ProductDetailSkeleton } from "@/components/ui/skeleton";
-import {
-  ArrowRight,
-  Minus,
-  Plus,
-  ShoppingCart,
-  Search,
-  Share2,
-  Star,
-  Heart,
-  MessageCircle,
-  CheckCircle2,
-  Home,
-  ChevronLeft,
-} from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { motion } from "framer-motion";
-import { formatPrice } from "@/lib/store-data";
-import { buildShareUrls } from "@/lib/share-urls";
-import { fetchProductBySlug } from "@/lib/actions/product.actions";
+import { formatPrice, type Product } from "@/lib/store-data";
 import { useCart } from "@/lib/cart-store";
-import { quickOrderLink } from "@/lib/whatsapp";
-import { useModelViewer } from "@/lib/model-viewer";
-import { useAppearance } from "@/components/appearance-provider";
-import { buildProductHead } from "@/lib/seo";
+import { useFavorites } from "@/lib/use-favorites";
 import { ProductMediaGallery } from "@/components/product-media-gallery";
-import { ProductRecommendations } from "@/components/product-recommendations";
-import { trackEvent } from "@/lib/analytics";
-
-const TAJAWAL = "Tajawal, system-ui, sans-serif";
-
-const PRODUCT_PAGE_STYLE = {
-  background: "var(--color-bg)",
-  color: "var(--color-text-primary)",
-  fontFamily: TAJAWAL,
-  "--showcase": "var(--color-bg)",
-  "--showcase-foreground": "var(--color-text-primary)",
-  "--showcase-muted": "var(--color-text-secondary)",
-  "--showcase-border": "var(--color-border-default)",
-} as CSSProperties;
-
+import { buildProductHead } from "@/lib/seo";
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ context: { queryClient }, params }) => {
     const product = await queryClient.ensureQueryData(productBySlugQueryOptions(params.slug));
     if (!product) throw notFound();
     return { product };
   },
-  pendingComponent: () => (
-    <div className="min-h-screen bg-showcase pt-12">
-      <div className="mx-auto max-w-7xl px-4 lg:px-8">
-        <ProductDetailSkeleton />
-      </div>
-    </div>
-  ),
-  head: (ctx) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = ctx.loaderData as any;
-    if (!data?.product) {
-      return {
-        meta: [
-          { title: "المنتج غير موجود — اندكس ستور" },
-          { name: "robots", content: "noindex, nofollow" },
-        ],
-      };
-    }
-    const p = data.product;
-    // Resolve base URL from environment dynamically
-    const baseUrl =
-      process.env.SITE_URL ||
-      (typeof window !== "undefined" ? window.location.origin : null) ||
-      import.meta.env.VITE_PUBLIC_URL ||
-      "";
-
-    const { meta, links, scripts } = buildProductHead(
-      {
-        id: p.id,
-        slug: p.slug,
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        oldPrice: p.oldPrice,
-        currency: "YER",
-        stock: p.stock,
-        image: p.image,
-        images: p.images,
-        brand: p.brand,
-        categoryId: p.categoryId,
-        rating: p.rating,
-        reviews: p.reviews,
-        sku: p.sku,
-        barcode: p.barcode,
-        mpn: p.mpn,
-        condition: p.condition,
-        availability: p.availability,
-        videoPlaybackId: p.videoPlaybackId,
-      },
-      baseUrl,
-      p.categoryName,
+  head: ({ loaderData }) => {
+    if (!loaderData?.product) return { meta: [{ title: "المنتج غير موجود — اندكس ستور" }] };
+    return buildProductHead(
+      { ...loaderData.product, currency: "YER" },
+      process.env.SITE_URL || import.meta.env.VITE_PUBLIC_URL || "https://indexes-store.vercel.app",
     );
-    return { meta, links, scripts };
   },
-  notFoundComponent: () => (
-    <div className="p-8 text-center" dir="rtl">
-      <p className="text-lg font-bold">المنتج غير موجود</p>
-      <Link to="/" className="mt-4 inline-block text-primary underline">
-        العودة للرئيسية
-      </Link>
-    </div>
+  pendingComponent: () => (
+    <section className="sf-page sf-empty" role="status">
+      جارٍ تحميل المنتج…
+    </section>
   ),
   errorComponent: () => (
-    <div
-      className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8 text-center"
-      dir="rtl"
-    >
-      <p className="text-lg font-bold text-destructive">تعذر تحميل المنتج مؤقتًا</p>
-      <p className="text-sm text-muted-foreground">حاول تحديث الصفحة أو العودة لاحقًا.</p>
-      <Link
-        to="/"
-        className="mt-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90"
-      >
-        العودة للمتجر
+    <section className="sf-page sf-empty" role="alert">
+      <h1>تعذر تحميل المنتج</h1>
+      <Link to="/search" className="sf-secondary-button">
+        العودة للمنتجات
       </Link>
-    </div>
+    </section>
+  ),
+  notFoundComponent: () => (
+    <section className="sf-page sf-empty">
+      <h1>المنتج غير متاح</h1>
+      <Link to="/search" className="sf-primary-button">
+        تصفح المنتجات
+      </Link>
+    </section>
   ),
   component: ProductPage,
 });
-
 function ProductPage() {
   const { slug } = Route.useParams();
-  const { data: productRaw } = useSuspenseQuery(productBySlugQueryOptions(slug));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const product = productRaw as any;
-
-  if (!product) {
-    throw notFound();
-  }
-
-  const { settings } = useAppearance();
-  const pageCfg = settings.product_page;
-  const shareUrls = buildShareUrls(product);
-  const [qty, setQty] = useState(1);
-  const add = useCart((s) => s.add);
+  const { data: product } = useSuspenseQuery(productBySlugQueryOptions(slug));
+  const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
-  const heroRef = useRef<HTMLDivElement>(null);
-  const [showStickyBar, setShowStickyBar] = useState(true);
-  const availableStock = Number(product.stock);
-  const isAvailable = Number.isFinite(availableStock) ? availableStock > 0 : product.stock !== 0;
-  const description = String(product.description || "")
-    .replace(/#{1,6}\s+/g, "")
-    .replace(/\*\*|__|`/g, "")
-    .replace(/^[-*+]\s+/gm, "")
-    .trim();
-
-  useModelViewer();
-
-  useEffect(
-    () => {
-      if (product?.id) {
-        trackEvent("view_product", {
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-        });
+  const add = useCart((state) => state.add);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  if (!product) throw notFound();
+  const available = Number(product.stock) > 0;
+  const discounted = product.oldPrice != null && product.oldPrice > product.price;
+  const favorite = isFavorite(product.id);
+  const share = async () => {
+    try {
+      if (navigator.share)
+        await navigator.share({ title: product.name, url: window.location.href });
+      else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("تم نسخ رابط المنتج");
       }
-    }, // eslint-disable-next-line react-hooks/exhaustive-deps
-    [product?.id],
-  );
-
-  useEffect(() => {
-    if (window.matchMedia("(max-width: 767px)").matches) return;
-    const el = heroRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([entry]) => setShowStickyBar(!entry.isIntersecting), {
-      rootMargin: "-20% 0px 0px 0px",
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  const handleAdd = () => {
-    if (!isAvailable) return;
-    add(product, qty);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
+    } catch {
+      /* Dismissing the native share dialog does not change the product. */
+    }
   };
-
-  const orderHref = quickOrderLink(product);
-
   return (
-    <div
-      dir="rtl"
-      data-product-page
-      className="product-page min-h-screen bg-white pb-20 text-black md:bg-[var(--color-bg)] md:pb-28 md:text-[var(--color-text-primary)]"
-      style={PRODUCT_PAGE_STYLE}
-    >
-      {/* SHEIN-style compact mobile product header */}
-      <div
-        className="sticky top-0 z-40 flex h-12 items-center gap-2 border-b border-neutral-200 bg-white px-2 text-black md:hidden"
-        dir="rtl"
-      >
-        <Link
-          to="/"
-          aria-label="العودة للمتجر"
-          className="grid h-9 w-9 shrink-0 place-items-center"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </Link>
-        <div className="flex h-9 min-w-0 flex-1 items-center border border-neutral-200 bg-[#f7f7f7]">
-          <span className="flex-1 px-2 text-right text-[12px] text-neutral-500">البحث</span>
-          <Search className="me-2 h-4 w-4" />
-        </div>
-        <Link to="/cart" aria-label="السلة" className="relative grid h-9 w-9 place-items-center">
-          <ShoppingCart className="h-5 w-5" />
-        </Link>
-        <button
-          type="button"
-          aria-label="مشاركة المنتج"
-          className="grid h-9 w-9 place-items-center"
-        >
-          <Share2 className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          aria-label="المزيد من الخيارات"
-          className="grid h-9 w-9 place-items-center text-lg font-black"
-        >
-          ⋮
-        </button>
-      </div>
-
-      {/* Top Header / Navigation Bar */}
-      <nav
-        aria-label="التنقل الرئيسي"
-        className="hidden sticky top-0 z-30 items-center justify-between border-b border-showcase-border bg-showcase/80 px-4 py-3 backdrop-blur-xl md:flex"
-      >
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-xs font-bold text-showcase-foreground/80 hover:text-showcase-foreground transition"
-          aria-label="العودة للمتجر الرئيسي"
-        >
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          <span>العودة للمتجر</span>
-        </Link>
-        <span className="rounded-full border border-showcase-border bg-showcase-foreground/5 px-3 py-1 text-[10px] font-bold tracking-[0.2em]">
-          INDEXES · {product.categoryName || product.category_name || "PREMIUM"}
-        </span>
+    <VStack as="section" className="sf-page sf-product-page" gap={5} data-product-page>
+      <nav aria-label="مسار التنقل" className="sf-breadcrumb">
+        <Link to="/">الرئيسية</Link>
+        <ChevronLeft aria-hidden="true" />
+        <Link to="/search">المنتجات</Link>
       </nav>
-
-      {/* Visible Breadcrumbs (SEO + UX) */}
-      <nav
-        aria-label="مسار التنقل"
-        className="hidden items-center gap-1.5 border-b border-showcase-border/30 px-4 py-2 text-[11px] text-showcase-foreground/50 md:flex"
-      >
-        <Link
-          to="/"
-          className="flex items-center gap-1 hover:text-showcase-foreground transition"
-          aria-label="الرئيسية"
-        >
-          <Home className="h-3 w-3" aria-hidden="true" />
-          <span>الرئيسية</span>
-        </Link>
-        <ChevronLeft className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
-        {(product.categoryName || product.category_name || product.categoryId) && (
-          <>
-            <Link
-              to="/search"
-              search={{ category: product.categoryId }}
-              className="hover:text-showcase-foreground transition truncate max-w-[120px]"
-            >
-              {product.categoryName || product.category_name || "تصفح التصنيف"}
-            </Link>
-            <ChevronLeft className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
-          </>
-        )}
-        <span
-          className="text-showcase-foreground/80 font-semibold truncate max-w-[180px]"
-          aria-current="page"
-        >
-          {product.name}
-        </span>
-      </nav>
-
-      <div ref={heroRef} className="mx-auto max-w-7xl px-0 pt-0 md:px-4 md:pt-8 lg:px-8 lg:pt-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* Right/Top Column: Interactive Gallery (7 columns on Desktop) */}
-          <div className="order-1 flex flex-col gap-2 md:gap-4 lg:order-1 lg:col-span-7">
-            <ProductMediaGallery
-              product={{
-                id: product.id,
-                name: product.name,
-                image: product.image,
-                images: product.images,
-                videos: product.videos,
-                media: product.media,
-                videoPlaybackId: product.videoPlaybackId,
-                modelUrl: product.modelUrl ?? product.model_url ?? null,
-              }}
-            />
-          </div>
-
-          {/* Left/Bottom Column: Product Details & Buy Box (5 columns on Desktop) */}
-          <div className="product-buy-box order-2 flex flex-col gap-3 px-3 pt-2 md:gap-5 md:px-0 md:pt-0 lg:order-2 lg:col-span-5">
-            {/* Title & Category */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="rounded-md bg-primary/15 px-2.5 py-0.5 text-xs font-bold text-primary border border-primary/20">
-                  {product.categoryName ||
-                    product.category_name ||
-                    (product.categoryId ? undefined : null) ||
-                    "عام"}
-                </span>
-                <span
-                  className={`flex items-center gap-1 text-xs font-bold ${isAvailable ? "text-success" : "text-destructive"}`}
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  {isAvailable ? "متوفر في المتجر" : "نفد المخزون"}
-                </span>
-              </div>
-
-              <h1 className="text-2xl font-black leading-tight sm:text-3xl lg:text-4xl text-showcase-foreground">
-                {product.name}
-              </h1>
-
-              {product.brand && product.brand !== "UNKNOWN" && (
-                <span className="mt-2 block text-sm text-muted-foreground">{product.brand}</span>
-              )}
-
-              {/* Rating */}
-              {Number(product.reviews) > 0 ? (
-                <div
-                  className="mt-3 flex items-center gap-3 text-xs"
-                  aria-label={`تقييم ${product.rating} من 5`}
-                >
-                  <div className="flex items-center gap-1 text-amber-400">
-                    <Star className="h-4 w-4 fill-amber-400" />
-                    <span className="font-bold">{product.rating}</span>
-                  </div>
-                  <span className="text-showcase-foreground/50">•</span>
-                  <span className="text-showcase-foreground/70">
-                    {product.reviews} تقييم للمنتج
-                  </span>
-                </div>
-              ) : (
-                <p className="mt-3 text-xs text-showcase-foreground/40">لا توجد تقييمات بعد</p>
-              )}
-            </div>
-
-            {/* Price Box */}
-            <div className="rounded-2xl border border-showcase-border bg-showcase-foreground/5 p-4 flex items-baseline justify-between">
-              <div>
-                <span className="text-xs font-bold text-showcase-foreground/60 block mb-1">
-                  السعر الحالي
-                </span>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-3xl font-black text-showcase-foreground">
-                    {formatPrice(product.price)}
-                  </span>
-                  {product.oldPrice && (
-                    <span className="text-sm line-through text-showcase-foreground/40">
-                      {formatPrice(product.oldPrice)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {product.oldPrice && product.oldPrice > product.price && (
-                <span className="rounded-full bg-destructive/15 px-3 py-1 text-xs font-bold text-destructive border border-destructive/20">
-                  خصم {Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}%
-                </span>
-              )}
-            </div>
-
-            {/* Description Summary */}
-            {pageCfg.showDescription !== false && description && (
-              <details className="order-5 rounded-2xl border border-showcase-border/60 bg-showcase-foreground/5 px-4 py-3 text-sm leading-relaxed text-showcase-foreground/80">
-                <summary className="cursor-pointer list-none font-black text-showcase-foreground">
-                  تفاصيل المنتج
-                </summary>
-                <p className="mt-3 border-t border-showcase-border/50 pt-3">{description}</p>
-              </details>
-            )}
-
-            {/* Quantity Selector */}
-            <div className="order-3 flex items-center justify-between rounded-xl border border-showcase-border bg-showcase-foreground/5 p-3">
-              <span className="text-xs font-bold text-showcase-foreground">
-                الكمية المطلوب طلبها
-              </span>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  aria-label={`تقليل كمية ${product.name}`}
-                  onClick={() => setQty(Math.max(1, qty - 1))}
-                  className="grid h-11 w-11 place-items-center rounded-md border border-input bg-showcase-foreground/10 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring transition"
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </button>
-                <span className="w-6 text-center text-sm font-black">{qty}</span>
-                <button
-                  type="button"
-                  aria-label={`زيادة كمية ${product.name}`}
-                  onClick={() =>
-                    setQty(
-                      Number.isFinite(availableStock) ? Math.min(availableStock, qty + 1) : qty + 1,
-                    )
-                  }
-                  disabled={
-                    !isAvailable || (Number.isFinite(availableStock) && qty >= availableStock)
-                  }
-                  className="grid h-11 w-11 place-items-center rounded-md border border-input bg-primary text-primary-foreground font-bold hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring transition"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* CTA Action Buttons — Cart is primary */}
-            <div className="order-4 flex flex-col gap-2.5">
-              {pageCfg.showCartBtn !== false && (
-                <button
-                  onClick={handleAdd}
-                  disabled={!isAvailable || added}
-                  className={`hidden min-h-12 items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black transition md:flex ${isAvailable && !added ? "bg-[#2F6BFF] text-white hover:bg-[#2458D8]" : added ? "bg-emerald-600 text-white" : "cursor-not-allowed bg-showcase-foreground/10 text-showcase-foreground/40"}`}
-                >
-                  {added ? (
-                    <CheckCircle2 className="h-5 w-5" />
-                  ) : (
-                    <ShoppingCart className="h-5 w-5" />
-                  )}
-                  <span>
-                    {added ? "تمت الإضافة للسلة ✓" : isAvailable ? "أضف للسلة" : "غير متوفر حالياً"}
-                  </span>
-                </button>
-              )}
-
-              {pageCfg.showWaBtn !== false && (
-                <a
-                  href={orderHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-disabled={!isAvailable}
-                  onClick={(event) => {
-                    if (!isAvailable) {
-                      event.preventDefault();
-                      return;
-                    }
-                    trackEvent("click_whatsapp", {
-                      source: "product_page",
-                      productId: product.id,
-                    });
-                  }}
-                  className={`hidden min-h-11 items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-black transition md:flex ${isAvailable ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15" : "pointer-events-none border-showcase-border bg-showcase-foreground/5 text-showcase-foreground/40"}`}
-                >
-                  <MessageCircle className="h-5 w-5" />
-                  <span>اطلب عبر واتساب</span>
-                </a>
-              )}
-            </div>
-
-            <div className="order-6 space-y-3 pt-2">
-              {/* Social Share Buttons */}
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-showcase-border/40">
-                <span className="text-showcase-foreground/60 font-bold">مشاركة المنتج:</span>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={shareUrls.whatsapp}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-lg bg-success/20 text-success border border-success/30 px-2.5 py-1 font-bold hover:bg-success/30 transition"
-                  >
-                    واتساب
-                  </a>
-                  <a
-                    href={shareUrls.facebook}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 px-2.5 py-1 font-bold hover:bg-blue-600/30 transition"
-                  >
-                    فيسبوك
-                  </a>
-                  <a
-                    href={shareUrls.twitter}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-lg bg-white/10 text-white border border-white/20 px-2.5 py-1 font-bold hover:bg-white/20 transition"
-                  >
-                    إكس
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Product Recommendations ("قد يعجبك أيضاً") */}
-        <ProductRecommendations
-          currentProductId={product.id}
-          categoryId={product.categoryId}
-          productName={product.name}
-        />
-      </div>
-
-      {/* Sticky Conversion Bar when scrolling — includes both Cart and WhatsApp */}
-      {isAvailable && (
-        <motion.div
-          initial={false}
-          animate={{
-            y: showStickyBar ? 0 : 120,
-            opacity: showStickyBar ? 1 : 0,
-          }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-none px-0 md:bottom-6 md:max-w-md md:px-3"
-          style={{ pointerEvents: showStickyBar ? "auto" : "none" }}
-        >
-          <div className="flex items-center justify-between gap-2 border-t border-neutral-200 bg-white p-2 shadow-[0_-3px_12px_rgba(0,0,0,0.08)] md:rounded-2xl md:border md:border-showcase-border md:bg-showcase/90 md:p-2.5 md:shadow-2xl md:backdrop-blur-2xl">
-            <div className="hidden min-w-0 flex-1 ps-2 md:block">
-              <p className="truncate text-xs font-bold text-showcase-foreground">{product.name}</p>
-              <p className="text-xs font-black text-primary">{formatPrice(product.price)}</p>
-            </div>
+      <Grid columns={{ minWidth: 300, max: 2 }} gap={6} className="sf-product-detail-grid">
+        <section className="sf-product-gallery" aria-label="صور ووسائط المنتج">
+          <ProductMediaGallery product={product} />
+        </section>
+        <VStack as="section" gap={4} className="sf-product-details">
+          <header className="sf-page-heading">
+            <h1>{product.name}</h1>
+          </header>
+          <p className="sf-detail-price">
+            {formatPrice(product.price)} {discounted && <del>{formatPrice(product.oldPrice!)}</del>}
+          </p>
+          <p className={available ? "sf-stock-available" : "sf-stock-unavailable"}>
+            {available ? "متوفر في المخزون" : "غير متوفر حاليًا"}
+          </p>
+          <section className="sf-product-utilities">
             <button
-              onClick={handleAdd}
-              disabled={added}
-              className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-none bg-black px-3 py-2 md:flex-none md:rounded-xl md:bg-[#2F6BFF] text-xs font-black text-white transition hover:bg-[#2458D8] disabled:bg-emerald-600"
+              className="sf-secondary-button"
+              aria-pressed={favorite}
+              onClick={() => toggleFavorite(product.id)}
             >
-              {added ? (
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              ) : (
-                <ShoppingCart className="h-3.5 w-3.5" />
-              )}
-              {added ? "تمت الإضافة ✓" : "أضف إلى عربة التسوق"}
+              <Heart className={favorite ? "fill-current" : ""} />
+              {favorite ? "محفوظ في المفضلة" : "حفظ في المفضلة"}
             </button>
-            <button
-              type="button"
-              aria-label="إضافة إلى المفضلة"
-              className="grid h-11 w-12 shrink-0 place-items-center text-black md:hidden"
-            >
-              <Heart className="h-6 w-6" />
+            <button className="sf-icon-button" aria-label="مشاركة المنتج" onClick={share}>
+              <Share2 />
             </button>
-            {pageCfg.showWaBtn !== false && (
-              <a
-                href={orderHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden items-center gap-1.5 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-500 transition hover:bg-emerald-500/15 md:flex"
+          </section>
+          {product.description && (
+            <section className="sf-product-description">
+              <h2>تفاصيل المنتج</h2>
+              <p>{product.description.replace(/#{1,6}\s+|\*\*|__|`/g, "")}</p>
+            </section>
+          )}
+          <section className="sf-purchase-panel" aria-label="شراء المنتج">
+            <label htmlFor="product-quantity">الكمية</label>
+            <section className="sf-quantity">
+              <button
+                aria-label="تقليل الكمية"
+                disabled={quantity <= 1}
+                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
               >
-                <MessageCircle className="h-3.5 w-3.5" />
-                واتساب
-              </a>
+                <Minus />
+              </button>
+              <input
+                id="product-quantity"
+                type="number"
+                min={1}
+                max={product.stock}
+                value={quantity}
+                onChange={(event) =>
+                  setQuantity(
+                    Math.max(1, Math.min(Number(product.stock), Number(event.target.value) || 1)),
+                  )
+                }
+              />
+              <button
+                aria-label="زيادة الكمية"
+                disabled={!available || quantity >= Number(product.stock)}
+                onClick={() => setQuantity((value) => value + 1)}
+              >
+                <Plus />
+              </button>
+            </section>
+            <button
+              className="sf-primary-button"
+              disabled={!available}
+              onClick={() => {
+                add(product as Product, quantity);
+                setAdded(true);
+                toast.success("أُضيف إلى السلة");
+              }}
+            >
+              <ShoppingCart />
+              {available ? (added ? "تمت الإضافة — أضف مرة أخرى" : "أضف إلى السلة") : "غير متوفر"}
+            </button>
+            {added && (
+              <Link to="/cart" className="sf-secondary-button">
+                عرض السلة وإتمام الطلب
+              </Link>
             )}
-          </div>
-        </motion.div>
-      )}
-    </div>
+            <p>راجع المنتجات وبيانات التسليم في السلة، ثم أكمل الطلب عبر واتساب.</p>
+          </section>
+        </VStack>
+      </Grid>
+    </VStack>
   );
 }

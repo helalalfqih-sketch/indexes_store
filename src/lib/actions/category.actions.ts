@@ -4,7 +4,7 @@
  */
 import { z } from "zod";
 import { listCategories, getCategoryBySlug as getCategoryBySlugFn } from "@/lib/catalog.functions";
-import { fallbackCategories, toLegacyCategory, type LegacyCategoryShape } from "@/lib/data-adapter";
+import { toLegacyCategory, type LegacyCategoryShape } from "@/lib/data-adapter";
 import type { CategoryWithMetaDTO } from "@/lib/repositories/categories.repo";
 import { diagnoseShopifyCatalog, listShopifyCategories } from "@/lib/shopify/catalog.functions";
 import { categories as seedCategories } from "@/lib/store-data";
@@ -76,9 +76,7 @@ const CANONICAL_SHOPIFY_COLLECTION_HANDLES = new Set([
   "الهدايا-والهوايات",
 ]);
 
-const filterCanonicalShopifyCategories = (
-  items: LegacyCategoryShape[],
-): LegacyCategoryShape[] =>
+const filterCanonicalShopifyCategories = (items: LegacyCategoryShape[]): LegacyCategoryShape[] =>
   items.filter((category) => CANONICAL_SHOPIFY_COLLECTION_HANDLES.has(category.id));
 
 export const normalizeCategorySlug = (slug: string): string => {
@@ -97,11 +95,10 @@ export async function fetchCategories(): Promise<LegacyCategoryShape[]> {
   }
   try {
     const rows = await listCategories({});
-    if (rows.length === 0) return fallbackCategories().map(toLegacyCategory).map(enrich);
     return mapMany(rows);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[category.actions] fetchCategories fallback:", err);
-    return fallbackCategories().map(toLegacyCategory).map(enrich);
+    throw err;
   }
 }
 
@@ -124,11 +121,13 @@ export async function fetchCategoryBySlug(slug: string): Promise<LegacyCategoryS
     if (status.source === "shopify") throw err;
   }
   try {
-    const dto = await getCategoryBySlugFn({ data: { slug: normalized } });
+    const dto = await getCategoryBySlugFn({
+      data: { slug: parsed.toLowerCase().replace(/_/g, "-") },
+    });
     if (dto) return enrich(toLegacyCategory(dto));
   } catch (err) {
-    if (import.meta.env.DEV) console.warn("[category.actions] fetchCategoryBySlug fallback:", err);
+    if (import.meta.env.DEV) console.warn("[category.actions] fetchCategoryBySlug failed:", err);
+    throw err;
   }
-  const seed = fallbackCategories().find((c) => normalizeCategorySlug(c.slug) === normalized);
-  return seed ? enrich(toLegacyCategory(seed)) : null;
+  return null;
 }

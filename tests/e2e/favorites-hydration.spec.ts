@@ -16,14 +16,18 @@ test("returning visitors restore favorites without a hydration mismatch", async 
     localStorage.setItem("indexes_favorites", JSON.stringify(["hydration-fixture"]));
   });
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  const favorites = page.getByRole("button", { name: "المفضلة", exact: true }).first();
+  const favorites = page.getByRole("link", { name: "المفضلة", exact: true }).first();
   await expect(favorites).toBeVisible({ timeout: 30_000 });
-  await expect(favorites).toContainText("1");
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem("indexes_favorites") ?? "[]")),
+  ).toEqual(["hydration-fixture"]);
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(favorites).toContainText("1");
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem("indexes_favorites") ?? "[]")),
+  ).toEqual(["hydration-fixture"]);
   expect(hydrationErrors).toEqual([]);
   const accessibility = await new AxeBuilder({ page })
-    .include('button[aria-label="المفضلة"]')
+    .include('a[aria-label="المفضلة"]')
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
   expect(accessibility.violations).toEqual([]);

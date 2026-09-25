@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CartDrawer as CartDrawerBase } from "./CartDrawerBase";
 import type { CartItem, Currency, Product } from "./types";
 import { formatPrice } from "./currency";
-import { STORE_INFO } from "./constants";
+import { useAppearance } from "@/components/appearance-provider";
 import { submitOrder } from "@/lib/actions/order.actions";
 import { useCart } from "@/lib/cart-store";
 import { yemeniPhoneSchema } from "@/lib/validation/phone";
@@ -36,6 +36,9 @@ function makeIdempotencyKey() {
 }
 
 export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
+  const { isOpen, onClose } = props;
+  const { settings } = useAppearance();
+  const config = settings.cart_config;
   const [step, setStep] = useState<FlowStep>("cart");
   const [discountPercent, setDiscountPercent] = useState(0);
   const [name, setName] = useState("");
@@ -48,6 +51,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const idempotencyKeyRef = useRef<string | null>(null);
+  const deliveryRef = useRef<HTMLDivElement>(null);
   const clearCart = useCart((state) => state.clear);
 
   useEffect(() => {
@@ -61,13 +65,54 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
     }
   }, [props.isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || step === "cart") return;
+    const previous = document.activeElement as HTMLElement | null;
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const node = deliveryRef.current;
+    const focusables = () =>
+      node?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input, textarea, select, [tabindex="0"]',
+      );
+    focusables()?.[0]?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !submitting) {
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const elements = focusables();
+      if (!elements?.length) return;
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      }
+      if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = oldOverflow;
+      document.removeEventListener("keydown", onKey);
+      previous?.focus();
+    };
+  }, [isOpen, onClose, step, submitting]);
+
   const subtotal = useMemo(
     () => props.cartItems.reduce((sum, item) => sum + item.product.priceYER * item.quantity, 0),
     [props.cartItems],
   );
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
   const afterDiscount = subtotal - discountAmount;
-  const shipping = afterDiscount >= STORE_INFO.freeShippingThresholdYER ? 0 : 3000;
+  const shipping =
+    config.freeShippingThreshold > 0 && afterDiscount >= config.freeShippingThreshold
+      ? 0
+      : config.shippingFee;
   const total = afterDiscount + shipping;
   const couponCode =
     discountPercent >= 20 ? "INDEXES20" : discountPercent >= 10 ? "INDEXES10" : undefined;
@@ -129,7 +174,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
           },
           couponCode,
         }),
-        STORE_INFO.whatsappNumber,
+        config.whatsappPhone,
       );
       clearCart();
       setOrderId(result.orderId);
@@ -162,15 +207,26 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex justify-end bg-black/80 backdrop-blur-md dir-rtl"
+          className="sf-delivery-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="بيانات التسليم"
         >
-          <div className="flex-1 cursor-pointer" onClick={props.onClose} />
+          <button
+            type="button"
+            className="sf-delivery-backdrop"
+            aria-label="إغلاق بيانات التسليم"
+            tabIndex={-1}
+            disabled={submitting}
+            onClick={onClose}
+          />
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 220 }}
-            className="h-full w-full max-w-md overflow-hidden border-r border-[var(--color-border-default)] bg-[var(--color-surface-1)] shadow-2xl"
+            ref={deliveryRef}
+            className="sf-delivery-dialog"
             dir="rtl"
           >
             {step === "success" ? (
@@ -187,7 +243,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                 {orderId && (
                   <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-4 py-3">
                     <span className="text-[11px] text-[var(--color-text-muted)]">رقم الطلب</span>
-                    <p className="mt-1 break-all font-mono text-sm font-black text-[#2F6BFF]">
+                    <p className="mt-1 break-all font-mono text-sm font-black text-primary">
                       {orderId}
                     </p>
                   </div>
@@ -203,7 +259,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                 <button
                   type="button"
                   onClick={props.onClose}
-                  className="mt-2 rounded-2xl bg-[#2F6BFF] px-6 py-3 text-sm font-black text-white"
+                  className="mt-2 rounded-2xl bg-primary px-6 py-3 text-sm font-black text-white"
                 >
                   العودة للمتجر
                 </button>
@@ -216,11 +272,12 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                       بيانات التسليم
                     </h2>
                     <p className="mt-0.5 text-[11px] text-[var(--color-text-secondary)]">
-                      أكمل الطلب داخل نفس السلة
+                      أدخل بياناتك ثم أكمل التأكيد عبر واتساب
                     </p>
                   </div>
                   <button
                     type="button"
+                    disabled={submitting}
                     onClick={() => setStep("cart")}
                     className="flex items-center gap-1 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-2 text-xs font-bold text-[var(--color-text-primary)]"
                   >
@@ -261,7 +318,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                         value={notes}
                         onChange={(event) => setNotes(event.target.value)}
                         rows={3}
-                        className="mt-1.5 w-full resize-none rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-[#2F6BFF]"
+                        className="mt-1.5 w-full resize-none rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-3 py-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-primary"
                       />
                     </label>
                   </div>
@@ -282,12 +339,15 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                     />
                     <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border-default)] pt-3 text-base font-black">
                       <span>الإجمالي</span>
-                      <span className="text-[#2F6BFF]">{formatPrice(total, props.currency)}</span>
+                      <span className="text-primary">{formatPrice(total, props.currency)}</span>
                     </div>
                   </div>
 
                   {submitError && (
-                    <p className="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-500">
+                    <p
+                      role="alert"
+                      className="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-500"
+                    >
                       {submitError}
                     </p>
                   )}
@@ -298,7 +358,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                     type="button"
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#2F6BFF] to-[#3B75FF] py-3.5 text-sm font-black text-white shadow-lg shadow-blue-600/25 disabled:opacity-60"
+                    className="sf-primary-button w-full"
                   >
                     {submitting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -342,11 +402,13 @@ function Field({
         <span className="text-rose-500">*</span>
       </span>
       <input
+        required
+        aria-invalid={Boolean(error)}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         autoComplete={autoComplete}
         inputMode={inputMode}
-        className={`mt-1.5 w-full rounded-2xl border bg-[var(--color-surface-2)] px-3 py-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-[#2F6BFF] ${error ? "border-rose-500" : "border-[var(--color-border-default)]"}`}
+        className={`mt-1.5 w-full rounded-2xl border bg-[var(--color-surface-2)] px-3 py-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-primary ${error ? "border-rose-500" : "border-[var(--color-border-default)]"}`}
       />
       {error && <span className="mt-1 block text-[11px] font-semibold text-rose-500">{error}</span>}
     </label>
