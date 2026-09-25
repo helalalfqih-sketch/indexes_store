@@ -4,6 +4,7 @@ import { z } from "zod";
 import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveTenantId } from "@/lib/saas/tenant-context";
+import { checkTenantPermission } from "@/lib/users.functions";
 
 export type AIProviderType = "gemini" | "lovable" | "openai" | "openrouter" | "vertex";
 
@@ -33,6 +34,63 @@ function getSafeDb(context?: any) {
   const db = context?.supabase;
   if (!db) throw new Error("Authenticated Supabase context is unavailable");
   return db;
+}
+
+async function getProviderAccess(context: any) {
+  const authDb = getSafeDb(context);
+  const userId = context?.userId;
+  if (!userId) throw new Error("Unauthenticated");
+
+  const { data: adminRole, error: adminRoleError } = await authDb
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (adminRoleError) throw new Error("Unable to verify platform-admin role");
+  const isPlatformAdmin = Boolean(adminRole);
+
+  let tenantId: string | null = null;
+  if (isPlatformAdmin) {
+    try {
+      tenantId = await resolveTenantId(authDb, { userId });
+    } catch {
+      tenantId = null;
+    }
+  } else {
+    const allowed = await checkTenantPermission("settings", context);
+    if (!allowed) throw new Error("Insufficient permission to manage AI providers");
+    tenantId = await resolveTenantId(authDb, { userId });
+  }
+
+  const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return {
+    authDb,
+    adminDb: getSupabaseAdmin(),
+    userId,
+    tenantId,
+    isPlatformAdmin,
+  };
+}
+
+function assertConfigAccess(
+  row: { tenant_id?: string | null } | null,
+  access: { tenantId: string | null; isPlatformAdmin: boolean },
+) {
+  if (!row) throw new Error("AI provider configuration not found");
+  if (access.isPlatformAdmin) return;
+  if (!access.tenantId || row.tenant_id !== access.tenantId) {
+    throw new Error("Forbidden: AI provider configuration belongs to another scope");
+  }
+}
+
+function maskProviderConfig(item: any) {
+  return {
+    ...item,
+    api_key: maskApiKey(decryptApiKey(item.api_key)),
+    has_key: Boolean(item.api_key),
+  };
 }
 
 export function maskApiKey(key?: string | null): string {
@@ -91,13 +149,17 @@ export async function resolveActiveAIProvider(options?: {
 export const listAIProvidersFn = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const db = getSafeDb(context);
-    await resolveTenantId(db, { userId: (context as any)?.userId });
-
-    const { data, error } = await db
+    const access = await getProviderAccess(context);
+    let query = access.adminDb
       .from("ai_provider_configs" as any)
       .select("*")
       .order("priority", { ascending: true });
+
+    if (!access.isPlatformAdmin) {
+      query = query.or(`tenant_id.eq.${access.tenantId},tenant_id.is.null`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       if (
@@ -110,11 +172,7 @@ export const listAIProvidersFn = createServerFn({ method: "GET" })
       throw new Error(error.message);
     }
 
-    return (data || []).map((item: any) => ({
-      ...item,
-      api_key: maskApiKey(decryptApiKey(item.api_key)),
-      has_key: Boolean(item.api_key),
-    })) as (AIProviderConfig & { has_key: boolean })[];
+    return (data || []).map(maskProviderConfig) as (AIProviderConfig & { has_key: boolean })[];
   });
 
 const SaveProviderSchema = z.object({
@@ -132,30 +190,43 @@ export const saveAIProviderFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => SaveProviderSchema.parse(input))
   .handler(async ({ context, data }) => {
-    const db = getSafeDb(context);
-    const tenantId = data.is_global
-      ? null
-      : await resolveTenantId(db, { userId: (context as any)?.userId });
+    const access = await getProviderAccess(context);
+
+    if (data.is_global && !access.isPlatformAdmin) {
+      throw new Error("Forbidden: platform admin required for global AI providers");
+    }
+
+    const targetTenantId = data.is_global ? null : access.tenantId;
+    if (!data.is_global && !targetTenantId) {
+      throw new Error("Tenant not resolved for AI provider configuration");
+    }
+
     const model = validateProviderModel(data.provider, data.model);
     let encryptedKey: string | null = null;
+    let existing: any = null;
+
+    if (data.id) {
+      const existingResult = await access.adminDb
+        .from("ai_provider_configs" as any)
+        .select("*")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (existingResult.error) throw new Error(existingResult.error.message);
+      existing = existingResult.data;
+      assertConfigAccess(existing, access);
+    }
 
     if (data.api_key && !data.api_key.startsWith("••••")) {
       encryptedKey = encryptApiKey(data.api_key);
+    } else if (existing) {
+      encryptedKey = existing.api_key ?? null;
     }
 
     if (data.id) {
-      if (data.api_key?.startsWith("••••")) {
-        const { data: existing } = await db
-          .from("ai_provider_configs" as any)
-          .select("api_key")
-          .eq("id", data.id)
-          .single();
-        encryptedKey = existing?.api_key ?? null;
-      }
-
-      const { data: updated, error } = await db
+      const { data: updated, error } = await access.adminDb
         .from("ai_provider_configs" as any)
         .update({
+          tenant_id: targetTenantId,
           provider: data.provider,
           api_key: encryptedKey,
           model,
@@ -169,13 +240,13 @@ export const saveAIProviderFn = createServerFn({ method: "POST" })
         .single();
 
       if (error) throw new Error(error.message);
-      return updated;
+      return maskProviderConfig(updated);
     }
 
-    const { data: inserted, error } = await db
+    const { data: inserted, error } = await access.adminDb
       .from("ai_provider_configs" as any)
       .insert({
-        tenant_id: tenantId,
+        tenant_id: targetTenantId,
         provider: data.provider,
         api_key: encryptedKey,
         model,
@@ -187,15 +258,23 @@ export const saveAIProviderFn = createServerFn({ method: "POST" })
       .single();
 
     if (error) throw new Error(error.message);
-    return inserted;
+    return maskProviderConfig(inserted);
   });
 
 export const deleteAIProviderFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => z.object({ id: z.string() }).parse(input))
   .handler(async ({ context, data }) => {
-    const db = getSafeDb(context);
-    const { error } = await db
+    const access = await getProviderAccess(context);
+    const existing = await access.adminDb
+      .from("ai_provider_configs" as any)
+      .select("id, tenant_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (existing.error) throw new Error(existing.error.message);
+    assertConfigAccess(existing.data, access);
+
+    const { error } = await access.adminDb
       .from("ai_provider_configs" as any)
       .delete()
       .eq("id", data.id);
@@ -207,8 +286,16 @@ export const toggleAIProviderFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => z.object({ id: z.string(), enabled: z.boolean() }).parse(input))
   .handler(async ({ context, data }) => {
-    const db = getSafeDb(context);
-    const { error } = await db
+    const access = await getProviderAccess(context);
+    const existing = await access.adminDb
+      .from("ai_provider_configs" as any)
+      .select("id, tenant_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (existing.error) throw new Error(existing.error.message);
+    assertConfigAccess(existing.data, access);
+
+    const { error } = await access.adminDb
       .from("ai_provider_configs" as any)
       .update({ enabled: data.enabled, updated_at: new Date().toISOString() } as any)
       .eq("id", data.id);
@@ -229,16 +316,18 @@ export const testAIConnectionFn = createServerFn({ method: "POST" })
   .validator((input: unknown) => TestConnectionSchema.parse(input))
   .handler(async ({ context, data }) => {
     try {
-      const db = getSafeDb(context);
+      const access = await getProviderAccess(context);
       let rawKey = data.api_key || null;
 
       if ((!rawKey || rawKey.startsWith("••••")) && data.id) {
-        const { data: existing } = await db
+        const existingResult = await access.adminDb
           .from("ai_provider_configs" as any)
-          .select("api_key")
+          .select("tenant_id, api_key")
           .eq("id", data.id)
-          .single();
-        rawKey = decryptApiKey(existing?.api_key);
+          .maybeSingle();
+        if (existingResult.error) throw new Error(existingResult.error.message);
+        assertConfigAccess(existingResult.data, access);
+        rawKey = decryptApiKey(existingResult.data?.api_key);
       }
 
       const modelsToTry = Array.from(
