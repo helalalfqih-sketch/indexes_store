@@ -1,0 +1,451 @@
+-- Close the remaining authenticated RPC and tenant-isolation gaps.
+-- This migration is intentionally additive to the live 2026-09-24 security
+-- rollout. It must be applied only after the application changes in the same
+-- pull request are deployed together.
+
+BEGIN;
+
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '120s';
+
+DO $preflight$
+DECLARE
+  mismatch_count bigint;
+BEGIN
+  IF to_regclass('public.orders') IS NULL
+     OR to_regclass('public.branches') IS NULL
+     OR to_regclass('public.tenant_members') IS NULL
+     OR to_regclass('public.user_roles') IS NULL
+     OR to_regclass('public.webhook_events') IS NULL
+     OR to_regclass('public.whatsapp_inbox') IS NULL
+     OR to_regclass('public.ai_daily_usage') IS NULL THEN
+    RAISE EXCEPTION 'Security hardening preflight failed: required objects are missing';
+  END IF;
+
+  SELECT count(*)
+    INTO mismatch_count
+  FROM public.orders AS o
+  JOIN public.branches AS b ON b.id = o.branch_id
+  WHERE o.branch_id IS NOT NULL
+    AND o.tenant_id IS DISTINCT FROM b.tenant_id;
+
+  IF mismatch_count <> 0 THEN
+    RAISE EXCEPTION
+      'Security hardening preflight failed: % order(s) reference a branch from another tenant',
+      mismatch_count;
+  END IF;
+END
+$preflight$;
+
+-- ---------------------------------------------------------------------------
+-- 1. Membership and role reads are self-only at the Data API boundary.
+--    Cross-user membership administration is performed by reviewed server
+--    functions using the server-only Supabase client after caller authorization.
+-- ---------------------------------------------------------------------------
+
+DROP POLICY IF EXISTS "Members view their memberships" ON public.tenant_members;
+DROP POLICY IF EXISTS "Owners and admins add members" ON public.tenant_members;
+DROP POLICY IF EXISTS "Owners and admins remove members" ON public.tenant_members;
+DROP POLICY IF EXISTS "Owners and admins update members" ON public.tenant_members;
+DROP POLICY IF EXISTS "P0 members read own membership" ON public.tenant_members;
+
+ALTER TABLE public.tenant_members ENABLE ROW LEVEL SECURITY;
+
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON TABLE public.tenant_members FROM anon, authenticated;
+GRANT SELECT ON TABLE public.tenant_members TO authenticated;
+GRANT ALL ON TABLE public.tenant_members TO service_role;
+
+CREATE POLICY "P0 members read own membership"
+  ON public.tenant_members
+  FOR SELECT
+  TO authenticated
+  USING (
+    (SELECT auth.uid()) IS NOT NULL
+    AND user_id = (SELECT auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Authenticated can view roles" ON public.user_roles;
+DROP POLICY IF EXISTS "P0 users read own roles" ON public.user_roles;
+
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON TABLE public.user_roles TO authenticated;
+
+CREATE POLICY "P0 users read own roles"
+  ON public.user_roles
+  FOR SELECT
+  TO authenticated
+  USING (
+    (SELECT auth.uid()) IS NOT NULL
+    AND user_id = (SELECT auth.uid())
+  );
+
+-- ---------------------------------------------------------------------------
+-- 2. Authorization helpers no longer run as SECURITY DEFINER and refuse to
+--    answer questions about any user other than the authenticated caller.
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.has_role(
+  _user_id uuid,
+  _role public.app_role
+)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY INVOKER
+SET search_path = pg_catalog, public
+AS $function$
+BEGIN
+  IF _user_id IS NULL
+     OR (SELECT auth.uid()) IS NULL
+     OR _user_id <> (SELECT auth.uid()) THEN
+    RETURN false;
+  END IF;
+
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.user_roles AS ur
+    WHERE ur.user_id = _user_id
+      AND ur.role = _role
+  );
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.is_tenant_member(
+  _tenant_id uuid,
+  _user_id uuid
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = pg_catalog, public
+AS $function$
+  SELECT
+    _tenant_id IS NOT NULL
+    AND _user_id IS NOT NULL
+    AND (SELECT auth.uid()) IS NOT NULL
+    AND _user_id = (SELECT auth.uid())
+    AND EXISTS (
+      SELECT 1
+      FROM public.tenant_members AS tm
+      WHERE tm.tenant_id = _tenant_id
+        AND tm.user_id = _user_id
+    );
+$function$;
+
+CREATE OR REPLACE FUNCTION public.has_tenant_role(
+  _tenant_id uuid,
+  _user_id uuid,
+  _role public.tenant_role
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = pg_catalog, public
+AS $function$
+  SELECT
+    _tenant_id IS NOT NULL
+    AND _user_id IS NOT NULL
+    AND (SELECT auth.uid()) IS NOT NULL
+    AND _user_id = (SELECT auth.uid())
+    AND EXISTS (
+      SELECT 1
+      FROM public.tenant_members AS tm
+      WHERE tm.tenant_id = _tenant_id
+        AND tm.user_id = _user_id
+        AND tm.role = _role
+    );
+$function$;
+
+CREATE OR REPLACE FUNCTION public.has_tenant_permission(
+  _tenant_id uuid,
+  _user_id uuid,
+  _required_role public.tenant_role
+)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY INVOKER
+SET search_path = pg_catalog, public
+AS $function$
+DECLARE
+  caller_role public.tenant_role;
+BEGIN
+  IF _tenant_id IS NULL
+     OR _user_id IS NULL
+     OR (SELECT auth.uid()) IS NULL
+     OR _user_id <> (SELECT auth.uid()) THEN
+    RETURN false;
+  END IF;
+
+  IF public.has_role(_user_id, 'admin'::public.app_role) THEN
+    RETURN true;
+  END IF;
+
+  SELECT tm.role
+    INTO caller_role
+  FROM public.tenant_members AS tm
+  WHERE tm.tenant_id = _tenant_id
+    AND tm.user_id = _user_id;
+
+  IF caller_role IS NULL THEN
+    RETURN false;
+  END IF;
+
+  RETURN CASE _required_role
+    WHEN 'viewer'::public.tenant_role THEN
+      caller_role IN (
+        'viewer'::public.tenant_role,
+        'staff'::public.tenant_role,
+        'manager'::public.tenant_role,
+        'owner'::public.tenant_role
+      )
+    WHEN 'staff'::public.tenant_role THEN
+      caller_role IN (
+        'staff'::public.tenant_role,
+        'manager'::public.tenant_role,
+        'owner'::public.tenant_role
+      )
+    WHEN 'manager'::public.tenant_role THEN
+      caller_role IN (
+        'manager'::public.tenant_role,
+        'owner'::public.tenant_role
+      )
+    WHEN 'owner'::public.tenant_role THEN
+      caller_role = 'owner'::public.tenant_role
+    ELSE false
+  END;
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.can_manage_tenant(
+  _tenant_id uuid,
+  _user_id uuid
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = pg_catalog, public
+AS $function$
+  SELECT
+    _tenant_id IS NOT NULL
+    AND _user_id IS NOT NULL
+    AND (SELECT auth.uid()) IS NOT NULL
+    AND _user_id = (SELECT auth.uid())
+    AND (
+      public.has_role(_user_id, 'admin'::public.app_role)
+      OR public.is_tenant_member(_tenant_id, _user_id)
+    );
+$function$;
+
+REVOKE ALL ON FUNCTION public.has_role(uuid, public.app_role)
+  FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_tenant_member(uuid, uuid)
+  FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.has_tenant_role(uuid, uuid, public.tenant_role)
+  FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.has_tenant_permission(uuid, uuid, public.tenant_role)
+  FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.can_manage_tenant(uuid, uuid)
+  FROM PUBLIC, anon, authenticated, service_role;
+
+-- Public catalog policies call has_role(auth.uid(), 'admin'); anonymous callers
+-- receive false before user_roles is queried.
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role)
+  TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_tenant_member(uuid, uuid)
+  TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_tenant_role(uuid, uuid, public.tenant_role)
+  TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_tenant_permission(uuid, uuid, public.tenant_role)
+  TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_manage_tenant(uuid, uuid)
+  TO authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 3. Order branch assignment is a server-only mutation and is protected again
+--    at table level so no write path can create a cross-tenant reference.
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.guard_order_branch_tenant()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $function$
+DECLARE
+  branch_tenant_id uuid;
+BEGIN
+  IF NEW.branch_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT b.tenant_id
+    INTO branch_tenant_id
+  FROM public.branches AS b
+  WHERE b.id = NEW.branch_id;
+
+  IF branch_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Invalid branch' USING ERRCODE = '23503';
+  END IF;
+
+  IF branch_tenant_id IS DISTINCT FROM NEW.tenant_id THEN
+    RAISE EXCEPTION 'Branch tenant does not match order tenant' USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS guard_order_branch_tenant ON public.orders;
+CREATE TRIGGER guard_order_branch_tenant
+BEFORE INSERT OR UPDATE OF branch_id, tenant_id ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION public.guard_order_branch_tenant();
+
+REVOKE ALL ON FUNCTION public.guard_order_branch_tenant()
+  FROM PUBLIC, anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.update_order_branch(
+  _order_id uuid,
+  _branch_id uuid
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $function$
+DECLARE
+  order_tenant_id uuid;
+  branch_tenant_id uuid;
+BEGIN
+  SELECT o.tenant_id
+    INTO order_tenant_id
+  FROM public.orders AS o
+  WHERE o.id = _order_id;
+
+  IF order_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Order not found' USING ERRCODE = 'P0002';
+  END IF;
+
+  SELECT b.tenant_id
+    INTO branch_tenant_id
+  FROM public.branches AS b
+  WHERE b.id = _branch_id;
+
+  IF branch_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Branch not found' USING ERRCODE = 'P0002';
+  END IF;
+
+  IF branch_tenant_id IS DISTINCT FROM order_tenant_id THEN
+    RAISE EXCEPTION 'Branch tenant does not match order tenant' USING ERRCODE = '42501';
+  END IF;
+
+  UPDATE public.orders
+  SET branch_id = _branch_id
+  WHERE id = _order_id
+    AND tenant_id = order_tenant_id;
+
+  RETURN FOUND;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.update_order_branch(uuid, uuid)
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.update_order_branch(uuid, uuid)
+  TO service_role;
+
+-- Helpful-count mutation is also a server-only primitive. A future public
+-- endpoint must authenticate/rate-limit/dedupe before invoking it.
+REVOKE ALL ON FUNCTION public.increment_review_helpful(uuid)
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.increment_review_helpful(uuid)
+  TO service_role;
+
+-- ---------------------------------------------------------------------------
+-- 4. Move the AI daily quota mutation behind the server-only client. The
+--    authenticated bearer token is still validated by the application first.
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.consume_ai_request_for_user(target_user uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $function$
+DECLARE
+  accepted integer;
+BEGIN
+  IF target_user IS NULL THEN
+    RAISE EXCEPTION 'Missing user' USING ERRCODE = '22004';
+  END IF;
+
+  INSERT INTO public.ai_daily_usage(user_id, day, requests)
+  VALUES (target_user, (now() AT TIME ZONE 'UTC')::date, 1)
+  ON CONFLICT (user_id, day)
+  DO UPDATE
+    SET requests = public.ai_daily_usage.requests + 1
+    WHERE public.ai_daily_usage.requests < 100
+  RETURNING requests INTO accepted;
+
+  RETURN accepted IS NOT NULL;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.consume_ai_request()
+  FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.consume_ai_request_for_user(uuid)
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.consume_ai_request_for_user(uuid)
+  TO service_role;
+
+-- ---------------------------------------------------------------------------
+-- 5. Make the three service-only tables explicit instead of relying on
+--    "RLS enabled with no policy". This preserves deny-by-default for clients
+--    and removes ambiguous security-advisor findings.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_daily_usage ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.ai_daily_usage FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_daily_usage TO service_role;
+DROP POLICY IF EXISTS "P0 ai usage service only" ON public.ai_daily_usage;
+CREATE POLICY "P0 ai usage service only"
+  ON public.ai_daily_usage
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.webhook_events ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.webhook_events FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.webhook_events TO service_role;
+DROP POLICY IF EXISTS "P0 webhook events service only" ON public.webhook_events;
+CREATE POLICY "P0 webhook events service only"
+  ON public.webhook_events
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.whatsapp_inbox ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.whatsapp_inbox FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE public.whatsapp_inbox TO service_role;
+DROP POLICY IF EXISTS "P0 whatsapp inbox service select" ON public.whatsapp_inbox;
+DROP POLICY IF EXISTS "P0 whatsapp inbox service insert" ON public.whatsapp_inbox;
+CREATE POLICY "P0 whatsapp inbox service select"
+  ON public.whatsapp_inbox
+  FOR SELECT
+  TO service_role
+  USING (true);
+CREATE POLICY "P0 whatsapp inbox service insert"
+  ON public.whatsapp_inbox
+  FOR INSERT
+  TO service_role
+  WITH CHECK (true);
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
