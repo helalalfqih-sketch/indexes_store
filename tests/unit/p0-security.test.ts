@@ -334,3 +334,103 @@ describe("P0 Security Suite — UI State & Polling Constraints", () => {
     expect(importerFile).toContain("video_playback_id");
   });
 });
+
+
+describe("P0 Security Suite — Remaining Trust Boundaries", () => {
+  const migrationPath = path.resolve(
+    __dirname,
+    "../../supabase/migrations/20260925170000_close_remaining_security_boundaries.sql",
+  );
+
+  it("ships the follow-up hardening migration", () => {
+    expect(fs.existsSync(migrationPath)).toBe(true);
+  });
+
+  it("makes authorization helpers self-only SECURITY INVOKER functions", () => {
+    const sql = fs.readFileSync(migrationPath, "utf-8");
+    expect(sql).toContain("CREATE OR REPLACE FUNCTION public.has_role");
+    expect(sql).toContain("SECURITY INVOKER");
+    expect(sql).toContain("_user_id <> (SELECT auth.uid())");
+    expect(sql).toContain('DROP POLICY IF EXISTS "Authenticated can view roles"');
+    expect(sql).toContain('CREATE POLICY "P0 users read own roles"');
+    expect(sql).toContain('CREATE POLICY "P0 members read own membership"');
+  });
+
+  it("keeps privileged mutator RPCs off the authenticated Data API", () => {
+    const sql = fs.readFileSync(migrationPath, "utf-8");
+    for (const signature of [
+      "public.update_order_branch(uuid, uuid)",
+      "public.increment_review_helpful(uuid)",
+      "public.consume_ai_request()",
+    ]) {
+      expect(sql).toContain(`REVOKE ALL ON FUNCTION ${signature}`);
+    }
+    expect(sql).toContain(
+      "GRANT EXECUTE ON FUNCTION public.update_order_branch(uuid, uuid)\n  TO service_role;",
+    );
+    expect(sql).toContain(
+      "GRANT EXECUTE ON FUNCTION public.increment_review_helpful(uuid)\n  TO service_role;",
+    );
+    expect(sql).toContain(
+      "GRANT EXECUTE ON FUNCTION public.consume_ai_request_for_user(uuid)\n  TO service_role;",
+    );
+  });
+
+  it("enforces order and branch tenant consistency at the table boundary", () => {
+    const sql = fs.readFileSync(migrationPath, "utf-8");
+    expect(sql).toContain("CREATE OR REPLACE FUNCTION public.guard_order_branch_tenant()");
+    expect(sql).toContain("BEFORE INSERT OR UPDATE OF branch_id, tenant_id ON public.orders");
+    expect(sql).toContain("Branch tenant does not match order tenant");
+  });
+
+  it("gives service-only tables explicit policies without reopening client access", () => {
+    const sql = fs.readFileSync(migrationPath, "utf-8");
+    for (const table of ["ai_daily_usage", "webhook_events", "whatsapp_inbox"]) {
+      expect(sql).toContain(`ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;`);
+      expect(sql).toContain(`REVOKE ALL ON TABLE public.${table} FROM PUBLIC, anon, authenticated;`);
+    }
+    expect(sql).toContain('CREATE POLICY "P0 webhook events service only"');
+    expect(sql).toContain('CREATE POLICY "P0 whatsapp inbox service select"');
+    expect(sql).toContain('CREATE POLICY "P0 ai usage service only"');
+  });
+
+  it("fails closed when the WhatsApp webhook service client is unavailable", () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, "../../src/routes/api/webhooks.whatsapp.ts"),
+      "utf-8",
+    );
+    expect(source).toContain("return getSupabaseAdmin()");
+    expect(source).not.toContain("fallback to anon client");
+    expect(source).not.toContain('await import("@/integrations/supabase/client")');
+  });
+
+  it("moves AI quota mutation behind the server-only Supabase client", () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, "../../src/lib/ai-access.server.ts"),
+      "utf-8",
+    );
+    expect(source).toContain('await import("@/integrations/supabase/client.server")');
+    expect(source).toContain('.rpc("consume_ai_request_for_user"');
+    expect(source).not.toContain('.rpc("consume_ai_request")');
+  });
+
+  it("uses server-only clients for cross-member administration after authorization", () => {
+    const usersSource = fs.readFileSync(
+      path.resolve(__dirname, "../../src/lib/users.functions.ts"),
+      "utf-8",
+    );
+    const adminStoresSource = fs.readFileSync(
+      path.resolve(__dirname, "../../src/lib/admin-stores.functions.ts"),
+      "utf-8",
+    );
+    const storeSource = fs.readFileSync(
+      path.resolve(__dirname, "../../src/lib/store.functions.ts"),
+      "utf-8",
+    );
+
+    expect(usersSource).toContain('await import("@/integrations/supabase/client.server")');
+    expect(usersSource).toContain("const adminDb = getSupabaseAdmin()");
+    expect(adminStoresSource).toContain("const adminDb = await getPlatformAdminDb()");
+    expect(storeSource).toContain("storeService.listStoreMembers(getSupabaseAdmin(), tenantId)");
+  });
+});
