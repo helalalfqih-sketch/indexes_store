@@ -1164,6 +1164,167 @@ REVOKE ALL ON TABLE public.whatsapp_configs FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO service_role;
 
+-- ---------------------------------------------------------------------------
+-- 10. Reviews: the live table is public.reviews (not product_reviews).
+--     Customer inserts are pending/unverified only. Moderation and deletion
+--     remain server-only after an explicit manager authorization check.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.reviews
+  ADD COLUMN IF NOT EXISTS moderation_status text NOT NULL DEFAULT 'pending';
+
+UPDATE public.reviews
+SET moderation_status = CASE WHEN is_approved THEN 'approved' ELSE 'pending' END
+WHERE moderation_status IS DISTINCT FROM
+      CASE WHEN is_approved THEN 'approved' ELSE 'pending' END;
+
+DO $reviews_status_constraint$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conrelid = 'public.reviews'::regclass
+      AND conname = 'reviews_moderation_status_check'
+  ) THEN
+    ALTER TABLE public.reviews
+      ADD CONSTRAINT reviews_moderation_status_check
+      CHECK (moderation_status IN ('pending', 'approved', 'rejected'));
+  END IF;
+END
+$reviews_status_constraint$;
+
+DO $reviews_link_preflight$
+DECLARE
+  product_mismatches bigint;
+  order_mismatches bigint;
+BEGIN
+  SELECT count(*)
+    INTO product_mismatches
+  FROM public.reviews AS review
+  LEFT JOIN public.products AS product ON product.id = review.product_id
+  WHERE product.id IS NULL
+     OR product.tenant_id IS DISTINCT FROM review.tenant_id;
+
+  SELECT count(*)
+    INTO order_mismatches
+  FROM public.reviews AS review
+  LEFT JOIN public.orders AS managed_order ON managed_order.id = review.order_id
+  WHERE review.order_id IS NOT NULL
+    AND (
+      managed_order.id IS NULL
+      OR managed_order.tenant_id IS DISTINCT FROM review.tenant_id
+    );
+
+  IF product_mismatches <> 0 OR order_mismatches <> 0 THEN
+    RAISE EXCEPTION
+      'Review tenant-link preflight failed: % product mismatch(es), % order mismatch(es)',
+      product_mismatches,
+      order_mismatches;
+  END IF;
+END
+$reviews_link_preflight$;
+
+CREATE OR REPLACE FUNCTION public.guard_review_tenant_links()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $function$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.products AS product
+    WHERE product.id = NEW.product_id
+      AND product.tenant_id = NEW.tenant_id
+  ) THEN
+    RAISE EXCEPTION 'Review product tenant does not match review tenant'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF NEW.order_id IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1
+       FROM public.orders AS managed_order
+       WHERE managed_order.id = NEW.order_id
+         AND managed_order.tenant_id = NEW.tenant_id
+     ) THEN
+    RAISE EXCEPTION 'Review order tenant does not match review tenant'
+      USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS guard_review_tenant_links ON public.reviews;
+CREATE TRIGGER guard_review_tenant_links
+BEFORE INSERT OR UPDATE OF tenant_id, product_id, order_id ON public.reviews
+FOR EACH ROW
+EXECUTE FUNCTION public.guard_review_tenant_links();
+
+REVOKE ALL ON FUNCTION public.guard_review_tenant_links()
+  FROM PUBLIC, anon, authenticated, service_role;
+
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users create reviews" ON public.reviews;
+DROP POLICY IF EXISTS "Public view approved reviews" ON public.reviews;
+DROP POLICY IF EXISTS "Tenant members view all reviews" ON public.reviews;
+DROP POLICY IF EXISTS "Staff manage reviews" ON public.reviews;
+DROP POLICY IF EXISTS "P0 public approved reviews" ON public.reviews;
+DROP POLICY IF EXISTS "P0 authenticated reviews read" ON public.reviews;
+DROP POLICY IF EXISTS "P0 customer reviews insert" ON public.reviews;
+DROP POLICY IF EXISTS "P0 reviews service access" ON public.reviews;
+
+REVOKE ALL ON TABLE public.reviews FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.reviews TO anon, authenticated;
+GRANT INSERT ON TABLE public.reviews TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.reviews TO service_role;
+
+CREATE POLICY "P0 public approved reviews"
+  ON public.reviews
+  FOR SELECT TO anon
+  USING (
+    moderation_status = 'approved'
+    AND is_approved = true
+  );
+
+CREATE POLICY "P0 authenticated reviews read"
+  ON public.reviews
+  FOR SELECT TO authenticated
+  USING (
+    (moderation_status = 'approved' AND is_approved = true)
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'viewer'::public.tenant_role
+    )
+  );
+
+CREATE POLICY "P0 customer reviews insert"
+  ON public.reviews
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND moderation_status = 'pending'
+    AND is_approved = false
+    AND is_verified_purchase = false
+    AND helpful_count = 0
+    AND order_id IS NULL
+    AND EXISTS (
+      SELECT 1
+      FROM public.products AS product
+      WHERE product.id = reviews.product_id
+        AND product.tenant_id = reviews.tenant_id
+        AND product.is_published = true
+    )
+  );
+
+CREATE POLICY "P0 reviews service access"
+  ON public.reviews
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
