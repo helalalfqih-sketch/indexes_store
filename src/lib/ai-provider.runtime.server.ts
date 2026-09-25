@@ -3,7 +3,6 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createVertex } from "@ai-sdk/google-vertex";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createLovableGateway } from "@/lib/ai-gateway.server";
-import { supabase } from "@/integrations/supabase/client";
 
 export type AIProviderType = "gemini" | "lovable" | "openai" | "openrouter" | "vertex";
 
@@ -144,17 +143,26 @@ export async function resolveActiveAIProvider(options?: {
   providerId?: string;
 }): Promise<ResolvedAIProvider | null> {
   try {
-    let query = supabase
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const adminDb = getSupabaseAdmin();
+    const tenantId = options?.tenantId || null;
+
+    let query = adminDb
       .from("ai_provider_configs" as any)
       .select("*")
       .eq("enabled", true)
       .order("priority", { ascending: true });
 
+    if (tenantId) {
+      query = query.or(`tenant_id.eq.${tenantId},tenant_id.is.null`);
+    } else {
+      query = query.is("tenant_id", null);
+    }
+
     if (options?.providerId) query = query.eq("id", options.providerId);
 
     const { data: configs, error } = await query;
     if (!error && configs?.length) {
-      const tenantId = options?.tenantId || null;
       const sorted = [...configs].sort((a: any, b: any) => {
         if (tenantId && a.tenant_id === tenantId && b.tenant_id !== tenantId) return -1;
         if (tenantId && b.tenant_id === tenantId && a.tenant_id !== tenantId) return 1;
