@@ -51,10 +51,9 @@ DROP POLICY IF EXISTS "P0 members read own membership" ON public.tenant_members;
 
 ALTER TABLE public.tenant_members ENABLE ROW LEVEL SECURITY;
 
-REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
-  ON TABLE public.tenant_members FROM anon, authenticated;
+REVOKE ALL ON TABLE public.tenant_members FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON TABLE public.tenant_members TO authenticated;
-GRANT ALL ON TABLE public.tenant_members TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.tenant_members TO service_role;
 
 CREATE POLICY "P0 members read own membership"
   ON public.tenant_members
@@ -1032,6 +1031,140 @@ CREATE POLICY "P0 AI memory service access"
   FOR ALL TO service_role
   USING (true)
   WITH CHECK (true);
+
+
+-- ---------------------------------------------------------------------------
+-- 9. Remove unnecessary anonymous grants and make ownership policies explicit
+--    for AI sessions/messages while preserving public active-tenant lookup.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_sessions_user_access" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own select" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own insert" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own update" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions own delete" ON public.ai_agent_sessions;
+DROP POLICY IF EXISTS "P0 AI sessions service access" ON public.ai_agent_sessions;
+REVOKE ALL ON TABLE public.ai_agent_sessions FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_sessions TO service_role;
+CREATE POLICY "P0 AI sessions own select"
+  ON public.ai_agent_sessions
+  FOR SELECT TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions own insert"
+  ON public.ai_agent_sessions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own update"
+  ON public.ai_agent_sessions
+  FOR UPDATE TO authenticated
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (
+    user_id = (SELECT auth.uid())
+    AND public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI sessions own delete"
+  ON public.ai_agent_sessions
+  FOR DELETE TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+CREATE POLICY "P0 AI sessions service access"
+  ON public.ai_agent_sessions
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_messages_user_access" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own select" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own insert" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own update" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages own delete" ON public.ai_agent_messages;
+DROP POLICY IF EXISTS "P0 AI messages service access" ON public.ai_agent_messages;
+REVOKE ALL ON TABLE public.ai_agent_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_messages TO service_role;
+CREATE POLICY "P0 AI messages own select"
+  ON public.ai_agent_messages
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own insert"
+  ON public.ai_agent_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own update"
+  ON public.ai_agent_messages
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages own delete"
+  ON public.ai_agent_messages
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.ai_agent_sessions AS session
+      WHERE session.id = ai_agent_messages.session_id
+        AND session.user_id = (SELECT auth.uid())
+        AND session.tenant_id = ai_agent_messages.tenant_id
+    )
+  );
+CREATE POLICY "P0 AI messages service access"
+  ON public.ai_agent_messages
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Active tenant metadata is needed to resolve the public storefront, but
+-- anonymous mutation privileges are never needed.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON TABLE public.tenants FROM PUBLIC, anon;
+GRANT SELECT ON TABLE public.tenants TO anon;
+
+-- WhatsApp inbox messages are written by trusted integrations. Browser users
+-- need only staff-scoped reads; configuration management remains staff-scoped.
+REVOKE ALL ON TABLE public.whatsapp_messages FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.whatsapp_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_messages TO service_role;
+
+REVOKE ALL ON TABLE public.whatsapp_configs FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.whatsapp_configs TO service_role;
 
 NOTIFY pgrst, 'reload schema';
 
