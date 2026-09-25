@@ -49,8 +49,20 @@ export const listTenantReviews = createServerFn({ method: "GET" })
     if (error) throw new Error(`فشل تحميل التقييمات: ${error.message}`);
 
     const rows = reviews ?? [];
-    const productIds = [...new Set(rows.map((review: any) => review.product_id).filter(Boolean))];
-    const userIds = [...new Set(rows.map((review: any) => review.user_id).filter(Boolean))];
+    const productIds: string[] = Array.from(
+      new Set(
+        rows
+          .map((review: any) => review.product_id)
+          .filter((id: unknown): id is string => typeof id === "string" && id.length > 0),
+      ),
+    );
+    const userIds: string[] = Array.from(
+      new Set(
+        rows
+          .map((review: any) => review.user_id)
+          .filter((id: unknown): id is string => typeof id === "string" && id.length > 0),
+      ),
+    );
 
     const [{ data: products }, profilesResult] = await Promise.all([
       productIds.length > 0
