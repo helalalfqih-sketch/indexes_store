@@ -266,7 +266,109 @@ GRANT EXECUTE ON FUNCTION public.can_manage_tenant(uuid, uuid)
   TO authenticated;
 
 -- ---------------------------------------------------------------------------
--- 3. Order branch assignment is a server-only mutation and is protected again
+-- 3. Keep member reads intact, but require staff-or-higher for direct catalog
+--    mutations. can_manage_tenant intentionally remains a membership/read
+--    helper; it must not be used as a write authorization predicate.
+-- ---------------------------------------------------------------------------
+
+DROP POLICY IF EXISTS "Tenant members insert categories" ON public.categories;
+DROP POLICY IF EXISTS "Tenant members update categories" ON public.categories;
+DROP POLICY IF EXISTS "Tenant members delete categories" ON public.categories;
+DROP POLICY IF EXISTS "Staff insert categories" ON public.categories;
+DROP POLICY IF EXISTS "Staff update categories" ON public.categories;
+DROP POLICY IF EXISTS "Staff delete categories" ON public.categories;
+
+CREATE POLICY "Staff insert categories"
+  ON public.categories
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "Staff update categories"
+  ON public.categories
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "Staff delete categories"
+  ON public.categories
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+
+DROP POLICY IF EXISTS "Tenant members insert products" ON public.products;
+DROP POLICY IF EXISTS "Tenant members update products" ON public.products;
+DROP POLICY IF EXISTS "Tenant members delete products" ON public.products;
+DROP POLICY IF EXISTS "Staff insert products" ON public.products;
+DROP POLICY IF EXISTS "Staff update products" ON public.products;
+DROP POLICY IF EXISTS "Staff delete products" ON public.products;
+
+CREATE POLICY "Staff insert products"
+  ON public.products
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "Staff update products"
+  ON public.products
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "Staff delete products"
+  ON public.products
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+
+DROP POLICY IF EXISTS "Tenant members insert product_media" ON public.product_media;
+DROP POLICY IF EXISTS "Tenant members update product_media" ON public.product_media;
+DROP POLICY IF EXISTS "Tenant members delete product_media" ON public.product_media;
+DROP POLICY IF EXISTS "Staff insert product_media" ON public.product_media;
+DROP POLICY IF EXISTS "Staff update product_media" ON public.product_media;
+DROP POLICY IF EXISTS "Staff delete product_media" ON public.product_media;
+
+CREATE POLICY "Staff insert product_media"
+  ON public.product_media
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "Staff update product_media"
+  ON public.product_media
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  )
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+CREATE POLICY "Staff delete product_media"
+  ON public.product_media
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+
+DROP POLICY IF EXISTS "Tenant members insert inventory" ON public.inventory_movements;
+DROP POLICY IF EXISTS "Staff insert inventory" ON public.inventory_movements;
+CREATE POLICY "Staff insert inventory"
+  ON public.inventory_movements
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(tenant_id, (SELECT auth.uid()), 'staff'::public.tenant_role)
+  );
+
+-- ---------------------------------------------------------------------------
+-- 4. Order branch assignment is a server-only mutation and is protected again
 --    at table level so no write path can create a cross-tenant reference.
 -- ---------------------------------------------------------------------------
 
@@ -366,7 +468,7 @@ GRANT EXECUTE ON FUNCTION public.increment_review_helpful(uuid)
   TO service_role;
 
 -- ---------------------------------------------------------------------------
--- 4. Move the AI daily quota mutation behind the server-only client. The
+-- 5. Move the AI daily quota mutation behind the server-only client. The
 --    authenticated bearer token is still validated by the application first.
 -- ---------------------------------------------------------------------------
 
@@ -403,7 +505,7 @@ GRANT EXECUTE ON FUNCTION public.consume_ai_request_for_user(uuid)
   TO service_role;
 
 -- ---------------------------------------------------------------------------
--- 5. Make the three service-only tables explicit instead of relying on
+-- 6. Make the three service-only tables explicit instead of relying on
 --    "RLS enabled with no policy". This preserves deny-by-default for clients
 --    and removes ambiguous security-advisor findings.
 -- ---------------------------------------------------------------------------
