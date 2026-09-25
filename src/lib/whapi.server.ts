@@ -173,7 +173,12 @@ export async function readWhapi(
           response.status === 429 ? 429 : 502,
         );
       }
-      return await readBoundedJson(response);
+      // Chat list payloads can exceed the generic 1 MiB guard even for a
+      // small page because Whapi may include avatars and nested chat metadata.
+      // Keep the read bounded, but give /chats a dedicated ceiling so a valid
+      // response is not surfaced as an opaque MCP internal error.
+      const maxBytes = apiPath.startsWith("/chats?") ? 4 * 1024 * 1024 : MAX_RESPONSE_BYTES;
+      return await readBoundedJson(response, maxBytes);
     } catch (error) {
       if (error instanceof WhapiError) throw error;
       throw new WhapiError("WHAPI_UNAVAILABLE", 502);
