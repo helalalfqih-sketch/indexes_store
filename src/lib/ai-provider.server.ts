@@ -85,11 +85,50 @@ function assertConfigAccess(
   }
 }
 
+function isMissingProviderVaultRpc(error: any): boolean {
+  return Boolean(error && ["PGRST202", "42883"].includes(error.code ?? ""));
+}
+
+async function supportsProviderVault(adminDb: any): Promise<boolean> {
+  const probe = await adminDb.rpc("get_ai_provider_secret", {
+    _config_id: "00000000-0000-0000-0000-000000000000",
+  });
+  if (!probe.error) return true;
+  if (isMissingProviderVaultRpc(probe.error)) return false;
+  throw new Error("Unable to verify AI provider Vault capability");
+}
+
+async function setProviderVaultSecret(adminDb: any, configId: string, secret: string): Promise<void> {
+  const result = await adminDb.rpc("set_ai_provider_secret", {
+    _config_id: configId,
+    _secret: secret,
+  });
+  if (result.error) throw new Error("Failed to store AI provider credential in Vault");
+}
+
+async function resolveStoredProviderSecret(adminDb: any, row: any): Promise<string | null> {
+  if (row?.vault_secret_id) {
+    const result = await adminDb.rpc("get_ai_provider_secret", { _config_id: row.id });
+    if (!result.error) return typeof result.data === "string" ? result.data : null;
+    if (!isMissingProviderVaultRpc(result.error)) {
+      throw new Error("Failed to load AI provider credential from Vault");
+    }
+  }
+
+  // Staged-deployment compatibility only. The migration removes every legacy
+  // api_key value after moving it into Supabase Vault.
+  return decryptApiKey(row?.api_key);
+}
+
 function maskProviderConfig(item: any) {
+  const hasKey = Boolean(item?.vault_secret_id || item?.api_key);
+  const safe = { ...item };
+  delete safe.vault_secret_id;
+  delete safe.api_key;
   return {
-    ...item,
-    api_key: maskApiKey(decryptApiKey(item.api_key)),
-    has_key: Boolean(item.api_key),
+    ...safe,
+    api_key: hasKey ? "••••••••••••" : "",
+    has_key: hasKey,
   };
 }
 
@@ -202,7 +241,9 @@ export const saveAIProviderFn = createServerFn({ method: "POST" })
     }
 
     const model = validateProviderModel(data.provider, data.model);
-    let encryptedKey: string | null = null;
+    const newSecret =
+      data.api_key && !data.api_key.startsWith("••••") ? data.api_key : null;
+    const vaultAvailable = await supportsProviderVault(access.adminDb);
     let existing: any = null;
 
     if (data.id) {
@@ -212,53 +253,72 @@ export const saveAIProviderFn = createServerFn({ method: "POST" })
         .eq("id", data.id)
         .maybeSingle();
       if (existingResult.error) throw new Error(existingResult.error.message);
-      existing = existingResult.data;
+      existing = existingResult.data as any;
       assertConfigAccess(existing, access);
     }
 
-    if (data.api_key && !data.api_key.startsWith("••••")) {
-      encryptedKey = encryptApiKey(data.api_key);
-    } else if (existing) {
-      encryptedKey = existing.api_key ?? null;
-    }
+    const legacyKey = vaultAvailable
+      ? null
+      : newSecret
+        ? encryptApiKey(newSecret)
+        : existing?.api_key ?? null;
+
+    const rowValues = {
+      tenant_id: targetTenantId,
+      provider: data.provider,
+      api_key: legacyKey,
+      model,
+      enabled: data.enabled,
+      priority: data.priority,
+      base_url: data.base_url || null,
+      updated_at: new Date().toISOString(),
+    };
 
     if (data.id) {
-      const { data: updated, error } = await access.adminDb
+      const { error } = await access.adminDb
         .from("ai_provider_configs" as any)
-        .update({
-          tenant_id: targetTenantId,
-          provider: data.provider,
-          api_key: encryptedKey,
-          model,
-          enabled: data.enabled,
-          priority: data.priority,
-          base_url: data.base_url || null,
-          updated_at: new Date().toISOString(),
-        } as any)
-        .eq("id", data.id)
-        .select()
-        .single();
+        .update(rowValues as any)
+        .eq("id", data.id);
 
       if (error) throw new Error(error.message);
-      return maskProviderConfig(updated);
+
+      if (vaultAvailable && newSecret) {
+        await setProviderVaultSecret(access.adminDb, data.id, newSecret);
+      }
+
+      const finalResult = await access.adminDb
+        .from("ai_provider_configs" as any)
+        .select("*")
+        .eq("id", data.id)
+        .single();
+      if (finalResult.error) throw new Error(finalResult.error.message);
+      return maskProviderConfig(finalResult.data);
     }
 
     const { data: inserted, error } = await access.adminDb
       .from("ai_provider_configs" as any)
-      .insert({
-        tenant_id: targetTenantId,
-        provider: data.provider,
-        api_key: encryptedKey,
-        model,
-        enabled: data.enabled,
-        priority: data.priority,
-        base_url: data.base_url || null,
-      } as any)
-      .select()
+      .insert(rowValues as any)
+      .select("*")
       .single();
 
     if (error) throw new Error(error.message);
-    return maskProviderConfig(inserted);
+
+    if (vaultAvailable && newSecret) {
+      try {
+        await setProviderVaultSecret(access.adminDb, inserted.id, newSecret);
+      } catch (error) {
+        await access.adminDb.from("ai_provider_configs" as any).delete().eq("id", inserted.id);
+        throw error;
+      }
+    }
+
+    const finalResult = await access.adminDb
+      .from("ai_provider_configs" as any)
+      .select("*")
+      .eq("id", inserted.id)
+      .single();
+    if (finalResult.error) throw new Error(finalResult.error.message);
+    return maskProviderConfig(finalResult.data);
   });
 
 export const deleteAIProviderFn = createServerFn({ method: "POST" })
@@ -322,13 +382,13 @@ export const testAIConnectionFn = createServerFn({ method: "POST" })
       if ((!rawKey || rawKey.startsWith("••••")) && data.id) {
         const existingResult = await access.adminDb
           .from("ai_provider_configs" as any)
-          .select("tenant_id, api_key")
+          .select("*")
           .eq("id", data.id)
           .maybeSingle();
         if (existingResult.error) throw new Error(existingResult.error.message);
         const existingRow = existingResult.data as any;
         assertConfigAccess(existingRow, access);
-        rawKey = decryptApiKey(existingRow?.api_key);
+        rawKey = await resolveStoredProviderSecret(access.adminDb, existingRow);
       }
 
       const modelsToTry = Array.from(
