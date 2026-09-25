@@ -920,6 +920,119 @@ CREATE POLICY "P0 system live logs service only"
   USING (true)
   WITH CHECK (true);
 
+
+-- ---------------------------------------------------------------------------
+-- 8. Protect AI integrity tables: audit/usage records are server-authored;
+--    workspace memory remains tenant-readable but staff-writable.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE public.ai_agent_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_audit_tenant_access" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit read" ON public.ai_agent_audit_logs;
+DROP POLICY IF EXISTS "P0 AI audit service write" ON public.ai_agent_audit_logs;
+REVOKE ALL ON TABLE public.ai_agent_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_audit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_audit_logs TO service_role;
+CREATE POLICY "P0 AI audit read"
+  ON public.ai_agent_audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI audit service write"
+  ON public.ai_agent_audit_logs
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_usage_tenant_access" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage read" ON public.ai_agent_usage;
+DROP POLICY IF EXISTS "P0 AI usage service write" ON public.ai_agent_usage;
+REVOKE ALL ON TABLE public.ai_agent_usage FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.ai_agent_usage TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_usage TO service_role;
+CREATE POLICY "P0 AI usage read"
+  ON public.ai_agent_usage
+  FOR SELECT TO authenticated
+  USING (
+    user_id = (SELECT auth.uid())
+    OR public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI usage service write"
+  ON public.ai_agent_usage
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+ALTER TABLE public.ai_agent_memory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_memory_tenant_access" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory tenant read" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff insert" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff update" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory staff delete" ON public.ai_agent_memory;
+DROP POLICY IF EXISTS "P0 AI memory service access" ON public.ai_agent_memory;
+REVOKE ALL ON TABLE public.ai_agent_memory FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.ai_agent_memory TO service_role;
+CREATE POLICY "P0 AI memory tenant read"
+  ON public.ai_agent_memory
+  FOR SELECT TO authenticated
+  USING (
+    public.can_manage_tenant(tenant_id, (SELECT auth.uid()))
+  );
+CREATE POLICY "P0 AI memory staff insert"
+  ON public.ai_agent_memory
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff update"
+  ON public.ai_agent_memory
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  )
+  WITH CHECK (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory staff delete"
+  ON public.ai_agent_memory
+  FOR DELETE TO authenticated
+  USING (
+    public.has_tenant_permission(
+      tenant_id,
+      (SELECT auth.uid()),
+      'staff'::public.tenant_role
+    )
+  );
+CREATE POLICY "P0 AI memory service access"
+  ON public.ai_agent_memory
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
+
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
