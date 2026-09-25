@@ -1210,6 +1210,7 @@ export type Database = {
           content: string | null;
           is_verified_purchase: boolean;
           is_approved: boolean;
+          moderation_status: "pending" | "approved" | "rejected";
           helpful_count: number;
           images: Json;
           created_at: string;
@@ -1226,6 +1227,7 @@ export type Database = {
           content?: string | null;
           is_verified_purchase?: boolean;
           is_approved?: boolean;
+          moderation_status?: "pending" | "approved" | "rejected";
           helpful_count?: number;
           images?: Json;
           created_at?: string;
@@ -1242,6 +1244,7 @@ export type Database = {
           content?: string | null;
           is_verified_purchase?: boolean;
           is_approved?: boolean;
+          moderation_status?: "pending" | "approved" | "rejected";
           helpful_count?: number;
           images?: Json;
           created_at?: string;
