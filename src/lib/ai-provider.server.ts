@@ -272,7 +272,7 @@ export const deleteAIProviderFn = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (existing.error) throw new Error(existing.error.message);
-    assertConfigAccess(existing.data, access);
+    assertConfigAccess(existing.data as any, access);
 
     const { error } = await access.adminDb
       .from("ai_provider_configs" as any)
@@ -293,7 +293,7 @@ export const toggleAIProviderFn = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (existing.error) throw new Error(existing.error.message);
-    assertConfigAccess(existing.data, access);
+    assertConfigAccess(existing.data as any, access);
 
     const { error } = await access.adminDb
       .from("ai_provider_configs" as any)
@@ -326,8 +326,9 @@ export const testAIConnectionFn = createServerFn({ method: "POST" })
           .eq("id", data.id)
           .maybeSingle();
         if (existingResult.error) throw new Error(existingResult.error.message);
-        assertConfigAccess(existingResult.data, access);
-        rawKey = decryptApiKey(existingResult.data?.api_key);
+        const existingRow = existingResult.data as any;
+        assertConfigAccess(existingRow, access);
+        rawKey = decryptApiKey(existingRow?.api_key);
       }
 
       const modelsToTry = Array.from(
