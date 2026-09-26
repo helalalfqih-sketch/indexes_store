@@ -73,8 +73,7 @@ export const Route = createFileRoute("/")({
       { title: "متجر إندكس — INDEXES STORE | التسوق الإلكتروني الفاخر في اليمن" },
       {
         name: "description",
-        content:
-          "اكتشف أحدث الإلكترونيات والمنتجات الأصلية في متجر إندكس: تسوق فاخر، عروض حصرية، توصيل سريع لجميع المحافظات.",
+        content: "تصفح الإلكترونيات والمنتجات والعروض الحالية في متجر إندكس.",
       },
       { property: "og:title", content: "متجر إندكس — INDEXES STORE" },
       {
@@ -686,8 +685,24 @@ function HomePage() {
                       data-qa-section="catalog"
                       data-qa-filter-state={JSON.stringify({
                         category: selectedCategory,
-                        minPrice: priceRange === "under-20k" ? 0 : priceRange === "20k-50k" ? 20000 : priceRange === "over-50k" ? 50000 : priceRange === "custom" ? customMinPrice ?? null : null,
-                        maxPrice: priceRange === "under-20k" ? 20000 : priceRange === "20k-50k" ? 50000 : priceRange === "custom" ? customMaxPrice ?? null : null,
+                        minPrice:
+                          priceRange === "under-20k"
+                            ? 0
+                            : priceRange === "20k-50k"
+                              ? 20000
+                              : priceRange === "over-50k"
+                                ? 50000
+                                : priceRange === "custom"
+                                  ? (customMinPrice ?? null)
+                                  : null,
+                        maxPrice:
+                          priceRange === "under-20k"
+                            ? 20000
+                            : priceRange === "20k-50k"
+                              ? 50000
+                              : priceRange === "custom"
+                                ? (customMaxPrice ?? null)
+                                : null,
                         priceRange,
                         brand: selectedBrands,
                         rating: selectedRatings,
@@ -770,7 +785,7 @@ function HomePage() {
                               <ProductCard
                                 key={product.id}
                                 product={product}
-                                qa={productCardQA(product, selectedCategory === "all" ? "catalog" : "category_page")}
+                                qa={productCardQA(product, "new_products")}
                                 currency={currency}
                                 isFavorite={favorites.includes(product.id)}
                                 onToggleFavorite={handleToggleFavorite}
@@ -788,7 +803,7 @@ function HomePage() {
                               <ProductCard
                                 key={product.id}
                                 product={product}
-                                qa={productCardQA(product, selectedCategory === "all" ? "catalog" : "category_page")}
+                                qa={productCardQA(product, "new_products")}
                                 currency={currency}
                                 isFavorite={favorites.includes(product.id)}
                                 onToggleFavorite={handleToggleFavorite}
@@ -830,6 +845,17 @@ function HomePage() {
 
           {/* Footer */}
           <StoreFooter
+            catalogFilters={{
+              category: selectedCategory,
+              query: searchQuery,
+              sort: sortBy,
+              priceRange,
+              minPrice: customMinPrice,
+              maxPrice: customMaxPrice,
+              brands: selectedBrands,
+              ratings: selectedRatings,
+              excludeIds: visibleProducts.map((product) => product.id),
+            }}
             onOpenTracker={() => setIsTrackerModalOpen(true)}
             onOpenAdmin={handleOpenAdmin}
             onOpenSupport={() => setIsSupportHubOpen(true)}

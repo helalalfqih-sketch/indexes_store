@@ -185,7 +185,9 @@ test("V3 MCP tools return real Chromium evidence and enforce isolated interactio
     ).toBe(true);
     const audit = await reader.callTool({ name: "full_store_audit", arguments: {} });
     expect(audit.isError).not.toBe(true);
-    expect(audit.structuredContent).toMatchObject({ pages: expect.arrayContaining([expect.objectContaining({ path: "/product/cheap" })]) });
+    expect(audit.structuredContent).toMatchObject({
+      pages: expect.arrayContaining([expect.objectContaining({ path: "/product/cheap" })]),
+    });
     expect(contextsClosed).toBe(contextsOpened);
   } finally {
     await Promise.all(clients.map((client) => client.close()));

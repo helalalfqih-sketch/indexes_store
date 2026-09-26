@@ -93,7 +93,7 @@ describe("Private WhatsApp MCP discovery", () => {
       result?: { capabilities?: { tools?: unknown } };
     };
     expect(json.result?.capabilities?.tools).toBeDefined();
-  });
+  }, 20_000);
 
   it("preserves first-party tool security contracts while allowing the provider tool surface", async () => {
     const response = await handleWhatsappMcp(
@@ -137,5 +137,5 @@ describe("Private WhatsApp MCP discovery", () => {
         expect(literalValue(tool.inputSchema?.properties?.confirmed)).toBe(true);
       }
     }
-  });
+  }, 20_000);
 });

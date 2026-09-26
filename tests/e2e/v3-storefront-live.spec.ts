@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { STORE_BRANDS } from "../../src/components/storefront/filter-options";
 
 const cards = (page: Page) =>
-  page.locator('#store-products [data-testid^="product-card-"]:visible');
+  page.locator('[data-qa-section="catalog"] [data-testid^="product-card-"]:visible');
 const key = (page: Page, value: string) =>
   page.locator(`[data-element-key="${value}"]:visible`).first();
 const state = async (page: Page) =>
@@ -18,6 +18,9 @@ for (const device of ["desktop", "mobile"] as const) {
   test.describe(`${device} rendered storefront`, () => {
     test.use({
       viewport: device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 },
+    });
+    test.beforeEach(async ({ page }) => {
+      if (process.env.VERCEL_SHARE_URL) await page.goto(process.env.VERCEL_SHARE_URL);
     });
     test("critical keys, routes and real product data", async ({ page }) => {
       await page.goto("/");
@@ -43,7 +46,7 @@ for (const device of ["desktop", "mobile"] as const) {
       for (const card of await cards(page).all()) {
         expect(await card.getAttribute("data-product-id")).toBeTruthy();
         expect(Number.isFinite(Number(await card.getAttribute("data-product-price")))).toBe(true);
-        expect(await card.getAttribute("data-section-source")).toMatch(/^(catalog|category_page)$/);
+        expect(await card.getAttribute("data-section-source")).toBe("catalog");
       }
       const slug = await cards(page).first().getAttribute("data-product-slug");
       expect(slug).toBeTruthy();
@@ -84,7 +87,9 @@ for (const device of ["desktop", "mobile"] as const) {
       );
       const brand = STORE_BRANDS.find((option) =>
         brands.some((value) =>
-          [option.id, option.name].some((alias) => alias.toLowerCase() === value?.toLowerCase()),
+          [option.id, option.name, ...option.keywords].some(
+            (alias) => alias.toLowerCase() === value?.toLowerCase(),
+          ),
         ),
       );
       expect(brand, "No observed brand matches a selectable brand").toBeDefined();
@@ -93,9 +98,11 @@ for (const device of ["desktop", "mobile"] as const) {
       await expect.poll(() => state(page).then((s) => s.brand)).toContain(brand!.id);
       expect(await cards(page).count()).toBeGreaterThan(0);
       for (const card of await cards(page).all()) {
-        expect([brand!.id.toLowerCase(), brand!.name.toLowerCase()]).toContain(
-          (await card.getAttribute("data-product-brand"))?.toLowerCase(),
-        );
+        expect([
+          brand!.id.toLowerCase(),
+          brand!.name.toLowerCase(),
+          ...brand!.keywords.map((alias) => alias.toLowerCase()),
+        ]).toContain((await card.getAttribute("data-product-brand"))?.toLowerCase());
       }
       await key(page, "filter.rating").click();
       await key(page, "filter-rating-4.0").click();

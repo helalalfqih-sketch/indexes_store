@@ -1,14 +1,29 @@
-﻿import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Truck, CheckCircle2, RefreshCw, MessageSquare, ShieldCheck, AlertCircle, Phone, X, BookOpen, Send, Sparkles, Upload, Check } from 'lucide-react';
-import { OrderStatus, Product, CartItem, Currency } from './types';
-import { formatPrice } from './currency';
-import { STORE_INFO } from './constants';;
+﻿import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Package,
+  Truck,
+  CheckCircle2,
+  RefreshCw,
+  MessageSquare,
+  ShieldCheck,
+  AlertCircle,
+  Phone,
+  X,
+  BookOpen,
+  Send,
+  Sparkles,
+  Upload,
+  Check,
+} from "lucide-react";
+import { OrderStatus, Product, CartItem, Currency } from "./types";
+import { formatPrice } from "./currency";
+import { STORE_INFO } from "./constants";
 import {
   prepareReorderItems,
   getVerifiedCompatibleAccessories,
   submitSupportTicket,
-} from '@/lib/orderSelfService';
+} from "@/lib/orderSelfService";
 
 interface PostPurchaseHubModalProps {
   isOpen: boolean;
@@ -25,15 +40,19 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
   order,
   catalogProducts,
   onAddToCart,
-  currency = 'YER',
+  currency = "YER",
 }) => {
-  const [activeTab, setActiveTab] = useState<'timeline' | 'reorder' | 'support' | 'guides'>('timeline');
+  const [activeTab, setActiveTab] = useState<"timeline" | "reorder" | "support" | "guides">(
+    "timeline",
+  );
 
   // Support form state
-  const [issueType, setIssueType] = useState<'product_defect' | 'wrong_item' | 'delivery_delay' | 'general_query'>('product_defect');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [attachmentFileName, setAttachmentFileName] = useState('');
+  const [issueType, setIssueType] = useState<
+    "product_defect" | "wrong_item" | "delivery_delay" | "general_query"
+  >("product_defect");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [attachmentFileName, setAttachmentFileName] = useState("");
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
   const [supportSuccess, setSupportSuccess] = useState(false);
 
@@ -42,13 +61,19 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
 
   if (!isOpen || !order) return null;
 
-  const compatibleAccessories = getVerifiedCompatibleAccessories(order.items.map(i => i.productName), catalogProducts);
+  const compatibleAccessories = getVerifiedCompatibleAccessories(
+    order.items.map((i) => i.productName),
+    catalogProducts,
+  );
 
   const handleReorder = () => {
-    const { availableItems, outOfStockItems, priceChanges } = prepareReorderItems(order.items, catalogProducts);
+    const { availableItems, outOfStockItems, priceChanges } = prepareReorderItems(
+      order.items,
+      catalogProducts,
+    );
 
     if (availableItems.length === 0) {
-      setReorderNotice('عذراً، جميع منتجات هذا الطلب غير متوفرة في المخزون حالياً.');
+      setReorderNotice("عذراً، جميع منتجات هذا الطلب غير متوفرة في المخزون حالياً.");
       return;
     }
 
@@ -59,7 +84,7 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
       msg += ` تنبيه: تغيرت أسعار بعض المنتجات حسب تحديثات المتجر الجديدة.`;
     }
     if (outOfStockItems.length > 0) {
-      msg += ` (تعذر إضافة: ${outOfStockItems.join(', ')})`;
+      msg += ` (تعذر إضافة: ${outOfStockItems.join(", ")})`;
     }
     setReorderNotice(msg);
   };
@@ -76,28 +101,28 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
       issueType,
       subject,
       message,
-      attachmentFileName ? `attached_${attachmentFileName}` : undefined
+      attachmentFileName ? `attached_${attachmentFileName}` : undefined,
     );
 
     setIsSubmittingSupport(false);
     setSupportSuccess(true);
-    setSubject('');
-    setMessage('');
-    setAttachmentFileName('');
+    setSubject("");
+    setMessage("");
+    setAttachmentFileName("");
   };
 
-  const getStepStatus = (step: 'received' | 'processing' | 'shipped' | 'delivered') => {
-    const statusOrder = ['received', 'processing', 'shipped', 'out_for_delivery', 'delivered'];
+  const getStepStatus = (step: "received" | "processing" | "shipped" | "delivered") => {
+    const statusOrder = ["received", "processing", "shipped", "out_for_delivery", "delivered"];
     const currentIndex = statusOrder.indexOf(order.status);
 
     let stepIndex = 0;
-    if (step === 'received') stepIndex = 0;
-    if (step === 'processing') stepIndex = 1;
-    if (step === 'shipped') stepIndex = 2;
-    if (step === 'delivered') stepIndex = 4;
+    if (step === "received") stepIndex = 0;
+    if (step === "processing") stepIndex = 1;
+    if (step === "shipped") stepIndex = 2;
+    if (step === "delivered") stepIndex = 4;
 
-    if (currentIndex >= stepIndex) return 'completed';
-    return 'pending';
+    if (currentIndex >= stepIndex) return "completed";
+    return "pending";
   };
 
   return (
@@ -126,7 +151,9 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
                 <h3 className="text-lg font-extrabold text-[var(--color-text-primary)]">
                   مركز خدمات ما بعد الشراء #{order.orderNumber}
                 </h3>
-                <p className="text-xs text-[var(--color-text-secondary)]">تتبع الشحنة، الضمان، وتكرار الطلب بسهولة</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  تتبع الشحنة، الضمان، وتكرار الطلب بسهولة
+                </p>
               </div>
             </div>
 
@@ -141,44 +168,44 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
           {/* Navigation Tabs */}
           <div className="grid grid-cols-4 gap-2 mb-6 p-1 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border-default)]">
             <button
-              onClick={() => setActiveTab('timeline')}
+              onClick={() => setActiveTab("timeline")}
               className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                activeTab === 'timeline'
-                  ? 'bg-[#2F6BFF] text-white shadow-md'
-                  : 'text-gray-400 hover:text-white'
+                activeTab === "timeline"
+                  ? "bg-[#2F6BFF] text-white shadow-md"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
               <Truck className="w-4 h-4" /> تتبع الشحنة
             </button>
 
             <button
-              onClick={() => setActiveTab('reorder')}
+              onClick={() => setActiveTab("reorder")}
               className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                activeTab === 'reorder'
-                  ? 'bg-[#2F6BFF] text-white shadow-md'
-                  : 'text-gray-400 hover:text-white'
+                activeTab === "reorder"
+                  ? "bg-[#2F6BFF] text-white shadow-md"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
               <RefreshCw className="w-4 h-4" /> تكرار الطلب
             </button>
 
             <button
-              onClick={() => setActiveTab('guides')}
+              onClick={() => setActiveTab("guides")}
               className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                activeTab === 'guides'
-                  ? 'bg-[#2F6BFF] text-white shadow-md'
-                  : 'text-gray-400 hover:text-white'
+                activeTab === "guides"
+                  ? "bg-[#2F6BFF] text-white shadow-md"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
               <BookOpen className="w-4 h-4" /> الدليل والضمان
             </button>
 
             <button
-              onClick={() => setActiveTab('support')}
+              onClick={() => setActiveTab("support")}
               className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                activeTab === 'support'
-                  ? 'bg-[#2F6BFF] text-white shadow-md'
-                  : 'text-gray-400 hover:text-white'
+                activeTab === "support"
+                  ? "bg-[#2F6BFF] text-white shadow-md"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
               <MessageSquare className="w-4 h-4" /> الدعم والبلاغات
@@ -186,12 +213,14 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
           </div>
 
           {/* Tab 1: Interactive Timeline & Order Details */}
-          {activeTab === 'timeline' && (
+          {activeTab === "timeline" && (
             <div className="space-y-6">
               {/* Order Status Badge */}
               <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block mb-1">حالة الطلب المباشرة</span>
+                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block mb-1">
+                    حالة الطلب المباشرة
+                  </span>
                   <div className="text-base font-extrabold text-white">{order.statusLabel}</div>
                   <div className="text-xs text-gray-400 mt-0.5">تاريخ الطلب: {order.date}</div>
                 </div>
@@ -208,16 +237,22 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
 
               {/* Progress Stepper */}
               <div className="p-5 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border-default)]">
-                <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-4">مسار شحنتك المباشر</h4>
+                <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-4">
+                  مسار شحنتك المباشر
+                </h4>
                 <div className="relative flex items-center justify-between">
                   {/* Connecting Line */}
                   <div className="absolute top-1/2 left-4 right-4 h-1 bg-gray-800 -translate-y-1/2 -z-0" />
 
                   {/* Step 1: Received */}
                   <div className="relative z-10 flex flex-col items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      getStepStatus('received') === 'completed' ? 'bg-emerald-500 text-white' : 'bg-gray-800 text-gray-500'
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                        getStepStatus("received") === "completed"
+                          ? "bg-emerald-500 text-white"
+                          : "bg-gray-800 text-gray-500"
+                      }`}
+                    >
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
                     <span className="text-[11px] font-bold text-gray-300">استلام الطلب</span>
@@ -225,9 +260,13 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
 
                   {/* Step 2: Processing */}
                   <div className="relative z-10 flex flex-col items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      getStepStatus('processing') === 'completed' ? 'bg-emerald-500 text-white' : 'bg-gray-800 text-gray-500'
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                        getStepStatus("processing") === "completed"
+                          ? "bg-emerald-500 text-white"
+                          : "bg-gray-800 text-gray-500"
+                      }`}
+                    >
                       <Package className="w-4 h-4" />
                     </div>
                     <span className="text-[11px] font-bold text-gray-300">تجهيز الشحنة</span>
@@ -235,9 +274,13 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
 
                   {/* Step 3: Shipped */}
                   <div className="relative z-10 flex flex-col items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      getStepStatus('shipped') === 'completed' ? 'bg-emerald-500 text-white' : 'bg-gray-800 text-gray-500'
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                        getStepStatus("shipped") === "completed"
+                          ? "bg-emerald-500 text-white"
+                          : "bg-gray-800 text-gray-500"
+                      }`}
+                    >
                       <Truck className="w-4 h-4" />
                     </div>
                     <span className="text-[11px] font-bold text-gray-300">قيد الشحن 🛵</span>
@@ -245,9 +288,13 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
 
                   {/* Step 4: Delivered */}
                   <div className="relative z-10 flex flex-col items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      getStepStatus('delivered') === 'completed' ? 'bg-emerald-500 text-white' : 'bg-gray-800 text-gray-500'
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                        getStepStatus("delivered") === "completed"
+                          ? "bg-emerald-500 text-white"
+                          : "bg-gray-800 text-gray-500"
+                      }`}
+                    >
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
                     <span className="text-[11px] font-bold text-gray-300">تم التسليم 🎉</span>
@@ -257,32 +304,41 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
 
               {/* Items & Shipping summary */}
               <div className="p-5 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border-default)] space-y-3">
-                <h4 className="text-xs font-bold text-[var(--color-text-secondary)]">محتويات الشحنة</h4>
+                <h4 className="text-xs font-bold text-[var(--color-text-secondary)]">
+                  محتويات الشحنة
+                </h4>
                 <div className="divide-y divide-[var(--color-border-subtle)]">
                   {order.items.map((item, idx) => (
                     <div key={idx} className="py-2.5 flex items-center justify-between text-xs">
                       <div>
-                        <span className="font-bold text-[var(--color-text-primary)]">{item.productName}</span>
+                        <span className="font-bold text-[var(--color-text-primary)]">
+                          {item.productName}
+                        </span>
                         <span className="text-gray-400 mr-2">x{item.quantity}</span>
                       </div>
-                      <span className="font-bold text-emerald-400">{formatPrice(item.price * item.quantity, currency)}</span>
+                      <span className="font-bold text-emerald-400">
+                        {formatPrice(item.price * item.quantity, currency)}
+                      </span>
                     </div>
                   ))}
                 </div>
 
                 <div className="pt-3 border-t border-[var(--color-border-default)] flex items-center justify-between text-sm font-extrabold text-[var(--color-text-primary)]">
                   <span>الإجمالي الكلي النهائي:</span>
-                  <span className="text-blue-400 text-base">{formatPrice(order.totalPriceYER, currency)}</span>
+                  <span className="text-blue-400 text-base">
+                    {formatPrice(order.totalPriceYER, currency)}
+                  </span>
                 </div>
               </div>
             </div>
           )}
 
           {/* Tab 2: Reorder */}
-          {activeTab === 'reorder' && (
+          {activeTab === "reorder" && (
             <div className="space-y-5">
               <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-xs text-blue-200">
-                يمكنك إعادة شراء نفس المنتجات بنقرة واحدة. نقوم بالتحقق التلقائي من الأسعار والكميات المتوفرة بالمخزون قبل الإضافة.
+                يمكنك إعادة شراء نفس المنتجات بنقرة واحدة. نقوم بالتحقق التلقائي من الأسعار والكميات
+                المتوفرة بالمخزون قبل الإضافة.
               </div>
 
               {reorderNotice && (
@@ -294,10 +350,17 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
 
               <div className="space-y-3">
                 {order.items.map((item, idx) => (
-                  <div key={idx} className="p-4 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border-default)] flex items-center justify-between">
+                  <div
+                    key={idx}
+                    className="p-4 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border-default)] flex items-center justify-between"
+                  >
                     <div>
-                      <div className="text-sm font-bold text-[var(--color-text-primary)]">{item.productName}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">الكمية السابقة: {item.quantity}</div>
+                      <div className="text-sm font-bold text-[var(--color-text-primary)]">
+                        {item.productName}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        الكمية السابقة: {item.quantity}
+                      </div>
                     </div>
 
                     <div className="text-sm font-bold text-emerald-400">
@@ -322,11 +385,22 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
                   </h4>
                   <div className="grid grid-cols-2 gap-3">
                     {compatibleAccessories.map((acc) => (
-                      <div key={acc.id} className="p-3 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border-default)] flex items-center gap-3">
-                        <img src={acc.image} alt={acc.name} className="w-12 h-12 object-contain rounded-xl bg-black/20 p-1" />
+                      <div
+                        key={acc.id}
+                        className="p-3 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border-default)] flex items-center gap-3"
+                      >
+                        <img
+                          src={acc.image}
+                          alt={acc.name}
+                          className="w-12 h-12 object-contain rounded-xl bg-black/20 p-1"
+                        />
                         <div className="flex-1 min-w-0 text-right">
-                          <div className="text-xs font-bold text-[var(--color-text-primary)] truncate">{acc.name}</div>
-                          <div className="text-xs text-emerald-400 font-bold">{formatPrice(acc.priceYER, currency)}</div>
+                          <div className="text-xs font-bold text-[var(--color-text-primary)] truncate">
+                            {acc.name}
+                          </div>
+                          <div className="text-xs text-emerald-400 font-bold">
+                            {formatPrice(acc.priceYER, currency)}
+                          </div>
                           <button
                             onClick={() => onAddToCart({ product: acc, quantity: 1 })}
                             className="mt-1 text-[10px] font-bold text-blue-400 hover:underline cursor-pointer"
@@ -343,7 +417,7 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
           )}
 
           {/* Tab 3: Guides & Warranty */}
-          {activeTab === 'guides' && (
+          {activeTab === "guides" && (
             <div className="space-y-4">
               <div className="p-5 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border-default)] space-y-3">
                 <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
@@ -361,7 +435,9 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
                   <span>إرشادات الاستخدام والتعليمات</span>
                 </div>
                 <ul className="text-xs text-[var(--color-text-secondary)] space-y-2 list-disc list-inside leading-relaxed">
-                  <li>شحن الساعات الذكية والسماعات بكرت شحن أصلي بقدرة 5V/1A لتجنب تلف البطارية.</li>
+                  <li>
+                    شحن الساعات الذكية والسماعات بكرت شحن أصلي بقدرة 5V/1A لتجنب تلف البطارية.
+                  </li>
                   <li>عدم استخدام الساعات في المياه الساخنة أو السونا.</li>
                   <li>احتفظ بكرتون المنتج وفاتورة الطلب للرجوع إلى تفاصيل الطلب.</li>
                 </ul>
@@ -370,34 +446,47 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
           )}
 
           {/* Tab 4: Support & Report Issue */}
-          {activeTab === 'support' && (
+          {activeTab === "support" && (
             <div className="space-y-4">
               {supportSuccess ? (
                 <div className="p-6 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-center space-y-2">
                   <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
                   <div className="text-base font-extrabold text-white">تم رفع بلاغك بنجاح!</div>
                   <p className="text-xs text-emerald-200">
-                    سيقوم فريق خدمة العملاء بمراجعة تذكرتك والتواصل معك مباشرة على الرقم {order.phone}.
+                    سيقوم فريق خدمة العملاء بمراجعة تذكرتك والتواصل معك مباشرة على الرقم{" "}
+                    {order.phone}.
                   </p>
                 </div>
               ) : (
                 <form onSubmit={handleSupportSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-1">نوع البلاغ أو المشكلة</label>
+                    <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-1">
+                      نوع البلاغ أو المشكلة
+                    </label>
                     <select
                       value={issueType}
                       onChange={(e) => setIssueType(e.target.value as unknown as typeof issueType)}
                       className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl px-3 py-2.5 text-xs text-[var(--color-text-primary)] focus:border-blue-500 focus:outline-none cursor-pointer"
                     >
-                      <option value="product_defect" className="bg-gray-900">خلل مصنعي / مشكلة في المنتج</option>
-                      <option value="wrong_item" className="bg-gray-900">استلام منتج مختلف عن الطلب</option>
-                      <option value="delivery_delay" className="bg-gray-900">تأخير في موعد التسليم</option>
-                      <option value="general_query" className="bg-gray-900">استفسار عام حول الطلب</option>
+                      <option value="product_defect" className="bg-gray-900">
+                        خلل مصنعي / مشكلة في المنتج
+                      </option>
+                      <option value="wrong_item" className="bg-gray-900">
+                        استلام منتج مختلف عن الطلب
+                      </option>
+                      <option value="delivery_delay" className="bg-gray-900">
+                        تأخير في موعد التسليم
+                      </option>
+                      <option value="general_query" className="bg-gray-900">
+                        استفسار عام حول الطلب
+                      </option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-1">عنوان الموضوع *</label>
+                    <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-1">
+                      عنوان الموضوع *
+                    </label>
                     <input
                       type="text"
                       required
@@ -409,7 +498,9 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-1">تفاصيل المشكلة *</label>
+                    <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-1">
+                      تفاصيل المشكلة *
+                    </label>
                     <textarea
                       required
                       rows={4}
@@ -421,11 +512,13 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-1">إرفاق صورة للمشكلة (اختياري)</label>
+                    <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-1">
+                      إرفاق صورة للمشكلة (اختياري)
+                    </label>
                     <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-[var(--color-border-default)] bg-[var(--color-surface-2)] cursor-pointer hover:border-blue-500 transition-colors">
                       <Upload className="w-4 h-4 text-blue-400" />
                       <span className="text-xs text-gray-300">
-                        {attachmentFileName || 'اختر صورة من جهازك'}
+                        {attachmentFileName || "اختر صورة من جهازك"}
                       </span>
                       <input
                         type="file"

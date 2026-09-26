@@ -8,6 +8,7 @@ export const QA_MATRIX = [
   "products.unique_placements",
   "products.prices",
   "products.grid",
+  "commercial.claims",
   "filters.instrumented",
   "filters.validation",
   "sort.validation",
@@ -28,7 +29,9 @@ export function auditState(state: QaState) {
   const repeatedWithinSection = placementKeys.filter(
     (key, index) => placementKeys.indexOf(key) !== index,
   );
-  const grid = catalog.length ? catalog : visible;
+  const grid = catalog.length
+    ? catalog
+    : visible.filter((p) => p.section_source === "new_products");
   const activePrice = state.filters?.priceRange;
   const brands = Array.isArray(state.filters?.brand) ? (state.filters.brand as string[]) : [];
   const ratings = Array.isArray(state.filters?.rating) ? (state.filters.rating as string[]) : [];
@@ -46,11 +49,16 @@ export function auditState(state: QaState) {
     : undefined;
   const priceValidation = priceRule ? validateGrid(grid, { price: priceRule }) : null;
   const brandValidation = selectedBrand
-    ? validateGrid(grid, { brand: [selectedBrand.id, selectedBrand.name] })
+    ? validateGrid(grid, {
+        brand: [selectedBrand.id, selectedBrand.name, ...selectedBrand.keywords],
+      })
     : null;
   const ratingValidation = Number.isFinite(ratingFloor)
     ? validateGrid(grid, { rating: ratingFloor })
     : null;
+  const activeFilterValidations = [priceValidation, brandValidation, ratingValidation].filter(
+    (result) => result !== null,
+  );
   const sortValidation =
     sort === "price-low" || sort === "price-high" ? validateGrid(grid, { sort }) : null;
   const critical =
@@ -144,6 +152,12 @@ export function auditState(state: QaState) {
       },
     },
     {
+      id: "commercial.claims",
+      status: state.claims.some((claim) => !claim.verified) ? "BLOCKED" : "PASS",
+      severity: "medium",
+      evidence: state.claims,
+    },
+    {
       id: "filters.instrumented",
       status: state.filters ? "PASS" : "NOT_TESTED",
       severity: "medium",
@@ -153,15 +167,15 @@ export function auditState(state: QaState) {
       id: "filters.validation",
       status: !state.filters
         ? "NOT_TESTED"
-        : !grid.length
-          ? "BLOCKED"
-          : [priceValidation, brandValidation, ratingValidation].some((v) => v?.status === "FAIL")
-            ? "FAIL"
-            : [priceValidation, brandValidation, ratingValidation].some(
-                  (v) => v?.status === "BLOCKED",
-                )
-              ? "BLOCKED"
-              : "PASS",
+        : !activeFilterValidations.length
+          ? "NOT_TESTED"
+          : !grid.length
+            ? "BLOCKED"
+            : activeFilterValidations.some((v) => v.status === "FAIL")
+              ? "FAIL"
+              : activeFilterValidations.some((v) => v.status === "BLOCKED")
+                ? "BLOCKED"
+                : "PASS",
       severity: "high",
       evidence: {
         activePrice,

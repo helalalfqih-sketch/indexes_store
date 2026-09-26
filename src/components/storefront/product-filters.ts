@@ -26,7 +26,11 @@ export function matchesProductFilters(product: Product, filters: ProductFilters)
       const brand = STORE_BRANDS.find((item) => item.id === brandId);
       if (!brand) return false;
       const value = product.brand?.trim().toLowerCase();
-      return value === brand.id.toLowerCase() || value === brand.name.toLowerCase();
+      return (
+        value === brand.id.toLowerCase() ||
+        value === brand.name.toLowerCase() ||
+        brand.keywords.some((alias) => value === alias.toLowerCase())
+      );
     });
   const matchRating =
     selectedRatings.length === 0 ||

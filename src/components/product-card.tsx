@@ -560,8 +560,7 @@ export function ProductCard({ product, qa, eager = false }: ProductCardProps) {
                     </div>
 
                     <p className="text-xs text-slate-300 leading-relaxed pt-2">
-                      {product.description ||
-                        "للاستفسار عن تفاصيل المنتج والتوصيل، تواصل معنا."}
+                      {product.description || "للاستفسار عن تفاصيل المنتج والتوصيل، تواصل معنا."}
                     </p>
                   </div>
 

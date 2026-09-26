@@ -83,7 +83,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           type="button"
           onClick={onOpenCart}
           data-element-key="header.cart"
-            aria-label="السلة"
+          aria-label="السلة"
           className="relative grid h-10 w-9 shrink-0 place-items-center text-white"
         >
           <ShoppingCart className="h-[22px] w-[22px] stroke-[1.8]" />
@@ -97,7 +97,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           type="button"
           onClick={onOpenNotifications}
           data-element-key="header.notifications"
-            aria-label="الإشعارات"
+          aria-label="الإشعارات"
           className="relative grid h-10 w-9 shrink-0 place-items-center text-white"
         >
           <Bell className="h-[21px] w-[21px] stroke-[1.8]" />

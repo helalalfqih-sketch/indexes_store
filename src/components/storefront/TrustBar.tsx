@@ -39,6 +39,8 @@ export const TrustBar: React.FC<TrustBarProps> = ({ trustBadges }) => {
           return (
             <div
               key={`${item.title}-${idx}`}
+              data-claim-source={`storefront-settings.trustBadges.badge${idx + 1}`}
+              data-claim-verified="false"
               className="flex flex-col items-center justify-center p-1 text-center group cursor-default"
             >
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#2F6BFF]/10 border border-[#2F6BFF]/20 flex items-center justify-center text-[#2F6BFF] mb-1.5 shrink-0 transition-all">

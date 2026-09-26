@@ -11,6 +11,19 @@ export async function inspectQa(
     device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 };
   try {
     return await browse(url, viewport, async (page) => {
+      const pathname = new URL(url).pathname;
+      if (
+        (mode === "products" || mode === "audit") &&
+        ["/", "/offers", "/search"].includes(pathname)
+      ) {
+        // Store products arrive after the initial document and settings requests.
+        // A bounded wait prevents a loading skeleton from being reported as an empty grid.
+        await page
+          .locator('[data-testid^="product-card-"]')
+          .first()
+          .waitFor({ state: "visible", timeout: 10_000 })
+          .catch(() => undefined);
+      }
       const state = await readQaState(page);
       if (mode === "tree") return { device, ...state };
       if (mode === "products")

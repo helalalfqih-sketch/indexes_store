@@ -152,7 +152,10 @@ export function InfiniteStorefrontCatalog({
             <ProductCard
               key={product.id}
               product={product}
-              qa={productCardQA(product, selectedCategoryId === "all" ? "catalog" : "category_page")}
+              qa={productCardQA(
+                product,
+                selectedCategoryId === "all" ? "catalog" : "category_page",
+              )}
               currency={currency}
               isFavorite={favorites.includes(product.id)}
               onToggleFavorite={onToggleFavorite}

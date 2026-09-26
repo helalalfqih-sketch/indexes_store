@@ -116,6 +116,13 @@ export async function readQaState(page: Page) {
         visible: visible(el),
         evidence: "rendered-card-attributes", // stock is not authoritative inventory
       }));
+    const claims = Array.from(document.querySelectorAll<HTMLElement>("[data-claim-source]"))
+      .filter(visible)
+      .map((el) => ({
+        text: el.innerText.trim().slice(0, 200),
+        source: el.getAttribute("data-claim-source"),
+        verified: el.getAttribute("data-claim-verified") === "true",
+      }));
     const filter = document.querySelector<HTMLElement>("[data-qa-filter-state]");
     let filters: Record<string, unknown> | null = null;
     if (filter) {
@@ -143,6 +150,7 @@ export async function readQaState(page: Page) {
       scroll: { x: scrollX, y: scrollY },
       elements,
       products,
+      claims,
       filters,
       open_overlays: elements.filter(
         (e) => e.visible && ["dialog", "alertdialog"].includes(e.role || ""),

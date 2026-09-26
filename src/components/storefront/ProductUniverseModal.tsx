@@ -1,20 +1,50 @@
-import React, { useState, useEffect, useMemo, useRef, Suspense, Component, ErrorInfo, ReactNode } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html, Sparkles, Stars } from '@react-three/drei';
-import * as THREE from 'three';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, Sparkles as SparklesIcon, ShoppingCart, Heart, Share2, 
-  Compass, Shuffle, Eye, ChevronLeft, 
-  Check, Play, Grid, HelpCircle, ShieldCheck, 
-  Layers, Info, Scale, ArrowRight, RotateCcw,
-  Sparkle, CheckCircle2, Gift, Zap, DollarSign, Package
-} from 'lucide-react';
-import { Product, Currency } from './types';
-import { formatPrice } from './currency';
-import { useLiteMode } from '@/lib/liteMode';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  Suspense,
+  Component,
+  ErrorInfo,
+  ReactNode,
+} from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls, Html, Sparkles, Stars } from "@react-three/drei";
+import * as THREE from "three";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  X,
+  Sparkles as SparklesIcon,
+  ShoppingCart,
+  Heart,
+  Share2,
+  Compass,
+  Shuffle,
+  Eye,
+  ChevronLeft,
+  Check,
+  Play,
+  Grid,
+  HelpCircle,
+  ShieldCheck,
+  Layers,
+  Info,
+  Scale,
+  ArrowRight,
+  RotateCcw,
+  Sparkle,
+  CheckCircle2,
+  Gift,
+  Zap,
+  DollarSign,
+  Package,
+} from "lucide-react";
+import { Product, Currency } from "./types";
+import { formatPrice } from "./currency";
+import { useLiteMode } from "@/lib/liteMode";
 
-const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%23181825"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="16">&#1604;&#1575; &#1578;&#1578;&#1608;&#1601;&#1585; &#1589;&#1608;&#1585;&#1577;</text></svg>';
+const FALLBACK_IMAGE =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%23181825"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="16">&#1604;&#1575; &#1578;&#1578;&#1608;&#1601;&#1585; &#1589;&#1608;&#1585;&#1577;</text></svg>';
 const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
   e.currentTarget.src = FALLBACK_IMAGE;
 };
@@ -40,7 +70,7 @@ class WebGLErrorBoundary extends Component<WebGLErrorBoundaryProps, WebGLErrorBo
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.warn('ProductUniverse WebGL fallback triggered:', error, errorInfo);
+    console.warn("ProductUniverse WebGL fallback triggered:", error, errorInfo);
   }
 
   render() {
@@ -65,15 +95,17 @@ interface ProductUniverseModalProps {
 }
 
 // Smart Touch-Aware OrbitControls for Universe Canvas
-const UniverseSmartOrbitControls: React.FC<any> = (props) => {
-  const controlsRef = useRef<any>(null);
+const UniverseSmartOrbitControls: React.FC<React.ComponentProps<typeof OrbitControls>> = (
+  props,
+) => {
+  const controlsRef = useRef<React.ElementRef<typeof OrbitControls>>(null);
   const { gl } = useThree();
 
   useEffect(() => {
     const canvas = gl.domElement;
     if (!canvas) return;
 
-    canvas.style.touchAction = 'pan-y';
+    canvas.style.touchAction = "pan-y";
 
     let touchStartX = 0;
     let touchStartY = 0;
@@ -111,16 +143,16 @@ const UniverseSmartOrbitControls: React.FC<any> = (props) => {
       }
     };
 
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: true });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: true });
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: true });
-    canvas.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+    canvas.addEventListener("touchstart", handleTouchStart, { passive: true });
+    canvas.addEventListener("touchmove", handleTouchMove, { passive: true });
+    canvas.addEventListener("touchend", handleTouchEnd, { passive: true });
+    canvas.addEventListener("touchcancel", handleTouchEnd, { passive: true });
 
     return () => {
-      canvas.removeEventListener('touchstart', handleTouchStart);
-      canvas.removeEventListener('touchmove', handleTouchMove);
-      canvas.removeEventListener('touchend', handleTouchEnd);
-      canvas.removeEventListener('touchcancel', handleTouchEnd);
+      canvas.removeEventListener("touchstart", handleTouchStart);
+      canvas.removeEventListener("touchmove", handleTouchMove);
+      canvas.removeEventListener("touchend", handleTouchEnd);
+      canvas.removeEventListener("touchcancel", handleTouchEnd);
     };
   }, [gl]);
 
@@ -128,12 +160,12 @@ const UniverseSmartOrbitControls: React.FC<any> = (props) => {
 };
 
 // Analytics Event Logger
-const logUniverseEvent = (eventName: string, details?: Record<string, any>) => {
+const logUniverseEvent = (eventName: string, details?: Record<string, unknown>) => {
   console.log(`[ProductUniverse Analytics] ${eventName}`, details || {});
 };
 
 // Intent Portal Choice Types
-type IntentType = 'all' | 'utility' | 'gift' | 'problem' | 'fun' | 'budget';
+type IntentType = "all" | "utility" | "gift" | "problem" | "fun" | "budget";
 
 interface IntentOption {
   id: IntentType;
@@ -143,11 +175,36 @@ interface IntentOption {
 }
 
 const INTENT_OPTIONS: IntentOption[] = [
-  { id: 'utility', title: 'أريد شيئاً مفيداً يومياً', desc: 'منتجات تمنحك سهولة وكفاءة في روتينك', icon: <Zap className="w-4 h-4 text-amber-400" /> },
-  { id: 'gift', title: 'أبحث عن هدية مميزة', desc: 'خيارات راقية تناسب الإهداء والمناسبات', icon: <Gift className="w-4 h-4 text-pink-400" /> },
-  { id: 'problem', title: 'أريد حل مشكلة مزعجة', desc: 'أدوات وحلول ذكية للتحديات اليومية', icon: <HelpCircle className="w-4 h-4 text-cyan-400" /> },
-  { id: 'fun', title: 'أبحث عن شيء ممتع', desc: 'إلكترونيات واكسسوارات ترفيهية مبتكرة', icon: <SparklesIcon className="w-4 h-4 text-purple-400" /> },
-  { id: 'budget', title: 'لدي ميزانية محددة', desc: 'أفضل القيمة مقابل السعر وضمن ميزانيتك', icon: <DollarSign className="w-4 h-4 text-emerald-400" /> },
+  {
+    id: "utility",
+    title: "أريد شيئاً مفيداً يومياً",
+    desc: "منتجات تمنحك سهولة وكفاءة في روتينك",
+    icon: <Zap className="w-4 h-4 text-amber-400" />,
+  },
+  {
+    id: "gift",
+    title: "أبحث عن هدية مميزة",
+    desc: "خيارات راقية تناسب الإهداء والمناسبات",
+    icon: <Gift className="w-4 h-4 text-pink-400" />,
+  },
+  {
+    id: "problem",
+    title: "أريد حل مشكلة مزعجة",
+    desc: "أدوات وحلول ذكية للتحديات اليومية",
+    icon: <HelpCircle className="w-4 h-4 text-cyan-400" />,
+  },
+  {
+    id: "fun",
+    title: "أبحث عن شيء ممتع",
+    desc: "إلكترونيات واكسسوارات ترفيهية مبتكرة",
+    icon: <SparklesIcon className="w-4 h-4 text-purple-400" />,
+  },
+  {
+    id: "budget",
+    title: "لدي ميزانية محددة",
+    desc: "أفضل القيمة مقابل السعر وضمن ميزانيتك",
+    icon: <DollarSign className="w-4 h-4 text-emerald-400" />,
+  },
 ];
 
 // 3D Universe Particle Planet Component
@@ -162,17 +219,21 @@ const UniversePlanet: React.FC<{
 
   // Dynamic color based on category/intent
   const ringColor = useMemo(() => {
-    if (activeIntent === 'utility') return '#f59e0b';
-    if (activeIntent === 'gift') return '#ec4899';
-    if (activeIntent === 'problem') return '#00f0ff';
-    if (activeIntent === 'fun') return '#a855f7';
-    if (activeIntent === 'budget') return '#10b981';
+    if (activeIntent === "utility") return "#f59e0b";
+    if (activeIntent === "gift") return "#ec4899";
+    if (activeIntent === "problem") return "#00f0ff";
+    if (activeIntent === "fun") return "#a855f7";
+    if (activeIntent === "budget") return "#10b981";
 
     switch (activeCategory) {
-      case 'offers': return '#f59e0b';
-      case 'cards': return '#ec4899';
-      case 'electronics': return '#00f0ff';
-      default: return '#8b5cf6';
+      case "offers":
+        return "#f59e0b";
+      case "cards":
+        return "#ec4899";
+      case "electronics":
+        return "#00f0ff";
+      default:
+        return "#8b5cf6";
     }
   }, [activeCategory, activeIntent]);
 
@@ -184,9 +245,9 @@ const UniversePlanet: React.FC<{
     const phi = (1 + Math.sqrt(5)) / 2;
     const radius = 2.4;
 
-    const cyan = new THREE.Color('#00f0ff');
-    const magenta = new THREE.Color('#ff007f');
-    const violet = new THREE.Color('#8b5cf6');
+    const cyan = new THREE.Color("#00f0ff");
+    const magenta = new THREE.Color("#ff007f");
+    const violet = new THREE.Color("#8b5cf6");
     const tempColor = new THREE.Color();
 
     for (let i = 0; i < count; i++) {
@@ -310,12 +371,7 @@ const OrbitProductNode: React.FC<OrbitProductNodeProps> = ({
 
   return (
     <group ref={groupRef} position={position}>
-      <Html
-        center
-        distanceFactor={8}
-        zIndexRange={[100, 0]}
-        style={{ pointerEvents: 'auto' }}
-      >
+      <Html center distanceFactor={8} zIndexRange={[100, 0]} style={{ pointerEvents: "auto" }}>
         <div
           onClick={(e) => {
             e.stopPropagation();
@@ -324,17 +380,17 @@ const OrbitProductNode: React.FC<OrbitProductNodeProps> = ({
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           className={`relative cursor-pointer select-none transition-all duration-300 group flex flex-col items-center ${
-            isFocused ? 'scale-125 z-50' : 'hover:scale-115'
+            isFocused ? "scale-125 z-50" : "hover:scale-115"
           }`}
         >
           {/* Glass Card Container */}
           <div
             className={`w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl backdrop-blur-xl border flex items-center justify-center relative overflow-hidden transition-all duration-300 ${
               isFocused
-                ? 'bg-[#2F6BFF]/40 border-[#2F6BFF] shadow-[0_0_30px_rgba(47,107,255,0.9)]'
+                ? "bg-[#2F6BFF]/40 border-[#2F6BFF] shadow-[0_0_30px_rgba(47,107,255,0.9)]"
                 : hovered
-                ? 'bg-[#0d091f]/90 border-emerald-400/80 shadow-[0_0_20px_rgba(52,211,153,0.5)]'
-                : 'bg-[#090617]/80 border-white/15 shadow-[0_0_15px_rgba(0,0,0,0.5)]'
+                  ? "bg-[#0d091f]/90 border-emerald-400/80 shadow-[0_0_20px_rgba(52,211,153,0.5)]"
+                  : "bg-[#090617]/80 border-white/15 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
             }`}
           >
             <img
@@ -351,9 +407,11 @@ const OrbitProductNode: React.FC<OrbitProductNodeProps> = ({
                 onToggleFavorite(product);
               }}
               className="absolute top-1 right-1 p-0.5 rounded-full bg-black/60 hover:bg-black text-amber-400 transition-transform cursor-pointer"
-              title={isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+              title={isFavorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
             >
-              <Heart className={`w-3 h-3 ${isFavorite ? 'fill-amber-400 text-amber-400' : 'text-gray-400'}`} />
+              <Heart
+                className={`w-3 h-3 ${isFavorite ? "fill-amber-400 text-amber-400" : "text-gray-400"}`}
+              />
             </button>
 
             {/* Compared Badge */}
@@ -385,7 +443,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
   isOpen,
   onClose,
   products = [],
-  currency = 'YER',
+  currency = "YER",
   favorites = [],
   onToggleFavorite,
   onAddToCart,
@@ -395,8 +453,8 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
 }) => {
   const { isActive: isLiteMode } = useLiteMode();
 
-  const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [activeIntent, setActiveIntent] = useState<IntentType>('all');
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [activeIntent, setActiveIntent] = useState<IntentType>("all");
   const [showIntentPortal, setShowIntentPortal] = useState<boolean>(true);
   const [focusedProduct, setFocusedProduct] = useState<Product | null>(null);
   const [showIntroSequence, setShowIntroSequence] = useState<boolean>(true);
@@ -408,7 +466,9 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
   const [tourIndex, setTourIndex] = useState<number>(0);
 
   // Expanded Product Views State
-  const [activeTabModal, setActiveTabModal] = useState<'demo' | 'why' | 'confidence' | 'preview' | null>(null);
+  const [activeTabModal, setActiveTabModal] = useState<
+    "demo" | "why" | "confidence" | "preview" | null
+  >(null);
   const [compareList, setCompareList] = useState<Product[]>([]);
   const [showCompareModal, setShowCompareModal] = useState<boolean>(false);
 
@@ -417,24 +477,26 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
     let result = products;
 
     // Filter by Intent
-    if (activeIntent === 'utility') {
-      result = products.filter((p) => p.category === 'electronics' || p.inStock);
-    } else if (activeIntent === 'gift') {
-      result = products.filter((p) => p.category === 'watches' || (p.originalPriceYER && p.originalPriceYER > p.priceYER));
-    } else if (activeIntent === 'problem') {
-      result = products.filter((p) => p.category === 'electronics' || p.category === 'cards');
-    } else if (activeIntent === 'fun') {
-      result = products.filter((p) => p.category === 'electronics' || p.category === 'watches');
-    } else if (activeIntent === 'budget') {
+    if (activeIntent === "utility") {
+      result = products.filter((p) => p.category === "electronics" || p.inStock);
+    } else if (activeIntent === "gift") {
+      result = products.filter(
+        (p) => p.category === "watches" || (p.originalPriceYER && p.originalPriceYER > p.priceYER),
+      );
+    } else if (activeIntent === "problem") {
+      result = products.filter((p) => p.category === "electronics" || p.category === "cards");
+    } else if (activeIntent === "fun") {
+      result = products.filter((p) => p.category === "electronics" || p.category === "watches");
+    } else if (activeIntent === "budget") {
       result = [...products].sort((a, b) => a.priceYER - b.priceYER);
     }
 
     // Filter by Category
-    if (activeCategory === 'offers') {
+    if (activeCategory === "offers") {
       result = result.filter((p) => p.originalPriceYER && p.originalPriceYER > p.priceYER);
-    } else if (activeCategory === 'favorites') {
+    } else if (activeCategory === "favorites") {
       result = result.filter((p) => favorites.includes(p.id));
-    } else if (activeCategory !== 'all') {
+    } else if (activeCategory !== "all") {
       result = result.filter((p) => p.category === activeCategory);
     }
 
@@ -444,28 +506,35 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
   // Handle modal opening
   useEffect(() => {
     if (isOpen) {
-      logUniverseEvent('product_universe_opened', { totalProducts: products.length });
-      document.body.style.overflow = 'hidden';
+      logUniverseEvent("product_universe_opened", { totalProducts: products.length });
+      document.body.style.overflow = "hidden";
       setShowIntroSequence(true);
       setShowIntentPortal(true);
       const timer = setTimeout(() => setShowIntroSequence(false), 1400);
       return () => clearTimeout(timer);
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
       setFocusedProduct(null);
       setIsTourActive(false);
       setActiveTabModal(null);
     }
-  }, [isOpen]);
+  }, [isOpen, products.length]);
 
   const handleSelectProduct = (product: Product) => {
     setFocusedProduct(product);
     setQuantity(1);
     setActiveTabModal(null);
-    logUniverseEvent('universe_product_focused', { productId: product.id, productName: product.name });
+    logUniverseEvent("universe_product_focused", {
+      productId: product.id,
+      productName: product.name,
+    });
 
-    if ('vibrate' in navigator) {
-      try { navigator.vibrate(10); } catch (e) {}
+    if ("vibrate" in navigator) {
+      try {
+        navigator.vibrate(10);
+      } catch {
+        /* Vibration may be unavailable on this device. */
+      }
     }
   };
 
@@ -473,13 +542,17 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
     if (!focusedProduct) return;
     onAddToCart(focusedProduct, quantity);
     setLastAddedProduct(focusedProduct);
-    logUniverseEvent('universe_add_to_cart', { productId: focusedProduct.id, quantity });
+    logUniverseEvent("universe_add_to_cart", { productId: focusedProduct.id, quantity });
 
     setToastMsg({ msg: `تمت إضافة ${focusedProduct.name} إلى السلة 🛒`, canUndo: true });
     setTimeout(() => setToastMsg(null), 4000);
 
-    if ('vibrate' in navigator) {
-      try { navigator.vibrate([15, 30, 15]); } catch (e) {}
+    if ("vibrate" in navigator) {
+      try {
+        navigator.vibrate([15, 30, 15]);
+      } catch {
+        /* Vibration may be unavailable on this device. */
+      }
     }
   };
 
@@ -490,7 +563,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
         return prev.filter((p) => p.id !== product.id);
       }
       if (prev.length >= 3) {
-        setToastMsg({ msg: 'يمكنك مقارنة 3 منتجات كحد أقصى' });
+        setToastMsg({ msg: "يمكنك مقارنة 3 منتجات كحد أقصى" });
         setTimeout(() => setToastMsg(null), 2500);
         return prev;
       }
@@ -503,7 +576,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
     const randomIndex = Math.floor(Math.random() * filteredProducts.length);
     const randomProduct = filteredProducts[randomIndex];
     handleSelectProduct(randomProduct);
-    logUniverseEvent('universe_surprise_used', { productId: randomProduct.id });
+    logUniverseEvent("universe_surprise_used", { productId: randomProduct.id });
   };
 
   const handleStartTour = () => {
@@ -511,7 +584,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
     setIsTourActive(true);
     setTourIndex(0);
     handleSelectProduct(filteredProducts[0]);
-    logUniverseEvent('universe_guided_tour_started');
+    logUniverseEvent("universe_guided_tour_started");
   };
 
   if (!isOpen) return null;
@@ -519,7 +592,6 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[150] bg-[#03010b] text-white flex flex-col justify-between overflow-hidden dir-rtl select-none font-sans">
-        
         {/* Intent Portal Dialog Modal */}
         <AnimatePresence>
           {showIntentPortal && (
@@ -546,7 +618,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                       onClick={() => {
                         setActiveIntent(opt.id);
                         setShowIntentPortal(false);
-                        logUniverseEvent('universe_intent_selected', { intent: opt.id });
+                        logUniverseEvent("universe_intent_selected", { intent: opt.id });
                       }}
                       className="w-full bg-[#161138] hover:bg-purple-600/20 border border-white/10 hover:border-purple-500/50 p-3 rounded-2xl flex items-center gap-3 transition-all cursor-pointer group"
                     >
@@ -564,11 +636,13 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-                  <span className="text-[10px] text-gray-400">سنستخدم اختيارك لترتيب المنتجات المناسبة فقط</span>
+                  <span className="text-[10px] text-gray-400">
+                    سنستخدم اختيارك لترتيب المنتجات المناسبة فقط
+                  </span>
                   <button
                     onClick={() => {
                       setShowIntentPortal(false);
-                      logUniverseEvent('universe_intent_skipped');
+                      logUniverseEvent("universe_intent_skipped");
                     }}
                     className="text-purple-400 hover:text-purple-300 font-bold cursor-pointer"
                   >
@@ -589,7 +663,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
             <div>
               <h2 className="text-xs sm:text-sm font-black text-white flex items-center gap-1.5">
                 <span>عالم منتجات إندكس</span>
-                {activeIntent !== 'all' && (
+                {activeIntent !== "all" && (
                   <span className="text-[9px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">
                     مسار مخصص
                   </span>
@@ -626,13 +700,13 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
               className="bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 transition-all cursor-pointer"
             >
               <Grid className="w-3.5 h-3.5 text-cyan-400" />
-              <span>{is2DMirror ? 'عرض 3D' : 'عرض مبسّط'}</span>
+              <span>{is2DMirror ? "عرض 3D" : "عرض مبسّط"}</span>
             </button>
 
             {/* Close Button */}
             <button
               onClick={() => {
-                logUniverseEvent('product_universe_exited');
+                logUniverseEvent("product_universe_exited");
                 onClose();
               }}
               className="w-8 h-8 rounded-full bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white flex items-center justify-center border border-gray-700 transition-colors cursor-pointer"
@@ -645,7 +719,6 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
 
         {/* Main 3D Stage / 2D Mirror Area */}
         <div className="relative flex-1 w-full h-full overflow-hidden">
-          
           {/* Toast Notification inside Universe */}
           <AnimatePresence>
             {toastMsg && (
@@ -661,7 +734,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                   <button
                     onClick={() => {
                       setToastMsg(null);
-                      logUniverseEvent('universe_add_to_cart_undone');
+                      logUniverseEvent("universe_add_to_cart_undone");
                     }}
                     className="underline text-amber-200 mr-2 cursor-pointer font-bold"
                   >
@@ -689,7 +762,12 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                   onClick={() => handleSelectProduct(prod)}
                   className="bg-[#0e0a24] border border-white/10 rounded-2xl p-3 flex flex-col justify-between hover:border-emerald-500/50 transition-all cursor-pointer"
                 >
-                  <img src={prod.image || FALLBACK_IMAGE} alt={prod.name} onError={handleImageError} className="w-full h-20 object-contain mb-2" />
+                  <img
+                    src={prod.image || FALLBACK_IMAGE}
+                    alt={prod.name}
+                    onError={handleImageError}
+                    className="w-full h-20 object-contain mb-2"
+                  />
                   <div>
                     <h4 className="text-xs font-bold text-white line-clamp-1">{prod.name}</h4>
                     <p className="text-xs font-black text-emerald-400 mt-0.5">
@@ -723,7 +801,12 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                         onClick={() => handleSelectProduct(prod)}
                         className="bg-[#0e0a24] border border-white/10 rounded-2xl p-3 flex flex-col justify-between hover:border-emerald-500/50 transition-all cursor-pointer"
                       >
-                        <img src={prod.image || FALLBACK_IMAGE} alt={prod.name} onError={handleImageError} className="w-full h-20 object-contain mb-2" />
+                        <img
+                          src={prod.image || FALLBACK_IMAGE}
+                          alt={prod.name}
+                          onError={handleImageError}
+                          className="w-full h-20 object-contain mb-2"
+                        />
                         <div>
                           <h4 className="text-xs font-bold text-white line-clamp-1">{prod.name}</h4>
                           <p className="text-xs font-black text-emerald-400 mt-0.5">
@@ -750,8 +833,13 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                 <Canvas
                   camera={{ position: [0, 0, 8], fov: 45 }}
                   dpr={[1, 1.5]}
-                  gl={{ antialias: false, alpha: true, powerPreference: 'high-performance', failIfMajorPerformanceCaveat: false }}
-                  style={{ width: '100%', height: '100%', background: 'transparent' }}
+                  gl={{
+                    antialias: false,
+                    alpha: true,
+                    powerPreference: "high-performance",
+                    failIfMajorPerformanceCaveat: false,
+                  }}
+                  style={{ width: "100%", height: "100%", background: "transparent" }}
                 >
                   <Suspense fallback={null}>
                     <ambientLight intensity={0.8} />
@@ -800,10 +888,10 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
           <AnimatePresence>
             {focusedProduct && (
               <motion.div
-                initial={{ y: '100%', opacity: 0 }}
+                initial={{ y: "100%", opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+                exit={{ y: "100%", opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 280 }}
                 className="absolute bottom-14 sm:bottom-16 left-3 right-3 sm:left-auto sm:right-6 sm:w-[360px] z-[160] bg-[#0c0822]/95 border border-purple-500/40 rounded-3xl p-3.5 shadow-[0_-10px_40px_rgba(0,0,0,0.9)] backdrop-blur-2xl"
               >
                 {/* Header & 3-Second Value Reveal */}
@@ -820,9 +908,11 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                       </h3>
                       {/* 3-Second Value Statement */}
                       <p className="text-[10px] text-purple-300 line-clamp-1 mt-0.5">
-                        {focusedProduct.category === 'watches' ? 'ساعة أنيقة وعالية الجودة للاستخدام اليومي' :
-                         focusedProduct.category === 'electronics' ? 'حل تقني مبتكر يمنحك الراحة والكفاءة' :
-                         'بطاقات وخدمات رقمية فورية بأعلى أمان'}
+                        {focusedProduct.category === "watches"
+                          ? "ساعة أنيقة وعالية الجودة للاستخدام اليومي"
+                          : focusedProduct.category === "electronics"
+                            ? "حل تقني مبتكر يمنحك الراحة والكفاءة"
+                            : "بطاقات وخدمات رقمية فورية بأعلى أمان"}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs font-black text-emerald-400">
@@ -878,7 +968,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                   {/* Ethical Exploration Action Chips */}
                   <div className="grid grid-cols-4 gap-1.5 text-[10px] pt-1">
                     <button
-                      onClick={() => setActiveTabModal('demo')}
+                      onClick={() => setActiveTabModal("demo")}
                       className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 py-1.5 rounded-xl font-bold flex items-center justify-center gap-1 border border-purple-500/30 cursor-pointer"
                     >
                       <Play className="w-3 h-3 text-purple-400" />
@@ -886,7 +976,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                     </button>
 
                     <button
-                      onClick={() => setActiveTabModal('why')}
+                      onClick={() => setActiveTabModal("why")}
                       className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 py-1.5 rounded-xl font-bold flex items-center justify-center gap-1 border border-amber-500/30 cursor-pointer"
                     >
                       <HelpCircle className="w-3 h-3 text-amber-400" />
@@ -894,7 +984,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                     </button>
 
                     <button
-                      onClick={() => setActiveTabModal('confidence')}
+                      onClick={() => setActiveTabModal("confidence")}
                       className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 py-1.5 rounded-xl font-bold flex items-center justify-center gap-1 border border-cyan-500/30 cursor-pointer"
                     >
                       <ShieldCheck className="w-3 h-3 text-cyan-400" />
@@ -905,12 +995,14 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                       onClick={() => handleToggleCompare(focusedProduct)}
                       className={`py-1.5 rounded-xl font-bold flex items-center justify-center gap-1 border cursor-pointer ${
                         compareList.some((p) => p.id === focusedProduct.id)
-                          ? 'bg-cyan-500 text-black border-cyan-400'
-                          : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border-gray-700'
+                          ? "bg-cyan-500 text-black border-cyan-400"
+                          : "bg-gray-800/80 hover:bg-gray-700 text-gray-200 border-gray-700"
                       }`}
                     >
                       <Scale className="w-3 h-3" />
-                      <span>{compareList.some((p) => p.id === focusedProduct.id) ? 'مقارَن' : 'قارن'}</span>
+                      <span>
+                        {compareList.some((p) => p.id === focusedProduct.id) ? "مقارَن" : "قارن"}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -936,13 +1028,17 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                   </button>
 
                   {/* TAB 1: SHOW ME DEMO */}
-                  {activeTabModal === 'demo' && (
+                  {activeTabModal === "demo" && (
                     <div>
                       <div className="flex items-center gap-2 mb-3 text-purple-300 font-bold text-xs">
                         <Play className="w-4 h-4 text-purple-400" />
                         <span>عرض الفائدة والتجربة الميدانية</span>
                       </div>
-                      <img src={focusedProduct.image} alt="" className="w-full h-36 object-contain bg-black/40 rounded-2xl p-2 mb-3 border border-white/10" />
+                      <img
+                        src={focusedProduct.image}
+                        alt=""
+                        className="w-full h-36 object-contain bg-black/40 rounded-2xl p-2 mb-3 border border-white/10"
+                      />
                       <div className="space-y-2 text-xs text-gray-300">
                         <div className="flex items-center gap-2 bg-purple-950/40 p-2 rounded-xl border border-purple-500/20">
                           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -957,7 +1053,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                   )}
 
                   {/* TAB 2: WHY IT FITS */}
-                  {activeTabModal === 'why' && (
+                  {activeTabModal === "why" && (
                     <div>
                       <div className="flex items-center gap-2 mb-3 text-amber-300 font-bold text-xs">
                         <HelpCircle className="w-4 h-4 text-amber-400" />
@@ -966,7 +1062,10 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                       <div className="space-y-2 text-xs">
                         <div className="p-2.5 bg-black/40 rounded-xl border border-white/10 flex items-center gap-2">
                           <Check className="w-4 h-4 text-emerald-400" />
-                          <span>يتوافق مع هدف الاستكشاف الذي اخترته ({activeIntent === 'all' ? 'حر' : activeIntent})</span>
+                          <span>
+                            يتوافق مع هدف الاستكشاف الذي اخترته (
+                            {activeIntent === "all" ? "حر" : activeIntent})
+                          </span>
                         </div>
                         <div className="p-2.5 bg-black/40 rounded-xl border border-white/10 flex items-center gap-2">
                           <Check className="w-4 h-4 text-emerald-400" />
@@ -981,7 +1080,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                   )}
 
                   {/* TAB 3: CONFIDENCE BEFORE PURCHASE */}
-                  {activeTabModal === 'confidence' && (
+                  {activeTabModal === "confidence" && (
                     <div>
                       <div className="flex items-center gap-2 mb-3 text-cyan-300 font-bold text-xs">
                         <ShieldCheck className="w-4 h-4 text-cyan-400" />
@@ -989,11 +1088,15 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                       </div>
                       <div className="space-y-2 text-xs text-gray-300">
                         <div className="p-2.5 bg-black/40 rounded-xl border border-white/10">
-                          <span className="font-bold text-white block mb-0.5">📦 محتويات العبوة:</span>
+                          <span className="font-bold text-white block mb-0.5">
+                            📦 محتويات العبوة:
+                          </span>
                           <span>اطلب من خدمة العملاء تأكيد محتويات العبوة</span>
                         </div>
                         <div className="p-2.5 bg-black/40 rounded-xl border border-white/10">
-                          <span className="font-bold text-white block mb-0.5">🛡️ الضمان والاستبدال:</span>
+                          <span className="font-bold text-white block mb-0.5">
+                            🛡️ الضمان والاستبدال:
+                          </span>
                           <span>اطلب شروط الضمان والاستبدال الخاصة بالمنتج</span>
                         </div>
                         <div className="p-2.5 bg-black/40 rounded-xl border border-white/10">
@@ -1041,20 +1144,30 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                   </div>
 
                   {compareList.length === 0 ? (
-                    <p className="text-xs text-gray-400 text-center py-8">لم تقم بإضافة أي منتج للمقارنة بعد.</p>
+                    <p className="text-xs text-gray-400 text-center py-8">
+                      لم تقم بإضافة أي منتج للمقارنة بعد.
+                    </p>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {compareList.map((prod) => (
-                        <div key={prod.id} className="bg-black/40 border border-white/10 rounded-2xl p-3 flex flex-col justify-between">
+                        <div
+                          key={prod.id}
+                          className="bg-black/40 border border-white/10 rounded-2xl p-3 flex flex-col justify-between"
+                        >
                           <div>
-                            <img src={prod.image} alt="" className="w-full h-24 object-contain mb-2" />
-                            <h4 className="text-xs font-bold text-white line-clamp-1">{prod.name}</h4>
+                            <img
+                              src={prod.image}
+                              alt=""
+                              className="w-full h-24 object-contain mb-2"
+                            />
+                            <h4 className="text-xs font-bold text-white line-clamp-1">
+                              {prod.name}
+                            </h4>
                             <p className="text-xs font-black text-emerald-400 mt-1">
                               {formatPrice(prod.priceYER, currency)}
                             </p>
                             <div className="mt-2 pt-2 border-t border-gray-800 text-[10px] space-y-1 text-gray-300">
-                              <div>التوفر: {prod.inStock ? 'متوفر' : 'غير متوفر'}</div>
-
+                              <div>التوفر: {prod.inStock ? "متوفر" : "غير متوفر"}</div>
                             </div>
                           </div>
 
@@ -1084,26 +1197,24 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
               </motion.div>
             )}
           </AnimatePresence>
-
         </div>
 
         {/* Bottom Interactive Discovery Control Dock */}
         <div className="relative z-30 px-3 py-2 bg-[#080518]/95 border-t border-white/10 backdrop-blur-xl flex items-center justify-between gap-2 overflow-x-auto no-scrollbar shrink-0">
-          
           {/* Category Tabs */}
           <div className="flex items-center gap-1.5 shrink-0">
             {[
-              { id: 'all', label: 'الكل' },
-              { id: 'offers', label: '🔥 العروض' },
-              { id: 'favorites', label: '⭐ المفضلة' },
+              { id: "all", label: "الكل" },
+              { id: "offers", label: "🔥 العروض" },
+              { id: "favorites", label: "⭐ المفضلة" },
             ].map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   activeCategory === cat.id
-                    ? 'bg-[#2F6BFF] text-white shadow-md'
-                    : 'bg-white/5 text-gray-400 hover:text-white border border-white/10'
+                    ? "bg-[#2F6BFF] text-white shadow-md"
+                    : "bg-white/5 text-gray-400 hover:text-white border border-white/10"
                 }`}
               >
                 {cat.label}
@@ -1129,12 +1240,10 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
               className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
             >
               <SparklesIcon className="w-3.5 h-3.5 text-purple-400" />
-              <span>{isTourActive ? 'إيقاف الجولة' : 'خذني في جولة ✨'}</span>
+              <span>{isTourActive ? "إيقاف الجولة" : "خذني في جولة ✨"}</span>
             </button>
           </div>
-
         </div>
-
       </div>
     </AnimatePresence>
   );

@@ -167,7 +167,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </div>
               )}
 
-            {/* Item List */}
+              {/* Item List */}
               {cartItems.length === 0 ? (
                 <div className="py-16 text-center text-[var(--color-text-muted)] flex flex-col items-center gap-3">
                   <div className="w-20 h-20 rounded-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] flex items-center justify-center text-[var(--color-text-muted)]">
