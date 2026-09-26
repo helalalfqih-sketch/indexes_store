@@ -50,7 +50,7 @@ export function ProductCard({
       data-section-source={qa.sectionSource}
       data-storefront-product-id={product.id}
       data-element-key={`product.card.${qa.productId}`}
-      data-product-name={product.name}
+      data-product-name={qa.name ?? undefined}
       data-price-yer={product.priceYER}
       data-previous-price-yer={hasRealDiscount ? product.originalPriceYER : undefined}
       data-product-brand={qa.brand ?? undefined}

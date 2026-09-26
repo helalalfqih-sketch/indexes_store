@@ -46,8 +46,19 @@ export function productCardQA(
     price: typeof price === "number" && Number.isFinite(price) && price > 0 ? price : null,
     category: product.category ?? product.categoryId ?? null,
     brand: product.brand ?? null,
-    rating: typeof product.rating === "number" && product.rating > 0 ? product.rating : null,
-    stock: product.stockCount ?? null,
+    rating:
+      typeof product.rating === "number" &&
+      Number.isFinite(product.rating) &&
+      product.rating > 0 &&
+      product.rating <= 5
+        ? product.rating
+        : null,
+    stock:
+      typeof product.stockCount === "number" &&
+      Number.isFinite(product.stockCount) &&
+      product.stockCount >= 0
+        ? product.stockCount
+        : null,
     sectionSource,
   };
 }

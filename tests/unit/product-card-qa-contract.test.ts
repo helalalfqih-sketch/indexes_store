@@ -25,4 +25,9 @@ describe("product card evidence", () => {
       sectionSource: "offers",
     });
   });
+  it("does not report invalid rating or inventory as evidence", () => {
+    expect(
+      productCardQA({ id: "p3", price: 5000, rating: Infinity, stockCount: -1 }, "catalog"),
+    ).toMatchObject({ price: 5000, rating: null, stock: null });
+  });
 });
