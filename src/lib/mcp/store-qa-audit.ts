@@ -68,10 +68,19 @@ export function auditState(state: QaState) {
           "header.search",
           "header.notifications",
           "header.wishlist",
+          "header.account",
+          ...(state.viewport.width >= 768 ? ["header.install_app"] : []),
           "filter.price",
           "filter.brand",
           "filter.rating",
           "filter.sort",
+          ...(state.filters &&
+          (state.filters.priceRange !== "all" ||
+            brands.length > 0 ||
+            ratings.length > 0 ||
+            sort !== "default")
+            ? ["filter.reset"]
+            : []),
         ]
       : [];
   const missingKeys = critical.filter(
