@@ -39,14 +39,15 @@ export function productCardQA(
   product: CardData,
   sectionSource: ProductCardQAProps["sectionSource"],
 ): ProductCardQAProps {
+  const price = product.priceYER ?? product.price;
   return {
     productId: product.id,
     name: product.name ?? null,
-    price: product.priceYER ?? product.price ?? null,
+    price: typeof price === "number" && Number.isFinite(price) && price > 0 ? price : null,
     category: product.category ?? product.categoryId ?? null,
     brand: product.brand ?? null,
-    rating: product.rating ?? null,
-    stock: product.stockCount ?? product.stock ?? null,
+    rating: typeof product.rating === "number" && product.rating > 0 ? product.rating : null,
+    stock: product.stockCount ?? null,
     sectionSource,
   };
 }
