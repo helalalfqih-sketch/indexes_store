@@ -408,7 +408,7 @@ export function mapPublishedStorefrontSettings(
         "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد.",
       address:
         general.address || nav.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية",
-      deliveryInfoText: nav.deliveryInfoText || "متوفر لدينا خدمة التوصيل السريع لجميع المحافظات",
+      deliveryInfoText: nav.deliveryInfoText || "",
       phone: general.phone || nav.whatsappPhone || cart.whatsappPhone || "967771370740",
       whatsappPhone: general.whatsapp || cart.whatsappPhone || nav.whatsappPhone || "967771370740",
       supportEmail: sanitizeUrl(general.email || nav.supportEmail, "support@indexes-store.com", {

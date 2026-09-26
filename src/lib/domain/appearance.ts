@@ -178,7 +178,7 @@ export const NavigationConfigSchema = z.object({
   whatsappPhone: z.string().catch("967771370740"),
   supportEmail: z.string().catch("support@indexes-store.com"),
   addressText: z.string().catch("صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية"),
-  deliveryInfoText: z.string().catch("متوفر لدينا خدمة التوصيل لجميع المحافظات 🇾🇪"),
+  deliveryInfoText: z.string().catch(""),
   footerDescription: z
     .string()
     .catch("المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد."),
