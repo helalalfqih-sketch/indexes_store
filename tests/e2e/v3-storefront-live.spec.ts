@@ -106,6 +106,7 @@ for (const device of ["desktop", "mobile"] as const) {
       expect(brand, "No observed brand matches a selectable brand").toBeDefined();
       await key(page, "filter.brand").click();
       await expect(key(page, `filter-brand-${brand!.id}`)).toBeVisible();
+      await page.waitForTimeout(350); // Wait for the filter drawer's entrance animation.
       await key(page, `filter-brand-${brand!.id}`).click();
       await expect.poll(() => state(page).then((s) => s.brand)).toContain(brand!.id);
       expect(await cards(page).count()).toBeGreaterThan(0);
@@ -118,6 +119,7 @@ for (const device of ["desktop", "mobile"] as const) {
       }
       await key(page, "filter.rating").click();
       await expect(key(page, "filter-rating-4.0")).toBeVisible();
+      await page.waitForTimeout(350);
       await key(page, "filter-rating-4.0").click();
       await expect.poll(() => state(page).then((s) => s.rating)).toContain("4.0");
       expect(await cards(page).count()).toBeGreaterThan(0);
