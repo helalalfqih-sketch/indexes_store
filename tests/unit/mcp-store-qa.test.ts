@@ -7,6 +7,7 @@ const base: QaState = {
   scroll: { x: 0, y: 0 },
   elements: [],
   products: [],
+  claims: [],
   filters: null,
   open_overlays: [],
   loaded_product_count: 0,

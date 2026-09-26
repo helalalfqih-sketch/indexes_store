@@ -682,7 +682,7 @@ function HomePage() {
                     {/* Product Catalog Grid Section */}
                     <section
                       id="store-products"
-                      data-qa-section="catalog"
+                      data-qa-section="new_products"
                       data-qa-filter-state={JSON.stringify({
                         category: selectedCategory,
                         minPrice:
@@ -757,8 +757,8 @@ function HomePage() {
                         <div className="space-y-6">
                           <div className="rounded-2xl border border-dashed border-[#F93A00]/40 bg-[#FFF1EB] dark:bg-neutral-900 p-5 text-center">
                             <p className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white">
-                              لا توجد منتجات مسجلة في هذا التصنيف حالياً، جلبنا لك هذه المنتجات
-                              المميزة والأكثر طلباً في المتجر:
+                              لا توجد نتائج في أحدث المنتجات لهذه الفلاتر. راجع بقية الكتالوج أدناه
+                              أو أعد ضبط الفلاتر.
                             </p>
                             <button
                               type="button"
@@ -778,22 +778,6 @@ function HomePage() {
                             >
                               عرض جميع المنتجات المتوفرة
                             </button>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-                            {(products.length > 0 ? products.slice(0, 8) : []).map((product) => (
-                              <ProductCard
-                                key={product.id}
-                                product={product}
-                                qa={productCardQA(product, "new_products")}
-                                currency={currency}
-                                isFavorite={favorites.includes(product.id)}
-                                onToggleFavorite={handleToggleFavorite}
-                                onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                                onSelectProduct={handleSelectProduct}
-                                variant="grid"
-                              />
-                            ))}
                           </div>
                         </div>
                       ) : (

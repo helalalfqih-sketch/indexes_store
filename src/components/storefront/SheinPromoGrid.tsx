@@ -182,12 +182,6 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                       <StoreLogo variant="icon" className="h-20 w-20" />
                     </div>
                   )}
-                  <div className="absolute bottom-1 right-0 hidden items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow sm:flex sm:rounded-xl sm:px-3">
-                    <Sparkles className="h-3.5 w-3.5 text-[#F93A00]" />
-                    <span className="text-[11px] font-black text-neutral-900 dark:text-white">
-                      أصلي ومضمون
-                    </span>
-                  </div>
                 </div>
               </motion.div>
             </AnimatePresence>

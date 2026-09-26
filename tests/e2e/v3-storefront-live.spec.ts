@@ -66,9 +66,15 @@ for (const device of ["desktop", "mobile"] as const) {
       ] as const) {
         await key(page, `filter-price-${preset}`).click();
         await expect.poll(() => state(page).then((s) => s.priceRange)).toBe(preset);
-        const actual = await prices(page);
-        expect(actual.length, `No observed products for ${preset}`).toBeGreaterThan(0);
-        expect(actual.every(matches), `${preset}: ${actual.join(",")}`).toBe(true);
+        await expect
+          .poll(
+            async () => {
+              const actual = await prices(page);
+              return actual.length > 0 && actual.every(matches);
+            },
+            { message: `Observed catalog prices must match ${preset}` },
+          )
+          .toBe(true);
       }
       await key(page, "filter-price-all").click();
       for (const [sort, ordered] of [
@@ -78,9 +84,14 @@ for (const device of ["desktop", "mobile"] as const) {
         await key(page, "filter.sort").click();
         await key(page, `filter-sort-${sort}`).click();
         await expect.poll(() => state(page).then((s) => s.sort)).toBe(sort);
-        const actual = await prices(page);
-        expect(actual.length).toBeGreaterThan(0);
-        expect(actual.every((n, i) => i === 0 || ordered(actual[i - 1], n))).toBe(true);
+        await expect
+          .poll(async () => {
+            const actual = await prices(page);
+            return (
+              actual.length > 0 && actual.every((n, i) => i === 0 || ordered(actual[i - 1], n))
+            );
+          })
+          .toBe(true);
       }
       const brands = await cards(page).evaluateAll((elements) =>
         elements.map((el) => el.getAttribute("data-product-brand")).filter(Boolean),
@@ -94,6 +105,7 @@ for (const device of ["desktop", "mobile"] as const) {
       );
       expect(brand, "No observed brand matches a selectable brand").toBeDefined();
       await key(page, "filter.brand").click();
+      await expect(key(page, `filter-brand-${brand!.id}`)).toBeVisible();
       await key(page, `filter-brand-${brand!.id}`).click();
       await expect.poll(() => state(page).then((s) => s.brand)).toContain(brand!.id);
       expect(await cards(page).count()).toBeGreaterThan(0);
@@ -105,6 +117,7 @@ for (const device of ["desktop", "mobile"] as const) {
         ]).toContain((await card.getAttribute("data-product-brand"))?.toLowerCase());
       }
       await key(page, "filter.rating").click();
+      await expect(key(page, "filter-rating-4.0")).toBeVisible();
       await key(page, "filter-rating-4.0").click();
       await expect.poll(() => state(page).then((s) => s.rating)).toContain("4.0");
       expect(await cards(page).count()).toBeGreaterThan(0);
