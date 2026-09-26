@@ -361,8 +361,8 @@ export function AdminPanel({
       originalPriceYER: 12000,
       category: "electronics",
       discountBadge: "خصم خاص",
-      rating: 4.8,
-      reviewsCount: 1,
+      rating: 0,
+      reviewsCount: 0,
       image:
         "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80",
       gallery: [],
@@ -397,8 +397,10 @@ export function AdminPanel({
           Number(editingProduct.originalPriceYER) || Number(editingProduct.priceYER) || 0,
         category: editingProduct.category || "electronics",
         discountBadge: editingProduct.discountBadge || "",
-        rating: editingProduct.rating || 4.8,
-        reviewsCount: editingProduct.reviewsCount || 10,
+        rating: Number.isFinite(editingProduct.rating) ? editingProduct.rating : 0,
+        reviewsCount: Number.isFinite(editingProduct.reviewsCount)
+          ? editingProduct.reviewsCount
+          : 0,
         image:
           editingProduct.image ||
           "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80",

@@ -48,6 +48,7 @@ export interface CategoryBarProps {
   onSelectBrands?: (brands: string[]) => void;
   selectedRatings?: string[];
   onSelectRatings?: (ratings: string[]) => void;
+  ratingFilterAvailable?: boolean;
 }
 
 const CATEGORY_ITEMS = [
@@ -101,6 +102,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   onSelectBrands,
   selectedRatings = [],
   onSelectRatings,
+  ratingFilterAvailable = true,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCustomDrawerOpen, setIsCustomDrawerOpen] = useState(false);
@@ -443,19 +445,27 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
           {onSelectRatings && (
             <button
               type="button"
+              disabled={!ratingFilterAvailable}
               onClick={() => {
                 setIsRatingDrawerOpen(!isRatingDrawerOpen);
                 setIsBrandDrawerOpen(false);
                 setIsCustomDrawerOpen(false);
               }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                 selectedRatings.length > 0
                   ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
                   : "bg-[var(--color-surface-2)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:text-[var(--color-text-primary)]"
               }`}
-              title="فلترة حسب التقييم"
-              aria-label="التقييم"
+              title={
+                ratingFilterAvailable
+                  ? "فلترة حسب التقييم"
+                  : "التقييم غير متاح حتى تتوفر مراجعات موثقة"
+              }
+              aria-label={
+                ratingFilterAvailable ? "التقييم" : "التقييم غير متاح: لا توجد مراجعات موثقة"
+              }
               data-element-key="filter.rating"
+              data-qa-availability={ratingFilterAvailable ? "available" : "unavailable"}
               data-qa-action="local"
               aria-expanded={isRatingDrawerOpen}
             >
@@ -633,7 +643,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 
         {/* Rating Drawer */}
         <AnimatePresence>
-          {isRatingDrawerOpen && onSelectRatings && (
+          {isRatingDrawerOpen && onSelectRatings && ratingFilterAvailable && (
             <motion.div
               key="rating-drawer"
               initial={{ opacity: 0, height: 0 }}

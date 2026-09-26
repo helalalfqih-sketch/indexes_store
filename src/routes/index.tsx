@@ -642,6 +642,7 @@ function HomePage() {
                       onSelectBrands={setSelectedBrands}
                       selectedRatings={selectedRatings}
                       onSelectRatings={setSelectedRatings}
+                      ratingFilterAvailable={false}
                     />
                   </div>
                 );
