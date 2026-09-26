@@ -410,11 +410,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </button>
             )}
 
-            {/* Product Guarantee Badge */}
-            <div className="mt-3 p-3 bg-[var(--color-surface-2)]/60 rounded-xl border border-[var(--color-border-subtle)] flex items-center gap-2.5 text-xs text-[var(--color-text-secondary)]">
-              <span className="material-symbols-outlined text-[#2F6BFF] text-[20px]">verified</span>
-              <span className="font-bold text-[var(--color-text-primary)]">ضمان إندكس الأصلي 100% مع إمكانية المعاينة عند الاستلام</span>
-            </div>
+
           </div>
 
           {/* 2. PRODUCT DETAILS & ACTIONS AREA */}

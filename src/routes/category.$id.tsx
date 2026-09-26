@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ProductCard } from "@/components/product-card";
+import { productCardQA } from "@/lib/qa/product-card-contract";
 import { useInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { categoryBySlugQueryOptions } from "@/lib/store.queries";
 import { fetchCatalogPage } from "@/lib/actions/catalog-page.actions";
@@ -178,7 +179,7 @@ function CategoryPage() {
           <div className={gridClass} role="list" aria-label={`منتجات ${cat.name}`}>
             {items.map((p, index) => (
               <div key={p.id} role="listitem">
-                <ProductCard product={p as unknown as Product} eager={index < 4} />
+                <ProductCard product={p as unknown as Product} qa={productCardQA(p, "category_page")} eager={index < 4} />
               </div>
             ))}
           </div>

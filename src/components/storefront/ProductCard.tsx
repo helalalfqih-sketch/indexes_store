@@ -3,12 +3,14 @@ import { Check, Heart, Plus, Star } from "lucide-react";
 import type { Currency, Product } from "./types";
 import { formatPrice } from "./currency";
 import { OptimizedImage } from "@/components/optimized-image";
+import type { ProductCardQAProps } from "@/lib/qa/product-card-contract";
 
 const FALLBACK_IMAGE =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500"><rect width="400" height="500" fill="%23f5f5f5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="16">لا تتوفر صورة</text></svg>';
 
 interface ProductCardProps {
   product: Product;
+  qa: ProductCardQAProps;
   currency: Currency;
   isFavorite: boolean;
   onToggleFavorite: (product: Product) => void;
@@ -20,6 +22,7 @@ interface ProductCardProps {
 
 export function ProductCard({
   product,
+  qa,
   currency,
   isFavorite,
   onToggleFavorite,
@@ -40,15 +43,20 @@ export function ProductCard({
 
   return (
     <article
+      data-testid={`product-card-${qa.productId}`}
+      data-product-id={qa.productId}
+      data-product-slug={product.slug ?? undefined}
+      data-product-price={qa.price ?? undefined}
+      data-section-source={qa.sectionSource}
       data-storefront-product-id={product.id}
-      data-element-key="product-card"
+      data-element-key={`product.card.${qa.productId}`}
       data-product-name={product.name}
       data-price-yer={product.priceYER}
       data-previous-price-yer={hasRealDiscount ? product.originalPriceYER : undefined}
-      data-product-brand={product.brand}
-      data-product-rating={product.rating}
-      data-product-stock={product.stockCount}
-      data-product-category={product.category}
+      data-product-brand={qa.brand ?? undefined}
+      data-product-rating={qa.rating ?? undefined}
+      data-product-stock={qa.stock ?? undefined}
+      data-product-category={qa.category ?? undefined}
       className={`${widthClass} group min-w-0 cursor-pointer bg-white text-black`}
       onClick={() => onSelectProduct(product)}
       dir="rtl"
@@ -69,7 +77,7 @@ export function ProductCard({
         ) : null}
         <button
           type="button"
-          data-element-key="product-favorite"
+          data-element-key={`product.favorite.${qa.productId}`}
           aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
           onClick={(event) => {
             event.stopPropagation();
@@ -100,7 +108,7 @@ export function ProductCard({
           </div>
           <button
             type="button"
-            data-element-key="product-add-to-cart"
+            data-element-key={`product.cart.${qa.productId}`}
             disabled={!isAvailable || added}
             onClick={(event) => {
               event.stopPropagation();

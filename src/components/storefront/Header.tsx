@@ -8,6 +8,8 @@ import { getRecentSearches, saveRecentSearch, removeRecentSearch, clearRecentSea
 import { StoreLogo } from './StoreLogo';
 import { STORE_INFO } from './constants';
 import { LiteModeToggle } from './LiteModeToggle';
+import { Link } from '@tanstack/react-router';
+import { User } from 'lucide-react';
 
 interface HeaderProps {
   searchQuery: string;
@@ -115,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 bg-[var(--glass-bg)] backdrop-blur-xl px-3 sm:px-6 py-2 border-b border-[var(--color-border-default)] shadow-[var(--shadow-sm)] transition-colors dir-rtl">
+    <header data-qa-section="desktop-header" className="sticky top-0 z-40 bg-[var(--glass-bg)] backdrop-blur-xl px-3 sm:px-6 py-2 border-b border-[var(--color-border-default)] shadow-[var(--shadow-sm)] transition-colors dir-rtl">
       <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-3">
         {/* 1. Primary Action: Shopping Cart Button with Badge */}
         <motion.button
@@ -124,7 +126,8 @@ export const Header: React.FC<HeaderProps> = ({
           animate={isCartBouncing ? { y: [0, -6, 2, -3, 0], scale: [1, 1.15, 0.96, 1.05, 1] } : { y: 0, scale: 1 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
           onClick={onOpenCart}
-          aria-label="سلة التسوق"
+          data-element-key="header.cart"
+            aria-label="سلة التسوق"
           title="سلة التسوق"
           className="relative min-w-[44px] min-h-[44px] w-11 h-11 text-[var(--color-text-primary)] flex items-center justify-center rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] transition-all cursor-pointer shrink-0 shadow-sm"
         >
@@ -151,7 +154,8 @@ export const Header: React.FC<HeaderProps> = ({
           {onOpenWishlist && (
             <button
               onClick={onOpenWishlist}
-              aria-label="المفضلة"
+              data-element-key="header.wishlist"
+            aria-label="المفضلة"
               title="المفضلة"
               className="relative w-10 h-10 text-[var(--color-text-primary)] flex items-center justify-center rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] transition-all cursor-pointer shrink-0 shadow-sm"
             >
@@ -166,6 +170,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={onOpenNotifications}
+            data-element-key="header.notifications"
             aria-label="الإشعارات"
             title="الإشعارات"
             className="relative w-10 h-10 text-[var(--color-text-primary)] flex items-center justify-center rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] transition-all cursor-pointer shrink-0 shadow-sm"
@@ -175,6 +180,15 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="absolute top-1.5 right-1.5 bg-amber-400 border-2 border-[var(--color-bg)] w-2.5 h-2.5 rounded-full" />
             )}
           </button>
+
+          <Link
+            to="/account"
+            data-element-key="header.account"
+            aria-label="حسابي"
+            className="relative w-10 h-10 text-[var(--color-text-primary)] flex items-center justify-center rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)]"
+          >
+            <User className="w-4 h-4" />
+          </Link>
 
         </div>
 
@@ -198,6 +212,7 @@ export const Header: React.FC<HeaderProps> = ({
               }
             }}
             placeholder="ابحث عن المنتجات، الساعات، الإلكترونيات..."
+            data-element-key="header.search"
             aria-label="بحث عن المنتجات"
             className="w-full h-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] focus:border-[var(--color-primary)] rounded-full pr-10 pl-10 text-xs sm:text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] text-right focus:outline-none focus:ring-2 focus:ring-[#2F6BFF]/20 transition-all shadow-inner"
           />
@@ -357,6 +372,7 @@ export const Header: React.FC<HeaderProps> = ({
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={onOpenAppDownload}
+            data-element-key="header.install_app"
             aria-label="تثبيت التطبيق"
             title="تثبيت تطبيق إندكس ستور"
             className="hidden min-[420px]:flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl bg-black text-white hover:bg-neutral-900 transition-all cursor-pointer shrink-0 shadow-sm border border-neutral-800"
@@ -371,7 +387,8 @@ export const Header: React.FC<HeaderProps> = ({
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           onClick={onOpenTracker}
-          aria-label="تتبع الطلب"
+          data-element-key="cta.track_order"
+            aria-label="تتبع الطلب"
           className="hidden sm:flex w-10 h-10 sm:w-11 sm:h-11 items-center justify-center text-white border border-blue-500/30 rounded-2xl bg-[#2F6BFF] hover:bg-[#2458D8] transition-all cursor-pointer shrink-0 shadow-md shadow-blue-600/20"
           title="تتبع طلبي المباشر"
         >

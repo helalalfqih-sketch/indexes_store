@@ -24,8 +24,8 @@ const html = `<!doctype html><html><head><title>Isolated Store QA</title></head>
 <button type="button" data-element-key="filter-cheap" data-qa-action="local" aria-pressed="false"
 onclick="this.setAttribute('aria-pressed','true');document.querySelector('[data-qa-filter-state]').setAttribute('data-qa-filter-state',JSON.stringify({category:'all',sort:'default',minPrice:0,maxPrice:20000}));document.getElementById('expensive').hidden=true;document.getElementById('filter-panel').hidden=false">Under 20000</button>
 <button type="button" data-element-key="network-test" data-qa-action="local" onclick="Promise.allSettled([fetch('/orders',{method:'POST',body:'test'}),fetch('https://outside.invalid/read')])">Network probe</button>
-<article data-element-key="card" data-storefront-product-id="p-cheap" data-product-name="Cheap" data-price-yer="19900" data-product-category="watches">Cheap</article>
-<article id="expensive" data-element-key="card" data-storefront-product-id="p-expensive" data-product-name="Expensive" data-price-yer="59900">Expensive</article>
+<article data-testid="product-card-p-cheap" data-element-key="product.card.p-cheap" data-product-id="p-cheap" data-product-slug="cheap" data-section-source="catalog" data-product-name="Cheap" data-product-price="19900" data-product-category="watches">Cheap</article>
+<article id="expensive" data-testid="product-card-p-expensive" data-element-key="product.card.p-expensive" data-product-id="p-expensive" data-section-source="catalog" data-product-name="Expensive" data-product-price="59900">Expensive</article>
 <div id="filter-panel" role="dialog" hidden>Filtered</div>
 <form id="order-form"><button type="submit" data-element-key="submit" data-qa-action="local">Send</button></form>
 <input type="password" value="never-expose-this" id="private-input">
@@ -185,7 +185,7 @@ test("V3 MCP tools return real Chromium evidence and enforce isolated interactio
     ).toBe(true);
     const audit = await reader.callTool({ name: "full_store_audit", arguments: {} });
     expect(audit.isError).not.toBe(true);
-    expect(audit.structuredContent).toMatchObject({ summary: { total: 90, NOT_TESTED: 40 } });
+    expect(audit.structuredContent).toMatchObject({ pages: expect.arrayContaining([expect.objectContaining({ path: "/product/cheap" })]) });
     expect(contextsClosed).toBe(contextsOpened);
   } finally {
     await Promise.all(clients.map((client) => client.close()));

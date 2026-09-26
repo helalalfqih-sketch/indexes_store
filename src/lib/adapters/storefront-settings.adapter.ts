@@ -352,11 +352,11 @@ export function mapPublishedStorefrontSettings(
         subtitle: sections.testimonials?.subtitle || "ماذا يقول عملاؤنا عن اندكس ستور",
       },
       trustBadges: {
-        enabled: sections.trustBadges?.enabled ?? true,
-        badge1: sections.trustBadges?.badge1 || "توصيل سريع",
-        badge2: sections.trustBadges?.badge2 || "ضمان أصلي",
-        badge3: sections.trustBadges?.badge3 || "دعم 24/7",
-        badge4: (sections.trustBadges as any)?.badge4 || "استبدال وإرجاع",
+        enabled: sections.trustBadges?.enabled ?? false,
+        badge1: sections.trustBadges?.badge1 || "",
+        badge2: sections.trustBadges?.badge2 || "",
+        badge3: sections.trustBadges?.badge3 || "",
+        badge4: (sections.trustBadges as any)?.badge4 || "",
       },
     },
     shipping: {

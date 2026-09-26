@@ -86,6 +86,15 @@ function OfferRow({ product }: { product: Product }) {
       params={{ slug: product.slug }}
       className="group relative flex gap-3 rounded-3xl glass-float p-3 transition active:scale-[0.98] hover:border-primary/40 hover:shadow-lg"
       data-product-id={product.id}
+      data-testid={`product-card-${product.id}`}
+      data-element-key={`product.card.${product.id}`}
+      data-product-slug={product.slug}
+      data-product-name={product.name}
+      data-product-price={product.price}
+      data-product-category={product.categoryId}
+      data-product-rating={product.rating || undefined}
+      data-product-stock={product.stock}
+      data-section-source="offers"
     >
       <div className="relative shrink-0">
         <OptimizedImage

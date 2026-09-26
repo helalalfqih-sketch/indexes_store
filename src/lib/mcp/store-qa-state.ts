@@ -25,11 +25,9 @@ export async function readQaState(page: Page) {
     const candidates = all.map((el) => {
       const section = el.closest("section[id],[data-qa-section]");
       const scope = section?.getAttribute("data-qa-section") || section?.id || "page";
-      const card = el.closest("[data-storefront-product-id]");
+      const card = el.closest('[data-testid^="product-card-"]');
       const local = el.getAttribute("data-element-key") || el.getAttribute("data-testid") || el.id;
-      return local
-        ? `${scope}:${card?.getAttribute("data-storefront-product-id") || "ui"}:${local}`
-        : null;
+      return local ? `${scope}:${card?.getAttribute("data-product-id") || "ui"}:${local}` : null;
     });
     const counts = new Map<string, number>();
     candidates.forEach((k) => {
@@ -47,12 +45,12 @@ export async function readQaState(page: Page) {
     const keySelector = (el: Element) => {
       let selector = explicitSelector(el);
       if (!selector) return null;
-      const card = el.closest("[data-storefront-product-id]");
+      const card = el.closest('[data-testid^="product-card-"]');
       const section = el.closest("section[id],[data-qa-section]");
       if (card) {
         const cardSelector = attributeSelector(
-          "data-storefront-product-id",
-          card.getAttribute("data-storefront-product-id")!,
+          "data-product-id",
+          card.getAttribute("data-product-id")!,
         );
         selector = card === el ? cardSelector + selector : `${cardSelector} ${selector}`;
       }
@@ -94,17 +92,19 @@ export async function readQaState(page: Page) {
       return raw !== null && raw !== "" && Number.isFinite(Number(raw)) ? Number(raw) : null;
     };
     const products = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-storefront-product-id]"),
+      document.querySelectorAll<HTMLElement>('[data-testid^="product-card-"]'),
     )
       .slice(0, 500)
       .map((el, index) => ({
-        product_id: el.getAttribute("data-storefront-product-id"),
+        product_id: el.getAttribute("data-product-id"),
+        slug: el.getAttribute("data-product-slug"),
+        section_source: el.getAttribute("data-section-source"),
         section:
           el.closest("[data-qa-section],section[id]")?.getAttribute("data-qa-section") ||
           el.closest("section[id]")?.id ||
           null,
         name: el.getAttribute("data-product-name"),
-        price: numeric(el, "data-price-yer"),
+        price: numeric(el, "data-product-price"),
         previous_price: numeric(el, "data-previous-price-yer"),
         currency: "YER",
         brand: el.getAttribute("data-product-brand"),
@@ -122,10 +122,16 @@ export async function readQaState(page: Page) {
       try {
         const raw = JSON.parse(filter.getAttribute("data-qa-filter-state") || "{}");
         filters = Object.fromEntries(
-          ["category", "minPrice", "maxPrice", "brand", "rating", "sort", "query"].map((k) => [
-            k,
-            raw[k] ?? null,
-          ]),
+          [
+            "category",
+            "minPrice",
+            "maxPrice",
+            "priceRange",
+            "brand",
+            "rating",
+            "sort",
+            "query",
+          ].map((k) => [k, raw[k] ?? null]),
         );
       } catch {
         filters = null;
@@ -143,7 +149,8 @@ export async function readQaState(page: Page) {
       ),
       loaded_product_count: products.filter((p) => p.visible).length,
       truncated:
-        all.length > 1000 || document.querySelectorAll("[data-storefront-product-id]").length > 500,
+        all.length > 1000 ||
+        document.querySelectorAll('[data-testid^="product-card-"]').length > 500,
     };
   });
 }

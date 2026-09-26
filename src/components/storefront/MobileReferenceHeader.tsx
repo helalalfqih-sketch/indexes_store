@@ -36,6 +36,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
 }) => {
   return (
     <header
+      data-qa-section="mobile-header"
       className="sticky top-0 z-40 border-b border-white/10 bg-black text-white shadow-[0_1px_5px_rgba(0,0,0,0.22)] md:hidden"
       dir="rtl"
     >
@@ -44,6 +45,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           <button
             type="button"
             onClick={onOpenWishlist}
+            data-element-key="header.wishlist"
             aria-label="المفضلة"
             className="grid h-10 w-9 shrink-0 place-items-center text-white"
           >
@@ -62,12 +64,14 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
               if (event.key === "Enter") onSubmitSearch?.();
             }}
             placeholder="البحث"
+            data-element-key="header.search"
             aria-label="البحث عن المنتجات"
             className="min-w-0 flex-1 bg-transparent px-2 text-right text-[12px] font-medium text-black outline-none placeholder:text-neutral-500"
           />
           <button
             type="button"
             onClick={onSubmitSearch}
+            data-element-key="header.search.submit"
             aria-label="تنفيذ البحث"
             className="grid h-9 w-9 shrink-0 place-items-center border-r border-neutral-200 text-black"
           >
@@ -78,7 +82,8 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
         <button
           type="button"
           onClick={onOpenCart}
-          aria-label="السلة"
+          data-element-key="header.cart"
+            aria-label="السلة"
           className="relative grid h-10 w-9 shrink-0 place-items-center text-white"
         >
           <ShoppingCart className="h-[22px] w-[22px] stroke-[1.8]" />
@@ -91,7 +96,8 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
         <button
           type="button"
           onClick={onOpenNotifications}
-          aria-label="الإشعارات"
+          data-element-key="header.notifications"
+            aria-label="الإشعارات"
           className="relative grid h-10 w-9 shrink-0 place-items-center text-white"
         >
           <Bell className="h-[21px] w-[21px] stroke-[1.8]" />
@@ -117,6 +123,7 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
           <button
             type="button"
             key={category.id}
+            data-element-key={`category.nav.${category.id}`}
             aria-label={category.label}
             onClick={() => onSelectCategory?.(category.id)}
             className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${index === 0 ? "font-black text-white" : "text-white/75"}`}

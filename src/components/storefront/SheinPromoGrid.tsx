@@ -76,7 +76,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                 ترند المتجر
               </span>
               <h4 className="mt-2 text-base font-black">أجهزة وساعات</h4>
-              <p className="text-[11px] text-neutral-400 mt-1">تكنولوجيا أصلية بضمان حقيقي</p>
+              <p className="text-[11px] text-neutral-400 mt-1">تصفح المنتجات المتاحة</p>
             </div>
             <div className="flex items-center text-xs font-bold text-[#F93A00] group-hover:gap-2 transition-all">
               <span>تصفح القسم</span>
@@ -96,7 +96,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                 صوت فائق
               </span>
               <h4 className="mt-2 text-base font-black">سماعات وصوتيات</h4>
-              <p className="text-[11px] text-neutral-400 mt-1">عزل ضوضاء ونقاء استثنائي</p>
+              <p className="text-[11px] text-neutral-400 mt-1">تصفح سماعات المتجر</p>
             </div>
             <div className="flex items-center text-xs font-bold text-white group-hover:gap-2 transition-all">
               <span>عرض المنتجات</span>
@@ -125,7 +125,9 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                   </div>
 
                   <div className="mt-2 text-xl font-black tracking-tight text-[#F93A00] sm:mt-3 sm:text-5xl">
-                    {activeProduct.discountBadge || "خصم خاص"}
+                    {activeProduct.originalPriceYER > activeProduct.priceYER
+                      ? `${Math.round((1 - activeProduct.priceYER / activeProduct.originalPriceYER) * 100)}% خصم`
+                      : "منتج مختار"}
                   </div>
 
                   <h3 className="mt-1 line-clamp-2 text-[12px] font-black leading-tight text-neutral-900 dark:text-white sm:mt-2 sm:text-2xl">
@@ -135,7 +137,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                   <p className="mt-1 line-clamp-2 text-[9px] leading-relaxed text-neutral-600 dark:text-neutral-400 sm:text-sm">
                     {activeProduct.subtitle ||
                       activeProduct.description ||
-                      "تسوق الآن بالسعر والتوفر الحقيقي مع ضمان التوصيل"}
+                      "تصفح السعر والتوفر المسجلين للمنتج"}
                   </p>
 
                   <div className="mt-2 flex items-center gap-2 sm:mt-3 sm:gap-3">
@@ -252,14 +254,14 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                 INDEXES VIP
               </span>
               <span className="rounded bg-[#F93A00]/10 text-[#F93A00] text-[10px] font-black px-2 py-0.5">
-                الأصلي
+                من المتجر
               </span>
             </div>
             <div className="my-2">
               <h4 className="text-base font-black text-neutral-900 dark:text-white">
                 إلكترونيات مختارة
               </h4>
-              <p className="text-xs text-neutral-500">فحص وضمان حقيقي قبل التسليم</p>
+              <p className="text-xs text-neutral-500">استفسر عن التفاصيل قبل الطلب</p>
             </div>
             <div className="flex items-center text-xs font-bold text-[#F93A00] group-hover:gap-2 transition-all">
               <span>تسوق الكتالوج</span>
@@ -273,7 +275,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
             </div>
             <div className="text-right leading-tight">
               <span className="text-xs font-black text-[#F93A00] block">
-                توصيل سريع لجميع المحافظات
+                تفاصيل التوصيل عند تأكيد الطلب
               </span>
               <span className="text-[11px] text-neutral-600 dark:text-neutral-400 font-medium">
                 خطوات طلب واضحة وآمنة

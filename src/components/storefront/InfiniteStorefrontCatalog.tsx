@@ -3,6 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchCatalogPage } from "@/lib/actions/catalog-page.actions";
 import { mapProductionProductToDesignProduct } from "@/components/storefront/adapters";
 import { ProductCard } from "@/components/storefront/ProductCard";
+import { productCardQA } from "@/lib/qa/product-card-contract";
 import { ProductGridSkeleton } from "@/components/storefront/SkeletonLoader";
 import type { PriceRangePreset } from "@/components/storefront/CategoryBar";
 import { matchesProductFilters, sortProducts } from "@/components/storefront/product-filters";
@@ -151,6 +152,7 @@ export function InfiniteStorefrontCatalog({
             <ProductCard
               key={product.id}
               product={product}
+              qa={productCardQA(product, selectedCategoryId === "all" ? "catalog" : "category_page")}
               currency={currency}
               isFavorite={favorites.includes(product.id)}
               onToggleFavorite={onToggleFavorite}

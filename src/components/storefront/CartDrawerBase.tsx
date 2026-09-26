@@ -2,7 +2,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { CartItem, Currency, Product } from "./types";
 import { formatPrice } from "./currency";
-import { STORE_INFO } from "./constants";
 import {
   ShoppingCart,
   X,
@@ -48,21 +47,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   catalogProducts = [],
   onAddRecommended,
 }) => {
-  const [coupon, setCoupon] = useState("");
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
-  const [couponDiscount, setCouponDiscount] = useState(0);
-  const [couponError, setCouponError] = useState("");
-  const [couponAppliedText, setCouponAppliedText] = useState("");
 
   const subtotalYER = cartItems.reduce(
     (sum, item) => sum + item.product.priceYER * item.quantity,
     0,
   );
 
-  const isFreeShipping = subtotalYER >= STORE_INFO.freeShippingThresholdYER;
-  const shippingFeeYER = isFreeShipping || cartItems.length === 0 ? 0 : 3000;
-  const discountAmountYER = (subtotalYER * couponDiscount) / 100;
-  const totalYER = subtotalYER - discountAmountYER + shippingFeeYER;
+  // Delivery fees are confirmed with the customer; this is the product subtotal.
+  const totalYER = subtotalYER;
   const selectedCount = selectedItemIds.length;
   const recommendedProducts = catalogProducts
     .filter((product) => !cartItems.some((item) => item.product.id === product.id))
@@ -88,29 +81,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const removeSelectedItems = () => {
     selectedItemIds.forEach((productId) => onRemoveItem(productId));
     setSelectedItemIds([]);
-  };
-
-  const progressPercent = Math.min(
-    100,
-    Math.round((subtotalYER / STORE_INFO.freeShippingThresholdYER) * 100),
-  );
-
-  const applyCoupon = (codeToApply?: string) => {
-    const code = (codeToApply || coupon).trim().toUpperCase();
-    if (code === "INDEXES10") {
-      setCouponDiscount(10);
-      setCouponAppliedText("تم تطبيق كود الخصم (10% خصم)! 🎉");
-      setCouponError("");
-      setCoupon("INDEXES10");
-    } else if (code === "INDEXES20") {
-      setCouponDiscount(20);
-      setCouponAppliedText("تم تطبيق كود الخصم (20% خصم VIP)! 🔥");
-      setCouponError("");
-      setCoupon("INDEXES20");
-    } else {
-      setCouponError("كود الخصم غير صحيح أو منتهي الصلاحية");
-      setCouponAppliedText("");
-    }
   };
 
   return (
@@ -197,38 +167,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </div>
               )}
 
-              {/* Free Shipping Progress Indicator */}
-              <div className="bg-[#eef6ff] dark:bg-[var(--color-surface-2)] p-3.5 rounded-2xl border border-[#b8d7ff] dark:border-[var(--color-border-default)] mb-4 relative overflow-hidden">
-                <div className="flex justify-between items-center text-xs text-[var(--color-text-secondary)] font-bold mb-2">
-                  <span className="flex items-center gap-1.5">
-                    <Truck className="w-4 h-4 text-[#2F6BFF]" />
-                    {isFreeShipping ? (
-                      <strong className="text-emerald-400 font-black">
-                        🎉 مبروك! حصلت على شحن مجاني!
-                      </strong>
-                    ) : (
-                      <span>
-                        تبقي{" "}
-                        <strong className="text-[#2F6BFF] font-black">
-                          {formatPrice(STORE_INFO.freeShippingThresholdYER - subtotalYER, currency)}
-                        </strong>{" "}
-                        للحصول على شحن مجاني
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-amber-400 font-mono font-bold">{progressPercent}%</span>
-                </div>
-                <div className="w-full bg-[var(--color-surface-3)] h-2 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progressPercent}%` }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="bg-gradient-to-r from-[#2F6BFF] to-blue-400 h-full rounded-full"
-                  />
-                </div>
-              </div>
-
-              {/* Item List */}
+            {/* Item List */}
               {cartItems.length === 0 ? (
                 <div className="py-16 text-center text-[var(--color-text-muted)] flex flex-col items-center gap-3">
                   <div className="w-20 h-20 rounded-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] flex items-center justify-center text-[var(--color-text-muted)]">
@@ -385,58 +324,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             {/* Footer Summary & Checkout */}
             {cartItems.length > 0 && (
               <div className="shrink-0 border-t border-[var(--color-border-default)] bg-[var(--color-surface-1)] pt-3 space-y-3 mt-3">
-                {/* Coupon Code Section */}
-                <div>
-                  <div className="flex gap-2">
-                    <div className="relative flex-grow">
-                      <input
-                        type="text"
-                        value={coupon}
-                        onChange={(e) => setCoupon(e.target.value)}
-                        placeholder="كود الخصم (INDEXES10)"
-                        className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl pl-8 pr-3 py-2 text-xs text-[var(--color-text-primary)] uppercase placeholder-[var(--color-text-muted)] focus:border-[#2F6BFF] outline-none font-mono"
-                      />
-                      <Tag className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
-                    </div>
-                    <button
-                      onClick={() => applyCoupon()}
-                      className="bg-[#2F6BFF]/15 hover:bg-[#2F6BFF] text-[#2F6BFF] hover:text-white border border-[#2F6BFF]/30 text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shrink-0"
-                    >
-                      تطبيق
-                    </button>
-                  </div>
-
-                  {/* Coupon Quick Preset Chips */}
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <span className="text-[10px] text-[var(--color-text-muted)] font-medium">
-                      جرّب:
-                    </span>
-                    <button
-                      onClick={() => applyCoupon("INDEXES10")}
-                      className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md hover:bg-blue-500/20 transition-colors font-mono font-bold"
-                    >
-                      INDEXES10 (-10%)
-                    </button>
-                    <button
-                      onClick={() => applyCoupon("INDEXES20")}
-                      className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-md hover:bg-amber-500/20 transition-colors font-mono font-bold"
-                    >
-                      INDEXES20 (-20% VIP)
-                    </button>
-                  </div>
-
-                  {couponAppliedText && (
-                    <p className="text-emerald-400 text-xs mt-1.5 flex items-center gap-1 font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>{couponAppliedText}</span>
-                    </p>
-                  )}
-                  {couponError && (
-                    <p className="text-rose-400 text-xs mt-1 font-medium">{couponError}</p>
-                  )}
-                </div>
-
-                {/* Price Calculations */}
                 <div className="space-y-2 text-xs text-[var(--color-text-secondary)] pt-3 border-t border-[var(--color-border-subtle)]">
                   <div className="flex justify-between font-medium">
                     <span>المجموع الفرعي:</span>
@@ -445,26 +332,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     </span>
                   </div>
 
-                  {couponDiscount > 0 && (
-                    <div className="flex justify-between text-emerald-400 font-bold">
-                      <span>خصم الكوبون ({couponDiscount}%):</span>
-                      <span>-{formatPrice(discountAmountYER, currency)}</span>
-                    </div>
-                  )}
-
                   <div className="flex justify-between font-medium">
-                    <span>رسوم الشحن والتوصيل:</span>
-                    <span className="font-bold text-[var(--color-text-primary)]">
-                      {isFreeShipping ? (
-                        <strong className="text-emerald-400 font-black">مجاني 🚚</strong>
-                      ) : (
-                        formatPrice(shippingFeeYER, currency)
-                      )}
-                    </span>
+                    <span>رسوم التوصيل:</span>
+                    <span>تُحدد عند تأكيد الطلب عبر واتساب</span>
                   </div>
 
                   <div className="flex justify-between items-center text-sm font-black text-[var(--color-text-primary)] pt-2.5 border-t border-[var(--color-border-default)]">
-                    <span>الإجمالي النهائي:</span>
+                    <span>مجموع المنتجات:</span>
                     <span className="text-[#2F6BFF] text-lg font-black">
                       {formatPrice(totalYER, currency)}
                     </span>
@@ -473,7 +347,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
                 {/* Checkout Button */}
                 <button
-                  onClick={() => onCheckout(couponDiscount)}
+                  onClick={() => onCheckout(0)}
                   className="w-full bg-gradient-to-r from-[#2F6BFF] to-[#3B75FF] hover:from-[#2458D8] hover:to-[#2F6BFF] text-white font-black py-3.5 rounded-2xl shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 transition-all active:scale-98 text-sm cursor-pointer"
                 >
                   <span>المتابعة لإتمام الطلب</span>

@@ -348,10 +348,10 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
               <div className="p-5 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border-default)] space-y-3">
                 <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
                   <ShieldCheck className="w-5 h-5" />
-                  <span>ضمان متجر إندكس الشامل</span>
+                  <span>الضمان والاستبدال</span>
                 </div>
                 <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                  جميع الأجهزة الإلكترونية والساعات متوفرة بضمان معتمد لمدة سنة كاملة ضد العيوب المصنعية. في حال وجود أي مشكلة يتم الاستبدال الفوري.
+                  استفسر من خدمة العملاء عن شروط الضمان والاستبدال الخاصة بطلبك.
                 </p>
               </div>
 
@@ -363,7 +363,7 @@ export const PostPurchaseHubModal: React.FC<PostPurchaseHubModalProps> = ({
                 <ul className="text-xs text-[var(--color-text-secondary)] space-y-2 list-disc list-inside leading-relaxed">
                   <li>شحن الساعات الذكية والسماعات بكرت شحن أصلي بقدرة 5V/1A لتجنب تلف البطارية.</li>
                   <li>عدم استخدام الساعات في المياه الساخنة أو السونا.</li>
-                  <li>احتفظ بكرتون المنتج وفاتورة الطلب للاستفادة من الضمان.</li>
+                  <li>احتفظ بكرتون المنتج وفاتورة الطلب للرجوع إلى تفاصيل الطلب.</li>
                 </ul>
               </div>
             </div>

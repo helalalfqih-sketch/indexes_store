@@ -970,11 +970,11 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                         </div>
                         <div className="p-2.5 bg-black/40 rounded-xl border border-white/10 flex items-center gap-2">
                           <Check className="w-4 h-4 text-emerald-400" />
-                          <span>ضمن الفئات الأعلى تقييماً وطلباً في المتجر</span>
+                          <span>ضمن الفئة التي اخترتها</span>
                         </div>
                         <div className="p-2.5 bg-black/40 rounded-xl border border-white/10 flex items-center gap-2">
                           <Check className="w-4 h-4 text-emerald-400" />
-                          <span>متوفر حالياً للتسليم الفوري مع الضمان</span>
+                          <span>تحقق من توفر المنتج وتفاصيل تسليمه قبل الطلب</span>
                         </div>
                       </div>
                     </div>
@@ -990,15 +990,15 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                       <div className="space-y-2 text-xs text-gray-300">
                         <div className="p-2.5 bg-black/40 rounded-xl border border-white/10">
                           <span className="font-bold text-white block mb-0.5">📦 محتويات العبوة:</span>
-                          <span>المنتج الأصلي + كرت الضمان المعتمد + دليل الاستخدام</span>
+                          <span>اطلب من خدمة العملاء تأكيد محتويات العبوة</span>
                         </div>
                         <div className="p-2.5 bg-black/40 rounded-xl border border-white/10">
                           <span className="font-bold text-white block mb-0.5">🛡️ الضمان والاستبدال:</span>
-                          <span>ضمان الفحص التجريبي مع إمكانية الاستبدال مجاناً</span>
+                          <span>اطلب شروط الضمان والاستبدال الخاصة بالمنتج</span>
                         </div>
                         <div className="p-2.5 bg-black/40 rounded-xl border border-white/10">
                           <span className="font-bold text-white block mb-0.5">🚚 التوصيل:</span>
-                          <span>توصيل سريع ودفع آمن عند الاستلام</span>
+                          <span>تُحدد تفاصيل التوصيل عند تأكيد الطلب</span>
                         </div>
                       </div>
                     </div>
@@ -1054,7 +1054,7 @@ export const ProductUniverseModal: React.FC<ProductUniverseModalProps> = ({
                             </p>
                             <div className="mt-2 pt-2 border-t border-gray-800 text-[10px] space-y-1 text-gray-300">
                               <div>التوفر: {prod.inStock ? 'متوفر' : 'غير متوفر'}</div>
-                              <div>الضمان: متوفر مع صيانة</div>
+
                             </div>
                           </div>
 

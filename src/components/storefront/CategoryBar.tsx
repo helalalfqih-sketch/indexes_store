@@ -173,6 +173,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 
   return (
     <div
+      data-qa-section="filters"
       data-element-key="catalog-filters"
       data-qa-filter-state={JSON.stringify({
         category: selectedCategoryId,
@@ -211,7 +212,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
           return (
             <button
               key={cat.id}
-              data-element-key={`filter-category-${cat.id}`}
+              data-element-key={`category.nav.${cat.id}`}
               data-qa-action="local"
               type="button"
               aria-label={`تصفية الفئة: ${cat.name}`}
@@ -325,7 +326,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               }`}
               title="تبديل الترتيب بين المنخفض والمرتفع"
               aria-label="سعر منخفض/مرتفع"
-              data-element-key="filter-price-sort"
+              data-element-key="filter.price"
               data-qa-action="local"
             >
               <ArrowUpDown className="w-3 h-3 text-[#2F6BFF]" />
@@ -349,7 +350,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               aria-label={`ترتيب المنتجات: ${currentSortObj.label}`}
-              data-element-key="filter-sort-menu"
+              data-element-key="filter.sort"
               data-qa-action="local"
               aria-expanded={isDropdownOpen}
               className={`flex items-center gap-1.5 border px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
@@ -424,7 +425,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               }`}
               title="فلترة حسب العلامة التجارية"
               aria-label="العلامة"
-              data-element-key="filter-brand-menu"
+              data-element-key="filter.brand"
               data-qa-action="local"
               aria-expanded={isBrandDrawerOpen}
             >
@@ -454,7 +455,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               }`}
               title="فلترة حسب التقييم"
               aria-label="التقييم"
-              data-element-key="filter-rating-menu"
+              data-element-key="filter.rating"
               data-qa-action="local"
               aria-expanded={isRatingDrawerOpen}
             >
@@ -559,7 +560,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 
             <button
               onClick={handleResetAllFilters}
-              data-element-key="filter-reset"
+              data-element-key="filter.reset"
               data-qa-action="local"
               aria-label="إعادة ضبط جميع الفلاتر"
               className="text-[11px] font-extrabold text-rose-400 hover:text-rose-300 transition-colors cursor-pointer flex items-center gap-1 mr-auto"

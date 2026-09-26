@@ -70,6 +70,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
               type="button"
               whileTap={{ scale: 0.94 }}
               onClick={() => activate(tab.key)}
+              data-element-key={`header.${tab.key}`}
               aria-label={tab.ariaLabel}
               className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${isActive ? "font-black text-black" : "text-neutral-500"}`}
             >

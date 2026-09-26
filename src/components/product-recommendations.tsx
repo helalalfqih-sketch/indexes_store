@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Sparkles, Heart } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
+import { productCardQA } from "@/lib/qa/product-card-contract";
 import { fetchProductsByCategory, fetchProducts } from "@/lib/actions/product.actions";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product } from "@/lib/store-data";
@@ -96,7 +97,7 @@ export function ProductRecommendations({ currentProductId, categoryId, productNa
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {recommendations.map((p) => (
-          <ProductCard key={p.id} product={p as unknown as Product} />
+          <ProductCard key={p.id} product={p as unknown as Product} qa={productCardQA(p, "catalog")} />
         ))}
       </div>
     </section>

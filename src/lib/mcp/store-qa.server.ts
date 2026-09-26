@@ -50,7 +50,22 @@ export async function fullStoreAudit(url: string, browse: typeof withPage = with
   const start = Date.now();
   const base = new URL(url);
   const pages = [];
-  for (const path of ["/", "/search", "/offers", "/account", "/cart"]) {
+  const productSample = await inspectQa(base.origin + "/", "desktop", "products", browse).catch(
+    () => null,
+  );
+  const slug =
+    productSample && "products" in productSample && Array.isArray(productSample.products)
+      ? productSample.products.find((p) => p.slug)?.slug
+      : null;
+  const routes = [
+    "/",
+    "/search",
+    "/offers",
+    "/account",
+    "/cart",
+    ...(slug ? [`/product/${encodeURIComponent(slug)}`] : []),
+  ];
+  for (const path of routes) {
     for (const device of ["desktop", "mobile"] as const) {
       if (Date.now() - start > 40_000) {
         const checks = QA_MATRIX.map((id) => ({
@@ -71,20 +86,40 @@ export async function fullStoreAudit(url: string, browse: typeof withPage = with
       }
     }
   }
-  const checks = pages.flatMap((p) => p.checks);
+  const checks = pages.flatMap((p) =>
+    p.checks.map((check) => ({
+      ...check,
+      route: p.path,
+      device: p.device,
+      element_key: check.id === "ui.stable_keys" ? "critical_ui" : check.id,
+      expected: "Verified against rendered DOM evidence",
+      actual: check.status,
+    })),
+  );
+  const summary = summarizeAudit(checks);
   return {
     matrix_version: "3.0-foundation",
     pages,
-    summary: summarizeAudit(checks),
+    summary,
+    v3_qa_report: {
+      total_checks: summary.total,
+      passed: summary.PASS,
+      failed: summary.FAIL,
+      blocked: summary.BLOCKED,
+      not_tested: summary.NOT_TESTED,
+      evidence: checks,
+    },
     elapsed_ms: Date.now() - start,
-    exclusions: [
-      {
-        page: "product",
-        status: "NOT_TESTED",
-        reason: "A real product route must be supplied in a subsequent journey.",
-      },
-    ],
+    exclusions: slug
+      ? []
+      : [
+          {
+            page: "product",
+            status: "BLOCKED",
+            reason: "No real product slug available from the loaded homepage.",
+          },
+        ],
     scope:
-      "Five routes × two viewports. Currently loaded cards only. Unsupported assertions stay NOT_TESTED; no store-wide quality claim.",
+      "Five routes and a real sampled product route when available, two viewports. Currently loaded cards only. Unsupported assertions stay NOT_TESTED.",
   };
 }
