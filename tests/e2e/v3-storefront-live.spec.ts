@@ -9,9 +9,10 @@ const state = async (page: Page) =>
   JSON.parse((await page.locator("#store-products").getAttribute("data-qa-filter-state")) || "{}");
 const prices = async (page: Page) =>
   Promise.all(
-    (await cards(page).all()).map(async (card) =>
-      Number(await card.getAttribute("data-product-price")),
-    ),
+    (await cards(page).all()).map(async (card) => {
+      const value = await card.getAttribute("data-product-price");
+      return value === null || value.trim() === "" ? NaN : Number(value);
+    }),
   );
 
 for (const device of ["desktop", "mobile"] as const) {
@@ -20,7 +21,19 @@ for (const device of ["desktop", "mobile"] as const) {
       viewport: device === "mobile" ? { width: 390, height: 844 } : { width: 1440, height: 1000 },
     });
     test.beforeEach(async ({ page }) => {
-      if (process.env.VERCEL_SHARE_URL) await page.goto(process.env.VERCEL_SHARE_URL);
+      const base = process.env.PLAYWRIGHT_TEST_BASE_URL;
+      const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+      if (!base || !secret) return;
+      const previewOrigin = new URL(base).origin;
+      await page.route("**/*", (route) => {
+        if (new URL(route.request().url()).origin !== previewOrigin) return route.continue();
+        return route.continue({
+          headers: {
+            ...route.request().headers(),
+            "x-vercel-protection-bypass": secret,
+          },
+        });
+      });
     });
     test("critical keys, routes and real product data", async ({ page }) => {
       await page.goto("/");
@@ -45,7 +58,10 @@ for (const device of ["desktop", "mobile"] as const) {
       }
       for (const card of await cards(page).all()) {
         expect(await card.getAttribute("data-product-id")).toBeTruthy();
-        expect(Number.isFinite(Number(await card.getAttribute("data-product-price")))).toBe(true);
+        const rawPrice = await card.getAttribute("data-product-price");
+        expect(rawPrice).toBeTruthy();
+        expect(Number.isFinite(Number(rawPrice))).toBe(true);
+        expect(Number(rawPrice)).toBeGreaterThan(0);
         expect(await card.getAttribute("data-section-source")).toBe("catalog");
       }
       const slug = await cards(page).first().getAttribute("data-product-slug");
@@ -56,7 +72,7 @@ for (const device of ["desktop", "mobile"] as const) {
         await expect(page.locator("body")).not.toBeEmpty();
       }
     });
-    test("price, brand, rating, sorting and reset use rendered card values", async ({ page }) => {
+    test("price, brand and sorting use rendered card values", async ({ page }) => {
       await page.goto("/");
       await expect(cards(page).first()).toBeVisible({ timeout: 20_000 });
       for (const [preset, matches] of [
@@ -70,7 +86,7 @@ for (const device of ["desktop", "mobile"] as const) {
           .poll(
             async () => {
               const actual = await prices(page);
-              return actual.length > 0 && actual.every(matches);
+              return actual.length > 0 && actual.every((n) => Number.isFinite(n) && matches(n));
             },
             { message: `Observed catalog prices must match ${preset}` },
           )
@@ -88,7 +104,8 @@ for (const device of ["desktop", "mobile"] as const) {
           .poll(async () => {
             const actual = await prices(page);
             return (
-              actual.length > 0 && actual.every((n, i) => i === 0 || ordered(actual[i - 1], n))
+              actual.length > 0 &&
+              actual.every((n, i) => Number.isFinite(n) && (i === 0 || ordered(actual[i - 1], n)))
             );
           })
           .toBe(true);
@@ -117,14 +134,37 @@ for (const device of ["desktop", "mobile"] as const) {
           ...brand!.keywords.map((alias) => alias.toLowerCase()),
         ]).toContain((await card.getAttribute("data-product-brand"))?.toLowerCase());
       }
+    });
+    test("rating filter uses verified rendered ratings", async ({ page }) => {
+      await page.goto("/");
+      await expect(cards(page).first()).toBeVisible({ timeout: 20_000 });
       await key(page, "filter.rating").click();
       await expect(key(page, "filter-rating-4.0")).toBeVisible();
       await page.waitForTimeout(350);
       await key(page, "filter-rating-4.0").click();
       await expect.poll(() => state(page).then((s) => s.rating)).toContain("4.0");
       expect(await cards(page).count()).toBeGreaterThan(0);
-      for (const card of await cards(page).all())
-        expect(Number(await card.getAttribute("data-product-rating"))).toBeGreaterThanOrEqual(4);
+      for (const card of await cards(page).all()) {
+        const rating = await card.getAttribute("data-product-rating");
+        expect(rating).toBeTruthy();
+        expect(Number(rating)).toBeGreaterThanOrEqual(4);
+      }
+    });
+    test("reset clears combined filter state", async ({ page }) => {
+      await page.goto("/");
+      await expect(cards(page).first()).toBeVisible({ timeout: 20_000 });
+      await key(page, "filter-price-under-20k").click();
+      await key(page, "filter.sort").click();
+      await key(page, "filter-sort-price-low").click();
+      await key(page, "filter.brand").click();
+      await expect(key(page, "filter-brand-indexes")).toBeVisible();
+      await page.waitForTimeout(350);
+      await key(page, "filter-brand-indexes").click();
+      await key(page, "filter.rating").click();
+      await expect(key(page, "filter-rating-4.0")).toBeVisible();
+      await page.waitForTimeout(350);
+      await key(page, "filter-rating-4.0").click();
+      await expect.poll(() => state(page).then((s) => s.rating)).toContain("4.0");
       await key(page, "filter.reset").click();
       await expect
         .poll(() => state(page))
