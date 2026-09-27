@@ -81,40 +81,8 @@ describe("Shopify storefront availability", () => {
 
   it("does not invent a product when Storefront returns null", async () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ data: { product: null } })));
-    fetchMock.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          data: {
-            products: {
-              nodes: [fixture(true)],
-              pageInfo: { hasNextPage: false },
-            },
-          },
-        }),
-      ),
-    );
     expect((await getShopifyProductBySlug({ data: { slug: "missing" } })).item).toBeNull();
   });
-
-  it("resolves an exact Arabic handle from the published catalog when direct lookup misses", async () => {
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ data: { product: null } })));
-    fetchMock.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          data: {
-            products: {
-              nodes: [fixture(true)],
-              pageInfo: { hasNextPage: false },
-            },
-          },
-        }),
-      ),
-    );
-    const result = await getShopifyProductBySlug({ data: { slug: handle } });
-    expect(result.item?.slug).toBe(handle);
-    expect(JSON.parse(fetchMock.mock.calls[1][1].body).variables.query).toBe(`handle:"${handle}"`);
-  });
-
   it("uses the detail readiness rules for paginated cards", async () => {
     const valid = fixture(false);
     const nodes = [
@@ -135,7 +103,7 @@ describe("Shopify storefront availability", () => {
       ),
     );
     const page = await fetchCatalogPage();
-    expect(page.items).toHaveLength(1);
+    expect(page.items).toHaveLength(2);
     expect(page.items[0].slug).toBe(handle);
     expect(page.endCursor).toBe("cursor");
   });

@@ -21,7 +21,11 @@ import {
 import { fetchCategories } from "@/lib/actions/category.actions";
 import { fallbackProducts, toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
 import type { ProductDTO } from "@/lib/domain/product";
-import { isCatalogProductReady, shouldUseDemoCatalog } from "@/lib/catalog-readiness";
+import {
+  isCatalogProductReady,
+  isProductDetailReady,
+  shouldUseDemoCatalog,
+} from "@/lib/catalog-readiness";
 import {
   listShopifyProducts,
   getShopifyProductBySlug,
@@ -121,7 +125,7 @@ export async function fetchProductBySlug(slug: string): Promise<LegacyProductSha
   try {
     const shopify = await getShopifyProductBySlug({ data: { slug: parsed } });
     if (shopify.configured) {
-      return shopify.item && isCatalogProductReady(shopify.item)
+      return shopify.item && isProductDetailReady(shopify.item)
         ? toLegacyProduct(shopify.item)
         : null;
     }
@@ -131,7 +135,7 @@ export async function fetchProductBySlug(slug: string): Promise<LegacyProductSha
   }
   try {
     const dto = await getProductBySlugFn({ data: { slug: parsed } });
-    if (dto && isCatalogProductReady(dto)) return enrichLegacy(toLegacyProduct(dto));
+    if (dto && isProductDetailReady(dto)) return enrichLegacy(toLegacyProduct(dto));
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] fetchProductBySlug fallback:", err);
   }

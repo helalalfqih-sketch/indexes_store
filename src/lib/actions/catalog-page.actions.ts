@@ -1,7 +1,7 @@
 import { listShopifyProductsPage } from "@/lib/shopify/catalog.functions";
 import { toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
 import { normalizeCategorySlug } from "@/lib/actions/category.actions";
-import { isCatalogProductReady } from "@/lib/catalog-readiness";
+import { isProductDetailReady } from "@/lib/catalog-readiness";
 
 export type CatalogPage = {
   items: LegacyProductShape[];
@@ -33,7 +33,7 @@ export async function fetchCatalogPage(
   }
 
   return {
-    items: page.items.filter(isCatalogProductReady).map(toLegacyProduct),
+    items: page.items.filter(isProductDetailReady).map(toLegacyProduct),
     endCursor: page.endCursor,
     hasNextPage: page.hasNextPage,
   };
