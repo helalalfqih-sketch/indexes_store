@@ -162,7 +162,11 @@ export function auditState(state: QaState) {
     },
     {
       id: "commercial.claims",
-      status: state.claims.some((claim) => !claim.verified) ? "BLOCKED" : "PASS",
+      status: state.claims.some((claim) => !claim.source)
+        ? "FAIL"
+        : state.claims.some((claim) => !claim.verified)
+          ? "BLOCKED"
+          : "PASS",
       severity: "medium",
       evidence: state.claims,
     },

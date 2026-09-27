@@ -116,12 +116,31 @@ export async function readQaState(page: Page) {
         visible: visible(el),
         evidence: "rendered-card-attributes", // stock is not authoritative inventory
       }));
-    const claims = Array.from(document.querySelectorAll<HTMLElement>("[data-claim-source]"))
+    const claimElements = new Set(document.querySelectorAll<HTMLElement>("[data-claim-source]"));
+    // Discover claims independently of instrumentation, including numeric discount badges.
+    const claimPattern = /خصم|شحن\s+مجاني|ضمان|رصيد|هدية|توفير|[-−]\s*[0-9٠-٩]+\s*[%٪]/;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const parent = node.parentElement;
+      if (
+        !parent ||
+        !claimPattern.test(
+          parent.childElementCount === 0 ? parent.textContent || "" : node.textContent || "",
+        ) ||
+        parent.closest("script,style,noscript,template,input,textarea,[contenteditable]")
+      )
+        continue;
+      claimElements.add(parent.closest<HTMLElement>("[data-claim-source]") || parent);
+    }
+    const claims = Array.from(claimElements)
       .filter(visible)
       .map((el) => ({
-        text: el.innerText.trim().slice(0, 200),
-        source: el.getAttribute("data-claim-source"),
-        verified: el.getAttribute("data-claim-verified") === "true",
+        text: (el.innerText || el.textContent || "").trim().slice(0, 200),
+        source: el.getAttribute("data-claim-source")?.trim() || null,
+        verified:
+          Boolean(el.getAttribute("data-claim-source")?.trim()) &&
+          el.getAttribute("data-claim-verified") === "true",
       }));
     const filter = document.querySelector<HTMLElement>("[data-qa-filter-state]");
     let filters: Record<string, unknown> | null = null;
