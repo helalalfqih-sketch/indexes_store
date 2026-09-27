@@ -365,11 +365,20 @@ export const listShopifyProductsPage = createServerFn({ method: "GET" })
 export const getShopifyProductBySlug = createServerFn({ method: "GET" })
   .inputValidator((raw: unknown) => z.object({ slug: z.string().trim().min(1) }).parse(raw))
   .handler(async ({ data }) => {
+    console.info("[shopify-product-request]", { handle: data.slug, configured: Boolean(config()) });
     if (!config()) return { configured: false as const, item: null as ProductDTO | null };
     const result = await storefront<{ product: ShopifyProduct | null }>(
       `query Product($handle: String!) { product(handle: $handle) { ${PRODUCT_FIELDS} } }`,
       { handle: data.slug },
     );
+    console.info("[shopify-product-lookup]", {
+      handle: data.slug,
+      found: Boolean(result.product),
+      productId: result.product?.id ?? null,
+      variantId: result.product?.variants.nodes[0]?.id ?? null,
+      imageCount: result.product?.images.nodes.length ?? 0,
+      price: result.product?.variants.nodes[0]?.price.amount ?? null,
+    });
     if (result.product) return { configured: true as const, item: mapProduct(result.product) };
     // Resolve handles that the direct lookup misses using the same published
     // Storefront catalog as the cards. Search results must still match exactly.
