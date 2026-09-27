@@ -370,7 +370,15 @@ export const getShopifyProductBySlug = createServerFn({ method: "GET" })
       `query Product($handle: String!) { product(handle: $handle) { ${PRODUCT_FIELDS} } }`,
       { handle: data.slug },
     );
-    return { configured: true as const, item: result.product ? mapProduct(result.product) : null };
+    if (result.product) return { configured: true as const, item: mapProduct(result.product) };
+    // Resolve handles that the direct lookup misses using the same published
+    // Storefront catalog as the cards. Search results must still match exactly.
+    const candidates = await fetchShopifyProductPages({
+      query: `handle:${JSON.stringify(data.slug)}`,
+      maxProducts: 10,
+    });
+    const match = candidates.find((product) => product.handle === data.slug);
+    return { configured: true as const, item: match ? mapProduct(match) : null };
   });
 
 export const getShopifyProductsByIds = createServerFn({ method: "GET" })
