@@ -351,8 +351,7 @@ export async function sendWhapiSelfSearchText(
 ): Promise<{ sent: true; messageId: string }> {
   const text = body.trim();
   if (!text || text.length > 4000) throw new WhapiError("INVALID_MESSAGE_BODY", 400);
-  const token =
-    runtime.token ?? process.env.WHAPI_SELF_SEARCH_TOKEN ?? process.env.WHAPI_TOKEN;
+  const token = runtime.token ?? process.env.WHAPI_SELF_SEARCH_TOKEN ?? process.env.WHAPI_TOKEN;
   if (!token?.trim()) throw new WhapiError("WHAPI_SELF_SEARCH_NOT_CONFIGURED", 503);
   const fetcher = runtime.fetcher ?? fetch;
   const destination = whapiSelfSearchChatId();
@@ -415,11 +414,7 @@ export async function sendWhapiSelfSearchText(
 
   const result = asRecord(await readBoundedJson(response, 64 * 1024));
   const message = asRecord(result.message);
-  if (
-    result.sent !== true ||
-    typeof message.id !== "string" ||
-    message.chat_id !== destination
-  ) {
+  if (result.sent !== true || typeof message.id !== "string" || message.chat_id !== destination) {
     throw new WhapiError("WHAPI_SELF_SEARCH_SEND_UNCONFIRMED", 502);
   }
   return { sent: true, messageId: message.id };
