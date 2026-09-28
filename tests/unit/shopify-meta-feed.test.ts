@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { parseCsvText } from "@/lib/catalog/catalog-csv";
 import {
   buildShopifyMetaFeed,
+  buildShopifyMetaMediaFeed,
   type FeedProduct,
   type FeedVariant,
   type StorefrontQuery,
@@ -179,6 +180,41 @@ describe("Shopify Meta feed", () => {
     const record = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
 
     expect(record["video[0].url"]).toBe("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  });
+
+  it("exports only the allowlisted Meta media pilot variant", async () => {
+    const pilot = product("7526486900821", [variant("42922671243349", "36500.00")]);
+    pilot.featuredImage = { url: "https://cdn.example.com/hazzaz-1.jpg" };
+    pilot.variants.nodes[0].image = null;
+    pilot.images.nodes = [
+      { url: "https://cdn.example.com/hazzaz-1.jpg" },
+      { url: "https://cdn.example.com/hazzaz-2.jpg" },
+      { url: "https://cdn.example.com/hazzaz-3.jpg" },
+      { url: "https://cdn.example.com/hazzaz-4.jpg" },
+      { url: "https://cdn.example.com/hazzaz-5.jpg" },
+    ];
+    const unrelated = product("999", [variant("999999", "1000.00")]);
+    const query = vi.fn().mockResolvedValue(page([unrelated, pilot]));
+
+    const result = await buildShopifyMetaMediaFeed(query as StorefrontQuery, origin);
+    const [headers, ...rows] = parseCsvText(result.csv);
+    const records = rows.map((row) => Object.fromEntries(headers.map((key, i) => [key, row[i]])));
+
+    expect(result.itemCount).toBe(1);
+    expect(records).toHaveLength(1);
+    expect(records[0].id).toBe("42922671243349");
+    expect(records[0].price).toBe("36500.00 YER");
+    expect(records[0].image_link).toBe("https://cdn.example.com/hazzaz-1.jpg");
+    expect(records[0]["additional_image_link[0]"]).toBe("https://cdn.example.com/hazzaz-2.jpg");
+    expect(records[0]["additional_image_link[3]"]).toBe("https://cdn.example.com/hazzaz-5.jpg");
+    expect(result.csv).not.toContain("999999");
+  });
+
+  it("never falls back to the full catalog when the media allowlist item is unavailable", async () => {
+    const query = vi.fn().mockResolvedValue(page([product("999", [variant("999999")])]));
+    await expect(buildShopifyMetaMediaFeed(query as StorefrontQuery, origin)).rejects.toThrow(
+      "No eligible",
+    );
   });
 
   it("does not publish an empty successful feed that could clear catalog products", async () => {
