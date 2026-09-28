@@ -99,12 +99,13 @@ function extractProducts(
   source: "products" | "collection",
 ): WhapiCatalogSearchProduct[] {
   const record = asRecord(payload);
-  const raw = Array.isArray(payload)
+  const nestedProducts = asRecord(record.data).products;
+  const raw: unknown[] = Array.isArray(payload)
     ? payload
     : Array.isArray(record.products)
       ? record.products
-      : Array.isArray(asRecord(record.data).products)
-        ? asRecord(record.data).products
+      : Array.isArray(nestedProducts)
+        ? nestedProducts
         : [];
   return raw.flatMap((value) => {
     const product = normalizeCatalogProduct(value, source);
