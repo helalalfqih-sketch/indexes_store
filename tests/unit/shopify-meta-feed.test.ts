@@ -24,6 +24,7 @@ const product = (id = "1", variants = [variant()]): FeedProduct => ({
   onlineStoreUrl: `https://ubhd8d-iz.myshopify.com/products/product-${id}`,
   featuredImage: null,
   images: { nodes: [] },
+  media: { nodes: [] },
   variants: { nodes: variants, pageInfo: end },
 });
 const page = (products: FeedProduct[]) => ({ products: { nodes: products, pageInfo: end } });
@@ -118,6 +119,66 @@ describe("Shopify Meta feed", () => {
     await expect(buildShopifyMetaFeed(duplicates as StorefrontQuery, origin)).rejects.toThrow(
       "Duplicate",
     );
+  });
+
+  it("exports each additional image in its own field and prefers MP4 video", async () => {
+    const item = product();
+    item.featuredImage = { url: "https://cdn.example.com/0.jpg" };
+    item.variants.nodes[0].image = null;
+    item.images.nodes = [
+      { url: "https://cdn.example.com/0.jpg" },
+      { url: "https://cdn.example.com/1.jpg" },
+      { url: "https://cdn.example.com/2.jpg" },
+      { url: "https://cdn.example.com/3.jpg" },
+      { url: "https://cdn.example.com/4.jpg" },
+    ];
+    item.media.nodes = [
+      {
+        __typename: "Video",
+        sources: [
+          {
+            url: "https://cdn.example.com/video.m3u8",
+            format: "m3u8",
+            mimeType: "application/x-mpegURL",
+          },
+          {
+            url: "https://cdn.example.com/video.mp4",
+            format: "mp4",
+            mimeType: "video/mp4",
+          },
+        ],
+      },
+    ];
+
+    const query = vi.fn().mockResolvedValue(page([item]));
+    const result = await buildShopifyMetaFeed(query as StorefrontQuery, origin);
+    const [headers, row] = parseCsvText(result.csv);
+    const record = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
+
+    expect(record.image_link).toBe("https://cdn.example.com/0.jpg");
+    expect(record["additional_image_link[0]"]).toBe("https://cdn.example.com/1.jpg");
+    expect(record["additional_image_link[1]"]).toBe("https://cdn.example.com/2.jpg");
+    expect(record["additional_image_link[2]"]).toBe("https://cdn.example.com/3.jpg");
+    expect(record["additional_image_link[3]"]).toBe("https://cdn.example.com/4.jpg");
+    expect(record["additional_image_link[4]"]).toBe("");
+    expect(record["video[0].url"]).toBe("https://cdn.example.com/video.mp4");
+  });
+
+  it("exports an external Shopify video URL", async () => {
+    const item = product();
+    item.media.nodes = [
+      {
+        __typename: "ExternalVideo",
+        originUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      },
+    ];
+
+    const query = vi.fn().mockResolvedValue(page([item]));
+    const result = await buildShopifyMetaFeed(query as StorefrontQuery, origin);
+    const [headers, row] = parseCsvText(result.csv);
+    const record = Object.fromEntries(headers.map((key, i) => [key, row[i]]));
+
+    expect(record["video[0].url"]).toBe("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   });
 
   it("does not publish an empty successful feed that could clear catalog products", async () => {
