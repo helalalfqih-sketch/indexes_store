@@ -8,6 +8,7 @@ import {
 } from "./whapi.server";
 import type { WhapiReadInput } from "./whapi.server";
 import { getSupabaseAdmin } from "@/integrations/supabase/client.server";
+import { handleWhapiSelfSearchMessage } from "@/lib/whapi-self-search.server";
 
 const PRIVATE_HEADERS = {
   "Cache-Control": "private, no-store",
@@ -45,16 +46,24 @@ export async function handleWhapiRead(
   }
 }
 
-async function persistWhapiInboxRows(rows: Record<string, unknown>[]): Promise<void> {
-  const { error } = await getSupabaseAdmin()
+async function persistWhapiInboxRows(rows: Record<string, unknown>[]): Promise<Set<string>> {
+  const { data, error } = await getSupabaseAdmin()
     .from("whatsapp_inbox" as never)
-    .upsert(rows as never, { onConflict: "message_id", ignoreDuplicates: true });
+    .upsert(rows as never, { onConflict: "message_id", ignoreDuplicates: true })
+    .select("message_id");
   if (error) throw new WhapiError("WHAPI_INBOX_WRITE_FAILED", 503);
+  const inserted = (data ?? []) as unknown as Array<{ message_id?: unknown }>;
+  return new Set(
+    inserted.flatMap((row) => (typeof row.message_id === "string" ? [row.message_id] : [])),
+  );
 }
 
 export async function handleWhapiWebhook(
   request: Request,
-  persistRows: (rows: Record<string, unknown>[]) => Promise<void> = persistWhapiInboxRows,
+  persistRows: (
+    rows: Record<string, unknown>[],
+  ) => Promise<void | Set<string>> = persistWhapiInboxRows,
+  selfSearch: typeof handleWhapiSelfSearchMessage = handleWhapiSelfSearchMessage,
 ): Promise<Response> {
   if (!verifyWhapiWebhook(request)) return json({ ok: false, code: "FORBIDDEN" }, 403);
   if (!/^application\/json(?:;|$)/i.test(request.headers.get("content-type") || "")) {
@@ -135,7 +144,30 @@ export async function handleWhapiWebhook(
     });
     if (rows.length === 0) return json({ ok: true, processed: 0 });
 
-    await persistRows(rows);
+    const persisted = await persistRows(rows);
+    const insertedIds =
+      persisted instanceof Set
+        ? persisted
+        : new Set(
+            rows.flatMap((row) => (typeof row.message_id === "string" ? [row.message_id] : [])),
+          );
+
+    for (const row of rows) {
+      const messageId = typeof row.message_id === "string" ? row.message_id : null;
+      if (!messageId || !insertedIds.has(messageId)) continue;
+      try {
+        await selfSearch({
+          id: messageId,
+          chatId: typeof row.chat_id === "string" ? row.chat_id : "",
+          text: typeof row.text_content === "string" ? row.text_content : null,
+        });
+      } catch (error) {
+        console.warn("[WHAPI_SELF_SEARCH_ERROR]", {
+          code: error instanceof WhapiError ? error.code : "WHAPI_SELF_SEARCH_FAILED",
+        });
+      }
+    }
+
     return json({ ok: true, processed: rows.length });
   } catch (error) {
     return failure(error);

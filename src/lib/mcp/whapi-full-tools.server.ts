@@ -85,6 +85,13 @@ async function run(t:T,args:Record<string,unknown>){
   }
   return data;
 }
+export async function runWhapiReadTool(toolName:string,args:Record<string,unknown>={}):Promise<unknown>{
+  const list=await manifest();
+  const tool=list.find((item)=>item.toolName===toolName);
+  if(!tool)throw new WhapiError("WHAPI_TOOL_NOT_FOUND",404);
+  if(!["GET","HEAD"].includes(tool.http.method.toUpperCase()))throw new WhapiError("WHAPI_READ_TOOL_REQUIRED",400);
+  return run(tool,args);
+}
 export async function registerFullWhapiTools(instance:any,readSec:unknown,writeSec:unknown){
   const list=await manifest();
   for(const t of list){
