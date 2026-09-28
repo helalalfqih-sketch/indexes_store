@@ -16,6 +16,18 @@ const DEFAULT_RESULT_LIMIT = 5;
 export const WHAPI_SELF_CHAT_ID = `${WHAPI_PHONE}@s.whatsapp.net`;
 export const WHAPI_SELF_SEARCH_REPLY_PREFIX = "🔎 اندكس";
 
+export function whapiSelfSearchPhone(): string {
+  const configured = process.env.WHAPI_SELF_SEARCH_PHONE?.trim() ?? "";
+  const digits = configured.replace(/\D/g, "");
+  if (!digits) return WHAPI_PHONE;
+  if (!/^\d{9,15}$/.test(digits)) throw new WhapiError("WHAPI_SELF_SEARCH_PHONE_INVALID", 503);
+  return digits;
+}
+
+export function whapiSelfSearchChatId(): string {
+  return `${whapiSelfSearchPhone()}@s.whatsapp.net`;
+}
+
 type RecordLike = Record<string, unknown>;
 
 export type WhapiCatalogSearchProduct = {
@@ -326,7 +338,7 @@ export function shouldHandleWhapiSelfSearch(input: {
 }): boolean {
   const text = input.text?.trim() ?? "";
   return (
-    input.chatId === WHAPI_SELF_CHAT_ID &&
+    input.chatId === whapiSelfSearchChatId() &&
     text.length > 0 &&
     text.length <= 120 &&
     !text.startsWith(WHAPI_SELF_SEARCH_REPLY_PREFIX)
@@ -339,11 +351,40 @@ export async function sendWhapiSelfSearchText(
 ): Promise<{ sent: true; messageId: string }> {
   const text = body.trim();
   if (!text || text.length > 4000) throw new WhapiError("INVALID_MESSAGE_BODY", 400);
-  const token = runtime.token ?? process.env.WHAPI_TOKEN;
-  if (!token?.trim()) throw new WhapiError("WHAPI_NOT_CONFIGURED", 503);
+  const token = runtime.token ?? process.env.WHAPI_SELF_SEARCH_TOKEN ?? process.env.WHAPI_TOKEN;
+  if (!token?.trim()) throw new WhapiError("WHAPI_SELF_SEARCH_NOT_CONFIGURED", 503);
   const fetcher = runtime.fetcher ?? fetch;
+  const destination = whapiSelfSearchChatId();
 
-  await readWhapi({ resource: "health", count: 1, offset: 0 }, { token, fetcher });
+  let healthResponse: Response;
+  try {
+    healthResponse = await fetcher(`${WHAPI_BASE}/health`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      redirect: "error",
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch {
+    throw new WhapiError("WHAPI_SELF_SEARCH_UNAVAILABLE", 502);
+  }
+  if (!healthResponse.ok) {
+    await healthResponse.body?.cancel().catch(() => undefined);
+    throw new WhapiError("WHAPI_SELF_SEARCH_HEALTH_FAILED", 502);
+  }
+  const health = asRecord(await readBoundedJson(healthResponse, 64 * 1024));
+  const status = asRecord(health.status);
+  const user = asRecord(health.user);
+  if (status.code !== 4 || status.text !== "AUTH") {
+    throw new WhapiError("WHAPI_SELF_SEARCH_NOT_AUTHORIZED", 503);
+  }
+  if (String(user.id) !== whapiSelfSearchPhone()) {
+    throw new WhapiError("WHAPI_SELF_SEARCH_PHONE_MISMATCH", 409);
+  }
+  const expectedChannel = process.env.WHAPI_SELF_SEARCH_CHANNEL_ID?.trim();
+  if (expectedChannel && health.channel_id !== expectedChannel) {
+    throw new WhapiError("WHAPI_SELF_SEARCH_CHANNEL_MISMATCH", 409);
+  }
 
   let response: Response;
   try {
@@ -354,7 +395,7 @@ export async function sendWhapiSelfSearchText(
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ to: WHAPI_SELF_CHAT_ID, body: text, typing_time: 0 }),
+      body: JSON.stringify({ to: destination, body: text, typing_time: 0 }),
       redirect: "error",
       cache: "no-store",
       signal: AbortSignal.timeout(10000),
@@ -373,11 +414,7 @@ export async function sendWhapiSelfSearchText(
 
   const result = asRecord(await readBoundedJson(response, 64 * 1024));
   const message = asRecord(result.message);
-  if (
-    result.sent !== true ||
-    typeof message.id !== "string" ||
-    message.chat_id !== WHAPI_SELF_CHAT_ID
-  ) {
+  if (result.sent !== true || typeof message.id !== "string" || message.chat_id !== destination) {
     throw new WhapiError("WHAPI_SELF_SEARCH_SEND_UNCONFIRMED", 502);
   }
   return { sent: true, messageId: message.id };
