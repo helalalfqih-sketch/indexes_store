@@ -4,11 +4,6 @@ import type { ProductDTO } from "@/lib/domain/product";
 import type { LegacyCategoryShape } from "@/lib/data-adapter";
 
 type ShopifyImage = { url: string; altText?: string | null };
-type ShopifyMedia = {
-  __typename: string;
-  sources?: Array<{ url: string; format: string; mimeType: string }>;
-  originUrl?: string | null;
-};
 type ShopifyVariant = {
   id: string;
   sku?: string | null;
@@ -29,7 +24,6 @@ type ShopifyProduct = {
   availableForSale: boolean;
   featuredImage?: ShopifyImage | null;
   images: { nodes: ShopifyImage[] };
-  media: { nodes: ShopifyMedia[] };
   variants: { nodes: ShopifyVariant[] };
   productType: string;
   collections: { nodes: Array<{ handle: string }> };
@@ -149,17 +143,6 @@ const PRODUCT_FIELDS = `
   id handle title description vendor tags createdAt updatedAt availableForSale productType
   featuredImage { url altText }
   images(first: 20) { nodes { url altText } }
-  media(first: 20) {
-    nodes {
-      __typename
-      ... on Video {
-        sources { url format mimeType }
-      }
-      ... on ExternalVideo {
-        originUrl
-      }
-    }
-  }
   collections(first: 1) { nodes { handle } }
   variants(first: 20) {
     nodes {
@@ -197,31 +180,10 @@ function toNumber(value: string | null | undefined): number | null {
   return Number.isFinite(number) ? number : null;
 }
 
-function shopifyVideoUrl(media: ShopifyMedia): string | null {
-  if (media.__typename === "Video") {
-    const sources = media.sources ?? [];
-    return (
-      sources.find((source) => source.mimeType === "video/mp4")?.url ??
-      sources.find((source) => source.format.toLowerCase() === "mp4")?.url ??
-      sources[0]?.url ??
-      null
-    );
-  }
-  if (media.__typename === "ExternalVideo") return media.originUrl ?? null;
-  return null;
-}
-
 function mapProduct(product: ShopifyProduct): ProductDTO {
   const variant = product.variants.nodes.find((v) => v.availableForSale) ?? product.variants.nodes[0];
   const images = product.images.nodes.map((image) => image.url).filter(Boolean);
   if (product.featuredImage?.url && !images.includes(product.featuredImage.url)) images.unshift(product.featuredImage.url);
-  const videos = [
-    ...new Set(
-      product.media.nodes
-        .map(shopifyVideoUrl)
-        .filter((url): url is string => Boolean(url)),
-    ),
-  ];
   const price = toNumber(variant?.price.amount) ?? 0;
   const compareAt = toNumber(variant?.compareAtPrice?.amount);
   return {
@@ -234,11 +196,8 @@ function mapProduct(product: ShopifyProduct): ProductDTO {
     category_id: product.collections.nodes[0]?.handle || product.productType || "all",
     brand: product.vendor || null,
     images,
-    videos,
-    media: [
-      ...images.map((url) => ({ type: "image" as const, url })),
-      ...videos.map((url) => ({ type: "video" as const, url })),
-    ],
+    videos: [],
+    media: images.map((url) => ({ type: "image" as const, url })),
     model_url: null,
     stock: variant?.availableForSale ? 1 : 0,
     reserved_stock: 0,
