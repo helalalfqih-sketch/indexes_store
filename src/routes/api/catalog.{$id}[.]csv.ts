@@ -114,6 +114,30 @@ function buildCatalogCsv(products: ProductDTO[], baseUrl: string): string {
 }
 
 async function catalogResponse(request: Request, tenantId: string): Promise<Response> {
+  if (tenantId === "meta-media") {
+    try {
+      const [{ storefront }, { buildShopifyMetaMediaFeed }] = await Promise.all([
+        import("@/lib/shopify/catalog.functions"),
+        import("@/lib/shopify/meta-feed.server"),
+      ]);
+      const feed = await buildShopifyMetaMediaFeed(storefront, new URL(request.url).origin);
+      return new Response(request.method === "HEAD" ? null : feed.csv, {
+        headers: {
+          ...RESPONSE_HEADERS,
+          "X-Catalog-Source": "shopify",
+          "X-Catalog-Mode": "media-allowlist",
+          "X-Catalog-Items": String(feed.itemCount),
+          "X-Catalog-Skipped-Variants": String(feed.skippedVariants),
+        },
+      });
+    } catch {
+      return new Response("Meta media feed temporarily unavailable", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+      });
+    }
+  }
+
   if (tenantId === "shopify") {
     try {
       const [{ storefront }, { buildShopifyMetaFeed }] = await Promise.all([

@@ -145,7 +145,11 @@ function nextCursor(page: PageInfo, previous: string | null): string | null {
 }
 
 /** Public Storefront products only; never substitutes legacy or sample data. */
-export async function buildShopifyMetaFeed(query: StorefrontQuery, baseUrl: string) {
+export async function buildShopifyMetaFeed(
+  query: StorefrontQuery,
+  baseUrl: string,
+  options: { allowedVariantIds?: ReadonlySet<string> } = {},
+) {
   const rows: string[][] = [];
   const ids = new Set<string>();
   let skippedVariants = 0;
@@ -170,6 +174,7 @@ export async function buildShopifyMetaFeed(query: StorefrontQuery, baseUrl: stri
 
       for (const variant of variants) {
         const id = numericId(variant.id, "ProductVariant");
+        if (options.allowedVariantIds && !options.allowedVariantIds.has(id)) continue;
         if (ids.has(id)) throw new Error("Duplicate Shopify variant in catalog export");
         ids.add(id);
         const images = [
@@ -236,4 +241,17 @@ export async function buildShopifyMetaFeed(query: StorefrontQuery, baseUrl: stri
       ),
     ].join("\n") + "\n";
   return { csv, itemCount: rows.length, skippedVariants };
+}
+
+const META_MEDIA_PILOT_VARIANT_IDS = new Set<string>(["42922671243349"]);
+
+/**
+ * Narrow Meta media pilot feed.
+ * Safety rule: only explicitly allowlisted Shopify variant IDs can be exported.
+ * Never falls back to the full Shopify catalog.
+ */
+export function buildShopifyMetaMediaFeed(query: StorefrontQuery, baseUrl: string) {
+  return buildShopifyMetaFeed(query, baseUrl, {
+    allowedVariantIds: META_MEDIA_PILOT_VARIANT_IDS,
+  });
 }
