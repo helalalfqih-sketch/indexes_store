@@ -46,9 +46,7 @@ export async function handleWhapiRead(
   }
 }
 
-async function persistWhapiInboxRows(
-  rows: Record<string, unknown>[],
-): Promise<Set<string>> {
+async function persistWhapiInboxRows(rows: Record<string, unknown>[]): Promise<Set<string>> {
   const { data, error } = await getSupabaseAdmin()
     .from("whatsapp_inbox" as never)
     .upsert(rows as never, { onConflict: "message_id", ignoreDuplicates: true })
@@ -151,9 +149,7 @@ export async function handleWhapiWebhook(
       persisted instanceof Set
         ? persisted
         : new Set(
-            rows.flatMap((row) =>
-              typeof row.message_id === "string" ? [row.message_id] : [],
-            ),
+            rows.flatMap((row) => (typeof row.message_id === "string" ? [row.message_id] : [])),
           );
 
     for (const row of rows) {
