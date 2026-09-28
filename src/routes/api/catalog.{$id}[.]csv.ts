@@ -4,6 +4,11 @@ import type { ProductDTO } from "@/lib/domain/product";
 
 const tenantIdSchema = z.string().uuid();
 
+const ADDITIONAL_IMAGE_HEADERS = Array.from(
+  { length: 10 },
+  (_, index) => `additional_image_link[${index}]`,
+);
+
 const CSV_HEADERS = [
   "id",
   "title",
@@ -14,7 +19,9 @@ const CSV_HEADERS = [
   "link",
   "image_link",
   "brand",
-  "additional_image_link",
+  ...ADDITIONAL_IMAGE_HEADERS,
+  "video[0].url",
+  "video[0].tag[0]",
 ] as const;
 
 const RESPONSE_HEADERS = {
@@ -68,10 +75,20 @@ function buildCatalogCsv(products: ProductDTO[], baseUrl: string): string {
     if (!product.id || !product.slug || !product.name.trim() || !imageLink) return [];
     if (!Number.isFinite(price) || price <= 0) return [];
 
-    const additionalImageLink = product.images
-      .slice(1)
+    const additionalImages = product.images
+      .slice(1, 11)
       .map(validHttpsUrl)
-      .find((url) => Boolean(url) && url !== imageLink);
+      .filter((url): url is string => Boolean(url) && url !== imageLink);
+    const paddedAdditionalImages = Array.from(
+      { length: 10 },
+      (_, index) => additionalImages[index] ?? "",
+    );
+    const videoLink = [
+      ...(product.videos ?? []),
+      ...(product.media ?? []).filter((item) => item.type === "video").map((item) => item.url),
+    ]
+      .map(validHttpsUrl)
+      .find((url): url is string => Boolean(url));
 
     return [
       [
@@ -84,7 +101,9 @@ function buildCatalogCsv(products: ProductDTO[], baseUrl: string): string {
         `${baseUrl}/product/${encodeURIComponent(product.slug)}`,
         imageLink,
         product.brand?.trim() || "Indexes Store",
-        additionalImageLink || "",
+        ...paddedAdditionalImages,
+        videoLink || "",
+        "",
       ]
         .map(csvCell)
         .join(","),
