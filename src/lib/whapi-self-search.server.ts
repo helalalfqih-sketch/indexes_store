@@ -43,7 +43,8 @@ function asRecord(value: unknown): RecordLike {
 }
 
 function numberValue(value: unknown): number | null {
-  const numeric = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  const numeric =
+    typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
   return Number.isFinite(numeric) ? numeric : null;
 }
 
@@ -115,11 +116,7 @@ function extractProducts(
 
 function isRecoverableProductListError(error: unknown): boolean {
   if (!(error instanceof WhapiError)) return false;
-  return [
-    "WHAPI_UPSTREAM_ERROR",
-    "WHAPI_UNAVAILABLE",
-    "WHAPI_REQUEST_FAILED",
-  ].includes(error.code);
+  return ["WHAPI_UPSTREAM_ERROR", "WHAPI_UNAVAILABLE", "WHAPI_REQUEST_FAILED"].includes(error.code);
 }
 
 async function loadDirectProducts(): Promise<WhapiCatalogSearchProduct[]> {
@@ -241,10 +238,7 @@ function searchableQuery(query: string): string {
   );
 }
 
-function scoreProduct(
-  product: WhapiCatalogSearchProduct,
-  query: string,
-): number {
+function scoreProduct(product: WhapiCatalogSearchProduct, query: string): number {
   const normalized = searchableQuery(query);
   const rawDigits = normalizeDigits(query).replace(/\D/g, "");
   const price = requestedPrice(query);
@@ -260,7 +254,9 @@ function scoreProduct(
     else if (name.startsWith(normalized)) score += 520;
     else if (name.includes(normalized)) score += 420;
 
-    const tokens = normalized.split(" ").filter((token) => token.length >= 2 || /\p{Extended_Pictographic}/u.test(token));
+    const tokens = normalized
+      .split(" ")
+      .filter((token) => token.length >= 2 || /\p{Extended_Pictographic}/u.test(token));
     if (tokens.length) {
       const nameMatches = tokens.filter((token) => name.includes(token)).length;
       const descriptionMatches = tokens.filter((token) => description.includes(token)).length;
@@ -299,7 +295,9 @@ export async function searchWhapiCatalog(
 function displayPrice(product: WhapiCatalogSearchProduct): string {
   if (product.price === null) return "غير محدد";
   const amount = Math.round(product.price).toLocaleString("en-US");
-  return product.currency === "YER" || !product.currency ? `${amount} ر.ي` : `${amount} ${product.currency}`;
+  return product.currency === "YER" || !product.currency
+    ? `${amount} ر.ي`
+    : `${amount} ${product.currency}`;
 }
 
 function statusLine(status: string | null): string {
