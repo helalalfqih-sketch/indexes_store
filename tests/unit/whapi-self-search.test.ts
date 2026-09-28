@@ -43,15 +43,9 @@ describe("WhatsApp private self-chat catalog search", () => {
       product("38064791606498653", "قاعدة متحركة للأجهزة المنزلية", 8500),
     ];
 
-    expect(searchWhapiCatalogProducts(catalog, "كرسي هزاز")[0]?.id).toBe(
-      "37899433306366495",
-    );
-    expect(searchWhapiCatalogProducts(catalog, "سعر 29500")[0]?.id).toBe(
-      "28152861847656018",
-    );
-    expect(searchWhapiCatalogProducts(catalog, "42922671243349")[0]?.id).toBe(
-      "37899433306366495",
-    );
+    expect(searchWhapiCatalogProducts(catalog, "كرسي هزاز")[0]?.id).toBe("37899433306366495");
+    expect(searchWhapiCatalogProducts(catalog, "سعر 29500")[0]?.id).toBe("28152861847656018");
+    expect(searchWhapiCatalogProducts(catalog, "42922671243349")[0]?.id).toBe("37899433306366495");
   });
 
   it("formats only current WhatsApp product IDs into wa.me links", () => {
@@ -60,9 +54,7 @@ describe("WhatsApp private self-chat catalog search", () => {
     ]);
     expect(reply).toContain("36,500 ر.ي");
     expect(reply).toContain("✅ APPROVED");
-    expect(reply).toContain(
-      "https://wa.me/p/37899433306366495/967771370740",
-    );
+    expect(reply).toContain("https://wa.me/p/37899433306366495/967771370740");
   });
 
   it("accepts only the verified message-yourself chat and blocks reply loops", () => {
@@ -145,11 +137,7 @@ describe("WhatsApp private self-chat catalog search", () => {
       }),
     });
 
-    const response = await handleWhapiWebhook(
-      request,
-      async () => new Set(),
-      selfSearch,
-    );
+    const response = await handleWhapiWebhook(request, async () => new Set(), selfSearch);
 
     expect(response.status).toBe(200);
     expect(selfSearch).not.toHaveBeenCalled();
