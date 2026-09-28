@@ -85,9 +85,7 @@ function buildCatalogCsv(products: ProductDTO[], baseUrl: string): string {
     );
     const videoLink = [
       ...(product.videos ?? []),
-      ...(product.media ?? [])
-        .filter((item) => item.type === "video")
-        .map((item) => item.url),
+      ...(product.media ?? []).filter((item) => item.type === "video").map((item) => item.url),
     ]
       .map(validHttpsUrl)
       .find((url): url is string => Boolean(url));
