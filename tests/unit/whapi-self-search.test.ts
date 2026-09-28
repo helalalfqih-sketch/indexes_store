@@ -4,6 +4,7 @@ import {
   searchWhapiCatalogProducts,
   sendWhapiSelfSearchText,
   shouldHandleWhapiSelfSearch,
+  whapiSelfSearchChatId,
   WHAPI_SELF_CHAT_ID,
   WHAPI_SELF_SEARCH_REPLY_PREFIX,
   type WhapiCatalogSearchProduct,
@@ -31,6 +32,9 @@ const product = (
 
 afterEach(() => {
   delete process.env.WHAPI_WEBHOOK_SECRET;
+  delete process.env.WHAPI_SELF_SEARCH_PHONE;
+  delete process.env.WHAPI_SELF_SEARCH_TOKEN;
+  delete process.env.WHAPI_SELF_SEARCH_CHANNEL_ID;
 });
 
 describe("WhatsApp private self-chat catalog search", () => {
@@ -54,6 +58,22 @@ describe("WhatsApp private self-chat catalog search", () => {
     ]);
     expect(reply).toContain("36,500 ر.ي");
     expect(reply).toContain("✅ APPROVED");
+    expect(reply).toContain("https://wa.me/p/37899433306366495/967771370740");
+  });
+
+  it("can target a separate linked WhatsApp account without changing catalog links", () => {
+    process.env.WHAPI_SELF_SEARCH_PHONE = "967715158832";
+    expect(whapiSelfSearchChatId()).toBe("967715158832@s.whatsapp.net");
+    expect(
+      shouldHandleWhapiSelfSearch({
+        chatId: "967715158832@s.whatsapp.net",
+        text: "كرسي هزاز",
+      }),
+    ).toBe(true);
+
+    const reply = formatWhapiSelfSearchReply("كرسي", [
+      product("37899433306366495", "🧸 كرسي هزاز", 36500),
+    ]);
     expect(reply).toContain("https://wa.me/p/37899433306366495/967771370740");
   });
 
