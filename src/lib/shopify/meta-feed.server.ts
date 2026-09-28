@@ -179,10 +179,7 @@ export async function buildShopifyMetaFeed(query: StorefrontQuery, baseUrl: stri
               .filter((url): url is string => Boolean(url)),
           ),
         ];
-        const additionalImages = Array.from(
-          { length: 10 },
-          (_, index) => images[index + 1] ?? "",
-        );
+        const additionalImages = Array.from({ length: 10 }, (_, index) => images[index + 1] ?? "");
         const videoUrl = productVideoUrl(product.media?.nodes);
         const price = Number(variant.price.amount);
         if (
