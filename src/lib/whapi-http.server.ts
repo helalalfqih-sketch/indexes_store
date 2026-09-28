@@ -7,7 +7,8 @@ import {
   WhapiError,
 } from "./whapi.server";
 import type { WhapiReadInput } from "./whapi.server";
-import { getSupabaseAdmin } from "@/integrations/supabase/client.server";\nimport { handleWhapiSelfSearchMessage } from "@/lib/whapi-self-search.server";
+import { getSupabaseAdmin } from "@/integrations/supabase/client.server";
+import { handleWhapiSelfSearchMessage } from "@/lib/whapi-self-search.server";
 
 const PRIVATE_HEADERS = {
   "Cache-Control": "private, no-store",
