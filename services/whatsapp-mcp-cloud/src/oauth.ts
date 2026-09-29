@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { config } from "./config.js";
 import { pkceS256, signPayload, verifyPayload } from "./crypto.js";
+import { consumeAuthorizationCode } from "./replay-store.js";
 import { sessions } from "./session-manager.js";
 
 const now = () => Math.floor(Date.now() / 1000);
@@ -15,6 +16,7 @@ interface ClientToken extends Record<string, unknown> {
 interface LinkTicket extends Record<string, unknown> {
   typ: "link";
   sid: string;
+  jti: string;
   clientId: string;
   redirectUri: string;
   state: string;
@@ -24,6 +26,7 @@ interface LinkTicket extends Record<string, unknown> {
 interface AuthCode extends Record<string, unknown> {
   typ: "code";
   sid: string;
+  jti: string;
   clientId: string;
   redirectUri: string;
   challenge: string;
@@ -31,6 +34,12 @@ interface AuthCode extends Record<string, unknown> {
 }
 interface AccessToken extends Record<string, unknown> {
   typ: "access";
+  sid: string;
+  scope: string;
+  exp: number;
+}
+interface RefreshToken extends Record<string, unknown> {
+  typ: "refresh";
   sid: string;
   scope: string;
   exp: number;
@@ -139,6 +148,7 @@ export async function startAuthorization(form: FormData): Promise<string> {
   const ticket = signPayload({
     typ: "link",
     sid,
+    jti: randomUUID(),
     clientId: valid.clientId,
     redirectUri: valid.redirectUri,
     state: valid.state,
@@ -179,6 +189,7 @@ export async function linkStatus(ticket: string) {
     const code = signPayload({
       typ: "code",
       sid: parsed.sid,
+      jti: parsed.jti,
       clientId: parsed.clientId,
       redirectUri: parsed.redirectUri,
       challenge: parsed.challenge,
@@ -192,7 +203,7 @@ export async function linkStatus(ticket: string) {
   return { status: status.status, qr, redirect };
 }
 
-export function tokenResponse(form: URLSearchParams) {
+export async function tokenResponse(form: URLSearchParams) {
   const grant = form.get("grant_type");
   const clientId = form.get("client_id") ?? "";
   if (grant === "authorization_code") {
@@ -208,11 +219,12 @@ export function tokenResponse(form: URLSearchParams) {
     ) {
       throw new Error("INVALID_GRANT");
     }
+    await consumeAuthorizationCode(code, parsed.exp);
     return issueTokens(parsed.sid);
   }
   if (grant === "refresh_token") {
     const refresh = form.get("refresh_token") ?? "";
-    const parsed = verifyPayload<AccessToken>(refresh);
+    const parsed = verifyPayload<RefreshToken>(refresh);
     if (parsed.typ !== "refresh") throw new Error("INVALID_GRANT");
     return issueTokens(parsed.sid);
   }
