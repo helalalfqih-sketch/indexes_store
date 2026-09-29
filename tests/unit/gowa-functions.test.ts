@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseGowaDevices } from "../../src/lib/gowa.functions";
+import { normalizeGowaQrUrl, parseGowaDevices } from "../../src/lib/gowa.functions";
 
 describe("GOWA account parsing", () => {
   it("maps the REST device envelope into stable admin account records", () => {
@@ -47,5 +47,28 @@ describe("GOWA account parsing", () => {
   it("returns an empty list for unexpected provider payloads", () => {
     expect(parseGowaDevices({ results: null })).toEqual([]);
     expect(parseGowaDevices("invalid")).toEqual([]);
+  });
+});
+
+
+describe("GOWA QR URL normalization", () => {
+  it("upgrades a same-host Render proxy http QR link to the configured https origin", () => {
+    const url = normalizeGowaQrUrl(
+      "http://indexes-whatsapp-mcp.onrender.com/statics/qrcode/device.png?token=abc",
+      "https://indexes-whatsapp-mcp.onrender.com",
+    );
+
+    expect(url.toString()).toBe(
+      "https://indexes-whatsapp-mcp.onrender.com/statics/qrcode/device.png?token=abc",
+    );
+  });
+
+  it("rejects QR links that point at a different host", () => {
+    expect(() =>
+      normalizeGowaQrUrl(
+        "https://attacker.example/statics/qrcode/device.png",
+        "https://indexes-whatsapp-mcp.onrender.com",
+      ),
+    ).toThrow("GOWA_QR_ORIGIN_MISMATCH");
   });
 });
