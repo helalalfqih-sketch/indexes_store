@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  requireSupabaseAuth,
+  type SupabaseAuthContext,
+} from "@/integrations/supabase/auth-middleware";
 import { checkTenantPermission } from "@/lib/users.functions";
 
 const DEFAULT_GOWA_BASE_URL = "https://indexes-whatsapp-mcp.onrender.com";
@@ -14,6 +17,34 @@ export interface GowaDevice {
   createdAt?: string | null;
   isConnected?: boolean;
   isLoggedIn?: boolean;
+}
+
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+function toJsonValue(value: unknown): JsonValue {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+  if (Array.isArray(value)) return value.map((item) => toJsonValue(item));
+  if (value && typeof value === "object") {
+    const result: Record<string, JsonValue> = {};
+    for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+      result[key] = toJsonValue(child);
+    }
+    return result;
+  }
+  return null;
 }
 
 function config() {
@@ -35,9 +66,8 @@ function config() {
   };
 }
 
-async function requireIntegrationPermission(context: unknown) {
-  const ctx = context as any;
-  const hasPerm = await checkTenantPermission("cms", ctx);
+async function requireIntegrationPermission(context: Partial<SupabaseAuthContext>) {
+  const hasPerm = await checkTenantPermission("cms", context);
   if (!hasPerm) {
     throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة التكاملات.");
   }
@@ -143,7 +173,7 @@ export const createGowaAccount = createServerFn({ method: "POST" })
       method: "POST",
       body: JSON.stringify({ device_id: deviceId }),
     });
-    const result = resultOf(await response.json()) as any;
+    const result = toJsonValue(resultOf(await response.json()));
     return { ok: true, data: result };
   });
 
@@ -153,10 +183,8 @@ export const getGowaAccountStatus = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
     const deviceId = deviceIdSchema.parse(data.deviceId);
-    const response = await gowaFetch(
-      `/devices/${encodeURIComponent(deviceId)}/status`,
-    );
-    const result = resultOf(await response.json()) as any;
+    const response = await gowaFetch(`/devices/${encodeURIComponent(deviceId)}/status`);
+    const result = toJsonValue(resultOf(await response.json()));
     return { ok: true, data: result };
   });
 
@@ -166,9 +194,7 @@ export const getGowaAccountQr = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
     const deviceId = deviceIdSchema.parse(data.deviceId);
-    const loginResponse = await gowaFetch(
-      `/devices/${encodeURIComponent(deviceId)}/login`,
-    );
+    const loginResponse = await gowaFetch(`/devices/${encodeURIComponent(deviceId)}/login`);
     const login = resultOf(await loginResponse.json()) as Record<string, unknown>;
     const qrLink = typeof login?.qr_link === "string" ? login.qr_link : "";
     if (!qrLink) throw new Error("GOWA_QR_LINK_MISSING");
@@ -185,9 +211,7 @@ export const getGowaAccountQr = createServerFn({ method: "POST" })
     });
     if (!imageResponse.ok) throw new Error(`GOWA_QR_${imageResponse.status}`);
 
-    const mime = (imageResponse.headers.get("content-type") || "image/png")
-      .split(";")[0]
-      .trim();
+    const mime = (imageResponse.headers.get("content-type") || "image/png").split(";")[0].trim();
     if (!["image/png", "image/jpeg", "image/webp"].includes(mime)) {
       throw new Error("GOWA_QR_INVALID_CONTENT_TYPE");
     }
