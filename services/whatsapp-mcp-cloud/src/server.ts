@@ -70,7 +70,7 @@ app.get("/link/status", async (c) => {
 app.post("/oauth/token", async (c) => {
   try {
     const text = await c.req.text();
-    return c.json(tokenResponse(new URLSearchParams(text)), 200, {
+    return c.json(await tokenResponse(new URLSearchParams(text)), 200, {
       "Cache-Control": "no-store",
       Pragma: "no-cache",
     });
