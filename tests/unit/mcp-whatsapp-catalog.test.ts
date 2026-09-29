@@ -68,13 +68,12 @@ describe("stable WhatsApp catalog reads", () => {
   });
 
   it("refuses catalog access when the connected WhatsApp number does not match Indexes", async () => {
-    const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(json(authorizedHealth("967700000000")));
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(json(authorizedHealth("967700000000")));
 
     await expect(
-      listWhatsAppCatalogProducts(
-        { count: 1, offset: 0 },
-        { token: "test-token", fetcher },
-      ),
+      listWhatsAppCatalogProducts({ count: 1, offset: 0 }, { token: "test-token", fetcher }),
     ).rejects.toMatchObject<Partial<WhapiError>>({
       code: "WHAPI_PHONE_MISMATCH",
       status: 409,
@@ -103,10 +102,7 @@ describe("stable WhatsApp catalog reads", () => {
     const fetcher = vi.fn<typeof fetch>();
 
     await expect(
-      listWhatsAppCatalogProducts(
-        { count: 500, offset: 0 },
-        { token: "test-token", fetcher },
-      ),
+      listWhatsAppCatalogProducts({ count: 500, offset: 0 }, { token: "test-token", fetcher }),
     ).rejects.toMatchObject<Partial<WhapiError>>({
       code: "INVALID_PAGINATION",
       status: 400,
