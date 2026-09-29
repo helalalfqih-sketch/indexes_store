@@ -114,12 +114,13 @@ function validateAuthorize(input: URLSearchParams) {
 
 export function authorizePage(params: URLSearchParams): string {
   const valid = validateAuthorize(params);
-  const hidden = [
+  const hiddenFields: Array<[string, string]> = [
     ["client_id", valid.clientId],
     ["redirect_uri", valid.redirectUri],
     ["state", valid.state],
     ["code_challenge", valid.challenge],
-  ]
+  ];
+  const hidden = hiddenFields
     .map(([name, value]) => `<input type="hidden" name="${name}" value="${html(value)}">`)
     .join("");
   const gate = config.publicSignup
