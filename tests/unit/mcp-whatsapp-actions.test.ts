@@ -15,6 +15,11 @@ const READ_TOOLS = [
   "whapi_resolve_destination",
   "whapi_resolve_destination_by_name",
   "whapi_get_media_image",
+  "whatsapp_catalog_list_products",
+  "whatsapp_catalog_get_product",
+  "whatsapp_catalog_list_collections",
+  "whatsapp_catalog_get_collection",
+  "whatsapp_catalog_list_collection_products",
 ];
 const WRITE_TOOLS = [
   "whapi_send_text_by_name",
