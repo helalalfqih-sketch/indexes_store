@@ -19,13 +19,7 @@ export interface GowaDevice {
   isLoggedIn?: boolean;
 }
 
-type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 function toJsonValue(value: unknown): JsonValue {
   if (
