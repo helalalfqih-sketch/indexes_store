@@ -114,8 +114,8 @@ export function GowaAccountsPanel() {
             حسابات واتساب المباشرة — الأجهزة المرتبطة
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            ربط عدة حسابات عبر WhatsApp &gt; الأجهزة المرتبطة &gt; ربط جهاز، بدون كشف بيانات
-            اعتماد GOWA للمتصفح.
+            ربط عدة حسابات عبر WhatsApp &gt; الأجهزة المرتبطة &gt; ربط جهاز، بدون كشف بيانات اعتماد
+            GOWA للمتصفح.
           </p>
         </div>
         <div className="flex items-center gap-2">
