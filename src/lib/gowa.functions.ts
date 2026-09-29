@@ -76,21 +76,21 @@ export function parseGowaDevices(payload: unknown): GowaDevice[] {
   const raw = resultOf(payload);
   if (!Array.isArray(raw)) return [];
 
-  return raw
-    .map((item) => {
-      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
-      const row = item as Record<string, unknown>;
-      const id = typeof row.id === "string" ? row.id : "";
-      if (!id) return null;
-      return {
-        id,
-        displayName: typeof row.display_name === "string" ? row.display_name : "",
-        jid: typeof row.jid === "string" ? row.jid : "",
-        state: typeof row.state === "string" ? row.state : "unknown",
-        createdAt: typeof row.created_at === "string" ? row.created_at : null,
-      } satisfies GowaDevice;
-    })
-    .filter((value): value is GowaDevice => Boolean(value));
+  const devices: GowaDevice[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const row = item as Record<string, unknown>;
+    const id = typeof row.id === "string" ? row.id : "";
+    if (!id) continue;
+    devices.push({
+      id,
+      displayName: typeof row.display_name === "string" ? row.display_name : "",
+      jid: typeof row.jid === "string" ? row.jid : "",
+      state: typeof row.state === "string" ? row.state : "unknown",
+      createdAt: typeof row.created_at === "string" ? row.created_at : null,
+    });
+  }
+  return devices;
 }
 
 const deviceIdSchema = z
@@ -135,40 +135,37 @@ export const listGowaAccounts = createServerFn({ method: "GET" })
 
 export const createGowaAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { deviceId: string }) => ({
-    deviceId: deviceIdSchema.parse(data.deviceId),
-  }))
+  .validator((data: { deviceId: string }) => data)
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
+    const deviceId = deviceIdSchema.parse(data.deviceId);
     const response = await gowaFetch("/devices", {
       method: "POST",
-      body: JSON.stringify({ device_id: data.deviceId }),
+      body: JSON.stringify({ device_id: deviceId }),
     });
     return { ok: true, data: resultOf(await response.json()) };
   });
 
 export const getGowaAccountStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { deviceId: string }) => ({
-    deviceId: deviceIdSchema.parse(data.deviceId),
-  }))
+  .validator((data: { deviceId: string }) => data)
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
+    const deviceId = deviceIdSchema.parse(data.deviceId);
     const response = await gowaFetch(
-      `/devices/${encodeURIComponent(data.deviceId)}/status`,
+      `/devices/${encodeURIComponent(deviceId)}/status`,
     );
     return { ok: true, data: resultOf(await response.json()) };
   });
 
 export const getGowaAccountQr = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { deviceId: string }) => ({
-    deviceId: deviceIdSchema.parse(data.deviceId),
-  }))
+  .validator((data: { deviceId: string }) => data)
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
+    const deviceId = deviceIdSchema.parse(data.deviceId);
     const loginResponse = await gowaFetch(
-      `/devices/${encodeURIComponent(data.deviceId)}/login`,
+      `/devices/${encodeURIComponent(deviceId)}/login`,
     );
     const login = resultOf(await loginResponse.json()) as Record<string, unknown>;
     const qrLink = typeof login?.qr_link === "string" ? login.qr_link : "";
@@ -200,7 +197,7 @@ export const getGowaAccountQr = createServerFn({ method: "POST" })
 
     return {
       ok: true,
-      deviceId: data.deviceId,
+      deviceId,
       qrDataUrl: `data:${mime};base64,${Buffer.from(bytes).toString("base64")}`,
       duration:
         typeof login?.qr_duration === "number" || typeof login?.qr_duration === "string"
@@ -211,12 +208,11 @@ export const getGowaAccountQr = createServerFn({ method: "POST" })
 
 export const reconnectGowaAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { deviceId: string }) => ({
-    deviceId: deviceIdSchema.parse(data.deviceId),
-  }))
+  .validator((data: { deviceId: string }) => data)
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
-    await gowaFetch(`/devices/${encodeURIComponent(data.deviceId)}/reconnect`, {
+    const deviceId = deviceIdSchema.parse(data.deviceId);
+    await gowaFetch(`/devices/${encodeURIComponent(deviceId)}/reconnect`, {
       method: "POST",
     });
     return { ok: true };
@@ -224,13 +220,12 @@ export const reconnectGowaAccount = createServerFn({ method: "POST" })
 
 export const logoutGowaAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { deviceId: string; confirmed: true }) => ({
-    deviceId: deviceIdSchema.parse(data.deviceId),
-    confirmed: z.literal(true).parse(data.confirmed),
-  }))
+  .validator((data: { deviceId: string; confirmed: true }) => data)
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
-    await gowaFetch(`/devices/${encodeURIComponent(data.deviceId)}/logout`, {
+    z.literal(true).parse(data.confirmed);
+    const deviceId = deviceIdSchema.parse(data.deviceId);
+    await gowaFetch(`/devices/${encodeURIComponent(deviceId)}/logout`, {
       method: "POST",
     });
     return { ok: true };
@@ -244,7 +239,9 @@ export const removeGowaAccount = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
-    await gowaFetch(`/devices/${encodeURIComponent(data.deviceId)}`, {
+    z.literal(true).parse(data.confirmed);
+    const deviceId = deviceIdSchema.parse(data.deviceId);
+    await gowaFetch(`/devices/${encodeURIComponent(deviceId)}`, {
       method: "DELETE",
     });
     return { ok: true };
