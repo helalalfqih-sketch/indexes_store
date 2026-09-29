@@ -18,6 +18,7 @@ import {
   PlusCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { GowaAccountsPanel } from "@/components/admin/gowa-accounts-panel";
 import {
   getWhatsAppConfig,
   saveWhatsAppConfig,
@@ -143,6 +144,8 @@ function WhatsAppIntegrationComponent() {
           حفظ إعدادات الربط
         </button>
       </div>
+
+      <GowaAccountsPanel />
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
