@@ -90,6 +90,22 @@ async function gowaFetch(path: string, init: RequestInit = {}) {
   return response;
 }
 
+export function normalizeGowaQrUrl(qrLink: string, baseUrl: string): URL {
+  const configured = new URL(baseUrl);
+  const returned = new URL(qrLink, configured);
+
+  if (
+    returned.hostname !== configured.hostname ||
+    returned.port !== configured.port ||
+    returned.username ||
+    returned.password
+  ) {
+    throw new Error("GOWA_QR_ORIGIN_MISMATCH");
+  }
+
+  return new URL(`${returned.pathname}${returned.search}`, configured.origin);
+}
+
 function resultOf(payload: unknown): unknown {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return payload;
   const record = payload as Record<string, unknown>;
@@ -194,8 +210,7 @@ export const getGowaAccountQr = createServerFn({ method: "POST" })
     if (!qrLink) throw new Error("GOWA_QR_LINK_MISSING");
 
     const cfg = config();
-    const qrUrl = new URL(qrLink, cfg.baseUrl);
-    if (qrUrl.origin !== cfg.origin) throw new Error("GOWA_QR_ORIGIN_MISMATCH");
+    const qrUrl = normalizeGowaQrUrl(qrLink, cfg.baseUrl);
 
     const imageResponse = await fetch(qrUrl, {
       headers: { Authorization: cfg.authorization, Accept: "image/*" },
