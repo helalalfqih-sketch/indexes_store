@@ -28,9 +28,7 @@ describe("GOWA state gateway authentication", () => {
   it("fails closed when the server credential is missing", () => {
     vi.stubEnv("GOWA_BASIC_AUTH", "");
     expect(
-      verifyGowaStateAuthorization(
-        new Request("https://example.test/api/internal/gowa-state"),
-      ),
+      verifyGowaStateAuthorization(new Request("https://example.test/api/internal/gowa-state")),
     ).toBe(false);
   });
 });
