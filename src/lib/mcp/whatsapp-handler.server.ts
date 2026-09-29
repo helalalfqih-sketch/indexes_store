@@ -145,7 +145,8 @@ async function server() {
       annotations,
       _meta: { securitySchemes },
     },
-    async ({ count, offset }) => catalogResult(await listWhatsAppCatalogProducts({ count, offset })),
+    async ({ count, offset }) =>
+      catalogResult(await listWhatsAppCatalogProducts({ count, offset })),
   );
 
   instance.registerTool(
@@ -190,8 +191,7 @@ async function server() {
       annotations,
       _meta: { securitySchemes },
     },
-    async ({ collectionId }) =>
-      catalogResult(await getWhatsAppCatalogCollection(collectionId)),
+    async ({ collectionId }) => catalogResult(await getWhatsAppCatalogCollection(collectionId)),
   );
 
   instance.registerTool(
@@ -210,9 +210,7 @@ async function server() {
       _meta: { securitySchemes },
     },
     async ({ collectionId, productsCount }) =>
-      catalogResult(
-        await listWhatsAppCatalogCollectionProducts(collectionId, productsCount),
-      ),
+      catalogResult(await listWhatsAppCatalogCollectionProducts(collectionId, productsCount)),
   );
 
   instance.registerTool(
