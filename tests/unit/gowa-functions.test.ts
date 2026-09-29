@@ -50,7 +50,6 @@ describe("GOWA account parsing", () => {
   });
 });
 
-
 describe("GOWA QR URL normalization", () => {
   it("upgrades a same-host Render proxy http QR link to the configured https origin", () => {
     const url = normalizeGowaQrUrl(
