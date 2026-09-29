@@ -233,10 +233,7 @@ export const logoutGowaAccount = createServerFn({ method: "POST" })
 
 export const removeGowaAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { deviceId: string; confirmed: true }) => ({
-    deviceId: deviceIdSchema.parse(data.deviceId),
-    confirmed: z.literal(true).parse(data.confirmed),
-  }))
+  .validator((data: { deviceId: string; confirmed: true }) => data)
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
     z.literal(true).parse(data.confirmed);
