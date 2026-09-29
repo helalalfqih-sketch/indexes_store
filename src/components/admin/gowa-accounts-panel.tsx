@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -32,7 +32,11 @@ export function GowaAccountsPanel() {
   const removeFn = useServerFn(removeGowaAccount);
 
   const [newDeviceId, setNewDeviceId] = useState("");
-  const [qr, setQr] = useState<{ deviceId: string; dataUrl: string; duration: string | number | null } | null>(null);
+  const [qr, setQr] = useState<{
+    deviceId: string;
+    dataUrl: string;
+    duration: string | number | null;
+  } | null>(null);
 
   const query = useQuery({
     queryKey: ["gowa-whatsapp-accounts"],
@@ -97,10 +101,9 @@ export function GowaAccountsPanel() {
   });
 
   const accounts = query.data?.accounts ?? [];
-  const connectedCount = useMemo(
-    () => accounts.filter((account) => account.isLoggedIn || account.isConnected).length,
-    [accounts],
-  );
+  const connectedCount = accounts.filter(
+    (account) => account.isLoggedIn || account.isConnected,
+  ).length;
 
   return (
     <section className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 space-y-5 shadow-sm">
@@ -111,7 +114,8 @@ export function GowaAccountsPanel() {
             حسابات واتساب المباشرة — الأجهزة المرتبطة
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            ربط عدة حسابات عبر WhatsApp &gt; الأجهزة المرتبطة &gt; ربط جهاز، بدون كشف بيانات اعتماد GOWA للمتصفح.
+            ربط عدة حسابات عبر WhatsApp &gt; الأجهزة المرتبطة &gt; ربط جهاز، بدون كشف بيانات
+            اعتماد GOWA للمتصفح.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -151,7 +155,11 @@ export function GowaAccountsPanel() {
           onClick={() => createMutation.mutate(newDeviceId.trim())}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
         >
-          {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          {createMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Plus className="h-4 w-4" />
+          )}
           إضافة حساب
         </button>
       </div>
@@ -175,8 +183,14 @@ export function GowaAccountsPanel() {
                     </span>
                   </div>
                   <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">
-                    <p dir="ltr" className="font-mono break-all">device_id: {account.id}</p>
-                    {account.jid && <p dir="ltr" className="font-mono break-all">jid: {account.jid}</p>}
+                    <p dir="ltr" className="font-mono break-all">
+                      device_id: {account.id}
+                    </p>
+                    {account.jid && (
+                      <p dir="ltr" className="font-mono break-all">
+                        jid: {account.jid}
+                      </p>
+                    )}
                   </div>
                 </div>
 
