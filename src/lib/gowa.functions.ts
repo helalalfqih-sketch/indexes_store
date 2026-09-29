@@ -143,7 +143,8 @@ export const createGowaAccount = createServerFn({ method: "POST" })
       method: "POST",
       body: JSON.stringify({ device_id: deviceId }),
     });
-    return { ok: true, data: resultOf(await response.json()) };
+    const result = resultOf(await response.json()) as any;
+    return { ok: true, data: result };
   });
 
 export const getGowaAccountStatus = createServerFn({ method: "POST" })
@@ -155,7 +156,8 @@ export const getGowaAccountStatus = createServerFn({ method: "POST" })
     const response = await gowaFetch(
       `/devices/${encodeURIComponent(deviceId)}/status`,
     );
-    return { ok: true, data: resultOf(await response.json()) };
+    const result = resultOf(await response.json()) as any;
+    return { ok: true, data: result };
   });
 
 export const getGowaAccountQr = createServerFn({ method: "POST" })
