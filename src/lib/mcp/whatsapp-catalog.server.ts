@@ -15,10 +15,7 @@ type CatalogListInput = {
   offset: number;
 };
 
-async function authorizedCatalogGet(
-  path: string,
-  runtime: WhapiRuntime = {},
-): Promise<unknown> {
+async function authorizedCatalogGet(path: string, runtime: WhapiRuntime = {}): Promise<unknown> {
   const token = runtime.token ?? process.env.WHAPI_TOKEN;
   if (!token?.trim()) throw new WhapiError("WHAPI_NOT_CONFIGURED", 503);
   const fetcher = runtime.fetcher ?? fetch;
@@ -59,12 +56,10 @@ async function authorizedCatalogGet(
       ? (health.user as Record<string, unknown>)
       : {};
 
-  if (health.channel_id !== WHAPI_CHANNEL_ID)
-    throw new WhapiError("WHAPI_CHANNEL_MISMATCH", 409);
+  if (health.channel_id !== WHAPI_CHANNEL_ID) throw new WhapiError("WHAPI_CHANNEL_MISMATCH", 409);
   if (!(status.code === 4 && status.text === "AUTH"))
     throw new WhapiError("WHAPI_NOT_AUTHORIZED", 503);
-  if (String(user.id) !== WHAPI_PHONE)
-    throw new WhapiError("WHAPI_PHONE_MISMATCH", 409);
+  if (String(user.id) !== WHAPI_PHONE) throw new WhapiError("WHAPI_PHONE_MISMATCH", 409);
 
   return get(path);
 }
@@ -98,15 +93,9 @@ export async function listWhatsAppCatalogProducts(
   return authorizedCatalogGet(`/business/products?${params}`, runtime);
 }
 
-export async function getWhatsAppCatalogProduct(
-  productId: string,
-  runtime: WhapiRuntime = {},
-) {
+export async function getWhatsAppCatalogProduct(productId: string, runtime: WhapiRuntime = {}) {
   validateId(productId, "PRODUCT");
-  return authorizedCatalogGet(
-    `/business/products/${encodeURIComponent(productId)}`,
-    runtime,
-  );
+  return authorizedCatalogGet(`/business/products/${encodeURIComponent(productId)}`, runtime);
 }
 
 export async function listWhatsAppCatalogCollections(
@@ -126,10 +115,7 @@ export async function getWhatsAppCatalogCollection(
   runtime: WhapiRuntime = {},
 ) {
   validateId(collectionId, "COLLECTION");
-  return authorizedCatalogGet(
-    `/business/collections/${encodeURIComponent(collectionId)}`,
-    runtime,
-  );
+  return authorizedCatalogGet(`/business/collections/${encodeURIComponent(collectionId)}`, runtime);
 }
 
 export async function listWhatsAppCatalogCollectionProducts(
