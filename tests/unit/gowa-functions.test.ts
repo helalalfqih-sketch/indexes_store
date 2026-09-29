@@ -31,12 +31,7 @@ describe("GOWA account parsing", () => {
   it("drops malformed rows instead of inventing a device id", () => {
     expect(
       parseGowaDevices({
-        results: [
-          null,
-          {},
-          { display_name: "missing-id" },
-          { id: "king", state: "disconnected" },
-        ],
+        results: [null, {}, { display_name: "missing-id" }, { id: "king", state: "disconnected" }],
       }),
     ).toEqual([
       {
