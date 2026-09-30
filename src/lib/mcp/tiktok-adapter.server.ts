@@ -16,7 +16,22 @@ export interface TikTokMcpAdapter {
 const ACCOUNT_SELECT =
   "id,open_id,union_id,display_name,avatar_url,status,scopes,token_expires_at,refresh_token_expires_at,last_synced_at,created_at,updated_at";
 
-function accountView(row: Record<string, any>) {
+interface TikTokAccountRow {
+  id: string;
+  open_id: string;
+  union_id: string | null;
+  display_name: string;
+  avatar_url: string | null;
+  status: string;
+  scopes: string[] | null;
+  token_expires_at: string | null;
+  refresh_token_expires_at: string | null;
+  last_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function accountView(row: TikTokAccountRow) {
   return {
     id: row.id,
     open_id: row.open_id,
@@ -58,7 +73,7 @@ export function createTikTokMcpAdapter(tenantId: string, userId: string): TikTok
 
       if (error) throw new Error("TIKTOK_ACCOUNTS_READ_FAILED");
       return {
-        accounts: (data || []).map((row) => accountView(row as Record<string, any>)),
+        accounts: (data || []).map((row) => accountView(row as TikTokAccountRow)),
         secret_fields_included: false,
       };
     },
@@ -67,7 +82,7 @@ export function createTikTokMcpAdapter(tenantId: string, userId: string): TikTok
       const row = await getAccountRow(accountId);
       return {
         found: Boolean(row),
-        account: row ? accountView(row as Record<string, any>) : null,
+        account: row ? accountView(row as TikTokAccountRow) : null,
         secret_fields_included: false,
       };
     },
@@ -90,7 +105,7 @@ export function createTikTokMcpAdapter(tenantId: string, userId: string): TikTok
       const row = await getAccountRow(accountId);
       return {
         ok: true,
-        account: row ? accountView(row as Record<string, any>) : null,
+        account: row ? accountView(row as TikTokAccountRow) : null,
         secret_fields_included: false,
       };
     },
@@ -100,7 +115,7 @@ export function createTikTokMcpAdapter(tenantId: string, userId: string): TikTok
       const row = await getAccountRow(accountId);
       return {
         ok: true,
-        account: row ? accountView(row as Record<string, any>) : null,
+        account: row ? accountView(row as TikTokAccountRow) : null,
         local_tokens_deleted: true,
         provider_authorization_revoked: false,
       };
