@@ -152,8 +152,8 @@ function StoreMcpAuthorize() {
           <p className="font-semibold">حواجز الأمان</p>
           <p className="mt-1 text-muted-foreground">
             لا كتابة مباشرة إلى main، ولا Merge أو Production Deploy أو migrations أو قراءة أسرار.
-            تعديلات المصدر محصورة في فروع agent/* وDraft PRs مع تحقق SHA. عمليات نشر TikTok
-            تتطلب صلاحية مستقلة وتأكيدًا صريحًا لكل عملية كتابة.
+            تعديلات المصدر محصورة في فروع agent/* وDraft PRs مع تحقق SHA. عمليات نشر TikTok تتطلب
+            صلاحية مستقلة وتأكيدًا صريحًا لكل عملية كتابة.
           </p>
         </div>
 
