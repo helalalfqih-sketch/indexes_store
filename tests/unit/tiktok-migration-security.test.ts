@@ -11,9 +11,7 @@ const sql = fs.readFileSync(migrationPath, "utf8");
 describe("TikTok OAuth migration security", () => {
   it("enables RLS on metadata, secret, and OAuth state tables", () => {
     expect(sql).toContain("ALTER TABLE public.tiktok_accounts ENABLE ROW LEVEL SECURITY");
-    expect(sql).toContain(
-      "ALTER TABLE public.tiktok_account_secrets ENABLE ROW LEVEL SECURITY",
-    );
+    expect(sql).toContain("ALTER TABLE public.tiktok_account_secrets ENABLE ROW LEVEL SECURITY");
     expect(sql).toContain("ALTER TABLE public.tiktok_oauth_states ENABLE ROW LEVEL SECURITY");
   });
 
@@ -26,9 +24,7 @@ describe("TikTok OAuth migration security", () => {
   });
 
   it("keeps provider secrets inaccessible to anon and authenticated roles", () => {
-    expect(sql).toContain(
-      "REVOKE ALL ON public.tiktok_account_secrets FROM authenticated",
-    );
+    expect(sql).toContain("REVOKE ALL ON public.tiktok_account_secrets FROM authenticated");
     expect(sql).toContain("GRANT ALL ON public.tiktok_account_secrets TO service_role");
     expect(sql).not.toMatch(
       /GRANT\s+(?:SELECT|INSERT|UPDATE|DELETE|ALL)[^;]*tiktok_account_secrets[^;]*authenticated/i,
