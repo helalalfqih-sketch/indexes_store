@@ -32,6 +32,7 @@ export const ADMIN_ROUTES = [
   "/admin/users",
   "/admin/system-health",
   "/admin/integrations/whatsapp",
+  "/admin/integrations/tiktok",
   "/admin/platform",
   "/admin/settings",
 ];
