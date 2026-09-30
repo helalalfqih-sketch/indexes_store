@@ -23,8 +23,7 @@ describe("TikTok OAuth server helpers", () => {
   beforeEach(() => {
     process.env.TIKTOK_CLIENT_KEY = "client-key";
     process.env.TIKTOK_CLIENT_SECRET = "server-secret";
-    process.env.TIKTOK_REDIRECT_URI =
-      "https://indexes-store.vercel.app/api/tiktok/callback";
+    process.env.TIKTOK_REDIRECT_URI = "https://indexes-store.vercel.app/api/tiktok/callback";
     process.env.TIKTOK_TOKEN_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
     process.env.TIKTOK_OAUTH_SCOPES = "user.info.basic";
   });
@@ -119,8 +118,6 @@ describe("TikTok OAuth server helpers", () => {
     expect(normalizeTikTokReturnTo("https://evil.example/callback")).toBe(
       "/admin/integrations/tiktok",
     );
-    expect(normalizeTikTokReturnTo("/admin/products")).toBe(
-      "/admin/integrations/tiktok",
-    );
+    expect(normalizeTikTokReturnTo("/admin/products")).toBe("/admin/integrations/tiktok");
   });
 });
