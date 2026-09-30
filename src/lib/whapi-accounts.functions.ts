@@ -5,6 +5,7 @@ import {
   type SupabaseAuthContext,
 } from "@/integrations/supabase/auth-middleware";
 import { checkTenantPermission } from "@/lib/users.functions";
+import { resolveTenantId } from "@/lib/saas/tenant-context";
 
 const WHAPI_BASE_URL = "https://gate.whapi.cloud";
 const MAX_QR_BYTES = 2 * 1024 * 1024;
@@ -25,6 +26,23 @@ export interface WhapiAccount {
   state: string;
   isConnected: boolean;
   isLoggedIn: boolean;
+  metadataSynced?: boolean;
+}
+
+export interface WhapiRuntimeMetadataRow {
+  tenant_id: string;
+  provider: "whapi";
+  channel_id: string;
+  phone: string;
+  display_name: string;
+  connection_state: string;
+  authorized: boolean;
+  last_seen_at: string | null;
+  metadata: {
+    runtime: "whapi";
+    control_plane: "vercel";
+  };
+  updated_at: string;
 }
 
 const accountIdSchema = z
@@ -74,6 +92,28 @@ export function parseWhapiAccountsConfig(
       tokenEnv: "WHAPI_TOKEN",
     },
   ];
+}
+
+export function buildWhapiRuntimeMetadataRow(
+  tenantId: string,
+  account: WhapiAccount,
+  now: string,
+): WhapiRuntimeMetadataRow {
+  return {
+    tenant_id: tenantId,
+    provider: "whapi",
+    channel_id: account.id,
+    phone: account.phone,
+    display_name: account.displayName,
+    connection_state: account.state,
+    authorized: account.isLoggedIn,
+    last_seen_at: account.isConnected ? now : null,
+    metadata: {
+      runtime: "whapi",
+      control_plane: "vercel",
+    },
+    updated_at: now,
+  };
 }
 
 function configuredAccounts(): WhapiAccountConfig[] {
@@ -151,24 +191,51 @@ async function readHealth(account: WhapiAccountConfig): Promise<WhapiAccount> {
   };
 }
 
+async function syncRuntimeMetadata(
+  context: SupabaseAuthContext,
+  account: WhapiAccount,
+): Promise<boolean> {
+  try {
+    const tenantId = await resolveTenantId(context.supabase, { userId: context.userId });
+    if (!tenantId) return false;
+
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const row = buildWhapiRuntimeMetadataRow(tenantId, account, new Date().toISOString());
+    const { error } = await getSupabaseAdmin()
+      .from("whatsapp_runtime_accounts")
+      .upsert(row, { onConflict: "tenant_id,provider,channel_id" });
+
+    return !error;
+  } catch {
+    // The runtime must stay available even before the metadata migration is promoted.
+    return false;
+  }
+}
+
 export const listWhapiAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireIntegrationPermission(context);
     const accounts = await Promise.all(
       configuredAccounts().map(async (account) => {
+        let status: WhapiAccount;
         try {
-          return await readHealth(account);
+          status = await readHealth(account);
         } catch (error) {
-          return {
+          status = {
             id: account.id,
             displayName: account.label,
             phone: account.phone,
             state: error instanceof Error ? error.message : "UNAVAILABLE",
             isConnected: false,
             isLoggedIn: false,
-          } satisfies WhapiAccount;
+          };
         }
+
+        return {
+          ...status,
+          metadataSynced: await syncRuntimeMetadata(context, status),
+        } satisfies WhapiAccount;
       }),
     );
     return { ok: true, provider: "whapi" as const, accounts };
@@ -204,7 +271,14 @@ export const reconnectWhapiAccount = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
     const account = accountConfig(data.accountId);
-    return { ok: true, status: await readHealth(account) };
+    const status = await readHealth(account);
+    return {
+      ok: true,
+      status: {
+        ...status,
+        metadataSynced: await syncRuntimeMetadata(context, status),
+      },
+    };
   });
 
 export const logoutWhapiAccount = createServerFn({ method: "POST" })
@@ -215,5 +289,16 @@ export const logoutWhapiAccount = createServerFn({ method: "POST" })
     z.literal(true).parse(data.confirmed);
     const account = accountConfig(data.accountId);
     await whapiFetch(account, "/users/logout", { method: "POST" });
+
+    const loggedOut: WhapiAccount = {
+      id: account.id,
+      displayName: account.label,
+      phone: account.phone,
+      state: "LOGGED_OUT",
+      isConnected: false,
+      isLoggedIn: false,
+    };
+    await syncRuntimeMetadata(context, loggedOut);
+
     return { ok: true };
   });
