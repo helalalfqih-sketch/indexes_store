@@ -16,7 +16,8 @@ interface WhapiAccountConfig {
   id: string;
   label: string;
   phone: string;
-  tokenEnv: string;
+  tokenEnv?: string;
+  token?: string;
 }
 
 export interface WhapiAccount {
@@ -123,14 +124,21 @@ function configuredAccounts(): WhapiAccountConfig[] {
   );
 }
 
-function accountConfig(accountId: string): WhapiAccountConfig {
+async function accountConfig(accountId: string): Promise<WhapiAccountConfig> {
   const id = accountIdSchema.parse(accountId);
-  const account = configuredAccounts().find((item) => item.id === id);
-  if (!account) throw new Error("WHAPI_ACCOUNT_NOT_CONFIGURED");
-  return account;
+  const configured = configuredAccounts().find((item) => item.id === id);
+  if (configured) return configured;
+
+  const { getWhapiPartnerChannel } = await import("@/lib/whapi-partner.server");
+  const partner = await getWhapiPartnerChannel(id);
+  if (partner) return partner;
+
+  throw new Error("WHAPI_ACCOUNT_NOT_CONFIGURED");
 }
 
 function tokenFor(account: WhapiAccountConfig): string {
+  if (account.token?.trim()) return account.token.trim();
+  if (!account.tokenEnv) throw new Error("WHAPI_TOKEN_NOT_CONFIGURED");
   const token = process.env[account.tokenEnv]?.trim();
   if (!token) throw new Error(`WHAPI_TOKEN_NOT_CONFIGURED:${account.tokenEnv}`);
   return token;
@@ -216,8 +224,18 @@ export const listWhapiAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireIntegrationPermission(context);
+    const {
+      isWhapiPartnerConfigured,
+      listWhapiPartnerChannels,
+    } = await import("@/lib/whapi-partner.server");
+
+    const byId = new Map(configuredAccounts().map((account) => [account.id, account]));
+    for (const account of await listWhapiPartnerChannels()) {
+      if (!byId.has(account.id)) byId.set(account.id, account);
+    }
+
     const accounts = await Promise.all(
-      configuredAccounts().map(async (account) => {
+      [...byId.values()].map(async (account) => {
         let status: WhapiAccount;
         try {
           status = await readHealth(account);
@@ -238,7 +256,37 @@ export const listWhapiAccounts = createServerFn({ method: "GET" })
         } satisfies WhapiAccount;
       }),
     );
-    return { ok: true, provider: "whapi" as const, accounts };
+    return {
+      ok: true,
+      provider: "whapi" as const,
+      canCreateAccounts: isWhapiPartnerConfigured(),
+      accounts,
+    };
+  });
+
+export const createWhapiAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { label: string; phone?: string }) => data)
+  .handler(async ({ data, context }) => {
+    await requireIntegrationPermission(context);
+    const label = z.string().trim().min(1).max(120).parse(data.label);
+    const phone = data.phone?.trim()
+      ? z.string().trim().regex(/^\\d{8,20}$/).parse(data.phone.trim())
+      : undefined;
+
+    const { createWhapiPartnerChannel } = await import("@/lib/whapi-partner.server");
+    const channel = await createWhapiPartnerChannel({ label, phone });
+    const pending: WhapiAccount = {
+      id: channel.id,
+      displayName: label,
+      phone: phone || channel.phone,
+      state: "INITIALIZING",
+      isConnected: false,
+      isLoggedIn: false,
+    };
+    await syncRuntimeMetadata(context, pending);
+
+    return { ok: true, account: pending };
   });
 
 export const getWhapiAccountQr = createServerFn({ method: "POST" })
@@ -246,7 +294,7 @@ export const getWhapiAccountQr = createServerFn({ method: "POST" })
   .validator((data: { accountId: string }) => data)
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
-    const account = accountConfig(data.accountId);
+    const account = await accountConfig(data.accountId);
     const response = await whapiFetch(account, "/users/login/image?size=320&width=320&height=320", {
       headers: { Accept: "image/png,image/jpeg,image/webp" },
     });
@@ -270,7 +318,7 @@ export const reconnectWhapiAccount = createServerFn({ method: "POST" })
   .validator((data: { accountId: string }) => data)
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
-    const account = accountConfig(data.accountId);
+    const account = await accountConfig(data.accountId);
     const status = await readHealth(account);
     return {
       ok: true,
@@ -287,7 +335,7 @@ export const logoutWhapiAccount = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
     z.literal(true).parse(data.confirmed);
-    const account = accountConfig(data.accountId);
+    const account = await accountConfig(data.accountId);
     await whapiFetch(account, "/users/logout", { method: "POST" });
 
     const loggedOut: WhapiAccount = {
