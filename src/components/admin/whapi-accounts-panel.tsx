@@ -155,8 +155,8 @@ export function WhapiAccountsPanel() {
             </button>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            ينشئ Whapi Channel جديدًا ثم يظهر QR للربط من WhatsApp ← الأجهزة المرتبطة. Channel
-            Token لا يُحفظ في Supabase أو المتصفح.
+            ينشئ Whapi Channel جديدًا ثم يظهر QR للربط من WhatsApp ← الأجهزة المرتبطة. Channel Token
+            لا يُحفظ في Supabase أو المتصفح.
           </p>
         </div>
       ) : (
