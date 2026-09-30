@@ -46,11 +46,17 @@ function isServerApiKey(key: string): boolean {
 }
 
 function createSupabaseAdminClient() {
-  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const projectId = process.env.SUPABASE_PROJECT_ID?.trim();
+  const SUPABASE_URL =
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    (projectId ? `https://${projectId}.supabase.co` : undefined);
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!SUPABASE_URL) {
-    throw new Error("SUPABASE_URL is required for server database access.");
+    throw new Error(
+      "SUPABASE_URL, VITE_SUPABASE_URL, or SUPABASE_PROJECT_ID is required for server database access.",
+    );
   }
   if (!key || !isServerApiKey(key)) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY must contain a server secret or service_role key.");
