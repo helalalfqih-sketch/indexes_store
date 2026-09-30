@@ -206,7 +206,8 @@ async function syncRuntimeMetadata(
   try {
     const tenantId = await resolveTenantId(context.supabase, { userId: context.userId });
     const row = buildWhapiRuntimeMetadataRow(tenantId, account, new Date().toISOString());
-    const { error } = await context.supabase
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await getSupabaseAdmin()
       .from("whatsapp_runtime_accounts")
       .upsert(row, { onConflict: "tenant_id,provider,channel_id" });
 
