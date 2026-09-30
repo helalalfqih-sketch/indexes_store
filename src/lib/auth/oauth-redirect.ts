@@ -2,8 +2,13 @@ const DEFAULT_PRODUCTION_ORIGIN = "https://indexes-store.vercel.app";
 
 function cleanBasePath(baseUrl: string): string {
   const base = (baseUrl || "/").trim() || "/";
-  if (!base.startsWith("/")) return "";
+  if (!base.startsWith("/") || base.startsWith("//")) return "";
   return base === "/" ? "" : base.replace(/\/$/, "");
+}
+
+function isVercelPreviewHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return host.endsWith(".vercel.app") && host !== "indexes-store.vercel.app";
 }
 
 export function resolveAuthRedirectUrl(input: {
@@ -12,19 +17,18 @@ export function resolveAuthRedirectUrl(input: {
   productionOrigin?: string;
 }): string {
   const current = new URL(input.currentOrigin);
-  const configuredProduction =
-    input.productionOrigin?.trim() || DEFAULT_PRODUCTION_ORIGIN;
-  const production = new URL(configuredProduction);
+  const configured = new URL(input.productionOrigin?.trim() || DEFAULT_PRODUCTION_ORIGIN);
 
-  if (production.protocol !== "https:") {
+  if (configured.protocol !== "https:") {
     throw new Error("OAUTH_PRODUCTION_ORIGIN_MUST_BE_HTTPS");
   }
 
-  const host = current.hostname.toLowerCase();
-  const isVercelPreview =
-    host.endsWith(".vercel.app") &&
-    host !== "indexes-store.vercel.app";
+  const canonical =
+    isVercelPreviewHost(configured.hostname) &&
+    configured.hostname.toLowerCase() !== "indexes-store.vercel.app"
+      ? new URL(DEFAULT_PRODUCTION_ORIGIN)
+      : configured;
 
-  const origin = isVercelPreview ? production.origin : current.origin;
+  const origin = isVercelPreviewHost(current.hostname) ? canonical.origin : current.origin;
   return `${origin}${cleanBasePath(input.baseUrl || "/")}/auth`;
 }
