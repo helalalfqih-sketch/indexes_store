@@ -27,8 +27,16 @@ export interface WhapiAccount {
   isLoggedIn: boolean;
 }
 
-const accountIdSchema = z.string().trim().min(1).max(80).regex(/^[A-Za-z0-9._-]+$/);
-const tokenEnvSchema = z.string().trim().regex(/^WHAPI_TOKEN(?:_[A-Z0-9_]+)?$/);
+const accountIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .regex(/^[A-Za-z0-9._-]+$/);
+const tokenEnvSchema = z
+  .string()
+  .trim()
+  .regex(/^WHAPI_TOKEN(?:_[A-Z0-9_]+)?$/);
 
 export function parseWhapiAccountsConfig(
   raw: string | undefined,
@@ -46,7 +54,10 @@ export function parseWhapiAccountsConfig(
         z.object({
           id: accountIdSchema,
           label: z.string().trim().min(1).max(120),
-          phone: z.string().trim().regex(/^\d{8,20}$/),
+          phone: z
+            .string()
+            .trim()
+            .regex(/^\d{8,20}$/),
           tokenEnv: tokenEnvSchema,
         }),
       )
@@ -169,11 +180,9 @@ export const getWhapiAccountQr = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireIntegrationPermission(context);
     const account = accountConfig(data.accountId);
-    const response = await whapiFetch(
-      account,
-      "/users/login/image?size=320&width=320&height=320",
-      { headers: { Accept: "image/png,image/jpeg,image/webp" } },
-    );
+    const response = await whapiFetch(account, "/users/login/image?size=320&width=320&height=320", {
+      headers: { Accept: "image/png,image/jpeg,image/webp" },
+    });
     const mime = (response.headers.get("content-type") || "image/png").split(";")[0].trim();
     if (!["image/png", "image/jpeg", "image/webp"].includes(mime)) {
       throw new Error("WHAPI_QR_INVALID_CONTENT_TYPE");
