@@ -52,7 +52,9 @@ export const STOREFRONT_ROUTES = [
 export const RoutesAuditSpec = {
   name: "All Routes & Navigation Audit Spec",
   runAudit() {
-    console.log(`[E2E Route Audit] Testing ${ADMIN_ROUTES.length} Admin routes and ${STOREFRONT_ROUTES.length} Storefront routes...`);
+    console.log(
+      `[E2E Route Audit] Testing ${ADMIN_ROUTES.length} Admin routes and ${STOREFRONT_ROUTES.length} Storefront routes...`,
+    );
 
     let passedAdmin = 0;
     for (const route of ADMIN_ROUTES) {
@@ -66,7 +68,9 @@ export const RoutesAuditSpec = {
       passedStorefront++;
     }
 
-    console.log(`[E2E Route Audit] Audit Complete! Verified ${passedAdmin + passedStorefront} routes with 0 broken links.`);
+    console.log(
+      `[E2E Route Audit] Audit Complete! Verified ${passedAdmin + passedStorefront} routes with 0 broken links.`,
+    );
     return true;
   },
 };
