@@ -74,8 +74,7 @@ export function TikTokAccountsPanel() {
   });
 
   const syncMutation = useMutation({
-    mutationFn: (accountId: string) =>
-      refreshAccountFn({ data: { accountId } }),
+    mutationFn: (accountId: string) => refreshAccountFn({ data: { accountId } }),
     onSuccess: async () => {
       toast.success("تم تحديث اتصال TikTok");
       await refreshList();
@@ -163,10 +162,7 @@ export function TikTokAccountsPanel() {
         {accounts.map((account) => {
           const active = account.status === "active";
           return (
-            <article
-              key={account.id}
-              className="rounded-xl border border-border bg-background p-4"
-            >
+            <article key={account.id} className="rounded-xl border border-border bg-background p-4">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   {account.avatarUrl ? (
@@ -278,9 +274,9 @@ export function TikTokAccountsPanel() {
         <div className="flex items-start gap-2">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
           <p className="text-[11px] leading-5 text-muted-foreground">
-            الأمان: access token وrefresh token لا يظهران في هذه الصفحة ولا يخزنان كنص صريح.
-            عملية «فصل الحساب» تحذف مفاتيح الربط المحلية من اندكس؛ ولا تدّعي إلغاء صلاحية التطبيق
-            داخل TikTok نفسه.
+            الأمان: access token وrefresh token لا يظهران في هذه الصفحة ولا يخزنان كنص صريح. عملية
+            «فصل الحساب» تحذف مفاتيح الربط المحلية من اندكس؛ ولا تدّعي إلغاء صلاحية التطبيق داخل
+            TikTok نفسه.
           </p>
         </div>
       </div>
