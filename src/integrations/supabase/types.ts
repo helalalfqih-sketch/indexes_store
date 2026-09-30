@@ -640,6 +640,59 @@ export type Database = {
         };
         Relationships: [];
       };
+      whatsapp_runtime_accounts: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          provider: string;
+          channel_id: string;
+          phone: string;
+          display_name: string;
+          connection_state: string;
+          authorized: boolean;
+          last_seen_at: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          provider: string;
+          channel_id: string;
+          phone: string;
+          display_name: string;
+          connection_state?: string;
+          authorized?: boolean;
+          last_seen_at?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          provider?: string;
+          channel_id?: string;
+          phone?: string;
+          display_name?: string;
+          connection_state?: string;
+          authorized?: boolean;
+          last_seen_at?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_runtime_accounts_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       media_files: {
         Row: {
           id: string;
