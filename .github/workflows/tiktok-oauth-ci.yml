@@ -57,7 +57,7 @@ jobs:
 
       - name: Formatting check
         run: |
-          FILES="src/lib/tiktok.server.ts src/lib/tiktok.functions.ts src/lib/mcp/tiktok-adapter.server.ts src/lib/mcp/store-handler.server.ts src/lib/mcp/store-oauth.server.ts src/routes/mcp-store-authorize.tsx src/components/admin/tiktok-accounts-panel.tsx src/routes/admin.integrations.tiktok.tsx src/routes/api.tiktok.callback.ts src/routes/api.tiktok.device.ts src/integrations/supabase/types.ts tests/unit/tiktok-oauth.test.ts tests/unit/tiktok-migration-security.test.ts tests/unit/mcp-store-handler.test.ts tests/e2e/mcp-v3.spec.ts"
+          FILES="src/lib/tiktok.server.ts src/lib/tiktok.functions.ts src/lib/mcp/tiktok-adapter.server.ts src/lib/mcp/store-oauth.server.ts src/routes/mcp-store-authorize.tsx src/components/admin/tiktok-accounts-panel.tsx src/routes/admin.integrations.tiktok.tsx src/routes/api.tiktok.callback.ts src/routes/api.tiktok.device.ts src/integrations/supabase/types.ts tests/unit/tiktok-oauth.test.ts tests/unit/tiktok-migration-security.test.ts"
           npx prettier --write $FILES
           git diff -- $FILES
           git diff --exit-code -- $FILES
