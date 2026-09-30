@@ -124,9 +124,7 @@ export function WhapiAccountsPanel() {
                       phone: {account.phone}
                     </p>
                     {account.metadataSynced === false && (
-                      <p className="font-bold text-amber-400">
-                        Supabase metadata: غير متزامن
-                      </p>
+                      <p className="font-bold text-amber-400">Supabase metadata: غير متزامن</p>
                     )}
                   </div>
                 </div>
