@@ -31,8 +31,11 @@ describe("TikTok OAuth migration security", () => {
     );
   });
 
-  it("keeps OAuth state records service-role only", () => {
+  it("keeps OAuth state records service-role only and stores only hashed device codes", () => {
+    expect(sql).toContain("state_encrypted text NOT NULL");
+    expect(sql).toContain("device_code_hash text NOT NULL UNIQUE");
     expect(sql).toContain("REVOKE ALL ON public.tiktok_oauth_states FROM authenticated");
     expect(sql).toContain("GRANT ALL ON public.tiktok_oauth_states TO service_role");
+    expect(sql).not.toContain("device_code text");
   });
 });
