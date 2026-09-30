@@ -177,8 +177,8 @@ export function TikTokAccountsPanel() {
               <div className="text-right">
                 <p className="text-sm font-black text-foreground">امسح QR من هاتفك</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  افتح كاميرا الهاتف، امسح الرمز، ثم وافق على الربط داخل TikTok. ستتحدث هذه الصفحة
-                  تلقائيًا بعد نجاح التفويض.
+                  افتح كاميرا الهاتف، امسح الرمز، ثم وافق على الربط داخل TikTok. الرمز صالح لمدة
+                  5 دقائق، وستتحدث هذه الصفحة تلقائيًا بعد نجاح التفويض.
                 </p>
               </div>
               <button
@@ -212,6 +212,8 @@ export function TikTokAccountsPanel() {
               </button>
               <a
                 href={qrLink.directUrl}
+                target="_blank"
+                rel="noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold hover:bg-accent"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
