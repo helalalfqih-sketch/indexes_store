@@ -205,17 +205,14 @@ async function syncRuntimeMetadata(
 ): Promise<boolean> {
   try {
     const tenantId = await resolveTenantId(context.supabase, { userId: context.userId });
-    if (!tenantId) return false;
-
-    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
     const row = buildWhapiRuntimeMetadataRow(tenantId, account, new Date().toISOString());
-    const { error } = await getSupabaseAdmin()
+    const { error } = await context.supabase
       .from("whatsapp_runtime_accounts")
       .upsert(row, { onConflict: "tenant_id,provider,channel_id" });
 
     return !error;
   } catch {
-    // The runtime must stay available even before the metadata migration is promoted.
+    // Runtime health remains available even when the metadata cache is unavailable.
     return false;
   }
 }
