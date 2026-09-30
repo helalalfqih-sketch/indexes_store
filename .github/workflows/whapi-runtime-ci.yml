@@ -13,7 +13,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -44,7 +44,15 @@ jobs:
       - name: Formatting check
         run: npx prettier --check src/lib/whapi-accounts.functions.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx src/integrations/supabase/types.ts tests/unit/whapi-accounts-functions.test.ts
 
-      - name: Dependency audit fix probe
+      - name: Apply production dependency audit lockfile fixes
         run: |
           npm audit fix --package-lock-only || true
-          git diff -- package.json package-lock.json
+          if git diff --quiet -- package-lock.json; then
+            echo "No lockfile changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "fix(deps): apply npm audit lockfile fixes"
+          git push origin HEAD:${{ github.head_ref }}
