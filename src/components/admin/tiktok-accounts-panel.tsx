@@ -36,7 +36,11 @@ export function TikTokAccountsPanel() {
   const beginOAuthFn = useServerFn(beginTikTokOAuth);
   const refreshAccountFn = useServerFn(refreshTikTokAccount);
   const disconnectAccountFn = useServerFn(disconnectTikTokAccount);
-  const [qrLink, setQrLink] = useState<{ url: string; startedAt: number } | null>(null);
+  const [qrLink, setQrLink] = useState<{
+    qrUrl: string;
+    directUrl: string;
+    startedAt: number;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -83,7 +87,11 @@ export function TikTokAccountsPanel() {
   const connectMutation = useMutation({
     mutationFn: () => beginOAuthFn(),
     onSuccess: (result) => {
-      setQrLink({ url: result.authorizationUrl, startedAt: Date.now() });
+      setQrLink({
+        qrUrl: result.deviceUrl,
+        directUrl: result.authorizationUrl,
+        startedAt: Date.now(),
+      });
     },
     onError: (error: Error) => {
       toast.error(error.message || "تعذر بدء ربط TikTok");
@@ -185,7 +193,7 @@ export function TikTokAccountsPanel() {
 
             <div className="rounded-2xl bg-white p-3 shadow-sm">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=320x320&format=png&data=${encodeURIComponent(qrLink.url)}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=320x320&format=png&data=${encodeURIComponent(qrLink.qrUrl)}`}
                 alt="QR لربط حساب TikTok"
                 className="h-64 w-64"
                 referrerPolicy="no-referrer"
@@ -203,7 +211,7 @@ export function TikTokAccountsPanel() {
                 تحديث QR
               </button>
               <a
-                href={qrLink.url}
+                href={qrLink.directUrl}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold hover:bg-accent"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -212,7 +220,8 @@ export function TikTokAccountsPanel() {
             </div>
 
             <p className="text-[11px] text-muted-foreground">
-              لا يحتوي QR على Client Secret أو Access Token؛ هو رابط تفويض OAuth مؤقت.
+              QR يحتوي رمز جهاز مؤقت لمدة قصيرة فقط؛ لا يحتوي Client Secret أو Access Token أو
+              OAuth state الخام.
             </p>
           </div>
         </div>
