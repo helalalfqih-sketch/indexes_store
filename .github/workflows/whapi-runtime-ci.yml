@@ -40,7 +40,4 @@ jobs:
         run: npx vitest run tests/unit/whapi-accounts-functions.test.ts
 
       - name: Formatting check
-        run: |
-          npx prettier --write src/lib/whapi-accounts.functions.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx tests/unit/whapi-accounts-functions.test.ts
-          git diff -- src/lib/whapi-accounts.functions.ts src/components/admin/whapi-accounts-panel.tsx
-          git diff --exit-code
+        run: npx prettier --check src/lib/whapi-accounts.functions.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx tests/unit/whapi-accounts-functions.test.ts
