@@ -1,0 +1,210 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import {
+  requireSupabaseAuth,
+  type SupabaseAuthContext,
+} from "@/integrations/supabase/auth-middleware";
+import { checkTenantPermission } from "@/lib/users.functions";
+
+const WHAPI_BASE_URL = "https://gate.whapi.cloud";
+const MAX_QR_BYTES = 2 * 1024 * 1024;
+const DEFAULT_CHANNEL_ID = "HAWKEY-KFHM7";
+const DEFAULT_PHONE = "967771370740";
+
+interface WhapiAccountConfig {
+  id: string;
+  label: string;
+  phone: string;
+  tokenEnv: string;
+}
+
+export interface WhapiAccount {
+  id: string;
+  displayName: string;
+  phone: string;
+  state: string;
+  isConnected: boolean;
+  isLoggedIn: boolean;
+}
+
+const accountIdSchema = z.string().trim().min(1).max(80).regex(/^[A-Za-z0-9._-]+$/);
+const tokenEnvSchema = z.string().trim().regex(/^WHAPI_TOKEN(?:_[A-Z0-9_]+)?$/);
+
+export function parseWhapiAccountsConfig(
+  raw: string | undefined,
+  hasPrimaryToken: boolean,
+): WhapiAccountConfig[] {
+  if (raw?.trim()) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new Error("WHAPI_ACCOUNTS_JSON_INVALID");
+    }
+    return z
+      .array(
+        z.object({
+          id: accountIdSchema,
+          label: z.string().trim().min(1).max(120),
+          phone: z.string().trim().regex(/^\d{8,20}$/),
+          tokenEnv: tokenEnvSchema,
+        }),
+      )
+      .min(1)
+      .max(20)
+      .parse(parsed);
+  }
+  if (!hasPrimaryToken) return [];
+  return [
+    {
+      id: process.env.WHAPI_CHANNEL_ID?.trim() || DEFAULT_CHANNEL_ID,
+      label: process.env.WHAPI_ACCOUNT_LABEL?.trim() || "اندكس للتجارة",
+      phone: process.env.WHAPI_PHONE?.trim() || DEFAULT_PHONE,
+      tokenEnv: "WHAPI_TOKEN",
+    },
+  ];
+}
+
+function configuredAccounts(): WhapiAccountConfig[] {
+  return parseWhapiAccountsConfig(
+    process.env.WHAPI_ACCOUNTS_JSON,
+    Boolean(process.env.WHAPI_TOKEN?.trim()),
+  );
+}
+
+function accountConfig(accountId: string): WhapiAccountConfig {
+  const id = accountIdSchema.parse(accountId);
+  const account = configuredAccounts().find((item) => item.id === id);
+  if (!account) throw new Error("WHAPI_ACCOUNT_NOT_CONFIGURED");
+  return account;
+}
+
+function tokenFor(account: WhapiAccountConfig): string {
+  const token = process.env[account.tokenEnv]?.trim();
+  if (!token) throw new Error(`WHAPI_TOKEN_NOT_CONFIGURED:${account.tokenEnv}`);
+  return token;
+}
+
+async function requireIntegrationPermission(context: Partial<SupabaseAuthContext>) {
+  const hasPerm = await checkTenantPermission("cms", context);
+  if (!hasPerm) throw new Error("صلاحية مرفوضة: تتطلب صلاحية إدارة التكاملات.");
+}
+
+async function whapiFetch(account: WhapiAccountConfig, path: string, init: RequestInit = {}) {
+  const response = await fetch(`${WHAPI_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${tokenFor(account)}`,
+      Accept: "application/json",
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(init.headers || {}),
+    },
+    redirect: "error",
+    cache: "no-store",
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!response.ok) {
+    await response.body?.cancel().catch(() => undefined);
+    throw new Error(`WHAPI_${response.status}`);
+  }
+  return response;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+async function readHealth(account: WhapiAccountConfig): Promise<WhapiAccount> {
+  const response = await whapiFetch(account, "/health?wakeup=true");
+  const health = asRecord(await response.json());
+  const status = asRecord(health.status);
+  const user = asRecord(health.user);
+  const providerChannelId = typeof health.channel_id === "string" ? health.channel_id : "";
+  if (providerChannelId && providerChannelId !== account.id) {
+    throw new Error("WHAPI_CHANNEL_MISMATCH");
+  }
+  const authorized = status.code === 4 && status.text === "AUTH";
+  const providerPhone = authorized && user.id != null ? String(user.id) : "";
+  if (authorized && providerPhone && providerPhone !== account.phone) {
+    throw new Error("WHAPI_PHONE_MISMATCH");
+  }
+  return {
+    id: account.id,
+    displayName: account.label,
+    phone: authorized ? providerPhone || account.phone : account.phone,
+    state: typeof status.text === "string" ? status.text : "UNKNOWN",
+    isConnected: authorized,
+    isLoggedIn: authorized,
+  };
+}
+
+export const listWhapiAccounts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireIntegrationPermission(context);
+    const accounts = await Promise.all(
+      configuredAccounts().map(async (account) => {
+        try {
+          return await readHealth(account);
+        } catch (error) {
+          return {
+            id: account.id,
+            displayName: account.label,
+            phone: account.phone,
+            state: error instanceof Error ? error.message : "UNAVAILABLE",
+            isConnected: false,
+            isLoggedIn: false,
+          } satisfies WhapiAccount;
+        }
+      }),
+    );
+    return { ok: true, provider: "whapi" as const, accounts };
+  });
+
+export const getWhapiAccountQr = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { accountId: string }) => data)
+  .handler(async ({ data, context }) => {
+    await requireIntegrationPermission(context);
+    const account = accountConfig(data.accountId);
+    const response = await whapiFetch(
+      account,
+      "/users/login/image?size=320&width=320&height=320",
+      { headers: { Accept: "image/png,image/jpeg,image/webp" } },
+    );
+    const mime = (response.headers.get("content-type") || "image/png").split(";")[0].trim();
+    if (!["image/png", "image/jpeg", "image/webp"].includes(mime)) {
+      throw new Error("WHAPI_QR_INVALID_CONTENT_TYPE");
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.byteLength === 0 || bytes.byteLength > MAX_QR_BYTES) {
+      throw new Error("WHAPI_QR_INVALID_SIZE");
+    }
+    return {
+      ok: true,
+      accountId: account.id,
+      qrDataUrl: `data:${mime};base64,${Buffer.from(bytes).toString("base64")}`,
+    };
+  });
+
+export const reconnectWhapiAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { accountId: string }) => data)
+  .handler(async ({ data, context }) => {
+    await requireIntegrationPermission(context);
+    const account = accountConfig(data.accountId);
+    return { ok: true, status: await readHealth(account) };
+  });
+
+export const logoutWhapiAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { accountId: string; confirmed: true }) => data)
+  .handler(async ({ data, context }) => {
+    await requireIntegrationPermission(context);
+    z.literal(true).parse(data.confirmed);
+    const account = accountConfig(data.accountId);
+    await whapiFetch(account, "/users/logout", { method: "POST" });
+    return { ok: true };
+  });
