@@ -45,11 +45,8 @@ function isServerApiKey(key: string): boolean {
   }
 }
 
-const DEFAULT_SUPABASE_URL = "https://wtudcippyxbaobqzbmok.supabase.co";
-
 function createSupabaseAdminClient() {
-  const SUPABASE_URL =
-    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!SUPABASE_URL) {
