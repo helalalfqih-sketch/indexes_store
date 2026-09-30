@@ -177,8 +177,8 @@ export function TikTokAccountsPanel() {
               <div className="text-right">
                 <p className="text-sm font-black text-foreground">امسح QR من هاتفك</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  افتح كاميرا الهاتف، امسح الرمز، ثم وافق على الربط داخل TikTok. الرمز صالح لمدة
-                  5 دقائق، وستتحدث هذه الصفحة تلقائيًا بعد نجاح التفويض.
+                  افتح كاميرا الهاتف، امسح الرمز، ثم وافق على الربط داخل TikTok. الرمز صالح لمدة 5
+                  دقائق، وستتحدث هذه الصفحة تلقائيًا بعد نجاح التفويض.
                 </p>
               </div>
               <button
@@ -222,8 +222,8 @@ export function TikTokAccountsPanel() {
             </div>
 
             <p className="text-[11px] text-muted-foreground">
-              QR يحتوي رمز جهاز مؤقت لمدة قصيرة فقط؛ لا يحتوي Client Secret أو Access Token أو
-              OAuth state الخام.
+              QR يحتوي رمز جهاز مؤقت لمدة قصيرة فقط؛ لا يحتوي Client Secret أو Access Token أو OAuth
+              state الخام.
             </p>
           </div>
         </div>
