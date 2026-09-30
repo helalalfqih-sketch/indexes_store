@@ -94,7 +94,10 @@ test("V3 MCP tools return real Chromium evidence and enforce isolated interactio
       ({
         listAccounts: async () => ({ accounts: [], secret_fields_included: false }),
         getAccount: async () => ({ found: false, account: null, secret_fields_included: false }),
-        startLink: async () => ({ device_url: "https://indexes-store.vercel.app/api/tiktok/device?code=fixture", expires_in_seconds: 300 }),
+        startLink: async () => ({
+          device_url: "https://indexes-store.vercel.app/api/tiktok/device?code=fixture",
+          expires_in_seconds: 300,
+        }),
         refreshAccount: async () => ({ ok: true }),
         disconnectAccount: async () => ({ ok: true }),
       }) as TikTokMcpAdapter,
