@@ -1,15 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   CheckCircle2,
   CircleOff,
+  ExternalLink,
   Loader2,
   Music2,
   Plus,
+  QrCode,
   RefreshCw,
   ShieldCheck,
   Unplug,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -34,6 +37,7 @@ export function TikTokAccountsPanel() {
   const beginOAuthFn = useServerFn(beginTikTokOAuth);
   const refreshAccountFn = useServerFn(refreshTikTokAccount);
   const disconnectAccountFn = useServerFn(disconnectTikTokAccount);
+  const [qrLink, setQrLink] = useState<{ url: string; startedAt: number } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -57,7 +61,21 @@ export function TikTokAccountsPanel() {
     queryKey: ["tiktok-accounts"],
     queryFn: () => listAccountsFn(),
     retry: 1,
+    refetchInterval: qrLink ? 3000 : false,
   });
+
+  useEffect(() => {
+    if (!qrLink || !query.data?.accounts) return;
+    const linked = query.data.accounts.some(
+      (account) =>
+        account.status === "active" &&
+        new Date(account.updatedAt).getTime() >= qrLink.startedAt - 5000,
+    );
+    if (linked) {
+      setQrLink(null);
+      toast.success("تم ربط حساب TikTok من الهاتف بنجاح");
+    }
+  }, [qrLink, query.data?.accounts]);
 
   const refreshList = async () => {
     await queryClient.invalidateQueries({ queryKey: ["tiktok-accounts"] });
@@ -66,7 +84,7 @@ export function TikTokAccountsPanel() {
   const connectMutation = useMutation({
     mutationFn: () => beginOAuthFn(),
     onSuccess: (result) => {
-      window.location.assign(result.authorizationUrl);
+      setQrLink({ url: result.authorizationUrl, startedAt: Date.now() });
     },
     onError: (error: Error) => {
       toast.error(error.message || "تعذر بدء ربط TikTok");
@@ -140,10 +158,67 @@ export function TikTokAccountsPanel() {
             ) : (
               <Plus className="h-4 w-4" />
             )}
-            إضافة حساب TikTok
+            <QrCode className="h-4 w-4" />
+            ربط عبر QR
           </button>
         </div>
       </div>
+
+      {qrLink && (
+        <div className="rounded-2xl border border-violet-500/30 bg-violet-500/5 p-5">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="flex w-full items-start justify-between gap-3">
+              <div className="text-right">
+                <p className="text-sm font-black text-foreground">امسح QR من هاتفك</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  افتح كاميرا الهاتف، امسح الرمز، ثم وافق على الربط داخل TikTok. ستتحدث هذه الصفحة
+                  تلقائيًا بعد نجاح التفويض.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQrLink(null)}
+                className="rounded-lg border border-border p-2 text-muted-foreground hover:bg-accent"
+                aria-label="إغلاق QR"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="rounded-2xl bg-white p-3 shadow-sm">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=320x320&format=png&data=${encodeURIComponent(qrLink.url)}`}
+                alt="QR لربط حساب TikTok"
+                className="h-64 w-64"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => connectMutation.mutate()}
+                disabled={connectMutation.isPending}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold hover:bg-accent disabled:opacity-50"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                تحديث QR
+              </button>
+              <a
+                href={qrLink.url}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold hover:bg-accent"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                فتح TikTok على هذا الجهاز
+              </a>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground">
+              لا يحتوي QR على Client Secret أو Access Token؛ هو رابط تفويض OAuth مؤقت.
+            </p>
+          </div>
+        </div>
+      )}
 
       {!configured && !query.isLoading && !query.isError && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-700 dark:text-amber-300">
@@ -264,7 +339,7 @@ export function TikTokAccountsPanel() {
               لا توجد حسابات TikTok مرتبطة بعد
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              استخدم «إضافة حساب TikTok» لبدء الربط الرسمي.
+              استخدم «ربط عبر QR» ثم امسح الرمز من هاتفك لبدء التفويض الرسمي.
             </p>
           </div>
         )}
