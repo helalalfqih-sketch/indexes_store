@@ -5,8 +5,8 @@ export const STORE_ORIGIN = resolveStoreOAuthOrigin(process.env.VERCEL_ENV, proc
 export const STORE_OAUTH_ISSUER = `${STORE_ORIGIN}/api/mcp/store/oauth`;
 export const STORE_MCP_AUDIENCE = `${STORE_ORIGIN}/api/mcp/store`;
 export const STORE_MCP_SCOPE =
-  "store.read store.test store.develop tiktok.read tiktok.manage offline_access";
-export const STORE_MCP_DISCOVERY_VERSION = "3.1.0";
+  "store.read store.test store.develop tiktok.read tiktok.manage tiktok.publish offline_access";
+export const STORE_MCP_DISCOVERY_VERSION = "3.2.0";
 const STORE_CLIENT_KIND = "store_client_v3";
 // Discovery/schema revisions must not revoke existing public OAuth clients.
 const STORE_CLIENT_KINDS = new Set(["store_client", "store_client_v2", STORE_CLIENT_KIND]);
@@ -94,6 +94,7 @@ export const storeOauthMetadata = () => ({
     "store.develop",
     "tiktok.read",
     "tiktok.manage",
+    "tiktok.publish",
     "offline_access",
   ],
   token_endpoint_auth_methods_supported: ["none"],
