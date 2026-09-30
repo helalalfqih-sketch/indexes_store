@@ -110,6 +110,7 @@ export const storeResourceMetadata = () => ({
     "store.develop",
     "tiktok.read",
     "tiktok.manage",
+    "tiktok.publish",
     "offline_access",
   ],
   bearer_methods_supported: ["header"],
