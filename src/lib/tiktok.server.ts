@@ -205,6 +205,17 @@ export function parseTikTokProfile(
   fallbackOpenId: string,
 ): TikTokProfile {
   const root = asRecord(payload);
+  const providerError = asRecord(root.error);
+  const providerCode = providerError.code;
+  if (
+    providerCode != null &&
+    providerCode !== 0 &&
+    providerCode !== "0" &&
+    providerCode !== "ok"
+  ) {
+    throw new Error("TIKTOK_PROFILE_PROVIDER_ERROR");
+  }
+
   const data = asRecord(root.data);
   const user = asRecord(data.user);
   const openId =
