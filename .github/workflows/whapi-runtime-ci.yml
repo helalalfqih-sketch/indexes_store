@@ -45,4 +45,4 @@ jobs:
       - name: Dependency audit fix probe
         run: |
           npm audit fix --package-lock-only || true
-          git diff -- package-lock.json
+          git diff -- package.json package-lock.json
