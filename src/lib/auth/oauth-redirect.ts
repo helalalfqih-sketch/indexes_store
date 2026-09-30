@@ -6,7 +6,7 @@ function cleanBasePath(baseUrl: string): string {
   return base === "/" ? "" : base.replace(/\/$/, "");
 }
 
-export function resolveGoogleOAuthRedirectUrl(input: {
+export function resolveAuthRedirectUrl(input: {
   currentOrigin: string;
   baseUrl?: string;
   productionOrigin?: string;
