@@ -45,6 +45,22 @@ const capabilityGroups = [
       "التحقق من مصدر Production",
     ],
   },
+  {
+    title: "TikTok — قراءة",
+    items: [
+      "عرض الحسابات المرتبطة وبياناتها غير الحساسة",
+      "قراءة open_id والنطاقات وحالة الاتصال ومواعيد انتهاء التوكن",
+      "عدم عرض access token أو refresh token",
+    ],
+  },
+  {
+    title: "TikTok — إدارة",
+    items: [
+      "إنشاء رابط ربط OAuth مؤقت لحساب جديد",
+      "تحديث الاتصال ومزامنة بيانات الحساب",
+      "فصل الحساب محليًا وحذف التوكنات المشفرة بعد تأكيد صريح",
+    ],
+  },
 ] as const;
 
 function StoreMcpAuthorize() {
@@ -94,7 +110,11 @@ function StoreMcpAuthorize() {
                 (group.title !== "تطوير المصدر عبر GitHub" ||
                   query.scope.split(" ").includes("store.develop")) &&
                 (group.title !== "اختبار تفاعل معزول" ||
-                  query.scope.split(" ").includes("store.test")),
+                  query.scope.split(" ").includes("store.test")) &&
+                (group.title !== "TikTok — قراءة" ||
+                  query.scope.split(" ").includes("tiktok.read")) &&
+                (group.title !== "TikTok — إدارة" ||
+                  query.scope.split(" ").includes("tiktok.manage")),
             )
             .map((group) => (
               <section key={group.title} className="rounded-xl border p-4">
