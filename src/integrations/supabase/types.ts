@@ -640,6 +640,135 @@ export type Database = {
         };
         Relationships: [];
       };
+      tiktok_accounts: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          open_id: string;
+          union_id: string | null;
+          display_name: string;
+          avatar_url: string | null;
+          status: string;
+          scopes: string[];
+          token_expires_at: string | null;
+          refresh_token_expires_at: string | null;
+          last_synced_at: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          open_id: string;
+          union_id?: string | null;
+          display_name?: string;
+          avatar_url?: string | null;
+          status?: string;
+          scopes?: string[];
+          token_expires_at?: string | null;
+          refresh_token_expires_at?: string | null;
+          last_synced_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          open_id?: string;
+          union_id?: string | null;
+          display_name?: string;
+          avatar_url?: string | null;
+          status?: string;
+          scopes?: string[];
+          token_expires_at?: string | null;
+          refresh_token_expires_at?: string | null;
+          last_synced_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_accounts_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tiktok_account_secrets: {
+        Row: {
+          account_id: string;
+          access_token_encrypted: string;
+          refresh_token_encrypted: string;
+          updated_at: string;
+        };
+        Insert: {
+          account_id: string;
+          access_token_encrypted: string;
+          refresh_token_encrypted: string;
+          updated_at?: string;
+        };
+        Update: {
+          account_id?: string;
+          access_token_encrypted?: string;
+          refresh_token_encrypted?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_account_secrets_account_id_fkey";
+            columns: ["account_id"];
+            isOneToOne: true;
+            referencedRelation: "tiktok_accounts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tiktok_oauth_states: {
+        Row: {
+          state_hash: string;
+          state_encrypted: string;
+          device_code_hash: string;
+          tenant_id: string;
+          user_id: string;
+          return_to: string;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          state_hash: string;
+          state_encrypted: string;
+          device_code_hash: string;
+          tenant_id: string;
+          user_id: string;
+          return_to?: string;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: {
+          state_hash?: string;
+          state_encrypted?: string;
+          device_code_hash?: string;
+          tenant_id?: string;
+          user_id?: string;
+          return_to?: string;
+          expires_at?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_oauth_states_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       whatsapp_runtime_accounts: {
         Row: {
           id: string;
