@@ -161,8 +161,8 @@ export function WhapiAccountsPanel() {
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-background/70 p-3 text-xs text-muted-foreground">
-          الحساب الأساسي يعمل عبر WHAPI_TOKEN. حساب Whapi الحالي لا يملك Partner API مفعّلًا،
-          لذلك إنشاء قناة جديدة من داخل اللوحة غير متاح حاليًا. بعد تفعيل Partner access يمكن إضافة
+          الحساب الأساسي يعمل عبر WHAPI_TOKEN. حساب Whapi الحالي لا يملك Partner API مفعّلًا، لذلك
+          إنشاء قناة جديدة من داخل اللوحة غير متاح حاليًا. بعد تفعيل Partner access يمكن إضافة
           WHAPI_PARTNER_TOKEN وWHAPI_PARTNER_PROJECT_ID كأسرار Server-only في Vercel دون تخزينها في
           المتصفح أو Supabase.
         </div>
