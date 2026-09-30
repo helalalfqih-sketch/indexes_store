@@ -38,8 +38,7 @@ function mapAuthError(err: unknown): string {
     return "هذا البريد مسجَّل مسبقاً — جرّب تسجيل الدخول.";
   if (m.includes("email not confirmed"))
     return "بريدك غير مؤكَّد بعد — افتح رسالة التأكيد في صندوق بريدك.";
-  if (m.includes("password should be"))
-    return "كلمة المرور ضعيفة — 8 أحرف على الأقل مع حرف ورقم.";
+  if (m.includes("password should be")) return "كلمة المرور ضعيفة — 8 أحرف على الأقل مع حرف ورقم.";
   if (m.includes("rate limit") || m.includes("too many"))
     return "محاولات كثيرة — انتظر قليلاً ثم أعد المحاولة.";
   if (m.includes("access_denied") || m.includes("cancelled") || m.includes("canceled"))
