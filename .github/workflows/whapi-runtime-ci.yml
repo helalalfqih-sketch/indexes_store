@@ -14,7 +14,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
@@ -42,21 +42,10 @@ jobs:
       - name: Focused unit tests
         run: npx vitest run tests/unit/whapi-accounts-functions.test.ts
 
-      - name: Apply focused Prettier formatting
+      - name: Formatting check
         run: |
           npx prettier --write src/lib/whapi-accounts.functions.ts src/lib/whapi-partner.server.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx src/integrations/supabase/types.ts tests/unit/whapi-accounts-functions.test.ts
-          if git diff --quiet; then
-            echo "Formatting already clean."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/lib/whapi-accounts.functions.ts src/lib/whapi-partner.server.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx src/integrations/supabase/types.ts tests/unit/whapi-accounts-functions.test.ts
-          git commit -m "style: format Whapi Partner runtime"
-          git push origin HEAD:${{ github.head_ref }}
-
-      - name: Formatting check
-        run: npx prettier --check src/lib/whapi-accounts.functions.ts src/lib/whapi-partner.server.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx src/integrations/supabase/types.ts tests/unit/whapi-accounts-functions.test.ts
+          git diff --exit-code -- src/lib/whapi-accounts.functions.ts src/lib/whapi-partner.server.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx src/integrations/supabase/types.ts tests/unit/whapi-accounts-functions.test.ts
 
       - name: Verify production dependency audit
         run: npm audit --omit=dev --audit-level=high
