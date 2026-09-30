@@ -1,14 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  CheckCircle2,
-  CircleOff,
-  QrCode,
-  RefreshCw,
-  RotateCcw,
-  Unplug,
-} from "lucide-react";
+import { CheckCircle2, CircleOff, QrCode, RefreshCw, RotateCcw, Unplug } from "lucide-react";
 import { toast } from "sonner";
 import {
   getWhapiAccountQr,
@@ -73,7 +66,8 @@ export function WhapiAccountsPanel() {
             حسابات واتساب — Whapi + Vercel
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            تشغيل واتساب عبر قنوات Whapi الدائمة، ولوحة الإدارة والـAPI على Vercel بدون اعتماد على Render أو GOWA.
+            تشغيل واتساب عبر قنوات Whapi الدائمة، ولوحة الإدارة والـAPI على Vercel بدون اعتماد على
+            Render أو GOWA.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -94,13 +88,14 @@ export function WhapiAccountsPanel() {
 
       {query.isError && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
-          تعذر قراءة قنوات Whapi: {(query.error as Error).message}. تحقق من WHAPI_TOKEN أو WHAPI_ACCOUNTS_JSON في Vercel.
+          تعذر قراءة قنوات Whapi: {(query.error as Error).message}. تحقق من WHAPI_TOKEN أو
+          WHAPI_ACCOUNTS_JSON في Vercel.
         </div>
       )}
 
       <div className="rounded-xl border border-border bg-background/70 p-3 text-xs text-muted-foreground">
-        لإضافة رقم جديد: أنشئ Channel في Whapi، أضف Token كمتغير Server-only في Vercel، ثم أدرجه في WHAPI_ACCOUNTS_JSON.
-        لا تُخزّن Tokens في المتصفح أو Supabase.
+        لإضافة رقم جديد: أنشئ Channel في Whapi، أضف Token كمتغير Server-only في Vercel، ثم أدرجه في
+        WHAPI_ACCOUNTS_JSON. لا تُخزّن Tokens في المتصفح أو Supabase.
       </div>
 
       <div className="grid gap-3">
@@ -122,8 +117,12 @@ export function WhapiAccountsPanel() {
                     </span>
                   </div>
                   <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">
-                    <p dir="ltr" className="font-mono break-all">channel_id: {account.id}</p>
-                    <p dir="ltr" className="font-mono break-all">phone: {account.phone}</p>
+                    <p dir="ltr" className="font-mono break-all">
+                      channel_id: {account.id}
+                    </p>
+                    <p dir="ltr" className="font-mono break-all">
+                      phone: {account.phone}
+                    </p>
                   </div>
                 </div>
 
