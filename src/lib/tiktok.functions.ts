@@ -51,26 +51,24 @@ export const listTikTokAccounts = createServerFn({ method: "GET" })
       ok: true,
       configured: Boolean(
         process.env.TIKTOK_CLIENT_KEY?.trim() &&
-          process.env.TIKTOK_CLIENT_SECRET?.trim() &&
-          process.env.TIKTOK_REDIRECT_URI?.trim() &&
-          process.env.TIKTOK_TOKEN_ENCRYPTION_KEY?.trim(),
+        process.env.TIKTOK_CLIENT_SECRET?.trim() &&
+        process.env.TIKTOK_REDIRECT_URI?.trim() &&
+        process.env.TIKTOK_TOKEN_ENCRYPTION_KEY?.trim(),
       ),
-      accounts: (data || []).map(
-        (row): TikTokAccountSummary => ({
-          id: row.id,
-          openId: row.open_id,
-          unionId: row.union_id,
-          displayName: row.display_name,
-          avatarUrl: row.avatar_url,
-          status: row.status as TikTokAccountSummary["status"],
-          scopes: row.scopes || [],
-          tokenExpiresAt: row.token_expires_at,
-          refreshTokenExpiresAt: row.refresh_token_expires_at,
-          lastSyncedAt: row.last_synced_at,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-        }),
-      ),
+      accounts: (data || []).map((row): TikTokAccountSummary => ({
+        id: row.id,
+        openId: row.open_id,
+        unionId: row.union_id,
+        displayName: row.display_name,
+        avatarUrl: row.avatar_url,
+        status: row.status as TikTokAccountSummary["status"],
+        scopes: row.scopes || [],
+        tokenExpiresAt: row.token_expires_at,
+        refreshTokenExpiresAt: row.refresh_token_expires_at,
+        lastSyncedAt: row.last_synced_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      })),
     };
   });
 
