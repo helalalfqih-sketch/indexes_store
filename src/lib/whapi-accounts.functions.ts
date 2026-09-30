@@ -224,10 +224,8 @@ export const listWhapiAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireIntegrationPermission(context);
-    const {
-      isWhapiPartnerConfigured,
-      listWhapiPartnerChannels,
-    } = await import("@/lib/whapi-partner.server");
+    const { isWhapiPartnerConfigured, listWhapiPartnerChannels } =
+      await import("@/lib/whapi-partner.server");
 
     const byId = new Map(configuredAccounts().map((account) => [account.id, account]));
     for (const account of await listWhapiPartnerChannels()) {
@@ -271,7 +269,11 @@ export const createWhapiAccount = createServerFn({ method: "POST" })
     await requireIntegrationPermission(context);
     const label = z.string().trim().min(1).max(120).parse(data.label);
     const phone = data.phone?.trim()
-      ? z.string().trim().regex(/^\\d{8,20}$/).parse(data.phone.trim())
+      ? z
+          .string()
+          .trim()
+          .regex(/^\\d{8,20}$/)
+          .parse(data.phone.trim())
       : undefined;
 
     const { createWhapiPartnerChannel } = await import("@/lib/whapi-partner.server");
