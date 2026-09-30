@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from "@/integrations/supabase/client.server";
 const DEFAULT_AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
 const DEFAULT_TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 const DEFAULT_USER_INFO_URL = "https://open.tiktokapis.com/v2/user/info/";
-const DEFAULT_SCOPE = "user.info.basic";
+const DEFAULT_SCOPE = "user.info.basic,user.info.profile,user.info.stats,video.list,video.upload";
 const OAUTH_STATE_TTL_MS = 5 * 60 * 1000;
 
 export interface TikTokTokenSet {

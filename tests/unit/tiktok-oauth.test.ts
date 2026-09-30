@@ -25,7 +25,8 @@ describe("TikTok OAuth server helpers", () => {
     process.env.TIKTOK_CLIENT_SECRET = "server-secret";
     process.env.TIKTOK_REDIRECT_URI = "https://indexes-store.vercel.app/api/tiktok/callback";
     process.env.TIKTOK_TOKEN_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
-    process.env.TIKTOK_OAUTH_SCOPES = "user.info.basic";
+    process.env.TIKTOK_OAUTH_SCOPES =
+      "user.info.basic,user.info.profile,user.info.stats,video.list,video.upload";
   });
 
   afterEach(() => {
@@ -53,12 +54,23 @@ describe("TikTok OAuth server helpers", () => {
     expect(url.pathname).toBe("/v2/auth/authorize/");
     expect(url.searchParams.get("client_key")).toBe("client-key");
     expect(url.searchParams.get("response_type")).toBe("code");
-    expect(url.searchParams.get("scope")).toBe("user.info.basic");
+    expect(url.searchParams.get("scope")).toBe(
+      "user.info.basic,user.info.profile,user.info.stats,video.list,video.upload",
+    );
     expect(url.searchParams.get("redirect_uri")).toBe(
       "https://indexes-store.vercel.app/api/tiktok/callback",
     );
     expect(url.searchParams.get("state")).toBe("state-123");
     expect(value).not.toContain("server-secret");
+  });
+
+  it("uses the full approved TikTok scope set by default when no override is configured", () => {
+    delete process.env.TIKTOK_OAUTH_SCOPES;
+    const value = buildTikTokAuthorizationUrl({ state: "state-default-scopes" });
+    const url = new URL(value);
+    expect(url.searchParams.get("scope")).toBe(
+      "user.info.basic,user.info.profile,user.info.stats,video.list,video.upload",
+    );
   });
 
   it("fails closed when an endpoint override leaves the TikTok host", () => {
