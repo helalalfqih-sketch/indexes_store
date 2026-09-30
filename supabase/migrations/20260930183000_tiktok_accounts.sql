@@ -66,6 +66,9 @@ GRANT ALL ON public.tiktok_account_secrets TO service_role;
 CREATE TABLE IF NOT EXISTS public.tiktok_oauth_states (
   state_hash text PRIMARY KEY
     CHECK (char_length(state_hash) = 64),
+  state_encrypted text NOT NULL,
+  device_code_hash text NOT NULL UNIQUE
+    CHECK (char_length(device_code_hash) = 64),
   tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   user_id uuid NOT NULL,
   return_to text NOT NULL DEFAULT '/admin/integrations/tiktok',
