@@ -62,10 +62,7 @@ function parseChannel(value: unknown): WhapiPartnerChannel | null {
 
   return {
     id,
-    label:
-      typeof row.name === "string" && row.name.trim()
-        ? row.name.trim()
-        : `WhatsApp ${id}`,
+    label: typeof row.name === "string" && row.name.trim() ? row.name.trim() : `WhatsApp ${id}`,
     phone: typeof row.phone === "string" ? row.phone.replace(/\D/g, "") : "",
     token,
   };
