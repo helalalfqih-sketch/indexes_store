@@ -61,6 +61,22 @@ const capabilityGroups = [
       "فصل الحساب محليًا وحذف التوكنات المشفرة بعد تأكيد صريح",
     ],
   },
+  {
+    title: "TikTok — البحث والفحص",
+    items: [
+      "فحص الملف الشخصي والنطاقات والإحصاءات المتاحة",
+      "عرض فيديوهات الحساب والبحث داخل فيديوهات الحساب المرتبط",
+      "قراءة فيديو محدد وفحص جاهزية الحساب للنشر",
+    ],
+  },
+  {
+    title: "TikTok — النشر",
+    items: [
+      "رفع فيديو كمسودة بعد تأكيد صريح",
+      "بدء نشر فيديو مباشر بعد تأكيد صريح",
+      "فحص حالة publish_id دون عرض مفاتيح TikTok",
+    ],
+  },
 ] as const;
 
 function StoreMcpAuthorize() {
@@ -114,7 +130,11 @@ function StoreMcpAuthorize() {
                 (group.title !== "TikTok — قراءة" ||
                   query.scope.split(" ").includes("tiktok.read")) &&
                 (group.title !== "TikTok — إدارة" ||
-                  query.scope.split(" ").includes("tiktok.manage")),
+                  query.scope.split(" ").includes("tiktok.manage")) &&
+                (group.title !== "TikTok — البحث والفحص" ||
+                  query.scope.split(" ").includes("tiktok.read")) &&
+                (group.title !== "TikTok — النشر" ||
+                  query.scope.split(" ").includes("tiktok.publish")),
             )
             .map((group) => (
               <section key={group.title} className="rounded-xl border p-4">
@@ -132,7 +152,8 @@ function StoreMcpAuthorize() {
           <p className="font-semibold">حواجز الأمان</p>
           <p className="mt-1 text-muted-foreground">
             لا كتابة مباشرة إلى main، ولا Merge أو Production Deploy أو migrations أو قراءة أسرار.
-            تعديلات المصدر محصورة في فروع agent/* وDraft PRs مع تحقق SHA.
+            تعديلات المصدر محصورة في فروع agent/* وDraft PRs مع تحقق SHA. عمليات نشر TikTok
+            تتطلب صلاحية مستقلة وتأكيدًا صريحًا لكل عملية كتابة.
           </p>
         </div>
 
