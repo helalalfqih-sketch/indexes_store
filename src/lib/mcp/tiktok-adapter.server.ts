@@ -11,14 +11,15 @@ export interface TikTokMcpAdapter {
   getAccount(accountId: string): Promise<Record<string, unknown>>;
   inspectCapabilities(accountId: string): Promise<Record<string, unknown>>;
   inspectProfile(accountId: string): Promise<Record<string, unknown>>;
-  listVideos(accountId: string, maxCount: number, cursor?: number): Promise<Record<string, unknown>>;
+  listVideos(
+    accountId: string,
+    maxCount: number,
+    cursor?: number,
+  ): Promise<Record<string, unknown>>;
   searchVideos(accountId: string, query: string, limit: number): Promise<Record<string, unknown>>;
   getVideo(accountId: string, videoId: string): Promise<Record<string, unknown>>;
   creatorInfo(accountId: string): Promise<Record<string, unknown>>;
-  uploadVideoDraft(
-    accountId: string,
-    videoUrl: string,
-  ): Promise<Record<string, unknown>>;
+  uploadVideoDraft(accountId: string, videoUrl: string): Promise<Record<string, unknown>>;
   publishVideo(
     accountId: string,
     input: {
@@ -37,11 +38,7 @@ export interface TikTokMcpAdapter {
   disconnectAccount(accountId: string): Promise<Record<string, unknown>>;
 }
 
-export type TikTokPrivacyLevel =
-  | "PUBLIC_TO_EVERYONE"
-  | "MUTUAL_FOLLOW_FRIENDS"
-  | "FOLLOWER_OF_CREATOR"
-  | "SELF_ONLY";
+export type TikTokPrivacyLevel = "PUBLIC_TO_EVERYONE" | "MUTUAL_FOLLOW_FRIENDS" | "FOLLOWER_OF_CREATOR" | "SELF_ONLY";
 
 const ACCOUNT_SELECT =
   "id,open_id,union_id,display_name,avatar_url,status,scopes,token_expires_at,refresh_token_expires_at,last_synced_at,created_at,updated_at";
@@ -111,12 +108,7 @@ function normalizePullUrl(value: string) {
     throw new Error("TIKTOK_MEDIA_URL_INVALID");
   }
   const host = url.hostname.toLowerCase();
-  if (
-    host === "localhost" ||
-    host === "127.0.0.1" ||
-    host === "::1" ||
-    host.endsWith(".local")
-  ) {
+  if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host.endsWith(".local")) {
     throw new Error("TIKTOK_MEDIA_URL_INVALID");
   }
   return url.toString();
@@ -245,9 +237,7 @@ export function createTikTokMcpAdapter(tenantId: string, userId: string): TikTok
       required: { all: ["video.list"] },
     });
     return {
-      videos: Array.isArray(data.videos)
-        ? data.videos.map((video) => asRecord(video))
-        : [],
+      videos: Array.isArray(data.videos) ? data.videos.map((video) => asRecord(video)) : [],
       cursor: typeof data.cursor === "number" ? data.cursor : null,
       has_more: Boolean(data.has_more),
     };
@@ -365,9 +355,7 @@ export function createTikTokMcpAdapter(tenantId: string, userId: string): TikTok
         body: { filters: { video_ids: [videoId] } },
         required: { all: ["video.list"] },
       });
-      const videos = Array.isArray(data.videos)
-        ? data.videos.map((video) => asRecord(video))
-        : [];
+      const videos = Array.isArray(data.videos) ? data.videos.map((video) => asRecord(video)) : [];
       return {
         found: videos.length > 0,
         video: videos[0] || null,
