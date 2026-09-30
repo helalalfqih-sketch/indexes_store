@@ -3,6 +3,7 @@ import {
   buildWhapiRuntimeMetadataRow,
   parseWhapiAccountsConfig,
 } from "../../src/lib/whapi-accounts.functions";
+import { parseWhapiPartnerChannels } from "../../src/lib/whapi-partner.server";
 
 describe("Whapi account configuration", () => {
   it("parses multiple server-side token references without accepting raw tokens", () => {
@@ -91,4 +92,26 @@ describe("Whapi account configuration", () => {
     });
     expect(JSON.stringify(row)).not.toContain("token");
   });
+  it("parses Whapi Partner channel listings without persisting tokens in account metadata", () => {
+    expect(
+      parseWhapiPartnerChannels({
+        channels: [
+          {
+            id: "CHANNEL-KING",
+            name: "الكنج",
+            phone: "+967700000001",
+            token: "server-channel-token",
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        id: "CHANNEL-KING",
+        label: "الكنج",
+        phone: "967700000001",
+        token: "server-channel-token",
+      },
+    ]);
+  });
+
 });
