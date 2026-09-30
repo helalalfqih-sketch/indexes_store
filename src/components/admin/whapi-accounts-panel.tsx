@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckCircle2, CircleOff, QrCode, RefreshCw, RotateCcw, Unplug } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleOff,
+  Loader2,
+  Plus,
+  QrCode,
+  RefreshCw,
+  RotateCcw,
+  Unplug,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
+  createWhapiAccount,
   getWhapiAccountQr,
   listWhapiAccounts,
   logoutWhapiAccount,
@@ -13,9 +23,12 @@ import {
 export function WhapiAccountsPanel() {
   const queryClient = useQueryClient();
   const listAccountsFn = useServerFn(listWhapiAccounts);
+  const createAccountFn = useServerFn(createWhapiAccount);
   const getQrFn = useServerFn(getWhapiAccountQr);
   const reconnectFn = useServerFn(reconnectWhapiAccount);
   const logoutFn = useServerFn(logoutWhapiAccount);
+  const [newLabel, setNewLabel] = useState("");
+  const [newPhone, setNewPhone] = useState("");
   const [qr, setQr] = useState<{ accountId: string; dataUrl: string } | null>(null);
 
   const query = useQuery({
@@ -28,6 +41,23 @@ export function WhapiAccountsPanel() {
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ["whapi-whatsapp-accounts"] });
   };
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      createAccountFn({
+        data: {
+          label: newLabel.trim(),
+          ...(newPhone.trim() ? { phone: newPhone.trim() } : {}),
+        },
+      }),
+    onSuccess: async () => {
+      toast.success("تم إنشاء قناة Whapi. قد تستغرق التهيئة حتى تصبح جاهزة للـQR.");
+      setNewLabel("");
+      setNewPhone("");
+      await refresh();
+    },
+    onError: (error: Error) => toast.error(error.message || "تعذر إنشاء قناة Whapi"),
+  });
 
   const qrMutation = useMutation({
     mutationFn: (accountId: string) => getQrFn({ data: { accountId } }),
@@ -55,6 +85,7 @@ export function WhapiAccountsPanel() {
   });
 
   const accounts = query.data?.accounts ?? [];
+  const canCreateAccounts = query.data?.canCreateAccounts ?? false;
   const connectedCount = accounts.filter((account) => account.isLoggedIn).length;
 
   return (
@@ -88,15 +119,52 @@ export function WhapiAccountsPanel() {
 
       {query.isError && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
-          تعذر قراءة قنوات Whapi: {(query.error as Error).message}. تحقق من WHAPI_TOKEN أو
-          WHAPI_ACCOUNTS_JSON في Vercel.
+          تعذر قراءة قنوات Whapi: {(query.error as Error).message}. تحقق من إعدادات Whapi في Vercel.
         </div>
       )}
 
-      <div className="rounded-xl border border-border bg-background/70 p-3 text-xs text-muted-foreground">
-        لإضافة رقم جديد: أنشئ Channel في Whapi، أضف Token كمتغير Server-only في Vercel، ثم أدرجه في
-        WHAPI_ACCOUNTS_JSON. لا تُخزّن Tokens في المتصفح أو Supabase.
-      </div>
+      {canCreateAccounts ? (
+        <div className="rounded-xl border border-border bg-background/70 p-3">
+          <div className="grid gap-2 md:grid-cols-[1fr_220px_auto]">
+            <input
+              value={newLabel}
+              onChange={(event) => setNewLabel(event.target.value)}
+              placeholder="اسم الحساب — مثال: الكنج"
+              className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+            />
+            <input
+              value={newPhone}
+              onChange={(event) => setNewPhone(event.target.value.replace(/\D/g, ""))}
+              placeholder="9677XXXXXXXX"
+              dir="ltr"
+              inputMode="numeric"
+              className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-mono"
+            />
+            <button
+              type="button"
+              disabled={!newLabel.trim() || createMutation.isPending}
+              onClick={() => createMutation.mutate()}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {createMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+              إضافة حساب
+            </button>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            ينشئ Whapi Channel جديدًا ثم يظهر QR للربط من WhatsApp ← الأجهزة المرتبطة. Channel
+            Token لا يُحفظ في Supabase أو المتصفح.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-background/70 p-3 text-xs text-muted-foreground">
+          الحساب الأساسي يعمل عبر WHAPI_TOKEN. لتفعيل «إضافة حساب» من داخل اللوحة، يلزم إعداد
+          WHAPI_PARTNER_TOKEN وWHAPI_PARTNER_PROJECT_ID كأسرار Server-only في Vercel.
+        </div>
+      )}
 
       <div className="grid gap-3">
         {accounts.map((account) => {
@@ -121,7 +189,7 @@ export function WhapiAccountsPanel() {
                       channel_id: {account.id}
                     </p>
                     <p dir="ltr" className="font-mono break-all">
-                      phone: {account.phone}
+                      phone: {account.phone || "—"}
                     </p>
                     {account.metadataSynced === false && (
                       <p className="font-bold text-amber-400">Supabase metadata: غير متزامن</p>
@@ -173,7 +241,7 @@ export function WhapiAccountsPanel() {
 
         {!query.isLoading && !query.isError && accounts.length === 0 && (
           <div className="rounded-xl border border-dashed border-border bg-background p-6 text-center text-xs text-muted-foreground">
-            لا توجد قناة Whapi مهيأة في بيئة Vercel. أضف WHAPI_TOKEN للحساب الأساسي.
+            لا توجد قناة Whapi مهيأة. أضف WHAPI_TOKEN للحساب الأساسي أو فعّل Partner API.
           </div>
         )}
       </div>
