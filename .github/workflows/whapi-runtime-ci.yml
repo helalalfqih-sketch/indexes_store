@@ -41,3 +41,9 @@ jobs:
 
       - name: Formatting check
         run: npx prettier --check src/lib/whapi-accounts.functions.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx tests/unit/whapi-accounts-functions.test.ts
+
+      - name: Dependency audit fix probe
+        continue-on-error: true
+        run: |
+          npm audit fix --package-lock-only
+          git diff -- package-lock.json
