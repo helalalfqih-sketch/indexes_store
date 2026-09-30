@@ -14,8 +14,7 @@ describe("resolveAuthRedirectUrl", () => {
   it("maps Vercel preview deployments to the canonical production callback", () => {
     expect(
       resolveAuthRedirectUrl({
-        currentOrigin:
-          "https://indexes-store-ofqghlkvm-helalalfqih-2473s-projects.vercel.app",
+        currentOrigin: "https://indexes-store-ofqghlkvm-helalalfqih-2473s-projects.vercel.app",
         baseUrl: "/",
       }),
     ).toBe("https://indexes-store.vercel.app/auth");
