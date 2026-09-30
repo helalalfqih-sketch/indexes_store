@@ -7,7 +7,6 @@ import {
   ExternalLink,
   Loader2,
   Music2,
-  Plus,
   QrCode,
   RefreshCw,
   ShieldCheck,
@@ -129,8 +128,8 @@ export function TikTokAccountsPanel() {
             حسابات TikTok
           </h2>
           <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-            ربط عدة حسابات TikTok عبر OAuth. بيانات الحساب غير الحساسة فقط تظهر هنا، بينما مفاتيح
-            الوصول تحفظ مشفرة على الخادم ولا تصل إلى المتصفح.
+            ربط عدة حسابات TikTok عبر QR على الهاتف مع OAuth رسمي في الخلفية. بيانات الحساب غير
+            الحساسة فقط تظهر هنا، بينما مفاتيح الوصول تحفظ مشفرة على الخادم ولا تصل إلى المتصفح.
           </p>
         </div>
 
@@ -156,9 +155,8 @@ export function TikTokAccountsPanel() {
             {connectMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Plus className="h-4 w-4" />
+              <QrCode className="h-4 w-4" />
             )}
-            <QrCode className="h-4 w-4" />
             ربط عبر QR
           </button>
         </div>
