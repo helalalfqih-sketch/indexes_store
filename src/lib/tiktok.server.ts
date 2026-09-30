@@ -5,7 +5,7 @@ const DEFAULT_AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
 const DEFAULT_TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 const DEFAULT_USER_INFO_URL = "https://open.tiktokapis.com/v2/user/info/";
 const DEFAULT_SCOPE = "user.info.basic";
-const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const OAUTH_STATE_TTL_MS = 5 * 60 * 1000;
 
 export interface TikTokTokenSet {
   accessToken: string;
@@ -294,11 +294,12 @@ export async function beginTikTokOAuthTransaction(input: {
   tenantId: string;
   userId: string;
   returnTo?: string;
-}): Promise<{ authorizationUrl: string }> {
-  config();
+}): Promise<{ authorizationUrl: string; deviceUrl: string }> {
+  const cfg = config();
 
   const admin = getSupabaseAdmin();
   const state = randomBytes(32).toString("base64url");
+  const deviceCode = randomBytes(32).toString("base64url");
   const now = Date.now();
   const expiresAt = new Date(now + OAUTH_STATE_TTL_MS).toISOString();
 
@@ -306,6 +307,8 @@ export async function beginTikTokOAuthTransaction(input: {
 
   const { error } = await admin.from("tiktok_oauth_states").insert({
     state_hash: stateHash(state),
+    state_encrypted: encryptTikTokSecret(state),
+    device_code_hash: stateHash(deviceCode),
     tenant_id: input.tenantId,
     user_id: input.userId,
     return_to: normalizeTikTokReturnTo(input.returnTo),
@@ -313,9 +316,39 @@ export async function beginTikTokOAuthTransaction(input: {
   });
   if (error) throw new Error(`TIKTOK_OAUTH_STATE_STORE_FAILED:${error.code || "unknown"}`);
 
+  const origin = new URL(cfg.redirectUri).origin;
+  const deviceUrl = new URL("/api/tiktok/device", origin);
+  deviceUrl.searchParams.set("code", deviceCode);
+
   return {
     authorizationUrl: buildTikTokAuthorizationUrl({ state }),
+    deviceUrl: deviceUrl.toString(),
   };
+}
+
+export async function resolveTikTokDeviceAuthorization(deviceCode: string): Promise<string> {
+  if (!/^[A-Za-z0-9_-]{32,128}$/.test(deviceCode)) {
+    throw new Error("TIKTOK_DEVICE_CODE_INVALID");
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: transaction, error } = await admin
+    .from("tiktok_oauth_states")
+    .select("state_hash,state_encrypted,expires_at")
+    .eq("device_code_hash", stateHash(deviceCode))
+    .maybeSingle();
+
+  if (error || !transaction) throw new Error("TIKTOK_DEVICE_CODE_NOT_FOUND");
+  if (new Date(transaction.expires_at).getTime() <= Date.now()) {
+    throw new Error("TIKTOK_DEVICE_CODE_EXPIRED");
+  }
+
+  const state = decryptTikTokSecret(transaction.state_encrypted);
+  if (stateHash(state) !== transaction.state_hash) {
+    throw new Error("TIKTOK_DEVICE_STATE_MISMATCH");
+  }
+
+  return buildTikTokAuthorizationUrl({ state });
 }
 
 export async function completeTikTokOAuth(input: {
