@@ -70,6 +70,15 @@ function tiktokFixture(): TikTokMcpAdapter {
   return {
     listAccounts: vi.fn(async () => ({ accounts: [], secret_fields_included: false })),
     getAccount: vi.fn(async () => ({ found: false, account: null, secret_fields_included: false })),
+    inspectCapabilities: vi.fn(async () => ({ capabilities: {}, provider_scopes: [] })),
+    inspectProfile: vi.fn(async () => ({ user: {}, requested_fields: [] })),
+    listVideos: vi.fn(async () => ({ videos: [], cursor: null, has_more: false })),
+    searchVideos: vi.fn(async () => ({ videos: [], count: 0, pages_scanned: 1 })),
+    getVideo: vi.fn(async () => ({ found: false, video: null })),
+    creatorInfo: vi.fn(async () => ({ creator_info: {} })),
+    uploadVideoDraft: vi.fn(async () => ({ accepted: true, publish_id: "draft-1" })),
+    publishVideo: vi.fn(async () => ({ accepted: true, publish_id: "publish-1" })),
+    publishStatus: vi.fn(async () => ({ publish_id: "publish-1", status: {} })),
     startLink: vi.fn(async () => ({
       device_url: "https://indexes-store.vercel.app/api/tiktok/device?code=opaque-test-code",
       expires_in_seconds: 300,
@@ -124,6 +133,7 @@ describe("private store MCP", () => {
     { name: "create_development_branch", arguments: { branch: "agent/scope-test", confirmed: true }, required: "store.develop", scopes: ["store.read"], requested: "store.read store.develop" },
     { name: "tiktok_list_accounts", arguments: {}, required: "tiktok.read", scopes: ["store.read"], requested: "store.read tiktok.read" },
     { name: "tiktok_start_link", arguments: {}, required: "tiktok.manage", scopes: ["store.read", "tiktok.read"], requested: "store.read tiktok.read tiktok.manage" },
+    { name: "tiktok_publish_video", arguments: { account_id: "00000000-0000-4000-8000-000000000001", video_url: "https://indexes-store.vercel.app/video.mp4", privacy_level: "SELF_ONLY", confirmed: true }, required: "tiktok.publish", scopes: ["store.read", "tiktok.read", "tiktok.manage"], requested: "store.read tiktok.read tiktok.manage tiktok.publish" },
   ])("challenges for missing OAuth scope before $name executes", async ({ name, arguments: args, required, scopes, requested }) => {
     const originalScopes = [...scopes];
     const { client, adapter, development, browserInspection, tiktok } = await connected(scopes);
@@ -211,6 +221,15 @@ describe("private store MCP", () => {
           "compare_preview",
           "tiktok_list_accounts",
           "tiktok_get_account",
+          "tiktok_inspect_capabilities",
+          "tiktok_inspect_profile",
+          "tiktok_list_videos",
+          "tiktok_search_videos",
+          "tiktok_get_video",
+          "tiktok_creator_info",
+          "tiktok_upload_video_draft",
+          "tiktok_publish_video",
+          "tiktok_publish_status",
           "tiktok_start_link",
           "tiktok_refresh_account",
           "tiktok_disconnect_account",
@@ -223,6 +242,9 @@ describe("private store MCP", () => {
       expect(byName.get("patch_source_file")?.annotations?.readOnlyHint).toBe(false);
       expect(byName.get("patch_source_file")?.annotations?.destructiveHint).toBe(false);
       expect(byName.get("tiktok_list_accounts")?.annotations?.readOnlyHint).toBe(true);
+      expect(byName.get("tiktok_search_videos")?.annotations?.readOnlyHint).toBe(true);
+      expect(byName.get("tiktok_publish_video")?.annotations?.readOnlyHint).toBe(false);
+      expect(byName.get("tiktok_publish_video")?.annotations?.destructiveHint).toBe(false);
       expect(byName.get("tiktok_start_link")?.annotations?.readOnlyHint).toBe(false);
       expect(byName.get("tiktok_start_link")?.annotations?.destructiveHint).toBe(false);
       expect(byName.get("tiktok_disconnect_account")?.annotations?.destructiveHint).toBe(true);
@@ -237,6 +259,7 @@ describe("private store MCP", () => {
       "store.read",
       "tiktok.read",
       "tiktok.manage",
+      "tiktok.publish",
     ]);
     const accountId = "00000000-0000-4000-8000-000000000001";
     try {
@@ -248,11 +271,66 @@ describe("private store MCP", () => {
       expect(byName.get("tiktok_start_link")?._meta?.securitySchemes).toEqual([
         { type: "oauth2", scopes: ["store.read", "tiktok.manage"] },
       ]);
+      expect(byName.get("tiktok_publish_video")?._meta?.securitySchemes).toEqual([
+        { type: "oauth2", scopes: ["store.read", "tiktok.publish"] },
+      ]);
 
       expect((await client.callTool({ name: "tiktok_list_accounts", arguments: {} })).isError).not.toBe(true);
       expect(
         (await client.callTool({ name: "tiktok_get_account", arguments: { account_id: accountId } }))
           .isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_inspect_capabilities", arguments: { account_id: accountId } })).isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_inspect_profile", arguments: { account_id: accountId } })).isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_list_videos", arguments: { account_id: accountId } })).isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_search_videos", arguments: { account_id: accountId, query: "product" } })).isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_get_video", arguments: { account_id: accountId, video_id: "video-1" } })).isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_creator_info", arguments: { account_id: accountId } })).isError,
+      ).not.toBe(true);
+      expect(
+        (
+          await client.callTool({
+            name: "tiktok_upload_video_draft",
+            arguments: {
+              account_id: accountId,
+              video_url: "https://indexes-store.vercel.app/video.mp4",
+              confirmed: true,
+            },
+          })
+        ).isError,
+      ).not.toBe(true);
+      expect(
+        (
+          await client.callTool({
+            name: "tiktok_publish_video",
+            arguments: {
+              account_id: accountId,
+              video_url: "https://indexes-store.vercel.app/video.mp4",
+              title: "Product",
+              privacy_level: "SELF_ONLY",
+              confirmed: true,
+            },
+          })
+        ).isError,
+      ).not.toBe(true);
+      expect(
+        (
+          await client.callTool({
+            name: "tiktok_publish_status",
+            arguments: { account_id: accountId, publish_id: "publish-1" },
+          })
+        ).isError,
       ).not.toBe(true);
       expect((await client.callTool({ name: "tiktok_start_link", arguments: {} })).isError).not.toBe(true);
       expect(
@@ -270,6 +348,26 @@ describe("private store MCP", () => {
 
       expect(tiktok.listAccounts).toHaveBeenCalledOnce();
       expect(tiktok.getAccount).toHaveBeenCalledWith(accountId);
+      expect(tiktok.inspectCapabilities).toHaveBeenCalledWith(accountId);
+      expect(tiktok.inspectProfile).toHaveBeenCalledWith(accountId);
+      expect(tiktok.listVideos).toHaveBeenCalledWith(accountId, 20, undefined);
+      expect(tiktok.searchVideos).toHaveBeenCalledWith(accountId, "product", 20);
+      expect(tiktok.getVideo).toHaveBeenCalledWith(accountId, "video-1");
+      expect(tiktok.creatorInfo).toHaveBeenCalledWith(accountId);
+      expect(tiktok.uploadVideoDraft).toHaveBeenCalledWith(
+        accountId,
+        "https://indexes-store.vercel.app/video.mp4",
+      );
+      expect(tiktok.publishVideo).toHaveBeenCalledWith(accountId, {
+        videoUrl: "https://indexes-store.vercel.app/video.mp4",
+        title: "Product",
+        privacyLevel: "SELF_ONLY",
+        disableComment: false,
+        disableDuet: false,
+        disableStitch: false,
+        videoCoverTimestampMs: undefined,
+      });
+      expect(tiktok.publishStatus).toHaveBeenCalledWith(accountId, "publish-1");
       expect(tiktok.startLink).toHaveBeenCalledOnce();
       expect(tiktok.refreshAccount).toHaveBeenCalledWith(accountId);
       expect(tiktok.disconnectAccount).toHaveBeenCalledWith(accountId);
