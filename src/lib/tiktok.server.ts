@@ -1,9 +1,4 @@
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHash,
-  randomBytes,
-} from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { getSupabaseAdmin } from "@/integrations/supabase/client.server";
 
 const DEFAULT_AUTHORIZE_URL = "https://www.tiktok.com/v2/auth/authorize/";
@@ -143,10 +138,7 @@ export function normalizeTikTokReturnTo(value: string | undefined): string {
   return value;
 }
 
-export function buildTikTokAuthorizationUrl(input: {
-  state: string;
-  returnTo?: string;
-}): string {
+export function buildTikTokAuthorizationUrl(input: { state: string; returnTo?: string }): string {
   const cfg = config();
   const url = new URL(cfg.authorizeUrl);
   url.searchParams.set("client_key", cfg.clientKey);
@@ -172,10 +164,8 @@ export function parseTikTokTokenResponse(payload: unknown): TikTokTokenSet {
   const data = asRecord(root.data);
   const source = Object.keys(data).length > 0 ? data : root;
 
-  const accessToken =
-    typeof source.access_token === "string" ? source.access_token.trim() : "";
-  const refreshToken =
-    typeof source.refresh_token === "string" ? source.refresh_token.trim() : "";
+  const accessToken = typeof source.access_token === "string" ? source.access_token.trim() : "";
+  const refreshToken = typeof source.refresh_token === "string" ? source.refresh_token.trim() : "";
   const openId = typeof source.open_id === "string" ? source.open_id.trim() : "";
   const scopeRaw = typeof source.scope === "string" ? source.scope : "";
   const expiresIn = Number(source.expires_in || 0);
@@ -194,50 +184,34 @@ export function parseTikTokTokenResponse(payload: unknown): TikTokTokenSet {
       .map((item) => item.trim())
       .filter(Boolean),
     expiresIn: Math.max(0, expiresIn),
-    refreshExpiresIn: Number.isFinite(refreshExpiresIn)
-      ? Math.max(0, refreshExpiresIn)
-      : 0,
+    refreshExpiresIn: Number.isFinite(refreshExpiresIn) ? Math.max(0, refreshExpiresIn) : 0,
   };
 }
 
-export function parseTikTokProfile(
-  payload: unknown,
-  fallbackOpenId: string,
-): TikTokProfile {
+export function parseTikTokProfile(payload: unknown, fallbackOpenId: string): TikTokProfile {
   const root = asRecord(payload);
   const providerError = asRecord(root.error);
   const providerCode = providerError.code;
-  if (
-    providerCode != null &&
-    providerCode !== 0 &&
-    providerCode !== "0" &&
-    providerCode !== "ok"
-  ) {
+  if (providerCode != null && providerCode !== 0 && providerCode !== "0" && providerCode !== "ok") {
     throw new Error("TIKTOK_PROFILE_PROVIDER_ERROR");
   }
 
   const data = asRecord(root.data);
   const user = asRecord(data.user);
   const openId =
-    typeof user.open_id === "string" && user.open_id.trim()
-      ? user.open_id.trim()
-      : fallbackOpenId;
+    typeof user.open_id === "string" && user.open_id.trim() ? user.open_id.trim() : fallbackOpenId;
   if (!openId) throw new Error("TIKTOK_PROFILE_OPEN_ID_MISSING");
 
   return {
     openId,
     unionId:
-      typeof user.union_id === "string" && user.union_id.trim()
-        ? user.union_id.trim()
-        : null,
+      typeof user.union_id === "string" && user.union_id.trim() ? user.union_id.trim() : null,
     displayName:
       typeof user.display_name === "string" && user.display_name.trim()
         ? user.display_name.trim()
         : "TikTok account",
     avatarUrl:
-      typeof user.avatar_url === "string" && user.avatar_url.trim()
-        ? user.avatar_url.trim()
-        : null,
+      typeof user.avatar_url === "string" && user.avatar_url.trim() ? user.avatar_url.trim() : null,
   };
 }
 
@@ -328,10 +302,7 @@ export async function beginTikTokOAuthTransaction(input: {
   const now = Date.now();
   const expiresAt = new Date(now + OAUTH_STATE_TTL_MS).toISOString();
 
-  await admin
-    .from("tiktok_oauth_states")
-    .delete()
-    .lt("expires_at", new Date(now).toISOString());
+  await admin.from("tiktok_oauth_states").delete().lt("expires_at", new Date(now).toISOString());
 
   const { error } = await admin.from("tiktok_oauth_states").insert({
     state_hash: stateHash(state),
