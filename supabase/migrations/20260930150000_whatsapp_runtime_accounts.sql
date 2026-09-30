@@ -1,6 +1,7 @@
 -- WhatsApp runtime account metadata for Indexes Store.
 -- Target production project: wtudcippyxbaobqzbmok
 -- Provider credentials/tokens MUST remain server-only in Vercel and are never stored here.
+-- Application writes are service-role only; authenticated staff receive tenant-scoped read access.
 
 BEGIN;
 
@@ -38,25 +39,9 @@ CREATE POLICY "WhatsApp runtime staff read"
   );
 
 DROP POLICY IF EXISTS "WhatsApp runtime managers manage" ON public.whatsapp_runtime_accounts;
-CREATE POLICY "WhatsApp runtime managers manage"
-  ON public.whatsapp_runtime_accounts
-  FOR ALL TO authenticated
-  USING (
-    public.has_tenant_permission(
-      tenant_id,
-      (SELECT auth.uid()),
-      'manager'::public.tenant_role
-    )
-  )
-  WITH CHECK (
-    public.has_tenant_permission(
-      tenant_id,
-      (SELECT auth.uid()),
-      'manager'::public.tenant_role
-    )
-  );
 
 REVOKE ALL ON public.whatsapp_runtime_accounts FROM anon;
+REVOKE ALL ON public.whatsapp_runtime_accounts FROM authenticated;
 GRANT SELECT ON public.whatsapp_runtime_accounts TO authenticated;
 GRANT ALL ON public.whatsapp_runtime_accounts TO service_role;
 
