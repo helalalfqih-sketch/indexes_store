@@ -6,6 +6,8 @@ on:
       - "src/lib/whapi-accounts.functions.ts"
       - "src/components/admin/whapi-accounts-panel.tsx"
       - "src/routes/admin.whatsapp-accounts.tsx"
+      - "src/integrations/supabase/types.ts"
+      - "supabase/migrations/20260930150000_whatsapp_runtime_accounts.sql"
       - "tests/unit/whapi-accounts-functions.test.ts"
       - ".github/workflows/whapi-runtime-ci.yml"
   workflow_dispatch: {}
@@ -40,7 +42,7 @@ jobs:
         run: npx vitest run tests/unit/whapi-accounts-functions.test.ts
 
       - name: Formatting check
-        run: npx prettier --check src/lib/whapi-accounts.functions.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx tests/unit/whapi-accounts-functions.test.ts
+        run: npx prettier --check src/lib/whapi-accounts.functions.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx src/integrations/supabase/types.ts tests/unit/whapi-accounts-functions.test.ts
 
       - name: Dependency audit fix probe
         run: |
