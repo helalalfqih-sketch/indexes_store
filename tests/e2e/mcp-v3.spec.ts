@@ -94,6 +94,15 @@ test("V3 MCP tools return real Chromium evidence and enforce isolated interactio
       ({
         listAccounts: async () => ({ accounts: [], secret_fields_included: false }),
         getAccount: async () => ({ found: false, account: null, secret_fields_included: false }),
+        inspectCapabilities: async () => ({ capabilities: {}, provider_scopes: [] }),
+        inspectProfile: async () => ({ user: {}, requested_fields: [] }),
+        listVideos: async () => ({ videos: [], cursor: null, has_more: false }),
+        searchVideos: async () => ({ videos: [], count: 0, pages_scanned: 1 }),
+        getVideo: async () => ({ found: false, video: null }),
+        creatorInfo: async () => ({ creator_info: {} }),
+        uploadVideoDraft: async () => ({ accepted: true, publish_id: "draft-1" }),
+        publishVideo: async () => ({ accepted: true, publish_id: "publish-1" }),
+        publishStatus: async () => ({ publish_id: "publish-1", status: {} }),
         startLink: async () => ({
           device_url: "https://indexes-store.vercel.app/api/tiktok/device?code=fixture",
           expires_in_seconds: 300,
