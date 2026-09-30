@@ -8,6 +8,7 @@ on:
       - "src/components/admin/tiktok-accounts-panel.tsx"
       - "src/routes/admin.integrations.tiktok.tsx"
       - "src/routes/api.tiktok.callback.ts"
+      - "src/routes/api.tiktok.device.ts"
       - "src/components/admin/admin-shell.tsx"
       - "src/integrations/supabase/types.ts"
       - "supabase/migrations/20260930183000_tiktok_accounts.sql"
@@ -50,7 +51,7 @@ jobs:
 
       - name: Formatting check
         run: |
-          FILES="src/lib/tiktok.server.ts src/lib/tiktok.functions.ts src/components/admin/tiktok-accounts-panel.tsx src/routes/admin.integrations.tiktok.tsx src/routes/api.tiktok.callback.ts src/integrations/supabase/types.ts tests/unit/tiktok-oauth.test.ts tests/unit/tiktok-migration-security.test.ts"
+          FILES="src/lib/tiktok.server.ts src/lib/tiktok.functions.ts src/components/admin/tiktok-accounts-panel.tsx src/routes/admin.integrations.tiktok.tsx src/routes/api.tiktok.callback.ts src/routes/api.tiktok.device.ts src/integrations/supabase/types.ts tests/unit/tiktok-oauth.test.ts tests/unit/tiktok-migration-security.test.ts"
           npx prettier --write $FILES
           git diff -- $FILES
           git diff --exit-code -- $FILES
