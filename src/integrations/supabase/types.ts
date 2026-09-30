@@ -731,6 +731,8 @@ export type Database = {
       tiktok_oauth_states: {
         Row: {
           state_hash: string;
+          state_encrypted: string;
+          device_code_hash: string;
           tenant_id: string;
           user_id: string;
           return_to: string;
@@ -739,6 +741,8 @@ export type Database = {
         };
         Insert: {
           state_hash: string;
+          state_encrypted: string;
+          device_code_hash: string;
           tenant_id: string;
           user_id: string;
           return_to?: string;
@@ -747,6 +751,8 @@ export type Database = {
         };
         Update: {
           state_hash?: string;
+          state_encrypted?: string;
+          device_code_hash?: string;
           tenant_id?: string;
           user_id?: string;
           return_to?: string;
