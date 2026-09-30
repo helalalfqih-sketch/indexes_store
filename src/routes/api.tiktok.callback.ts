@@ -3,7 +3,7 @@ import { completeTikTokOAuth } from "@/lib/tiktok.server";
 
 function safeReason(error: unknown): string {
   const value = error instanceof Error ? error.message : "TIKTOK_OAUTH_FAILED";
-  const sanitized = value.replace(/[^A-Z0-9_:\-]/gi, "").slice(0, 80);
+  const sanitized = value.replace(/[^A-Z0-9_:-]/gi, "").slice(0, 80);
   return sanitized || "TIKTOK_OAUTH_FAILED";
 }
 
