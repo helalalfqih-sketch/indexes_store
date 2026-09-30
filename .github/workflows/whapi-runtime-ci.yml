@@ -1,0 +1,51 @@
+name: Whapi Runtime Focused CI
+
+on:
+  pull_request:
+    paths:
+      - "src/lib/whapi-accounts.functions.ts"
+      - "src/lib/whapi-partner.server.ts"
+      - "src/components/admin/whapi-accounts-panel.tsx"
+      - "src/routes/admin.whatsapp-accounts.tsx"
+      - "src/integrations/supabase/types.ts"
+      - "supabase/migrations/20260930150000_whatsapp_runtime_accounts.sql"
+      - "tests/unit/whapi-accounts-functions.test.ts"
+      - ".github/workflows/whapi-runtime-ci.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and generate route tree
+        run: npm run build
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Focused unit tests
+        run: npx vitest run tests/unit/whapi-accounts-functions.test.ts
+
+      - name: Formatting check
+        run: |
+          npx prettier --write src/lib/whapi-accounts.functions.ts src/lib/whapi-partner.server.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx src/integrations/supabase/types.ts tests/unit/whapi-accounts-functions.test.ts
+          git diff --exit-code -- src/lib/whapi-accounts.functions.ts src/lib/whapi-partner.server.ts src/components/admin/whapi-accounts-panel.tsx src/routes/admin.whatsapp-accounts.tsx src/integrations/supabase/types.ts tests/unit/whapi-accounts-functions.test.ts
+
+      - name: Verify production dependency audit
+        run: npm audit --omit=dev --audit-level=high

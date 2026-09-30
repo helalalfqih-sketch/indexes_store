@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { GowaAccountsPanel } from "@/components/admin/gowa-accounts-panel";
+import { WhapiAccountsPanel } from "@/components/admin/whapi-accounts-panel";
 
 export const Route = createFileRoute("/admin/whatsapp-accounts")({
   head: () => ({
     meta: [
-      { title: "حسابات واتساب المباشرة — لوحة الإدارة" },
+      { title: "حسابات واتساب — لوحة الإدارة" },
       {
         name: "description",
-        content: "إدارة عدة حسابات واتساب عبر الأجهزة المرتبطة وQR من داخل اندكس ستور.",
+        content: "إدارة حسابات واتساب عبر Whapi وVercel بدون اعتماد على Render أو GOWA.",
       },
     ],
   }),
@@ -20,11 +20,11 @@ function WhatsAppAccountsPage() {
       <div>
         <h1 className="text-2xl font-black tracking-tight">حسابات واتساب المباشرة</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          إدارة جلسات GOWA متعددة الحسابات عبر الأجهزة المرتبطة، مع بقاء Meta وWhapi كمسارات مستقلة.
+          Vercel للوحة والـAPI، Whapi لجلسة واتساب الدائمة، وSupabase لبيانات المتجر والوسائط.
         </p>
       </div>
 
-      <GowaAccountsPanel />
+      <WhapiAccountsPanel />
     </div>
   );
 }

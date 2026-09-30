@@ -37,6 +37,7 @@ import {
   Brain,
   ShieldCheck,
   MessageSquare,
+  QrCode,
   Code2,
   Terminal,
 } from "lucide-react";
@@ -123,7 +124,9 @@ function AdminGate({ children }: { children: React.ReactNode }) {
       setStatus("ok");
     } else {
       setStatus("no-role");
-      logUnauthorizedFn({ data: { path: typeof window !== "undefined" ? window.location.pathname : "/admin" } }).catch(() => {});
+      logUnauthorizedFn({
+        data: { path: typeof window !== "undefined" ? window.location.pathname : "/admin" },
+      }).catch(() => {});
     }
   }, [sessionUser, isLoading, isError, error, logUnauthorizedFn, sessionChecked]);
 
@@ -352,6 +355,7 @@ function ShellInner() {
         { to: "/admin/users", label: "المستخدمون والصلاحيات", icon: ShieldCheck },
         { to: "/admin/system-health", label: "حالة النظام والأداء", icon: Activity },
         { to: "/admin/live-logs", label: "سجلات الأخطاء المباشرة (Live Logs)", icon: Terminal },
+        { to: "/admin/whatsapp-accounts", label: "حسابات واتساب المباشرة", icon: QrCode },
         { to: "/admin/integrations/whatsapp", label: "WhatsApp Media Sync", icon: MessageSquare },
         { to: "/admin/platform", label: "التكاملات (SaaS)", icon: Globe },
         { to: "/admin/settings", label: t("nav.settings"), icon: Settings },
@@ -404,7 +408,11 @@ function ShellInner() {
                 title={collapsed ? "توسيع" : "طيّ"}
               >
                 {collapsed ? (
-                  dir === "rtl" ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />
+                  dir === "rtl" ? (
+                    <ChevronsLeft className="h-4 w-4" />
+                  ) : (
+                    <ChevronsRight className="h-4 w-4" />
+                  )
                 ) : dir === "rtl" ? (
                   <ChevronsRight className="h-4 w-4" />
                 ) : (
@@ -431,7 +439,9 @@ function ShellInner() {
                 >
                   {group.emoji} {group.label}
                 </p>
-                {collapsed && <div className="mx-3 mb-1 hidden border-t border-border/50 lg:block" />}
+                {collapsed && (
+                  <div className="mx-3 mb-1 hidden border-t border-border/50 lg:block" />
+                )}
                 {group.items.map((it) => {
                   const Icon = it.icon;
                   if (it.soon) {
@@ -445,7 +455,9 @@ function ShellInner() {
                         }`}
                       >
                         <Icon className="h-5 w-5 shrink-0" />
-                        <span className={`truncate ${collapsed ? "lg:hidden" : ""}`}>{it.label}</span>
+                        <span className={`truncate ${collapsed ? "lg:hidden" : ""}`}>
+                          {it.label}
+                        </span>
                         <span
                           className={`ms-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold ${
                             collapsed ? "lg:hidden" : ""
