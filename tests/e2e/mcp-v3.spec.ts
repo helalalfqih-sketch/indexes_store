@@ -16,6 +16,7 @@ import {
 import type { StoreAdminAdapter } from "../../src/lib/mcp/store-admin.server";
 import type { StoreDevelopmentAdapter } from "../../src/lib/mcp/store-development.server";
 import type { StoreInspectionAdapter } from "../../src/lib/mcp/store-inspection.server";
+import type { TikTokMcpAdapter } from "../../src/lib/mcp/tiktok-adapter.server";
 
 // No production credentials or data: the real browser serves only this intercepted fixture.
 const html = `<!doctype html><html><head><title>Isolated Store QA</title></head><body>
@@ -89,6 +90,26 @@ test("V3 MCP tools return real Chromium evidence and enforce isolated interactio
     developmentAdapterFactory: () => ({}) as StoreDevelopmentAdapter,
     inspectionAdapterFactory: () => ({}) as StoreInspectionAdapter,
     browserInspectionAdapterFactory: () => createStoreBrowserInspectionAdapter(browse),
+    tiktokAdapterFactory: () =>
+      ({
+        listAccounts: async () => ({ accounts: [], secret_fields_included: false }),
+        getAccount: async () => ({ found: false, account: null, secret_fields_included: false }),
+        inspectCapabilities: async () => ({ capabilities: {}, provider_scopes: [] }),
+        inspectProfile: async () => ({ user: {}, requested_fields: [] }),
+        listVideos: async () => ({ videos: [], cursor: null, has_more: false }),
+        searchVideos: async () => ({ videos: [], count: 0, pages_scanned: 1 }),
+        getVideo: async () => ({ found: false, video: null }),
+        creatorInfo: async () => ({ creator_info: {} }),
+        uploadVideoDraft: async () => ({ accepted: true, publish_id: "draft-1" }),
+        publishVideo: async () => ({ accepted: true, publish_id: "publish-1" }),
+        publishStatus: async () => ({ publish_id: "publish-1", status: {} }),
+        startLink: async () => ({
+          device_url: "https://indexes-store.vercel.app/api/tiktok/device?code=fixture",
+          expires_in_seconds: 300,
+        }),
+        refreshAccount: async () => ({ ok: true }),
+        disconnectAccount: async () => ({ ok: true }),
+      }) as TikTokMcpAdapter,
     qaAdapter: {
       inspect: ((url, device, mode) => inspectQa(url, device, mode, browse)) as typeof inspectQa,
       audit: ((url) => fullStoreAudit(url, browse)) as typeof fullStoreAudit,

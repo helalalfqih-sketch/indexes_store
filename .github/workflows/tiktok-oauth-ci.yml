@@ -5,6 +5,10 @@ on:
     paths:
       - "src/lib/tiktok.server.ts"
       - "src/lib/tiktok.functions.ts"
+      - "src/lib/mcp/tiktok-adapter.server.ts"
+      - "src/lib/mcp/store-handler.server.ts"
+      - "src/lib/mcp/store-oauth.server.ts"
+      - "src/routes/mcp-store-authorize.tsx"
       - "src/components/admin/tiktok-accounts-panel.tsx"
       - "src/routes/admin.integrations.tiktok.tsx"
       - "src/routes/api.tiktok.callback.ts"
@@ -14,6 +18,8 @@ on:
       - "supabase/migrations/20260930183000_tiktok_accounts.sql"
       - "tests/unit/tiktok-oauth.test.ts"
       - "tests/unit/tiktok-migration-security.test.ts"
+      - "tests/unit/mcp-store-handler.test.ts"
+      - "tests/e2e/mcp-v3.spec.ts"
       - "src/tests/e2e/routes-audit.spec.ts"
       - ".env.example"
       - ".github/workflows/tiktok-oauth-ci.yml"
@@ -47,11 +53,11 @@ jobs:
 
       - name: Focused unit tests
         run: |
-          npx vitest run tests/unit/tiktok-oauth.test.ts tests/unit/tiktok-migration-security.test.ts
+          npx vitest run tests/unit/tiktok-oauth.test.ts tests/unit/tiktok-migration-security.test.ts tests/unit/mcp-store-handler.test.ts
 
       - name: Formatting check
         run: |
-          FILES="src/lib/tiktok.server.ts src/lib/tiktok.functions.ts src/components/admin/tiktok-accounts-panel.tsx src/routes/admin.integrations.tiktok.tsx src/routes/api.tiktok.callback.ts src/routes/api.tiktok.device.ts src/integrations/supabase/types.ts tests/unit/tiktok-oauth.test.ts tests/unit/tiktok-migration-security.test.ts"
+          FILES="src/lib/tiktok.server.ts src/lib/tiktok.functions.ts src/lib/mcp/tiktok-adapter.server.ts src/lib/mcp/store-oauth.server.ts src/routes/mcp-store-authorize.tsx src/components/admin/tiktok-accounts-panel.tsx src/routes/admin.integrations.tiktok.tsx src/routes/api.tiktok.callback.ts src/routes/api.tiktok.device.ts src/integrations/supabase/types.ts tests/unit/tiktok-oauth.test.ts tests/unit/tiktok-migration-security.test.ts"
           npx prettier --write $FILES
           git diff -- $FILES
           git diff --exit-code -- $FILES

@@ -7,6 +7,7 @@ import type { StoreAdminAdapter } from "@/lib/mcp/store-admin.server";
 import type { StoreDevelopmentAdapter } from "@/lib/mcp/store-development.server";
 import type { StoreInspectionAdapter } from "@/lib/mcp/store-inspection.server";
 import type { StoreBrowserInspectionAdapter } from "@/lib/mcp/store-browser-inspection.server";
+import type { TikTokMcpAdapter } from "@/lib/mcp/tiktok-adapter.server";
 
 function fixture(): StoreAdminAdapter {
   return {
@@ -65,10 +66,38 @@ function browserInspectionFixture(): StoreBrowserInspectionAdapter {
   };
 }
 
+function tiktokFixture(): TikTokMcpAdapter {
+  return {
+    listAccounts: vi.fn(async () => ({ accounts: [], secret_fields_included: false })),
+    getAccount: vi.fn(async () => ({ found: false, account: null, secret_fields_included: false })),
+    inspectCapabilities: vi.fn(async () => ({ capabilities: {}, provider_scopes: [] })),
+    inspectProfile: vi.fn(async () => ({ user: {}, requested_fields: [] })),
+    listVideos: vi.fn(async () => ({ videos: [], cursor: null, has_more: false })),
+    searchVideos: vi.fn(async () => ({ videos: [], count: 0, pages_scanned: 1 })),
+    getVideo: vi.fn(async () => ({ found: false, video: null })),
+    creatorInfo: vi.fn(async () => ({ creator_info: {} })),
+    uploadVideoDraft: vi.fn(async () => ({ accepted: true, publish_id: "draft-1" })),
+    publishVideo: vi.fn(async () => ({ accepted: true, publish_id: "publish-1" })),
+    publishStatus: vi.fn(async () => ({ publish_id: "publish-1", status: {} })),
+    startLink: vi.fn(async () => ({
+      device_url: "https://indexes-store.vercel.app/api/tiktok/device?code=opaque-test-code",
+      expires_in_seconds: 300,
+      contains_provider_secret: false,
+    })),
+    refreshAccount: vi.fn(async () => ({ ok: true })),
+    disconnectAccount: vi.fn(async () => ({
+      ok: true,
+      local_tokens_deleted: true,
+      provider_authorization_revoked: false,
+    })),
+  };
+}
+
 async function connected(scopes = ["store.read", "store.develop"]) {
   const adapter = fixture();
   const development = developmentFixture();
   const browserInspection = browserInspectionFixture();
+  const tiktok = tiktokFixture();
   const client = new Client({ name: "store-mcp-test", version: "1.0.0" });
   const transport = new StreamableHTTPClientTransport(
     new URL("https://indexes-store.vercel.app/api/mcp/store"),
@@ -84,11 +113,16 @@ async function connected(scopes = ["store.read", "store.develop"]) {
           developmentAdapterFactory: () => development,
           inspectionAdapterFactory: () => inspectionFixture(),
           browserInspectionAdapterFactory: () => browserInspection,
+          tiktokAdapterFactory: (tenantId, userId) => {
+            expect(tenantId).toBe("tenant-a");
+            expect(userId).toBe("admin");
+            return tiktok;
+          },
         }),
     },
   );
   await client.connect(transport);
-  return { client, adapter, development, browserInspection };
+  return { client, adapter, development, browserInspection, tiktok };
 }
 
 describe("private store MCP", () => {
@@ -97,9 +131,12 @@ describe("private store MCP", () => {
     { name: "trial_navigation", arguments: { href: "/offers" }, required: "store.test", scopes: ["store.read"], requested: "store.read store.test" },
     { name: "development_repository", arguments: {}, required: "store.develop", scopes: ["store.read", "store.test"], requested: "store.read store.test store.develop" },
     { name: "create_development_branch", arguments: { branch: "agent/scope-test", confirmed: true }, required: "store.develop", scopes: ["store.read"], requested: "store.read store.develop" },
+    { name: "tiktok_list_accounts", arguments: {}, required: "tiktok.read", scopes: ["store.read"], requested: "store.read tiktok.read" },
+    { name: "tiktok_start_link", arguments: {}, required: "tiktok.manage", scopes: ["store.read", "tiktok.read"], requested: "store.read tiktok.read tiktok.manage" },
+    { name: "tiktok_publish_video", arguments: { account_id: "00000000-0000-4000-8000-000000000001", video_url: "https://indexes-store.vercel.app/video.mp4", privacy_level: "SELF_ONLY", confirmed: true }, required: "tiktok.publish", scopes: ["store.read", "tiktok.read", "tiktok.manage"], requested: "store.read tiktok.read tiktok.manage tiktok.publish" },
   ])("challenges for missing OAuth scope before $name executes", async ({ name, arguments: args, required, scopes, requested }) => {
     const originalScopes = [...scopes];
-    const { client, adapter, development, browserInspection } = await connected(scopes);
+    const { client, adapter, development, browserInspection, tiktok } = await connected(scopes);
     try {
       const response = await client.callTool({ name, arguments: args });
       expect(response.isError).toBe(true);
@@ -111,6 +148,8 @@ describe("private store MCP", () => {
       expect(browserInspection.trialNavigation).not.toHaveBeenCalled();
       expect(development.repositoryInfo).not.toHaveBeenCalled();
       expect(development.createBranch).not.toHaveBeenCalled();
+      expect(tiktok.listAccounts).not.toHaveBeenCalled();
+      expect(tiktok.startLink).not.toHaveBeenCalled();
       // Asking for consent never changes the current grant or blocks read tools.
       expect(scopes).toEqual(originalScopes);
       expect((await client.callTool({ name, arguments: args })).isError).toBe(true);
@@ -180,6 +219,20 @@ describe("private store MCP", () => {
           "try_safe_click",
           "trial_navigation",
           "compare_preview",
+          "tiktok_list_accounts",
+          "tiktok_get_account",
+          "tiktok_inspect_capabilities",
+          "tiktok_inspect_profile",
+          "tiktok_list_videos",
+          "tiktok_search_videos",
+          "tiktok_get_video",
+          "tiktok_creator_info",
+          "tiktok_upload_video_draft",
+          "tiktok_publish_video",
+          "tiktok_publish_status",
+          "tiktok_start_link",
+          "tiktok_refresh_account",
+          "tiktok_disconnect_account",
         ].sort(),
       );
       const byName = new Map(tools.map((tool) => [tool.name, tool]));
@@ -188,7 +241,136 @@ describe("private store MCP", () => {
       expect(byName.get("read_source_file")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("patch_source_file")?.annotations?.readOnlyHint).toBe(false);
       expect(byName.get("patch_source_file")?.annotations?.destructiveHint).toBe(false);
+      expect(byName.get("tiktok_list_accounts")?.annotations?.readOnlyHint).toBe(true);
+      expect(byName.get("tiktok_search_videos")?.annotations?.readOnlyHint).toBe(true);
+      expect(byName.get("tiktok_publish_video")?.annotations?.readOnlyHint).toBe(false);
+      expect(byName.get("tiktok_publish_video")?.annotations?.destructiveHint).toBe(false);
+      expect(byName.get("tiktok_start_link")?.annotations?.readOnlyHint).toBe(false);
+      expect(byName.get("tiktok_start_link")?.annotations?.destructiveHint).toBe(false);
+      expect(byName.get("tiktok_disconnect_account")?.annotations?.destructiveHint).toBe(true);
       expect((await client.callTool({ name: "update_product", arguments: {} })).isError).toBe(true);
+    } finally {
+      await client.close();
+    }
+  });
+
+  it("runs all TikTok MCP account tools when their OAuth scopes are granted", async () => {
+    const { client, tiktok } = await connected([
+      "store.read",
+      "tiktok.read",
+      "tiktok.manage",
+      "tiktok.publish",
+    ]);
+    const accountId = "00000000-0000-4000-8000-000000000001";
+    try {
+      const { tools } = await client.listTools();
+      const byName = new Map(tools.map((tool) => [tool.name, tool]));
+      expect(byName.get("tiktok_list_accounts")?._meta?.securitySchemes).toEqual([
+        { type: "oauth2", scopes: ["store.read", "tiktok.read"] },
+      ]);
+      expect(byName.get("tiktok_start_link")?._meta?.securitySchemes).toEqual([
+        { type: "oauth2", scopes: ["store.read", "tiktok.manage"] },
+      ]);
+      expect(byName.get("tiktok_publish_video")?._meta?.securitySchemes).toEqual([
+        { type: "oauth2", scopes: ["store.read", "tiktok.publish"] },
+      ]);
+
+      expect((await client.callTool({ name: "tiktok_list_accounts", arguments: {} })).isError).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_get_account", arguments: { account_id: accountId } }))
+          .isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_inspect_capabilities", arguments: { account_id: accountId } })).isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_inspect_profile", arguments: { account_id: accountId } })).isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_list_videos", arguments: { account_id: accountId } })).isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_search_videos", arguments: { account_id: accountId, query: "product" } })).isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_get_video", arguments: { account_id: accountId, video_id: "video-1" } })).isError,
+      ).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_creator_info", arguments: { account_id: accountId } })).isError,
+      ).not.toBe(true);
+      expect(
+        (
+          await client.callTool({
+            name: "tiktok_upload_video_draft",
+            arguments: {
+              account_id: accountId,
+              video_url: "https://indexes-store.vercel.app/video.mp4",
+              confirmed: true,
+            },
+          })
+        ).isError,
+      ).not.toBe(true);
+      expect(
+        (
+          await client.callTool({
+            name: "tiktok_publish_video",
+            arguments: {
+              account_id: accountId,
+              video_url: "https://indexes-store.vercel.app/video.mp4",
+              title: "Product",
+              privacy_level: "SELF_ONLY",
+              confirmed: true,
+            },
+          })
+        ).isError,
+      ).not.toBe(true);
+      expect(
+        (
+          await client.callTool({
+            name: "tiktok_publish_status",
+            arguments: { account_id: accountId, publish_id: "publish-1" },
+          })
+        ).isError,
+      ).not.toBe(true);
+      expect((await client.callTool({ name: "tiktok_start_link", arguments: {} })).isError).not.toBe(true);
+      expect(
+        (await client.callTool({ name: "tiktok_refresh_account", arguments: { account_id: accountId } }))
+          .isError,
+      ).not.toBe(true);
+      expect(
+        (
+          await client.callTool({
+            name: "tiktok_disconnect_account",
+            arguments: { account_id: accountId, confirmed: true },
+          })
+        ).isError,
+      ).not.toBe(true);
+
+      expect(tiktok.listAccounts).toHaveBeenCalledOnce();
+      expect(tiktok.getAccount).toHaveBeenCalledWith(accountId);
+      expect(tiktok.inspectCapabilities).toHaveBeenCalledWith(accountId);
+      expect(tiktok.inspectProfile).toHaveBeenCalledWith(accountId);
+      expect(tiktok.listVideos).toHaveBeenCalledWith(accountId, 20, undefined);
+      expect(tiktok.searchVideos).toHaveBeenCalledWith(accountId, "product", 20);
+      expect(tiktok.getVideo).toHaveBeenCalledWith(accountId, "video-1");
+      expect(tiktok.creatorInfo).toHaveBeenCalledWith(accountId);
+      expect(tiktok.uploadVideoDraft).toHaveBeenCalledWith(
+        accountId,
+        "https://indexes-store.vercel.app/video.mp4",
+      );
+      expect(tiktok.publishVideo).toHaveBeenCalledWith(accountId, {
+        videoUrl: "https://indexes-store.vercel.app/video.mp4",
+        title: "Product",
+        privacyLevel: "SELF_ONLY",
+        disableComment: false,
+        disableDuet: false,
+        disableStitch: false,
+        videoCoverTimestampMs: undefined,
+      });
+      expect(tiktok.publishStatus).toHaveBeenCalledWith(accountId, "publish-1");
+      expect(tiktok.startLink).toHaveBeenCalledOnce();
+      expect(tiktok.refreshAccount).toHaveBeenCalledWith(accountId);
+      expect(tiktok.disconnectAccount).toHaveBeenCalledWith(accountId);
     } finally {
       await client.close();
     }
@@ -209,6 +391,7 @@ describe("private store MCP", () => {
             developmentAdapterFactory: () => development,
             inspectionAdapterFactory: () => inspectionFixture(),
             browserInspectionAdapterFactory: () => browserInspectionFixture(),
+            tiktokAdapterFactory: () => tiktokFixture(),
           }),
       },
     );

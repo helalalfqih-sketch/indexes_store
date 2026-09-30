@@ -4,8 +4,9 @@ import { resolveStoreOAuthOrigin, STORE_PRODUCTION_ORIGIN } from "./store-oauth-
 export const STORE_ORIGIN = resolveStoreOAuthOrigin(process.env.VERCEL_ENV, process.env.VERCEL_URL);
 export const STORE_OAUTH_ISSUER = `${STORE_ORIGIN}/api/mcp/store/oauth`;
 export const STORE_MCP_AUDIENCE = `${STORE_ORIGIN}/api/mcp/store`;
-export const STORE_MCP_SCOPE = "store.read store.test store.develop offline_access";
-export const STORE_MCP_DISCOVERY_VERSION = "3.0.0";
+export const STORE_MCP_SCOPE =
+  "store.read store.test store.develop tiktok.read tiktok.manage tiktok.publish offline_access";
+export const STORE_MCP_DISCOVERY_VERSION = "3.2.0";
 const STORE_CLIENT_KIND = "store_client_v3";
 // Discovery/schema revisions must not revoke existing public OAuth clients.
 const STORE_CLIENT_KINDS = new Set(["store_client", "store_client_v2", STORE_CLIENT_KIND]);
@@ -87,7 +88,15 @@ export const storeOauthMetadata = () => ({
   response_types_supported: ["code"],
   grant_types_supported: ["authorization_code", "refresh_token"],
   code_challenge_methods_supported: ["S256"],
-  scopes_supported: ["store.read", "store.test", "store.develop", "offline_access"],
+  scopes_supported: [
+    "store.read",
+    "store.test",
+    "store.develop",
+    "tiktok.read",
+    "tiktok.manage",
+    "tiktok.publish",
+    "offline_access",
+  ],
   token_endpoint_auth_methods_supported: ["none"],
   service_documentation: `${STORE_ORIGIN}/mcp-store-authorize?discovery=${STORE_MCP_DISCOVERY_VERSION}`,
 });
@@ -95,7 +104,15 @@ export const storeOauthMetadata = () => ({
 export const storeResourceMetadata = () => ({
   resource: STORE_MCP_AUDIENCE,
   authorization_servers: [STORE_OAUTH_ISSUER],
-  scopes_supported: ["store.read", "store.test", "store.develop", "offline_access"],
+  scopes_supported: [
+    "store.read",
+    "store.test",
+    "store.develop",
+    "tiktok.read",
+    "tiktok.manage",
+    "tiktok.publish",
+    "offline_access",
+  ],
   bearer_methods_supported: ["header"],
   resource_documentation: `${STORE_ORIGIN}/mcp-store-authorize?discovery=${STORE_MCP_DISCOVERY_VERSION}`,
 });

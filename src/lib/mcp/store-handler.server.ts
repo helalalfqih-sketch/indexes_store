@@ -13,6 +13,7 @@ import {
   createStoreBrowserInspectionAdapter,
   type StoreBrowserInspectionAdapter,
 } from "./store-browser-inspection.server";
+import { createTikTokMcpAdapter, type TikTokMcpAdapter } from "./tiktok-adapter.server";
 import {
   STORE_MCP_AUDIENCE,
   STORE_MCP_DISCOVERY_VERSION,
@@ -47,6 +48,7 @@ const writeAnnotations = {
   idempotentHint: false,
   openWorldHint: false,
 };
+const destructiveAnnotations = { ...writeAnnotations, destructiveHint: true };
 
 type Authorization = { sub: string; tenantId: string; scopes: string[] };
 type Authorize = (token: string) => Authorization;
@@ -54,6 +56,7 @@ type AdapterFactory = (tenantId: string) => StoreAdminAdapter;
 type DevelopmentAdapterFactory = () => StoreDevelopmentAdapter;
 type InspectionAdapterFactory = () => StoreInspectionAdapter;
 type BrowserInspectionAdapterFactory = () => StoreBrowserInspectionAdapter;
+type TikTokAdapterFactory = (tenantId: string, userId: string) => TikTokMcpAdapter;
 type QaAdapter = { inspect: typeof inspectQa; audit: typeof fullStoreAudit };
 
 function bearer(request: Request, authorize: Authorize): Authorization | null {
@@ -73,7 +76,10 @@ function result(data: Record<string, unknown>) {
   };
 }
 
-function insufficientScope(required: "store.test" | "store.develop", granted: string[]) {
+function insufficientScope(
+  required: "store.test" | "store.develop" | "tiktok.read" | "tiktok.manage" | "tiktok.publish",
+  granted: string[],
+) {
   // Request fresh consent for the missing scope while retaining known grants.
   // This challenge never adds privileges to the current token or refresh grant.
   const requested = STORE_MCP_SCOPE.split(" ").filter(
@@ -131,6 +137,7 @@ function createServer(
   development: StoreDevelopmentAdapter,
   inspection: StoreInspectionAdapter,
   browserInspection: StoreBrowserInspectionAdapter,
+  tiktok: TikTokMcpAdapter,
   scopes: string[],
   qa: QaAdapter,
 ) {
@@ -138,7 +145,7 @@ function createServer(
     { name: "indexes-store-control-plane", version: STORE_MCP_DISCOVERY_VERSION },
     {
       instructions:
-        "Private, tenant-bound Store administration plus guarded source development. Store data remains read-only. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
+        "Private, tenant-bound Store administration plus TikTok account management and guarded source development. Commerce data remains read-only. TikTok reads include linked-account profile/video inspection and own-video search. TikTok writes include OAuth linking, token refresh/profile sync, confirmed draft upload/direct post, and confirmed local disconnect; provider tokens are never exposed. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
     },
   );
   const tool = <T extends z.ZodRawShape>(
@@ -152,6 +159,30 @@ function createServer(
       name,
       { title, description, inputSchema, annotations, _meta: { securitySchemes } },
       (input) => safeRead(() => read(input)),
+    );
+
+  const scopedTikTokTool = <T extends z.ZodRawShape>(
+    required: "tiktok.read" | "tiktok.manage" | "tiktok.publish",
+    name: string,
+    title: string,
+    description: string,
+    inputSchema: z.ZodObject<T>,
+    toolAnnotations: typeof annotations,
+    run: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>,
+  ) =>
+    server.registerTool(
+      name,
+      {
+        title,
+        description,
+        inputSchema,
+        annotations: toolAnnotations,
+        _meta: { securitySchemes: [{ type: "oauth2", scopes: ["store.read", required] }] },
+      },
+      (input) => {
+        if (!scopes.includes(required)) return insufficientScope(required, scopes);
+        return safeRead(() => run(input));
+      },
     );
 
   const testTool = <T extends z.ZodRawShape>(name: string, title: string, description: string, inputSchema: z.ZodObject<T>, run: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>) =>
@@ -173,6 +204,202 @@ function createServer(
     z.object({}).strict(),
     () => adapter.health(),
   );
+  scopedTikTokTool(
+    "tiktok.read",
+    "tiktok_list_accounts",
+    "List linked TikTok accounts",
+    "List tenant-bound TikTok account metadata and granted provider scopes. Never returns access or refresh tokens.",
+    z.object({}).strict(),
+    annotations,
+    () => tiktok.listAccounts(),
+  );
+  scopedTikTokTool(
+    "tiktok.read",
+    "tiktok_get_account",
+    "Read one linked TikTok account",
+    "Read one exact tenant-bound TikTok account by UUID without exposing provider tokens.",
+    z.object({ account_id: z.string().uuid() }).strict(),
+    annotations,
+    ({ account_id }) => tiktok.getAccount(account_id),
+  );
+  scopedTikTokTool(
+    "tiktok.read",
+    "tiktok_inspect_capabilities",
+    "Inspect TikTok capabilities",
+    "Report the linked account provider scopes and which profile, video-search, draft-upload, and direct-post capabilities are actually available.",
+    z.object({ account_id: z.string().uuid() }).strict(),
+    annotations,
+    ({ account_id }) => tiktok.inspectCapabilities(account_id),
+  );
+  scopedTikTokTool(
+    "tiktok.read",
+    "tiktok_inspect_profile",
+    "Inspect TikTok profile",
+    "Read the linked account profile. Extended profile and statistics are requested only when the provider granted their corresponding TikTok scopes.",
+    z.object({ account_id: z.string().uuid() }).strict(),
+    annotations,
+    ({ account_id }) => tiktok.inspectProfile(account_id),
+  );
+  scopedTikTokTool(
+    "tiktok.read",
+    "tiktok_list_videos",
+    "List TikTok videos",
+    "List recent videos owned by the linked account using TikTok Display API. Requires the provider scope video.list.",
+    z
+      .object({
+        account_id: z.string().uuid(),
+        max_count: z.number().int().min(1).max(20).default(20),
+        cursor: z.number().int().min(0).optional(),
+      })
+      .strict(),
+    annotations,
+    ({ account_id, max_count, cursor }) => tiktok.listVideos(account_id, max_count, cursor),
+  );
+  scopedTikTokTool(
+    "tiktok.read",
+    "tiktok_search_videos",
+    "Search linked TikTok videos",
+    "Search titles, descriptions, and IDs across up to 100 recent videos owned by the linked account. This is not arbitrary public TikTok search.",
+    z
+      .object({
+        account_id: z.string().uuid(),
+        query: z.string().trim().min(1).max(120),
+        limit: z.number().int().min(1).max(50).default(20),
+      })
+      .strict(),
+    annotations,
+    ({ account_id, query, limit }) => tiktok.searchVideos(account_id, query, limit),
+  );
+  scopedTikTokTool(
+    "tiktok.read",
+    "tiktok_get_video",
+    "Read one TikTok video",
+    "Read one exact video owned by the linked account by TikTok video ID. Requires video.list.",
+    z
+      .object({
+        account_id: z.string().uuid(),
+        video_id: z.string().trim().min(1).max(128),
+      })
+      .strict(),
+    annotations,
+    ({ account_id, video_id }) => tiktok.getVideo(account_id, video_id),
+  );
+  scopedTikTokTool(
+    "tiktok.publish",
+    "tiktok_creator_info",
+    "Inspect TikTok posting options",
+    "Query creator posting settings before direct publication, including provider-supported privacy options and posting limits when TikTok returns them. Requires provider scope video.publish.",
+    z.object({ account_id: z.string().uuid() }).strict(),
+    annotations,
+    ({ account_id }) => tiktok.creatorInfo(account_id),
+  );
+  scopedTikTokTool(
+    "tiktok.publish",
+    "tiktok_upload_video_draft",
+    "Upload TikTok video as draft",
+    "Create a TikTok draft from an HTTPS media URL using PULL_FROM_URL. Requires provider scope video.upload and explicit confirmation. TikTok may require the media URL/domain to be verified.",
+    z
+      .object({
+        account_id: z.string().uuid(),
+        video_url: z.string().url().max(2048),
+        confirmed: z.literal(true),
+      })
+      .strict(),
+    writeAnnotations,
+    ({ account_id, video_url }) => tiktok.uploadVideoDraft(account_id, video_url),
+  );
+  scopedTikTokTool(
+    "tiktok.publish",
+    "tiktok_publish_video",
+    "Publish TikTok video",
+    "Start a direct TikTok video post from an HTTPS media URL using PULL_FROM_URL. Requires provider scope video.publish and explicit confirmation. The selected privacy level must be allowed by creator_info.",
+    z
+      .object({
+        account_id: z.string().uuid(),
+        video_url: z.string().url().max(2048),
+        title: z.string().max(2200).default(""),
+        privacy_level: z.enum([
+          "PUBLIC_TO_EVERYONE",
+          "MUTUAL_FOLLOW_FRIENDS",
+          "FOLLOWER_OF_CREATOR",
+          "SELF_ONLY",
+        ]),
+        disable_comment: z.boolean().default(false),
+        disable_duet: z.boolean().default(false),
+        disable_stitch: z.boolean().default(false),
+        video_cover_timestamp_ms: z.number().int().min(0).max(3_600_000).optional(),
+        confirmed: z.literal(true),
+      })
+      .strict(),
+    writeAnnotations,
+    ({
+      account_id,
+      video_url,
+      title,
+      privacy_level,
+      disable_comment,
+      disable_duet,
+      disable_stitch,
+      video_cover_timestamp_ms,
+    }) =>
+      tiktok.publishVideo(account_id, {
+        videoUrl: video_url,
+        title,
+        privacyLevel: privacy_level,
+        disableComment: disable_comment,
+        disableDuet: disable_duet,
+        disableStitch: disable_stitch,
+        videoCoverTimestampMs: video_cover_timestamp_ms,
+      }),
+  );
+  scopedTikTokTool(
+    "tiktok.publish",
+    "tiktok_publish_status",
+    "Inspect TikTok publish status",
+    "Read the provider status for a previously returned publish_id. Works for direct posts or draft uploads when the linked account has the matching provider scope.",
+    z
+      .object({
+        account_id: z.string().uuid(),
+        publish_id: z.string().trim().min(1).max(200),
+      })
+      .strict(),
+    annotations,
+    ({ account_id, publish_id }) => tiktok.publishStatus(account_id, publish_id),
+  );
+
+  scopedTikTokTool(
+    "tiktok.manage",
+    "tiktok_start_link",
+    "Start TikTok account linking",
+    "Create a short-lived opaque device link for the official TikTok OAuth flow. The returned URL contains no client secret or provider access token.",
+    z.object({}).strict(),
+    writeAnnotations,
+    () => tiktok.startLink(),
+  );
+  scopedTikTokTool(
+    "tiktok.manage",
+    "tiktok_refresh_account",
+    "Refresh TikTok account connection",
+    "Refresh the provider token and synchronize basic account metadata for one tenant-bound TikTok account.",
+    z.object({ account_id: z.string().uuid() }).strict(),
+    writeAnnotations,
+    ({ account_id }) => tiktok.refreshAccount(account_id),
+  );
+  scopedTikTokTool(
+    "tiktok.manage",
+    "tiktok_disconnect_account",
+    "Disconnect TikTok account locally",
+    "Delete the locally stored encrypted TikTok tokens and mark the account disconnected. This does not claim to revoke authorization inside TikTok.",
+    z
+      .object({
+        account_id: z.string().uuid(),
+        confirmed: z.literal(true),
+      })
+      .strict(),
+    destructiveAnnotations,
+    ({ account_id }) => tiktok.disconnectAccount(account_id),
+  );
+
   tool(
     "search_products",
     "Search products",
@@ -533,6 +760,7 @@ export async function handleStoreMcp(
     developmentAdapterFactory?: DevelopmentAdapterFactory;
     inspectionAdapterFactory?: InspectionAdapterFactory;
     browserInspectionAdapterFactory?: BrowserInspectionAdapterFactory;
+    tiktokAdapterFactory?: TikTokAdapterFactory;
     qaAdapter?: QaAdapter;
   } = {},
 ) {
@@ -573,6 +801,8 @@ export async function handleStoreMcp(
       method: diagnosticPayload.method,
       schemaEpoch: STORE_MCP_DISCOVERY_VERSION,
       hasDevelopScope: authorization.scopes.includes("store.develop"),
+      hasTikTokReadScope: authorization.scopes.includes("tiktok.read"),
+      hasTikTokManageScope: authorization.scopes.includes("tiktok.manage"),
     });
   }
 
@@ -581,8 +811,20 @@ export async function handleStoreMcp(
   const inspection = (options.inspectionAdapterFactory ?? createStoreInspectionAdapter)();
   const browserInspection =
     (options.browserInspectionAdapterFactory ?? createStoreBrowserInspectionAdapter)();
-  const server = createServer(adapter, development, inspection, browserInspection, authorization.scopes,
-    options.qaAdapter ?? { inspect: inspectQa, audit: fullStoreAudit });
+  const tiktok =
+    (options.tiktokAdapterFactory ?? createTikTokMcpAdapter)(
+      authorization.tenantId,
+      authorization.sub,
+    );
+  const server = createServer(
+    adapter,
+    development,
+    inspection,
+    browserInspection,
+    tiktok,
+    authorization.scopes,
+    options.qaAdapter ?? { inspect: inspectQa, audit: fullStoreAudit },
+  );
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
