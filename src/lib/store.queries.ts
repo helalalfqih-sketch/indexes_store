@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchCategories, fetchCategoryBySlug } from "./actions/category.actions";
+import { categoriesQuery } from "./queries/catalog";
+import { fetchCategoryBySlug } from "./actions/category.actions";
 import {
   fetchBestSellers,
   fetchOffers,
@@ -22,23 +23,16 @@ const CACHE_CONFIG = {
 const perfLog = (label: string, key: string) => {
   if (import.meta.env.DEV) {
     const runtime = typeof window === "undefined" ? "server" : "client";
-    // eslint-disable-next-line no-console
+
     console.info(`[PERF] ${label}`, { key, runtime, t: Date.now() });
   }
 };
 
-export const categoriesQueryOptions = () =>
-  queryOptions({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      return fetchCategories();
-    },
-    ...CACHE_CONFIG,
-  });
+export const categoriesQueryOptions = categoriesQuery;
 
 export const bestSellersQueryOptions = (limit = 4) =>
   queryOptions({
-    queryKey: ["bestSellers", limit],
+    queryKey: ["catalog-v4", "bestSellers", limit],
     queryFn: async () => {
       perfLog("PRODUCT_QUERY_NETWORK_FETCH", "bestSellers");
       return fetchBestSellers(limit);
@@ -48,7 +42,7 @@ export const bestSellersQueryOptions = (limit = 4) =>
 
 export const offersQueryOptions = () =>
   queryOptions({
-    queryKey: ["offers"],
+    queryKey: ["catalog-v4", "offers"],
     queryFn: async () => {
       perfLog("PRODUCT_QUERY_NETWORK_FETCH", "offers");
       return fetchOffers(16);
@@ -58,7 +52,7 @@ export const offersQueryOptions = () =>
 
 export const allProductsQueryOptions = () =>
   queryOptions({
-    queryKey: ["allProducts", 24],
+    queryKey: ["catalog-v4", "allProducts", 24],
     queryFn: async () => {
       perfLog("PRODUCT_QUERY_START", "allProducts");
       perfLog("PRODUCT_QUERY_NETWORK_FETCH", "allProducts");
@@ -69,7 +63,7 @@ export const allProductsQueryOptions = () =>
 
 export const productBySlugQueryOptions = (slug: string) =>
   queryOptions({
-    queryKey: ["product", slug],
+    queryKey: ["catalog-v4", "product", slug],
     queryFn: async () => {
       return fetchProductBySlug(slug);
     },
@@ -78,7 +72,7 @@ export const productBySlugQueryOptions = (slug: string) =>
 
 export const categoryBySlugQueryOptions = (id: string) =>
   queryOptions({
-    queryKey: ["category", id],
+    queryKey: ["catalog-v4", "category", id],
     queryFn: async () => {
       return fetchCategoryBySlug(id);
     },
@@ -87,7 +81,7 @@ export const categoryBySlugQueryOptions = (id: string) =>
 
 export const productsByCategoryQueryOptions = (id: string) =>
   queryOptions({
-    queryKey: ["productsByCategory", id, 24],
+    queryKey: ["catalog-v4", "productsByCategory", id, 24],
     queryFn: async () => {
       perfLog("PRODUCT_QUERY_NETWORK_FETCH", `category:${id}`);
       return fetchProducts({ categoryId: id, limit: 24 });

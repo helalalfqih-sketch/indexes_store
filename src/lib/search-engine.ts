@@ -4,8 +4,6 @@ import type { LegacyProductShape } from "@/lib/data-adapter";
 export const MIN_RELEVANCE_SCORE = 8;
 export const SEARCH_PAGE_SIZE = 40;
 
-const searchCache = new Map<string, LegacyProductShape[]>();
-
 /** Arabic Text Normalizer & Typo Tolerator */
 export function normalizeArabic(text: string): string {
   if (!text) return "";
@@ -63,9 +61,35 @@ export interface SearchFilterOptions {
 }
 
 const STOP_WORDS = new Set([
-  "no", "product", "products", "item", "items", "the", "a", "an", "in", "on", "of", "to",
-  "for", "with", "and", "or", "is", "من", "في", "على", "عن", "مع", "لا", "او", "ام", "ال",
-  "ما", "هذا", "هذه",
+  "no",
+  "product",
+  "products",
+  "item",
+  "items",
+  "the",
+  "a",
+  "an",
+  "in",
+  "on",
+  "of",
+  "to",
+  "for",
+  "with",
+  "and",
+  "or",
+  "is",
+  "من",
+  "في",
+  "على",
+  "عن",
+  "مع",
+  "لا",
+  "او",
+  "ام",
+  "ال",
+  "ما",
+  "هذا",
+  "هذه",
 ]);
 
 function rankCandidates(products: LegacyProductShape[], query: string): LegacyProductShape[] {
@@ -103,30 +127,50 @@ function rankCandidates(products: LegacyProductShape[], query: string): LegacyPr
 
 /**
  * Advanced storefront search.
- * Important: never loads the entire catalog into the browser. It asks the catalog
- * source for a bounded candidate page and then applies UI-only filters/ranking.
+ * Search the source first, then scan matching pages before applying secondary
+ * filters. A price filter must not hide matches beyond the first candidate page.
+ * React Query owns caching; no module cache can survive stock changes forever.
  */
 export async function searchProductsAdvanced(
   options: SearchFilterOptions = {},
   signal?: AbortSignal,
 ): Promise<LegacyProductShape[]> {
-  const cacheKey = JSON.stringify({ ...options, limit: SEARCH_PAGE_SIZE });
-  const cached = searchCache.get(cacheKey);
-  if (cached) return [...cached];
-
-  const { search = "", categoryId, minPrice, maxPrice, dealsOnly, inStockOnly, brand, sortBy } = options;
-
-  const candidates = await fetchProducts({
-    search: search.trim() || undefined,
-    categoryId: categoryId && categoryId !== "all" ? categoryId : undefined,
-    limit: SEARCH_PAGE_SIZE,
-  });
-
+  const {
+    search = "",
+    categoryId,
+    minPrice,
+    maxPrice,
+    dealsOnly,
+    inStockOnly,
+    brand,
+    sortBy,
+  } = options;
+  const candidates: LegacyProductShape[] = [];
+  const seen = new Set<string>();
+  for (let offset = 0; ; offset += 100) {
+    if (signal?.aborted) throw new DOMException("Search aborted", "AbortError");
+    const page = await fetchProducts({
+      search: search.trim() || undefined,
+      categoryId: categoryId && categoryId !== "all" ? categoryId : undefined,
+      limit: 100,
+      offset,
+    });
+    let added = 0;
+    for (const product of page) {
+      if (!seen.has(product.id)) {
+        candidates.push(product);
+        seen.add(product.id);
+        added += 1;
+      }
+    }
+    if (page.length < 100 || added === 0) break;
+  }
   if (signal?.aborted) throw new DOMException("Search aborted", "AbortError");
 
   let filtered = candidates.filter((p) => {
     const rec = p as Record<string, unknown>;
-    if (brand && brand !== "all" && String(rec.brand || "").toLowerCase() !== brand.toLowerCase()) return false;
+    if (brand && brand !== "all" && String(rec.brand || "").toLowerCase() !== brand.toLowerCase())
+      return false;
     if (minPrice !== undefined && p.price < minPrice) return false;
     if (maxPrice !== undefined && p.price > maxPrice) return false;
     if (dealsOnly) {
@@ -156,7 +200,10 @@ export async function searchProductsAdvanced(
       filtered.sort((a, b) => {
         const ar = a as Record<string, unknown>;
         const br = b as Record<string, unknown>;
-        return new Date(String(br.created_at || 0)).getTime() - new Date(String(ar.created_at || 0)).getTime();
+        return (
+          new Date(String(br.created_at || 0)).getTime() -
+          new Date(String(ar.created_at || 0)).getTime()
+        );
       });
       break;
     case "rating":
@@ -164,12 +211,11 @@ export async function searchProductsAdvanced(
       break;
     case "bestselling":
     default:
-      filtered.sort((a, b) => b.rating * b.reviews - a.rating * a.reviews);
+      // Preserve source/relevance order; review counts are not sales figures.
       break;
   }
 
   if (signal?.aborted) throw new DOMException("Search aborted", "AbortError");
-  searchCache.set(cacheKey, [...filtered]);
   return filtered;
 }
 

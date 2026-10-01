@@ -287,7 +287,11 @@ export type ProductCreateInput = Omit<
 
 export const productsRepo = {
   async list(db: DB, filters: ProductFilters = {}): Promise<ProductDTO[]> {
-    let q = db.from("products").select("*").order("created_at", { ascending: false });
+    let q = db
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true });
     if (filters.tenantId) q = q.eq("tenant_id", filters.tenantId);
     if (!filters.includeUnpublished) q = q.eq("is_published", true);
     if (filters.categoryId) q = q.eq("category_id", filters.categoryId);
@@ -295,6 +299,8 @@ export const productsRepo = {
     if (filters.limit) q = q.limit(filters.limit);
     if (filters.offset != null && filters.limit) {
       q = q.range(filters.offset, filters.offset + filters.limit - 1);
+    } else if (filters.offset != null) {
+      q = q.range(filters.offset, filters.offset + 999);
     }
 
     const { data, error } = await q;

@@ -55,6 +55,13 @@ function CartRoutePage() {
     [items],
   );
 
+  if (!cartHasHydrated)
+    return (
+      <section className="sf-page sf-empty" role="status">
+        جارٍ تحميل السلة…
+      </section>
+    );
+
   return (
     <CartDrawer
       currency="YER"
@@ -67,14 +74,6 @@ function CartRoutePage() {
       onSaveForLater={(item) => {
         toggleFavorite(item.product.id);
         remove(item.product.id);
-      }}
-      onCheckout={(discountPercent) => {
-        const coupon =
-          discountPercent === 20 ? "INDEXES20" : discountPercent === 10 ? "INDEXES10" : undefined;
-        navigate({
-          to: "/order-completion",
-          search: coupon ? { coupon } : undefined,
-        });
       }}
     />
   );
