@@ -15,6 +15,10 @@ import {
 } from "./store-browser-inspection.server";
 import { createTikTokMcpAdapter, type TikTokMcpAdapter } from "./tiktok-adapter.server";
 import {
+  createReverseImageSearchAdapter,
+  type ReverseImageSearchAdapter,
+} from "./reverse-image-adapter.server";
+import {
   STORE_MCP_AUDIENCE,
   STORE_MCP_DISCOVERY_VERSION,
   STORE_MCP_SCOPE,
@@ -49,6 +53,7 @@ const writeAnnotations = {
   openWorldHint: false,
 };
 const destructiveAnnotations = { ...writeAnnotations, destructiveHint: true };
+const externalReadAnnotations = { ...annotations, openWorldHint: true };
 
 type Authorization = { sub: string; tenantId: string; scopes: string[] };
 type Authorize = (token: string) => Authorization;
@@ -57,6 +62,7 @@ type DevelopmentAdapterFactory = () => StoreDevelopmentAdapter;
 type InspectionAdapterFactory = () => StoreInspectionAdapter;
 type BrowserInspectionAdapterFactory = () => StoreBrowserInspectionAdapter;
 type TikTokAdapterFactory = (tenantId: string, userId: string) => TikTokMcpAdapter;
+type ReverseImageAdapterFactory = () => ReverseImageSearchAdapter;
 type QaAdapter = { inspect: typeof inspectQa; audit: typeof fullStoreAudit };
 
 function bearer(request: Request, authorize: Authorize): Authorization | null {
@@ -138,6 +144,7 @@ function createServer(
   inspection: StoreInspectionAdapter,
   browserInspection: StoreBrowserInspectionAdapter,
   tiktok: TikTokMcpAdapter,
+  reverseImage: ReverseImageSearchAdapter,
   scopes: string[],
   qa: QaAdapter,
 ) {
@@ -145,7 +152,7 @@ function createServer(
     { name: "indexes-store-control-plane", version: STORE_MCP_DISCOVERY_VERSION },
     {
       instructions:
-        "Private, tenant-bound Store administration plus TikTok account management and guarded source development. Commerce data remains read-only. TikTok reads include linked-account profile/video inspection and own-video search. TikTok writes include OAuth linking, token refresh/profile sync, confirmed draft upload/direct post, and confirmed local disconnect; provider tokens are never exposed. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
+        "Private, tenant-bound Store administration plus TikTok account management and guarded source development. Commerce data remains read-only. TikTok reads include linked-account profile/video inspection and own-video search. TikTok writes include OAuth linking, token refresh/profile sync, confirmed draft upload/direct post, and confirmed local disconnect; provider tokens are never exposed. Reverse-image search uses a server-side Apify token that is never returned. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
     },
   );
   const tool = <T extends z.ZodRawShape>(
@@ -204,6 +211,26 @@ function createServer(
     z.object({}).strict(),
     () => adapter.health(),
   );
+  server.registerTool(
+    "reverse_image_search",
+    {
+      title: "Reverse image search",
+      description:
+        "Search the public web for visual matches to one public HTTPS image through the configured Apify actor. The Apify token is never returned.",
+      inputSchema: z
+        .object({
+          image_url: z.string().url().max(2048).refine((value) => value.startsWith("https://"), {
+            message: "Only public HTTPS image URLs are allowed",
+          }),
+          limit: z.number().int().min(1).max(50).default(20),
+        })
+        .strict(),
+      annotations: externalReadAnnotations,
+      _meta: { securitySchemes },
+    },
+    ({ image_url, limit }) => safeRead(() => reverseImage.search(image_url, limit)),
+  );
+
   scopedTikTokTool(
     "tiktok.read",
     "tiktok_list_accounts",
@@ -761,6 +788,7 @@ export async function handleStoreMcp(
     inspectionAdapterFactory?: InspectionAdapterFactory;
     browserInspectionAdapterFactory?: BrowserInspectionAdapterFactory;
     tiktokAdapterFactory?: TikTokAdapterFactory;
+    reverseImageAdapterFactory?: ReverseImageAdapterFactory;
     qaAdapter?: QaAdapter;
   } = {},
 ) {
@@ -816,12 +844,15 @@ export async function handleStoreMcp(
       authorization.tenantId,
       authorization.sub,
     );
+  const reverseImage =
+    (options.reverseImageAdapterFactory ?? createReverseImageSearchAdapter)();
   const server = createServer(
     adapter,
     development,
     inspection,
     browserInspection,
     tiktok,
+    reverseImage,
     authorization.scopes,
     options.qaAdapter ?? { inspect: inspectQa, audit: fullStoreAudit },
   );
