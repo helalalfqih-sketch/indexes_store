@@ -33,8 +33,7 @@ export const Route = createFileRoute("/category/$id")({
   ),
   head: (ctx) => {
     const data = ctx.loaderData as
-      | { id: string; category: { name: string; imageUrl?: string | null } }
-      | undefined;
+      { id: string; category: { name: string; imageUrl?: string | null } } | undefined;
 
     if (!data?.category?.name) {
       return {
