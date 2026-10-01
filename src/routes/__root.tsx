@@ -1,4 +1,4 @@
-import { HeadContent, Scripts, createRootRoute, useRouter } from "@tanstack/react-router";
+import { HeadContent, Outlet, Scripts, createRootRoute, useRouter } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { useEffect } from "react";
 import { reportLovableError } from "@/lib/lovable-error";
