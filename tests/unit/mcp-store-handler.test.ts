@@ -8,6 +8,7 @@ import type { StoreDevelopmentAdapter } from "@/lib/mcp/store-development.server
 import type { StoreInspectionAdapter } from "@/lib/mcp/store-inspection.server";
 import type { StoreBrowserInspectionAdapter } from "@/lib/mcp/store-browser-inspection.server";
 import type { TikTokMcpAdapter } from "@/lib/mcp/tiktok-adapter.server";
+import type { ReverseImageSearchAdapter } from "@/lib/mcp/reverse-image-adapter.server";
 
 function fixture(): StoreAdminAdapter {
   return {
@@ -66,6 +67,19 @@ function browserInspectionFixture(): StoreBrowserInspectionAdapter {
   };
 }
 
+function reverseImageFixture(): ReverseImageSearchAdapter {
+  return {
+    search: vi.fn(async (imageUrl, limit) => ({
+      provider: "apify",
+      image_url: imageUrl,
+      matches: [],
+      count: 0,
+      limit,
+      provider_secrets_included: false,
+    })),
+  };
+}
+
 function tiktokFixture(): TikTokMcpAdapter {
   return {
     listAccounts: vi.fn(async () => ({ accounts: [], secret_fields_included: false })),
@@ -98,6 +112,7 @@ async function connected(scopes = ["store.read", "store.develop"]) {
   const development = developmentFixture();
   const browserInspection = browserInspectionFixture();
   const tiktok = tiktokFixture();
+  const reverseImage = reverseImageFixture();
   const client = new Client({ name: "store-mcp-test", version: "1.0.0" });
   const transport = new StreamableHTTPClientTransport(
     new URL("https://indexes-store.vercel.app/api/mcp/store"),
@@ -118,11 +133,12 @@ async function connected(scopes = ["store.read", "store.develop"]) {
             expect(userId).toBe("admin");
             return tiktok;
           },
+          reverseImageAdapterFactory: () => reverseImage,
         }),
     },
   );
   await client.connect(transport);
-  return { client, adapter, development, browserInspection, tiktok };
+  return { client, adapter, development, browserInspection, tiktok, reverseImage };
 }
 
 describe("private store MCP", () => {
@@ -219,6 +235,7 @@ describe("private store MCP", () => {
           "try_safe_click",
           "trial_navigation",
           "compare_preview",
+          "reverse_image_search",
           "tiktok_list_accounts",
           "tiktok_get_account",
           "tiktok_inspect_capabilities",
@@ -241,6 +258,10 @@ describe("private store MCP", () => {
       expect(byName.get("read_source_file")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("patch_source_file")?.annotations?.readOnlyHint).toBe(false);
       expect(byName.get("patch_source_file")?.annotations?.destructiveHint).toBe(false);
+      expect(byName.get("reverse_image_search")?.annotations).toMatchObject({
+        readOnlyHint: true,
+        openWorldHint: true,
+      });
       expect(byName.get("tiktok_list_accounts")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("tiktok_search_videos")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("tiktok_publish_video")?.annotations?.readOnlyHint).toBe(false);
@@ -392,6 +413,7 @@ describe("private store MCP", () => {
             inspectionAdapterFactory: () => inspectionFixture(),
             browserInspectionAdapterFactory: () => browserInspectionFixture(),
             tiktokAdapterFactory: () => tiktokFixture(),
+            reverseImageAdapterFactory: () => reverseImageFixture(),
           }),
       },
     );
