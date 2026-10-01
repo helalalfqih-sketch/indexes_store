@@ -1,90 +1,84 @@
-import { HeadContent, Outlet, Scripts, createRootRoute, useRouter } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { useEffect } from "react";
-import { reportLovableError } from "@/lib/lovable-error";
-import { getSeoConfig } from "@/lib/seo";
+import { QueryClient, queryOptions } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { get, set, del } from "idb-keyval";
+import {
+  Outlet,
+  Link,
+  createRootRouteWithContext,
+  useRouter,
+  useRouterState,
+  HeadContent,
+  Scripts,
+} from "@tanstack/react-router";
+import { useEffect, type ReactNode } from "react";
+
 import appCss from "../styles.css?url";
-import { Toaster } from "sonner";
-import { LocaleProvider } from "@/hooks/useLocale";
-import { CartProvider } from "@/hooks/useCart";
-import { WishlistProvider } from "@/hooks/useWishlist";
-import { FloatingWhatsApp } from "@/components/store/FloatingWhatsApp";
-import { RootSeoJsonLd } from "@/components/seo/RootSeoJsonLd";
-import { PwaServiceWorkerCleanup } from "@/components/pwa/PwaServiceWorkerCleanup";
+import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AppShell } from "../components/app-shell";
+import { supabase } from "@/integrations/supabase/client";
+import { TenantProvider } from "@/components/tenant-provider";
+import { AppearanceProvider } from "@/components/appearance-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
+import type { StorefrontSettingsShape } from "@/lib/domain/appearance";
+import { NetworkManager } from "@/components/network-manager";
+import { useHydrateCart } from "@/lib/cart-store";
+import {
+  generateOrganizationJsonLd,
+  generateLocalBusinessJsonLd,
+  generateWebsiteJsonLd,
+  DEFAULT_OG_IMAGE,
+} from "@/lib/seo";
+import { normalizeGoogleVerificationCode } from "@/lib/seo-verification";
+import { resolveCanonicalBaseUrl } from "@/lib/site-url";
 
-export const Route = createRootRoute({
-  head: () => {
-    const seo = getSeoConfig();
-    const siteName = seo.siteName || "اندكس";
-    const title = siteName;
-    const description =
-      "متجر إلكتروني شامل لأحدث المنتجات. تسوق بسهولة وأمان مع أفضل الأسعار وخدمة توصيل لجميع المحافظات.";
-    const image =
-      seo.defaultOgImage ||
-      "https://wtudcippyxbaobqzbmok.supabase.co/storage/v1/object/public/product-images/uploads/1766594403653-logo.jpg";
-
-    return {
-      meta: [
-        { charSet: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { title },
-        { name: "description", content: description },
-        { name: "theme-color", content: "#10b981" },
-        { name: "apple-mobile-web-app-capable", content: "yes" },
-        { name: "apple-mobile-web-app-status-bar-style", content: "default" },
-        { name: "apple-mobile-web-app-title", content: siteName },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:image", content: image },
-        { property: "og:type", content: "website" },
-        { property: "og:locale", content: "ar_YE" },
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
-        { name: "twitter:image", content: image },
-      ],
-      links: [
-        { rel: "stylesheet", href: appCss },
-        { rel: "icon", type: "image/png", href: seo.favicon || "/pwa-192x192.png" },
-        { rel: "manifest", href: "/manifest.json" },
-        { rel: "apple-touch-icon", href: "/pwa-192x192.png" },
-      ],
-    };
+const idbPersister = {
+  persistClient: async (client: unknown) => {
+    await set("react-query-offline-cache", client);
   },
-  errorComponent: ErrorComponent,
-  component: RootComponent,
-});
+  restoreClient: async () => {
+    return await get("react-query-offline-cache");
+  },
+  removeClient: async () => {
+    await del("react-query-offline-cache");
+  },
+};
 
-function RootComponent() {
-  return (
-    <RootDocument>
-      <RootSeoJsonLd />
-      <PwaServiceWorkerCleanup />
-      <CartProvider>
-        <WishlistProvider>
-          <LocaleProvider>
-            <Outlet />
-            <FloatingWhatsApp />
-            <Toaster richColors position="top-center" />
-          </LocaleProvider>
-        </WishlistProvider>
-      </CartProvider>
-      {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-right" />}
-    </RootDocument>
-  );
-}
+function NotFoundComponent() {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path.startsWith("/app/admin")) {
+        const target = path.replace(/^\/app\/admin/, "/admin") || "/admin";
+        window.location.replace(target);
+      }
+    }
+  }, []);
 
-function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4" dir="rtl">
+      <div className="max-w-md text-center">
+        <h1 className="text-7xl font-black text-primary">404</h1>
+        <h2 className="mt-4 text-xl font-bold text-foreground">الصفحة غير موجودة</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          الرابط الذي تحاول الوصول إليه غير متوفر.
+        </p>
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand"
+          >
+            العودة للرئيسية
+          </Link>
+          <Link
+            to="/admin"
+            className="inline-flex items-center justify-center rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-bold text-foreground shadow-card hover:bg-accent"
+          >
+            لوحة التحكم
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -121,12 +115,311 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-bold text-foreground"
+            className="inline-flex items-center justify-center rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-bold text-foreground"
           >
-            الصفحة الرئيسية
+            الرئيسية
           </a>
         </div>
       </div>
     </div>
+  );
+}
+
+/** Storefront settings query — shared cache key for the root loader (5-min fresh). */
+const storefrontSettingsQueryOptions = queryOptions({
+  queryKey: ["storefront-settings"],
+  queryFn: async (): Promise<StorefrontSettingsShape> => {
+    const res = await getStorefrontAppearance();
+    return res as unknown as StorefrontSettingsShape;
+  },
+  staleTime: 5 * 60 * 1000,
+});
+
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  head: ({ loaderData }) => {
+    // loaderData may be undefined on first render — fall back gracefully
+    const seo = loaderData?.settings?.seo;
+    const navigation = loaderData?.settings?.navigation;
+    const storeIdentity = loaderData?.settings?.store_identity;
+    const brandSettings = loaderData?.settings?.brand_settings;
+    const socialLinks = loaderData?.settings?.social_links;
+    const generalSettings = loaderData?.settings?.general_settings;
+
+    const storeName = brandSettings?.storeName || navigation?.storeName || "اندكس ستور";
+    const title = seo?.metaTitle || `${storeName} — الرئيسية | تسوّق أونلاين في اليمن`;
+    const description =
+      seo?.metaDescription ||
+      brandSettings?.description ||
+      navigation?.footerDescription ||
+      "اكتشف أحدث المنتجات والعروض في اندكس ستور: إلكترونيات، أزياء، أدوات منزلية، والمزيد.";
+    const ogImage = seo?.ogImage || DEFAULT_OG_IMAGE;
+    const ogTitle = seo?.ogTitle || title;
+    const ogDescription = seo?.ogDescription || description;
+    const themeColor =
+      storeIdentity?.themeColor || seo?.themeColor || brandSettings?.primaryColor || "#1F5EFF";
+    const faviconUrl =
+      storeIdentity?.faviconUrl ||
+      storeIdentity?.logoUrl ||
+      navigation?.logoUrl ||
+      "/store-icon.svg";
+    const appleTouchIconUrl =
+      storeIdentity?.appleTouchIconUrl ||
+      storeIdentity?.logoUrl ||
+      navigation?.logoUrl ||
+      "/apple-touch-icon.png";
+    const twitterUsername = seo?.twitterUsername || "@indexes_store";
+
+    const baseUrl = resolveCanonicalBaseUrl(
+      seo?.canonicalBaseUrl,
+      process.env.SITE_URL,
+      import.meta.env.VITE_PUBLIC_URL,
+      process.env.VITE_PUBLIC_URL,
+    );
+    const logoUrl = storeIdentity?.logoUrl || navigation?.logoUrl || undefined;
+
+    // Collect enabled social URLs for sameAs JSON-LD
+    const sameAsList: string[] = [];
+    if (socialLinks) {
+      if (socialLinks.facebook?.enabled && socialLinks.facebook?.url)
+        sameAsList.push(socialLinks.facebook.url);
+      if (socialLinks.instagram?.enabled && socialLinks.instagram?.url)
+        sameAsList.push(socialLinks.instagram.url);
+      if (socialLinks.tiktok?.enabled && socialLinks.tiktok?.url)
+        sameAsList.push(socialLinks.tiktok.url);
+      if (socialLinks.youtube?.enabled && socialLinks.youtube?.url)
+        sameAsList.push(socialLinks.youtube.url);
+      if (socialLinks.whatsapp?.enabled && socialLinks.whatsapp?.url)
+        sameAsList.push(socialLinks.whatsapp.url);
+      if (socialLinks.telegram?.enabled && socialLinks.telegram?.url)
+        sameAsList.push(socialLinks.telegram.url);
+    }
+
+    // Dynamic Structured Data
+    const customSchemaConfig = {
+      name: seo?.schemaOrgName || storeName,
+      alternateName: brandSettings?.shortName || "Indexes Store",
+      logoUrl,
+      phone: seo?.schemaPhone || generalSettings?.phone || navigation?.whatsappPhone,
+      email: seo?.schemaEmail || generalSettings?.email || navigation?.supportEmail,
+      streetAddress:
+        seo?.schemaAddressStreet || generalSettings?.address || navigation?.addressText,
+      addressLocality: seo?.schemaAddressCity || generalSettings?.city || "صنعاء",
+      country: seo?.schemaCountry || generalSettings?.country || "اليمن",
+      openingHours: seo?.schemaOpeningHours || generalSettings?.workingHours,
+      priceRange: seo?.schemaPriceRange || "$$",
+      sameAs: sameAsList,
+    };
+
+    const orgLd = generateOrganizationJsonLd(baseUrl, logoUrl, customSchemaConfig);
+    const localBizLd = generateLocalBusinessJsonLd(baseUrl, logoUrl, customSchemaConfig);
+    const websiteLd = generateWebsiteJsonLd(baseUrl);
+
+    const metaTags: Record<string, string>[] = [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=5" },
+      { name: "theme-color", content: themeColor },
+      { name: "msapplication-TileColor", content: themeColor },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: storeName },
+      { name: "application-name", content: storeName },
+      { name: "author", content: storeName },
+      { name: "format-detection", content: "telephone=no" },
+      { title },
+      { name: "description", content: description },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: `${storeName} — Indexes Store` },
+      { property: "og:locale", content: "ar_YE" },
+      { property: "og:title", content: ogTitle },
+      { property: "og:description", content: ogDescription },
+      { property: "og:image", content: ogImage },
+      { property: "og:image:width", content: String(seo?.ogImageWidth || 1200) },
+      { property: "og:image:height", content: String(seo?.ogImageHeight || 630) },
+      { property: "og:image:alt", content: ogTitle },
+      { name: "twitter:card", content: seo?.twitterCard || "summary_large_image" },
+      { name: "twitter:site", content: twitterUsername },
+      { name: "twitter:title", content: ogTitle },
+      { name: "twitter:description", content: ogDescription },
+      { name: "twitter:image", content: ogImage },
+      {
+        name: "robots",
+        content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+      },
+    ];
+
+    // Add only a valid Google Search Console meta verification token.
+    const googleVerificationCode = normalizeGoogleVerificationCode(seo?.googleVerificationCode);
+    if (googleVerificationCode) {
+      metaTags.push({ name: "google-site-verification", content: googleVerificationCode });
+    }
+
+    // Add Bing verification code if configured
+    if (seo?.bingVerificationCode) {
+      metaTags.push({ name: "msvalidate.01", content: seo.bingVerificationCode });
+    }
+
+    // Add Impact.com site verification
+    metaTags.push({
+      name: "impact-site-verification",
+      value: "7a93fca2-24d7-4478-b1c6-865114269bdf",
+      content: "7a93fca2-24d7-4478-b1c6-865114269bdf",
+    });
+
+    const linkTags: Record<string, string>[] = [
+      { rel: "stylesheet", href: appCss },
+      {
+        rel: "icon",
+        href: faviconUrl,
+        type: faviconUrl.endsWith(".svg")
+          ? "image/svg+xml"
+          : faviconUrl.endsWith(".ico")
+            ? "image/x-icon"
+            : "image/png",
+      },
+      { rel: "apple-touch-icon", sizes: "180x180", href: appleTouchIconUrl },
+      ...(baseUrl
+        ? [
+            { rel: "canonical", href: baseUrl },
+            { rel: "alternate", hrefLang: "ar", href: baseUrl },
+            { rel: "alternate", hrefLang: "x-default", href: baseUrl },
+          ]
+        : []),
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200",
+      },
+      { rel: "preconnect", href: "https://images.unsplash.com" },
+      { rel: "dns-prefetch", href: "https://stream.mux.com" },
+      { rel: "dns-prefetch", href: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev" },
+      { rel: "manifest", href: "/manifest.json" },
+    ];
+
+    return {
+      meta: metaTags,
+      links: linkTags,
+      scripts: [
+        { type: "application/ld+json", children: JSON.stringify(orgLd) },
+        { type: "application/ld+json", children: JSON.stringify(localBizLd) },
+        { type: "application/ld+json", children: JSON.stringify(websiteLd) },
+        {
+          type: "text/javascript",
+          children:
+            'function loadScript(a){var b=document.getElementsByTagName("head")[0],c=document.createElement("script");c.type="text/javascript",c.src="https://tracker.metricool.com/resources/be.js",c.onreadystatechange=a,c.onload=a,b.appendChild(c)}loadScript(function(){beTracker.t({hash:"3d0d5e64c4f07f690a6a01e20e34af6e"})});',
+        },
+      ],
+    };
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  loader: async (ctx: any) => {
+    // PERF: route the settings fetch through react-query so navigation never
+    // repeats the server roundtrip — cached 5min, deduped, refreshed silently
+    // in the background. (Realtime publish events still refresh instantly via
+    // the AppearanceProvider broadcast subscription.)
+    const queryClient = ctx.context.queryClient as QueryClient;
+    const settings: StorefrontSettingsShape = await queryClient.ensureQueryData(
+      storefrontSettingsQueryOptions,
+    );
+    return { settings };
+  },
+  shellComponent: RootShell,
+  component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+  errorComponent: ErrorComponent,
+});
+
+function RootShell({ children }: { children: ReactNode }) {
+  return (
+    <html lang="ar" dir="rtl">
+      <head>
+        <HeadContent />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7800647895658942"
+          crossOrigin="anonymous"
+        />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
+function RootComponent() {
+  useHydrateCart();
+  const { queryClient } = Route.useRouteContext();
+  const { settings } = Route.useLoaderData();
+  const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const cleanPath = pathname.replace(/^\/app/, "");
+  const isAdmin = cleanPath === "/admin" || cleanPath.startsWith("/admin/");
+  const isBare =
+    cleanPath === "/" ||
+    cleanPath === "" ||
+    cleanPath === "/immersive-store" ||
+    cleanPath.startsWith("/immersive-store/") ||
+    cleanPath === "/auth" ||
+    cleanPath.startsWith("/auth/");
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    const registerServiceWorker = () => {
+      navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {
+        // PWA is an enhancement; never block storefront rendering when registration fails.
+      });
+    };
+
+    if (document.readyState === "complete") {
+      registerServiceWorker();
+    } else {
+      window.addEventListener("load", registerServiceWorker, { once: true });
+    }
+
+    return () => window.removeEventListener("load", registerServiceWorker);
+  }, []);
+
+  useEffect(() => {
+    MonitoringService.init();
+    let lastUserId: string | null | undefined;
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      const uid = session?.user?.id ?? null;
+      if (event === "INITIAL_SESSION") {
+        lastUserId = uid;
+        return;
+      }
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      // Tab-focus or auth check re-emission for the same user → no-op.
+      if (event === "SIGNED_IN" && lastUserId !== undefined && uid === lastUserId) return;
+      lastUserId = uid;
+      // Invalidate only user-specific data (orders, profile) — NEVER public catalog cache
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [queryClient]);
+
+  return (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister: idbPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}
+    >
+      <AppearanceProvider initialSettings={settings}>
+        <TenantProvider>
+          {isAdmin || isBare ? (
+            <Outlet />
+          ) : (
+            <AppShell>
+              <Outlet />
+            </AppShell>
+          )}
+          <Toaster />
+          <NetworkManager />
+        </TenantProvider>
+      </AppearanceProvider>
+    </PersistQueryClientProvider>
   );
 }
