@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  summarizeTikTokScopes,
-  TIKTOK_SCOPE_DETAILS,
-} from "@/lib/tiktok-scopes";
+import { summarizeTikTokScopes, TIKTOK_SCOPE_DETAILS } from "@/lib/tiktok-scopes";
 
 describe("TikTok account permission display", () => {
   it("shows every supported permission as granted or missing", () => {
