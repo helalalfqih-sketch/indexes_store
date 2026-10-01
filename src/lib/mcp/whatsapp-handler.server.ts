@@ -10,6 +10,13 @@ import {
   sendWhapiTextByName,
 } from "@/lib/whapi.server";
 import { verifyAccessToken, AUDIENCE } from "./whatsapp-oauth.server";
+import {
+  getWhatsAppCatalogCollection,
+  getWhatsAppCatalogProduct,
+  listWhatsAppCatalogCollectionProducts,
+  listWhatsAppCatalogCollections,
+  listWhatsAppCatalogProducts,
+} from "./whatsapp-catalog.server";
 import { registerFullWhapiTools } from "./whapi-full-tools.server";
 
 const META = `${AUDIENCE.replace(
@@ -48,7 +55,7 @@ function bearer(request: Request) {
 
 async function server() {
   const instance = new McpServer(
-    { name: "indexes-whatsapp", version: "1.2.0" },
+    { name: "indexes-whatsapp", version: "1.3.0" },
     {
       instructions:
         "Private WhatsApp access for the Indexes Store administrator. Verify the exact destination before each approved write.",
@@ -117,6 +124,94 @@ async function server() {
   add("whapi_list_groups", "groups");
   add("whapi_list_channels", "channels");
   add("whapi_get_products", "products");
+
+  const catalogResult = (data: unknown) => ({
+    structuredContent: { data },
+    content: [{ type: "text" as const, text: JSON.stringify(data) }],
+  });
+
+  instance.registerTool(
+    "whatsapp_catalog_list_products",
+    {
+      title: "List WhatsApp catalog products",
+      description:
+        "Read a bounded page of products from the Indexes WhatsApp Business catalog using the store's fixed verified channel.",
+      inputSchema: z
+        .object({
+          count: z.number().int().min(1).max(50).default(20),
+          offset: z.number().int().min(0).max(10000).default(0),
+        })
+        .strict(),
+      annotations,
+      _meta: { securitySchemes },
+    },
+    async ({ count, offset }) =>
+      catalogResult(await listWhatsAppCatalogProducts({ count, offset })),
+  );
+
+  instance.registerTool(
+    "whatsapp_catalog_get_product",
+    {
+      title: "Get WhatsApp catalog product",
+      description:
+        "Read one product by exact WhatsApp catalog product ID from the fixed verified Indexes channel.",
+      inputSchema: z.object({ productId: z.string().min(1).max(128) }).strict(),
+      annotations,
+      _meta: { securitySchemes },
+    },
+    async ({ productId }) => catalogResult(await getWhatsAppCatalogProduct(productId)),
+  );
+
+  instance.registerTool(
+    "whatsapp_catalog_list_collections",
+    {
+      title: "List WhatsApp catalog collections",
+      description:
+        "Read a bounded page of WhatsApp Business catalog collections from the fixed verified Indexes channel.",
+      inputSchema: z
+        .object({
+          count: z.number().int().min(1).max(50).default(20),
+          offset: z.number().int().min(0).max(10000).default(0),
+        })
+        .strict(),
+      annotations,
+      _meta: { securitySchemes },
+    },
+    async ({ count, offset }) =>
+      catalogResult(await listWhatsAppCatalogCollections({ count, offset })),
+  );
+
+  instance.registerTool(
+    "whatsapp_catalog_get_collection",
+    {
+      title: "Get WhatsApp catalog collection",
+      description:
+        "Read one WhatsApp Business catalog collection by exact collection ID from the fixed verified Indexes channel.",
+      inputSchema: z.object({ collectionId: z.string().min(1).max(128) }).strict(),
+      annotations,
+      _meta: { securitySchemes },
+    },
+    async ({ collectionId }) => catalogResult(await getWhatsAppCatalogCollection(collectionId)),
+  );
+
+  instance.registerTool(
+    "whatsapp_catalog_list_collection_products",
+    {
+      title: "List WhatsApp collection products",
+      description:
+        "Read products for one exact WhatsApp Business catalog collection on the fixed verified Indexes channel.",
+      inputSchema: z
+        .object({
+          collectionId: z.string().min(1).max(128),
+          productsCount: z.number().int().min(1).max(100).default(10),
+        })
+        .strict(),
+      annotations,
+      _meta: { securitySchemes },
+    },
+    async ({ collectionId, productsCount }) =>
+      catalogResult(await listWhatsAppCatalogCollectionProducts(collectionId, productsCount)),
+  );
 
   instance.registerTool(
     "whapi_get_messages",
