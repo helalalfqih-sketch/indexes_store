@@ -109,11 +109,12 @@ describe("reverse image MCP adapter", () => {
 
   it("uses Apify directly when SerpApi is not configured", async () => {
     process.env.APIFY_API_TOKEN = "secret-apify-token";
-    const fetchMock = vi.fn(async () =>
-      new Response(JSON.stringify([]), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
     );
 
     const result = await createReverseImageSearchAdapter(fetchMock as typeof fetch).search(
