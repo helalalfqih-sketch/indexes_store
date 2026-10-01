@@ -152,7 +152,7 @@ function createServer(
     { name: "indexes-store-control-plane", version: STORE_MCP_DISCOVERY_VERSION },
     {
       instructions:
-        "Private, tenant-bound Store administration plus TikTok account management and guarded source development. Commerce data remains read-only. TikTok reads include linked-account profile/video inspection and own-video search. TikTok writes include OAuth linking, token refresh/profile sync, confirmed draft upload/direct post, and confirmed local disconnect; provider tokens are never exposed. Reverse-image search uses a server-side Apify token that is never returned. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
+        "Private, tenant-bound Store administration plus TikTok account management and guarded source development. Commerce data remains read-only. TikTok reads include linked-account profile/video inspection and own-video search. TikTok writes include OAuth linking, token refresh/profile sync, confirmed draft upload/direct post, and confirmed local disconnect; provider tokens are never exposed. Reverse-image search prefers server-side SerpApi Google Lens and falls back to Apify when configured; provider tokens are never returned. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
     },
   );
   const tool = <T extends z.ZodRawShape>(
@@ -216,7 +216,7 @@ function createServer(
     {
       title: "Reverse image search",
       description:
-        "Search the public web for visual matches to one public HTTPS image through the configured Apify actor. The Apify token is never returned.",
+        "Search the public web for visual matches to one public HTTPS image. SerpApi Google Lens is preferred and Apify is used as a fallback when configured. Provider tokens are never returned.",
       inputSchema: z
         .object({
           image_url: z.string().url().max(2048).refine((value) => value.startsWith("https://"), {
