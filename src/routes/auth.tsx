@@ -3,8 +3,8 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { signInSchema, signUpSchema } from "@/lib/validators/auth";
+import { resolveAuthRedirectUrl } from "@/lib/auth/oauth-redirect";
 
 const searchSchema = z.object({
   next: z.string().optional(),
@@ -32,15 +32,19 @@ function mapAuthError(err: unknown): string {
   if (err instanceof z.ZodError) return err.issues[0]?.message ?? "بيانات غير صالحة";
   const msg = err instanceof Error ? err.message : String(err);
   const m = msg.toLowerCase();
-  if (m.includes("invalid login credentials")) return "بيانات الدخول غير صحيحة — تحقق من البريد وكلمة المرور.";
+  if (m.includes("invalid login credentials"))
+    return "بيانات الدخول غير صحيحة — تحقق من البريد وكلمة المرور.";
   if (m.includes("already registered") || m.includes("already exists"))
     return "هذا البريد مسجَّل مسبقاً — جرّب تسجيل الدخول.";
-  if (m.includes("email not confirmed")) return "بريدك غير مؤكَّد بعد — افتح رسالة التأكيد في صندوق بريدك.";
+  if (m.includes("email not confirmed"))
+    return "بريدك غير مؤكَّد بعد — افتح رسالة التأكيد في صندوق بريدك.";
   if (m.includes("password should be")) return "كلمة المرور ضعيفة — 8 أحرف على الأقل مع حرف ورقم.";
-  if (m.includes("rate limit") || m.includes("too many")) return "محاولات كثيرة — انتظر قليلاً ثم أعد المحاولة.";
+  if (m.includes("rate limit") || m.includes("too many"))
+    return "محاولات كثيرة — انتظر قليلاً ثم أعد المحاولة.";
   if (m.includes("access_denied") || m.includes("cancelled") || m.includes("canceled"))
     return "تم إلغاء تسجيل الدخول.";
-  if (m.includes("failed to fetch") || m.includes("network")) return "تعذّر الاتصال بالخادم — تحقق من الإنترنت.";
+  if (m.includes("failed to fetch") || m.includes("network"))
+    return "تعذّر الاتصال بالخادم — تحقق من الإنترنت.";
   return msg;
 }
 
@@ -65,7 +69,11 @@ async function resolveDestination(userId: string, next?: string): Promise<string
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { next, error: oauthError, error_description: oauthErrorDesc } = useSearch({ from: "/auth" });
+  const {
+    next,
+    error: oauthError,
+    error_description: oauthErrorDesc,
+  } = useSearch({ from: "/auth" });
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -86,7 +94,7 @@ function AuthPage() {
   }, [oauthError, oauthErrorDesc]);
 
   // Redirect signed-in users away from /auth — role-aware (admin → /admin, customer → /account).
-  // This effect is also the OAuth callback handler: the Lovable broker returns to /auth,
+  // This effect is also the OAuth callback handler: Supabase returns to /auth,
   // the session is set, SIGNED_IN fires here, and the user is routed by role.
   useEffect(() => {
     let active = true;
@@ -118,9 +126,11 @@ function AuthPage() {
         if (error) throw error;
         // Redirect handled by the SIGNED_IN listener (role-aware).
       } else {
-        const base = import.meta.env.BASE_URL || "/";
-        const cleanBase = base.replace(/\/$/, "");
-        const redirectUrl = window.location.origin + cleanBase + "/auth";
+        const redirectUrl = resolveAuthRedirectUrl({
+          currentOrigin: window.location.origin,
+          baseUrl: import.meta.env.BASE_URL || "/",
+          productionOrigin: import.meta.env.VITE_APP_URL || "https://indexes-store.vercel.app",
+        });
 
         const input = signUpSchema.parse({
           email,
@@ -167,37 +177,22 @@ function AuthPage() {
     setInfo(null);
     setGoogleBusy(true);
     try {
-      const base = import.meta.env.BASE_URL || "/";
-      const cleanBase = base.replace(/\/$/, "");
-      const redirectUrl = window.location.origin + cleanBase + "/auth";
-
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: redirectUrl,
-        extraParams: { prompt: "select_account" },
+      const redirectUrl = resolveAuthRedirectUrl({
+        currentOrigin: window.location.origin,
+        baseUrl: import.meta.env.BASE_URL || "/",
+        productionOrigin: import.meta.env.VITE_APP_URL || "https://indexes-store.vercel.app",
       });
 
-      if (result.error) {
-        // Fallback directly to Supabase native OAuth client
-        const { error: supaErr } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: redirectUrl,
-            queryParams: { prompt: "select_account" },
-          },
-        });
-        if (supaErr) setError(mapAuthError(supaErr));
-      }
+      const { error: supaErr } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (supaErr) throw supaErr;
     } catch (err) {
-      try {
-        const redirectUrl = window.location.origin + (import.meta.env.BASE_URL || "").replace(/\/$/, "") + "/auth";
-        const { error: supaErr } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: { redirectTo: redirectUrl },
-        });
-        if (supaErr) setError(mapAuthError(supaErr));
-      } catch (fallbackErr) {
-        setError(mapAuthError(err));
-      }
+      setError(mapAuthError(err));
     } finally {
       setGoogleBusy(false);
     }
