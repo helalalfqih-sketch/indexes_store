@@ -27,7 +27,9 @@ export const Route = createFileRoute("/offers")({
   },
   pendingComponent: OffersPending,
   errorComponent: ({ error }) => (
-    <div className="p-8 text-center text-destructive">حدث خطأ: {error.message}</div>
+    <div className="p-8 text-center text-destructive">
+      حدث خطأ: {error instanceof Error ? error.message : String(error)}
+    </div>
   ),
   component: OffersPage,
 });
