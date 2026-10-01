@@ -79,7 +79,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "متجر إندكس — INDEXES STORE" },
       {
         property: "og:description",
-        content: "عروض حصرية تصل إلى 50% وشحن مجاني للطلبات فوق 30,000 ريال.",
+        content: "تصفح المنتجات والأسعار والتوفر، وراجع رسوم الشحن في السلة.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -522,6 +522,7 @@ function HomePage() {
         </div>
 
         <MobileReferenceHeader
+          selectedCategory={selectedCategory}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onSubmitSearch={() => navigate({ to: "/search", search: { q: searchQuery.trim() } })}
@@ -566,41 +567,6 @@ function HomePage() {
                       onSelectProduct={handleSelectProduct}
                     />
 
-                    {/* Mobile reference-style offer strip using real store products. */}
-                    <section
-                      className="mx-2 overflow-hidden border-y border-[#f3d4d9] bg-[#fff6f7] p-2.5 shadow-none md:hidden"
-                      aria-label="عرض العملاء الجدد"
-                    >
-                      <div className="mb-2 flex items-center justify-between text-[13px] font-black text-[#e64a4a]">
-                        <span>للمستخدمين الجدد فقط</span>
-                        <span>شحن مجاني 🚚</span>
-                      </div>
-                      <div className="grid grid-cols-[1.05fr_0.95fr_0.95fr] items-center gap-2">
-                        <div className="rounded-lg bg-white/80 p-2 text-center">
-                          <span className="text-[10px] text-neutral-500">تطبق الشروط</span>
-                          <strong className="mt-1 block text-xl font-black text-[#4b9f3a]">
-                            5000
-                          </strong>
-                          <span className="text-[10px] text-neutral-500">رصيد ترحيبي</span>
-                        </div>
-                        {products.slice(0, 2).map((product) => (
-                          <button
-                            type="button"
-                            key={`new-user-${product.id}`}
-                            onClick={() => handleSelectProduct(product)}
-                            className="overflow-hidden rounded-lg bg-white shadow-sm"
-                          >
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              loading="lazy"
-                              className="h-[76px] w-full object-contain"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </section>
-
                     {/* SHEIN Visual Category Circles */}
                     <VisualCategoryCircles
                       selectedCategoryId={selectedCategory}
@@ -611,21 +577,24 @@ function HomePage() {
                     {/* Mobile reference-style product tabs. */}
                     <div
                       className="mx-2 mt-2 grid grid-cols-4 gap-0 border-y border-neutral-200 bg-white p-0 text-[11px] font-black md:hidden"
-                      role="tablist"
+                      role="navigation"
                       aria-label="تصفية المنتجات السريعة"
                     >
-                      {["من أجلك", "مداخل جديدة", "تخفيضات", "الأكثر مبيعاً"].map(
+                      {["المنتجات", "وصل حديثاً", "العروض", "الأكثر تفاعلاً"].map(
                         (label, index) => (
                           <button
                             type="button"
                             key={label}
                             onClick={() =>
-                              document
-                                .getElementById("store-products")
-                                ?.scrollIntoView({ behavior: "smooth" })
+                              navigate({
+                                to: "/search",
+                                search: {
+                                  sortBy: index === 1 ? "latest" : "bestselling",
+                                  dealsOnly: index === 2 || undefined,
+                                },
+                              })
                             }
-                            className={`rounded-md px-1 py-2 ${index === 0 ? "bg-black text-white" : "text-neutral-700"}`}
-                            role="tab"
+                            className={`rounded-md px-1 py-2 text-foreground`}
                           >
                             {label}
                           </button>
@@ -636,7 +605,7 @@ function HomePage() {
                     {/* SHEIN Flash Deals Section with live countdown */}
                     <div className="hidden md:block">
                       <FlashDealsSection
-                        products={bestOffers.length ? bestOffers : products}
+                        products={bestOffers}
                         currency={currency}
                         onSelectProduct={handleSelectProduct}
                         onAddToCart={(prod) => {

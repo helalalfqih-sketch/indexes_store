@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   ChevronLeft,
   ChevronRight,
@@ -34,15 +34,17 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
   const validProducts = products.filter((p) => p.image && !p.image.includes("data:image/svg"));
   const featuredSlides =
     validProducts.length >= 3 ? validProducts.slice(0, 3) : products.slice(0, 3);
+  const reducedMotion = useReducedMotion();
+  const [paused, setPaused] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   useEffect(() => {
-    if (featuredSlides.length <= 1) return;
+    if (featuredSlides.length <= 1 || paused || reducedMotion) return;
     const timer = setInterval(() => {
       setCurrentSlideIndex((prev) => (prev + 1) % featuredSlides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [featuredSlides.length]);
+  }, [featuredSlides.length, paused, reducedMotion]);
 
   const activeProduct = featuredSlides[currentSlideIndex] || products[0];
 
@@ -60,6 +62,8 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
     <section
       className="w-full max-w-[1700px] mx-auto px-0 py-1 sm:px-6 sm:py-2"
       aria-label="العروض الترويجية الكبرى"
+      onFocusCapture={() => setPaused(true)}
+      onPointerEnter={() => setPaused(true)}
     >
       <div className="grid grid-cols-1 items-stretch gap-1 sm:gap-4 lg:grid-cols-12">
         {/* Left Side Quick Brand Features */}
@@ -76,7 +80,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                 ترند المتجر
               </span>
               <h4 className="mt-2 text-base font-black">أجهزة وساعات</h4>
-              <p className="text-[11px] text-neutral-400 mt-1">تكنولوجيا أصلية بضمان حقيقي</p>
+              <p className="text-[11px] text-neutral-400 mt-1">استعرض المواصفات والتوفر</p>
             </div>
             <div className="flex items-center text-xs font-bold text-[#F93A00] group-hover:gap-2 transition-all">
               <span>تصفح القسم</span>
@@ -106,7 +110,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
         </div>
 
         {/* Center Main Promotional Hero */}
-        <div className="relative min-h-[205px] overflow-hidden border-y border-neutral-200 bg-white shadow-none sm:min-h-[320px] sm:rounded-3xl sm:border lg:col-span-8 xl:col-span-7 dark:bg-white">
+        <div className="relative min-h-[205px] overflow-hidden border-y border-neutral-200 bg-white shadow-none sm:min-h-[320px] sm:rounded-3xl sm:border lg:col-span-8 xl:col-span-7 dark:bg-neutral-900">
           {activeProduct ? (
             <AnimatePresence mode="wait">
               <motion.div
@@ -114,7 +118,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.35 }}
+                transition={{ duration: reducedMotion ? 0 : 0.35 }}
                 className="absolute inset-0 flex flex-row items-center justify-between gap-1 p-3 sm:p-10"
               >
                 {/* Text Side */}
@@ -125,7 +129,9 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                   </div>
 
                   <div className="mt-2 text-xl font-black tracking-tight text-[#F93A00] sm:mt-3 sm:text-5xl">
-                    {activeProduct.discountBadge || "خصم خاص"}
+                    {activeProduct.originalPriceYER > activeProduct.priceYER
+                      ? `-${Math.round((1 - activeProduct.priceYER / activeProduct.originalPriceYER) * 100)}%`
+                      : "منتج مختار"}
                   </div>
 
                   <h3 className="mt-1 line-clamp-2 text-[12px] font-black leading-tight text-neutral-900 dark:text-white sm:mt-2 sm:text-2xl">
@@ -135,7 +141,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                   <p className="mt-1 line-clamp-2 text-[9px] leading-relaxed text-neutral-600 dark:text-neutral-400 sm:text-sm">
                     {activeProduct.subtitle ||
                       activeProduct.description ||
-                      "تسوق الآن بالسعر والتوفر الحقيقي مع ضمان التوصيل"}
+                      "راجع تفاصيل المنتج والتوفر"}
                   </p>
 
                   <div className="mt-2 flex items-center gap-2 sm:mt-3 sm:gap-3">
@@ -158,7 +164,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                       }}
                       className="inline-flex items-center justify-center gap-1 rounded-md bg-black px-3 py-1.5 text-[9px] font-black text-white shadow-lg transition-all active:scale-95 sm:gap-2 sm:rounded-xl sm:px-6 sm:py-3 sm:text-sm"
                     >
-                      طلب المنتج الآن
+                      عرض تفاصيل المنتج
                       <ArrowLeft className="h-4 w-4" />
                     </button>
                     <span className="text-[11px] font-bold text-neutral-500">متوفر في المتجر</span>
@@ -180,10 +186,10 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                       <StoreLogo variant="icon" className="h-20 w-20" />
                     </div>
                   )}
-                  <div className="absolute bottom-1 right-0 hidden items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 py-1 shadow sm:flex sm:rounded-xl sm:px-3">
+                  <div className="absolute bottom-1 right-0 hidden items-center gap-1 rounded-md border border-neutral-200 bg-surface px-2 py-1 shadow sm:flex sm:rounded-xl sm:px-3">
                     <Sparkles className="h-3.5 w-3.5 text-[#F93A00]" />
                     <span className="text-[11px] font-black text-neutral-900 dark:text-white">
-                      أصلي ومضمون
+                      تفاصيل المنتج
                     </span>
                   </div>
                 </div>
@@ -208,6 +214,14 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
           {/* Navigation Controls */}
           {featuredSlides.length > 1 && (
             <>
+              <button
+                type="button"
+                onClick={() => setPaused((value) => !value)}
+                className="absolute bottom-2 right-2 z-30 rounded-lg bg-surface px-3 py-2 text-foreground"
+                aria-pressed={paused}
+              >
+                {paused || reducedMotion ? "تشغيل الشرائح" : "إيقاف الشرائح"}
+              </button>
               <button
                 onClick={handlePrev}
                 className="absolute left-2 top-1/2 z-20 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-black shadow-md transition-all sm:left-3 sm:h-8 sm:w-8"
@@ -252,14 +266,14 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
                 INDEXES VIP
               </span>
               <span className="rounded bg-[#F93A00]/10 text-[#F93A00] text-[10px] font-black px-2 py-0.5">
-                الأصلي
+                الكتالوج
               </span>
             </div>
             <div className="my-2">
               <h4 className="text-base font-black text-neutral-900 dark:text-white">
                 إلكترونيات مختارة
               </h4>
-              <p className="text-xs text-neutral-500">فحص وضمان حقيقي قبل التسليم</p>
+              <p className="text-xs text-neutral-500">راجع مواصفات كل منتج</p>
             </div>
             <div className="flex items-center text-xs font-bold text-[#F93A00] group-hover:gap-2 transition-all">
               <span>تسوق الكتالوج</span>
@@ -273,7 +287,7 @@ export const SheinPromoGrid: React.FC<SheinPromoGridProps> = ({
             </div>
             <div className="text-right leading-tight">
               <span className="text-xs font-black text-[#F93A00] block">
-                توصيل سريع لجميع المحافظات
+                خيارات التسليم عند الطلب
               </span>
               <span className="text-[11px] text-neutral-600 dark:text-neutral-400 font-medium">
                 خطوات طلب واضحة وآمنة

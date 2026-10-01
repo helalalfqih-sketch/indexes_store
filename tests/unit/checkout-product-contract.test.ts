@@ -109,7 +109,22 @@ describe("checkout product ID contract", () => {
   it("accepts success only when the complete item count commits", () => {
     expect(
       assertCheckoutCommit(
-        { orderId: ORDER_ID, total: 100, currency: "YER", itemsCount: 2 },
+        {
+          orderId: ORDER_ID,
+          total: 100,
+          currency: "YER",
+          itemsCount: 2,
+          quote: {
+            subtotal: 100,
+            discount: 0,
+            shipping: 0,
+            total: 100,
+            currency: "YER",
+            couponCode: "",
+            freeShippingThreshold: 0,
+            items: [{ id: PRODUCT_ID, name: "Sandbox", unitPrice: 50, quantity: 2, stock: 2 }],
+          },
+        },
         null,
         2,
       ),

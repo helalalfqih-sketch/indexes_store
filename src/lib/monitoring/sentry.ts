@@ -5,9 +5,16 @@
 interface ErrorContext {
   component?: string;
   action?: string;
-  extra?: Record<string, any>;
+  extra?: Record<string, unknown>;
 }
 
+type TelemetryWindow = Window & {
+  Sentry?: {
+    captureException: (error: Error, options: unknown) => void;
+    captureMessage: (message: string, level: string) => void;
+  };
+};
+let initialized = false;
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
 
 export const MonitoringService = {
@@ -15,10 +22,11 @@ export const MonitoringService = {
    * Initialize monitoring and global error listeners.
    */
   init() {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || initialized) return;
+    initialized = true;
 
-    if (SENTRY_DSN) {
-      console.log("[Monitoring] Initialized Sentry Telemetry DSN");
+    if (SENTRY_DSN && (window as TelemetryWindow).Sentry) {
+      console.log("[Monitoring] Sentry runtime detected; delivery requires verification");
     } else {
       console.log("[Monitoring] Active in Console fallback mode (No VITE_SENTRY_DSN configured)");
     }
@@ -38,7 +46,7 @@ export const MonitoringService = {
         {
           component: "GlobalWindow",
           action: "unhandled_rejection",
-        }
+        },
       );
     });
   },
@@ -47,17 +55,20 @@ export const MonitoringService = {
    * Capture runtime exceptions.
    */
   captureException(error: Error | unknown, context?: ErrorContext) {
-    const errObj = error instanceof Error ? error : new Error(String(error));
+    const original = error instanceof Error ? error : new Error(String(error));
+    const errObj = import.meta.env.DEV ? original : new Error("Storefront runtime failure");
 
     console.error(`[Telemetry Error] [${context?.component || "App"}] ${errObj.message}`, {
       stack: errObj.stack,
-      context,
+      context: { component: context?.component, action: context?.action },
       timestamp: new Date().toISOString(),
     });
 
     // If Sentry is initialized, dispatch to Sentry API
-    if (SENTRY_DSN && typeof window !== "undefined" && (window as any).Sentry) {
-      (window as any).Sentry.captureException(errObj, { extra: context });
+    if (SENTRY_DSN && typeof window !== "undefined" && (window as TelemetryWindow).Sentry) {
+      (window as TelemetryWindow).Sentry?.captureException(errObj, {
+        extra: { component: context?.component, action: context?.action },
+      });
     }
   },
 
@@ -67,8 +78,8 @@ export const MonitoringService = {
   captureMessage(message: string, level: "info" | "warning" | "error" = "info") {
     console.log(`[Telemetry ${level.toUpperCase()}] ${message}`);
 
-    if (SENTRY_DSN && typeof window !== "undefined" && (window as any).Sentry) {
-      (window as any).Sentry.captureMessage(message, level);
+    if (SENTRY_DSN && typeof window !== "undefined" && (window as TelemetryWindow).Sentry) {
+      (window as TelemetryWindow).Sentry?.captureMessage(message, level);
     }
   },
 };

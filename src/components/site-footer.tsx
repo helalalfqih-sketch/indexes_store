@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
   MapPin,
   MessageCircle,
@@ -11,76 +10,10 @@ import {
 } from "lucide-react";
 import { useAppearance } from "@/components/appearance-provider";
 import { StoreBrand } from "@/components/brand/store-brand";
-import { InfiniteStorefrontCatalog } from "@/components/storefront/InfiniteStorefrontCatalog";
-import type { Product as DesignProduct, SortOption } from "@/components/storefront/types";
-import type { Product as StoreProduct } from "@/lib/store-data";
-import { useCart } from "@/lib/cart-store";
-import { useFavorites } from "@/lib/use-favorites";
 import { whatsappLink } from "@/lib/whatsapp";
 
 export function SiteFooter({ isHome }: { isHome?: boolean }) {
   const { settings } = useAppearance();
-  const location = useRouterState({ select: (state) => state.location });
-  const navigate = useNavigate();
-  const addToCart = useCart((state) => state.add);
-  const { favorites, toggleFavorite } = useFavorites();
-  const [alreadyRenderedIds, setAlreadyRenderedIds] = useState<string[]>([]);
-
-  const rawSearch = location.search as Record<string, unknown>;
-  const searchQuery = typeof rawSearch.q === "string" ? rawSearch.q : "";
-  const selectedCategory =
-    typeof rawSearch.category === "string" && rawSearch.category ? rawSearch.category : "all";
-  const minPrice = typeof rawSearch.minPrice === "number" ? rawSearch.minPrice : undefined;
-  const maxPrice = typeof rawSearch.maxPrice === "number" ? rawSearch.maxPrice : undefined;
-  const dealsOnly = rawSearch.dealsOnly === true;
-  const inStockOnly = rawSearch.inStockOnly === true;
-
-  const infiniteSort = useMemo<SortOption | "rating">(() => {
-    switch (rawSearch.sortBy) {
-      case "price_asc":
-        return "price-low";
-      case "price_desc":
-        return "price-high";
-      case "latest":
-        return "newest";
-      case "rating":
-        return "rating";
-      case "bestselling":
-        return "best-selling";
-      default:
-        return "default";
-    }
-  }, [rawSearch.sortBy]);
-
-  useEffect(() => {
-    if (location.pathname !== "/search") return;
-    const frame = requestAnimationFrame(() => {
-      const ids = Array.from(document.querySelectorAll<HTMLElement>("[data-product-id]"))
-        .map((node) => node.dataset.productId)
-        .filter((id): id is string => Boolean(id));
-      setAlreadyRenderedIds([...new Set(ids)]);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [location.pathname, searchQuery, selectedCategory, minPrice, maxPrice, dealsOnly, inStockOnly]);
-
-  const handleAddToCart = (product: DesignProduct) => {
-    const storeProduct: StoreProduct = {
-      id: product.id,
-      slug: product.slug || product.id,
-      name: product.name,
-      description: product.description,
-      price: product.priceYER,
-      oldPrice:
-        product.originalPriceYER > product.priceYER ? product.originalPriceYER : undefined,
-      stock: product.inStock === false ? 0 : Math.max(1, product.stockCount ?? 1),
-      image: product.image,
-      rating: product.rating,
-      reviews: product.reviewsCount,
-      categoryId: product.category,
-    } as StoreProduct;
-    addToCart(storeProduct, 1);
-  };
-
   const storeName = settings.navigation.storeName || "اندكس ستور";
   const phone = settings.navigation.whatsappPhone || "967771370740";
   const address = settings.navigation.addressText;
@@ -96,33 +29,6 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
 
   return (
     <>
-      {location.pathname === "/search" ? (
-        <section className="mx-auto w-full max-w-7xl px-4 pb-4" aria-label="متابعة نتائج البحث">
-          <InfiniteStorefrontCatalog
-            selectedCategoryId={selectedCategory}
-            searchQuery={searchQuery}
-            sortBy={infiniteSort}
-            priceRange={minPrice !== undefined || maxPrice !== undefined ? "custom" : "all"}
-            customMinPrice={minPrice}
-            customMaxPrice={maxPrice}
-            selectedBrands={[]}
-            selectedRatings={[]}
-            dealsOnly={dealsOnly}
-            inStockOnly={inStockOnly}
-            currency="YER"
-            favorites={favorites}
-            excludeIds={alreadyRenderedIds}
-            onToggleFavorite={(product) => toggleFavorite(product.id)}
-            onAddToCart={handleAddToCart}
-            onSelectProduct={(product) => {
-              if (product.slug) {
-                navigate({ to: "/product/$slug", params: { slug: product.slug } });
-              }
-            }}
-          />
-        </section>
-      ) : null}
-
       <footer
         dir="rtl"
         className="mt-8 px-4 pb-6 pt-8"

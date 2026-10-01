@@ -43,6 +43,7 @@ export const Route = createFileRoute("/search")({
   head: () => ({
     meta: [
       { title: "البحث في المنتجات والكتالوجات — اندكس ستور" },
+      { name: "robots", content: "noindex, follow" },
       { name: "description", content: "ابحث عن الأجهزة الذكية والمنتجات الفاخرة بالاسم والنوع." },
     ],
   }),
@@ -55,14 +56,21 @@ function SearchPage() {
   const searchParams = useSearch({ from: "/search" });
 
   const [q, setQ] = useState(searchParams.q || "");
-  const [selectedCat, setSelectedCat] = useState(searchParams.category || "all");
-  const [minPrice, setMinPrice] = useState<number | undefined>(searchParams.minPrice);
-  const [maxPrice, setMaxPrice] = useState<number | undefined>(searchParams.maxPrice);
-  const [dealsOnly, setDealsOnly] = useState<boolean>(!!searchParams.dealsOnly);
-  const [inStockOnly, setInStockOnly] = useState<boolean>(!!searchParams.inStockOnly);
-  const [sortBy, setSortBy] = useState<
-    "bestselling" | "latest" | "price_asc" | "price_desc" | "rating"
-  >(searchParams.sortBy || "bestselling");
+  const selectedCat = searchParams.category || "all";
+  const minPrice = searchParams.minPrice;
+  const maxPrice = searchParams.maxPrice;
+  const dealsOnly = !!searchParams.dealsOnly;
+  const inStockOnly = !!searchParams.inStockOnly;
+  const sortBy = searchParams.sortBy || "bestselling";
+  const updateFilters = (patch: Partial<typeof searchParams>) =>
+    navigate({ to: "/search", search: { ...searchParams, q, ...patch } });
+  const setSelectedCat = (category: string) => updateFilters({ category });
+  const setMinPrice = (minPrice?: number) => updateFilters({ minPrice });
+  const setMaxPrice = (maxPrice?: number) => updateFilters({ maxPrice });
+  const setDealsOnly = (dealsOnly: boolean) => updateFilters({ dealsOnly });
+  const setInStockOnly = (inStockOnly: boolean) => updateFilters({ inStockOnly });
+  const setSortBy = (sortBy: SearchSort) => updateFilters({ sortBy });
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
 
   const [results, setResults] = useState<LegacyProductShape[]>([]);
   const [searchState, setSearchState] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -85,12 +93,20 @@ function SearchPage() {
       .catch(() => {});
   }, []);
 
-  // Sync state with URL params
   useEffect(() => {
-    if (searchParams.q !== undefined && searchParams.q !== q) setQ(searchParams.q);
-    if (searchParams.category) setSelectedCat(searchParams.category);
-    if (searchParams.sortBy) setSortBy(searchParams.sortBy);
-  }, [q, searchParams]);
+    setQ(searchParams.q || "");
+  }, [searchParams.q]);
+  useEffect(() => {
+    if (q === (searchParams.q || "")) return;
+    const timer = setTimeout(() => {
+      void navigate({
+        to: "/search",
+        search: { ...searchParams, q: q || undefined },
+        replace: true,
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [q, searchParams, navigate]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -106,12 +122,15 @@ function SearchPage() {
   useEffect(() => {
     const controller = new AbortController();
     setErrorMsg(null);
+    setSearchState("loading");
+    setShowSuggestions(false);
+    setActiveSuggestion(-1);
 
     const t = setTimeout(async () => {
       setSearchState("loading");
       try {
         if (q.trim()) {
-          trackEvent("click_search", { query: q });
+          trackEvent("click_search", { queryLength: q.trim().length });
         }
 
         const data = await searchProductsAdvanced(
@@ -134,7 +153,9 @@ function SearchPage() {
               id: product.id,
               type: "product" as const,
               title: product.name,
-              subtitle: product.categoryId || "منتج",
+              subtitle:
+                categoriesList.find((cat) => cat.id === product.categoryId)?.name ||
+                (product.categoryId === "frontpage" ? "مختارات المتجر" : "منتج"),
               image: product.image,
               price: product.price,
               slug: product.slug,
@@ -159,7 +180,7 @@ function SearchPage() {
       clearTimeout(t);
       controller.abort();
     };
-  }, [q, selectedCat, minPrice, maxPrice, dealsOnly, inStockOnly, sortBy]);
+  }, [q, selectedCat, minPrice, maxPrice, dealsOnly, inStockOnly, sortBy, categoriesList]);
 
   useEffect(() => {
     setShowSuggestions(Boolean(q.trim() && suggestions.length > 0));
@@ -175,15 +196,12 @@ function SearchPage() {
   };
 
   const handleResetFilters = () => {
-    setSelectedCat("all");
-    setMinPrice(undefined);
-    setMaxPrice(undefined);
-    setDealsOnly(false);
-    setInStockOnly(false);
+    void navigate({ to: "/search", search: { q: q || undefined } });
   };
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-4 pb-16 max-w-7xl mx-auto" dir="rtl">
+      <h1 className="text-xl font-bold text-foreground">البحث عن المنتجات</h1>
       {/* Header Search Input with Auto Suggestions */}
       <div ref={searchContainerRef} className="relative z-30">
         <div className="flex items-center gap-3 rounded-2xl border border-showcase-border/50 bg-showcase-foreground/5 backdrop-blur-md px-4 py-3 shadow-card focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition">
@@ -196,13 +214,33 @@ function SearchPage() {
             onFocus={() => {
               if (suggestions.length > 0) setShowSuggestions(true);
             }}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={showSuggestions}
+            aria-controls="search-suggestions"
+            aria-activedescendant={
+              activeSuggestion >= 0 ? "suggestion-" + activeSuggestion : undefined
+            }
             onKeyDown={(event) => {
               if (event.key === "Escape") setShowSuggestions(false);
-              if (event.key === "Enter") setShowSuggestions(false);
+              if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                event.preventDefault();
+                setShowSuggestions(true);
+                setActiveSuggestion((index) =>
+                  event.key === "ArrowDown"
+                    ? Math.min(index + 1, suggestions.length - 1)
+                    : Math.max(index - 1, 0),
+                );
+              }
+              if (event.key === "Enter") {
+                if (showSuggestions && activeSuggestion >= 0 && suggestions[activeSuggestion])
+                  handleSelectSuggestion(suggestions[activeSuggestion]);
+                setShowSuggestions(false);
+              }
             }}
             placeholder="ابحث باسم المنتج، التصنيف، الكود (SKU)، أو الوسوم..."
             aria-label="مربع البحث عن المنتجات"
-            className="flex-1 bg-transparent text-sm font-bold outline-none placeholder:text-showcase-muted text-showcase-foreground"
+            className="flex-1 bg-transparent text-sm font-bold outline-none placeholder:text-muted-foreground text-foreground"
           />
           {q && (
             <button
@@ -211,7 +249,7 @@ function SearchPage() {
                 setShowSuggestions(false);
               }}
               aria-label="مسح نص البحث"
-              className="text-showcase-muted hover:text-white p-1"
+              className="text-muted-foreground hover:text-foreground p-1"
             >
               <X className="h-4 w-4" />
             </button>
@@ -223,19 +261,26 @@ function SearchPage() {
 
         {/* Live Auto-Suggestions Dropdown */}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute inset-x-0 top-full mt-2 z-40 rounded-2xl border border-white/10 bg-[#0c1a29]/95 p-3 shadow-2xl backdrop-blur-xl space-y-2">
+          <div className="absolute inset-x-0 top-full mt-2 z-40 rounded-2xl border border-white/10 bg-surface p-3 shadow-2xl backdrop-blur-xl space-y-2">
             <div className="text-[10px] font-bold text-muted-foreground px-2">
               اقتراحات البحث الذكي:
             </div>
-            <ul role="listbox" aria-label="اقتراحات البحث" className="space-y-2">
-              {suggestions.map((s) => (
-                <li key={s.id} role="option" aria-selected="false">
+            <ul
+              id="search-suggestions"
+              role="listbox"
+              aria-label="اقتراحات البحث"
+              className="space-y-2"
+            >
+              {suggestions.map((s, index) => (
+                <li
+                  id={`suggestion-${index}`}
+                  key={s.id}
+                  role="option"
+                  aria-selected={index === activeSuggestion}
+                >
                   <button
                     type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      handleSelectSuggestion(s);
-                    }}
+                    onClick={() => handleSelectSuggestion(s)}
                     className="flex w-full items-center justify-between gap-3 p-2 rounded-xl hover:bg-white/10 cursor-pointer transition"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -249,9 +294,9 @@ function SearchPage() {
                         <SearchIcon className="h-4 w-4 text-neon" />
                       )}
                       <div className="truncate text-xs">
-                        <p className="font-bold text-white truncate">{s.title}</p>
+                        <p className="font-bold text-foreground truncate">{s.title}</p>
                         {s.subtitle && (
-                          <p className="text-[10px] text-showcase-muted">{s.subtitle}</p>
+                          <p className="text-[10px] text-muted-foreground">{s.subtitle}</p>
                         )}
                       </div>
                     </div>
@@ -270,13 +315,13 @@ function SearchPage() {
 
       {/* Control Bar: Filters & Sorting */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-surface/50 border border-border/40 p-3 rounded-2xl backdrop-blur-sm">
-        <div className="flex items-center gap-2 text-xs font-bold text-showcase-muted">
+        <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
           <span>{q ? `نتائج البحث عن "${q}"` : "عرض جميع الكتالوجات"}</span>
           <span className="bg-primary/20 text-primary px-2 py-0.5 rounded-md text-[11px]">
             {searchState === "loading"
               ? "جاري البحث..."
               : searchState === "done"
-                ? `${results.length} منتج`
+                ? `${results.length} نتيجة محملة`
                 : ""}
           </span>
         </div>
@@ -314,19 +359,19 @@ function SearchPage() {
               aria-label="ترتيب النتائج حسب"
               className="bg-transparent text-foreground font-bold outline-none text-xs"
             >
-              <option value="bestselling" className="bg-slate-900 text-white">
-                الأكثر مبيعاً
+              <option value="bestselling" className="bg-surface text-foreground">
+                الأكثر تفاعلاً
               </option>
-              <option value="latest" className="bg-slate-900 text-white">
+              <option value="latest" className="bg-surface text-foreground">
                 الأحدث
               </option>
-              <option value="price_asc" className="bg-slate-900 text-white">
+              <option value="price_asc" className="bg-surface text-foreground">
                 السعر: الأقل إلى الأعلى
               </option>
-              <option value="price_desc" className="bg-slate-900 text-white">
+              <option value="price_desc" className="bg-surface text-foreground">
                 السعر: الأعلى إلى الأقل
               </option>
-              <option value="rating" className="bg-slate-900 text-white">
+              <option value="rating" className="bg-surface text-foreground">
                 الأعلى تقييماً
               </option>
             </select>
@@ -473,14 +518,12 @@ function SearchPage() {
             aria-live="polite"
             className="rounded-3xl border border-showcase-border/50 bg-showcase-foreground/5 backdrop-blur-md p-8 sm:p-12 text-center space-y-4"
           >
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-showcase-foreground/10 text-showcase-muted">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-showcase-foreground/10 text-muted-foreground">
               <PackageX className="h-7 w-7" />
             </div>
             <div className="space-y-1">
-              <p className="text-base font-black text-showcase-foreground">
-                لم نجد منتجًا مطابقًا لـ «{q}»
-              </p>
-              <p className="text-xs text-showcase-muted">
+              <p className="text-base font-black text-foreground">لم نجد منتجًا مطابقًا لـ «{q}»</p>
+              <p className="text-xs text-muted-foreground">
                 تأكد من صحة كلمة البحث، أو اختَر أحد التصنيفات السريعة أدناه:
               </p>
             </div>
@@ -494,7 +537,7 @@ function SearchPage() {
                     setSelectedCat(cat.id);
                     setQ("");
                   }}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-showcase-foreground hover:bg-primary/20 hover:border-primary/40 transition"
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-foreground hover:bg-primary/20 hover:border-primary/40 transition"
                 >
                   {cat.name}
                 </button>

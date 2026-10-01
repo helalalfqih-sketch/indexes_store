@@ -1,15 +1,10 @@
-import { useDialogFocus } from "@/lib/use-dialog-focus";
-import { checkoutAttemptKey, completeCheckoutAttempt } from "@/lib/checkout-attempt";
-import { useQuery } from "@tanstack/react-query";
-import { getCheckoutQuote } from "@/lib/checkout-quote.functions";
-import { trackEvent } from "@/lib/analytics";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Loader2, MapPin, Phone, User } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CartDrawer as CartDrawerBase } from "./CartDrawerBase";
-import type { CartItem, Currency, Product } from "./types";
-import { formatPrice } from "./currency";
-import { STORE_INFO } from "./constants";
+import type { CartItem, Currency, Product } from "@/components/storefront/types";
+import { formatPrice } from "@/components/storefront/currency";
+import { STORE_INFO } from "@/components/storefront/constants";
 import { submitOrder } from "@/lib/actions/order.actions";
 import { useCart } from "@/lib/cart-store";
 import { yemeniPhoneSchema } from "@/lib/validation/phone";
@@ -33,13 +28,16 @@ interface UnifiedCartFlowProps {
 
 type FlowStep = "cart" | "delivery" | "success";
 
+function makeIdempotencyKey() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `order-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
   const [step, setStep] = useState<FlowStep>("cart");
-  useDialogFocus(props.isOpen && step !== "cart", "#delivery-dialog");
-  const attemptSignature = useRef("");
-  const couponCode = useCart((state) => state.couponCode);
-  const setCouponCode = useCart((state) => state.setCouponCode);
-  const submittingRef = useRef(false);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -59,40 +57,20 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
       setErrors({});
       setOrderId(null);
       setWhatsappUrl(null);
+      idempotencyKeyRef.current = null;
     }
   }, [props.isOpen]);
 
-  const checkoutItems = useMemo(
-    () =>
-      props.cartItems.map((item) => ({
-        productRef:
-          item.product.checkoutProductRef ??
-          checkoutProductRefFromCatalogProduct({
-            id: item.product.id,
-            shopifyVariantId: item.product.shopifyVariantId,
-          }),
-        quantity: item.quantity,
-      })),
+  const subtotal = useMemo(
+    () => props.cartItems.reduce((sum, item) => sum + item.product.priceYER * item.quantity, 0),
     [props.cartItems],
   );
-  const quoteQuery = useQuery({
-    queryKey: ["checkout-quote", checkoutItems, couponCode],
-    queryFn: () => getCheckoutQuote({ data: { items: checkoutItems, couponCode } }),
-    enabled: props.isOpen && checkoutItems.length > 0,
-    staleTime: 0,
-    gcTime: 0,
-    retry: false,
-  });
-  const quote = quoteQuery.data;
-  const quoteReady = Boolean(quote && !quoteQuery.isFetching && !quoteQuery.isError);
-  const subtotal = quote?.subtotal ?? 0;
-  const discountAmount = quote?.discount ?? 0;
-  const discountPercent = subtotal ? Math.round((discountAmount / subtotal) * 100) : 0;
-  const shipping = quote?.shipping ?? 0;
-  const total = quote?.total ?? 0;
-  const quoteError = quoteQuery.isError
-    ? "تعذر اعتماد السعر أو الكوبون. أعد المحاولة أو أزل الكوبون."
-    : undefined;
+  const discountAmount = Math.round((subtotal * discountPercent) / 100);
+  const afterDiscount = subtotal - discountAmount;
+  const shipping = afterDiscount >= STORE_INFO.freeShippingThresholdYER ? 0 : 3000;
+  const total = afterDiscount + shipping;
+  const couponCode =
+    discountPercent >= 20 ? "INDEXES20" : discountPercent >= 10 ? "INDEXES10" : undefined;
 
   const validate = () => {
     const next: Record<string, string> = {};
@@ -106,24 +84,20 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
   };
 
   const handleSubmit = async () => {
-    if (submittingRef.current || !quoteReady || !validate()) return;
-    submittingRef.current = true;
+    if (submitting || !validate()) return;
     setSubmitError(null);
-    const signature = JSON.stringify([
-      checkoutItems,
-      couponCode,
-      name.trim(),
-      phone.trim(),
-      address.trim(),
-      notes.trim(),
-    ]);
-    if (attemptSignature.current !== signature) {
-      idempotencyKeyRef.current = null;
-      attemptSignature.current = signature;
-    }
+    idempotencyKeyRef.current ??= makeIdempotencyKey();
     setSubmitting(true);
     try {
-      idempotencyKeyRef.current ??= await checkoutAttemptKey(signature);
+      const checkoutItems = props.cartItems.map((item) => ({
+        productRef:
+          item.product.checkoutProductRef ??
+          checkoutProductRefFromCatalogProduct({
+            id: item.product.id,
+            shopifyVariantId: item.product.shopifyVariantId,
+          }),
+        quantity: item.quantity,
+      }));
       const result = await submitOrder({
         items: checkoutItems,
         customerName: name.trim(),
@@ -138,11 +112,15 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
       const url = whatsappLink(
         buildCheckoutWhatsAppMessage({
           orderId: result.orderId,
-          items: result.quote.items,
-          subtotal: result.quote.subtotal,
-          discount: result.quote.discount,
-          shipping: result.quote.shipping,
-          total: result.quote.total,
+          items: props.cartItems.map((item) => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            unitPrice: item.product.priceYER,
+          })),
+          subtotal,
+          discount: discountAmount,
+          shipping,
+          total,
           customer: {
             name: name.trim(),
             phone: phone.trim(),
@@ -153,23 +131,15 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
         }),
         STORE_INFO.whatsappNumber,
       );
-      trackEvent("order_created", {
-        orderId: result.orderId,
-        value: result.total,
-        currency: "YER",
-      });
-      completeCheckoutAttempt(idempotencyKeyRef.current);
       clearCart();
-      idempotencyKeyRef.current = null;
       setOrderId(result.orderId);
       setWhatsappUrl(url);
       setStep("success");
-    } catch {
-      setSubmitError("تعذر تأكيد الطلب. تحقق من السعر والتوفر ثم أعد المحاولة.");
-      void quoteQuery.refetch();
+      window.location.assign(url);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "تعذر إنشاء الطلب. حاول مرة أخرى.");
     } finally {
       setSubmitting(false);
-      submittingRef.current = false;
     }
   };
 
@@ -177,14 +147,8 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
     return (
       <CartDrawerBase
         {...props}
-        quote={quoteReady ? quote : undefined}
-        couponCode={couponCode}
-        onApplyCoupon={setCouponCode}
-        quoteError={quoteError}
-        onRetryQuote={() => void quoteQuery.refetch()}
-        onCheckout={() => {
-          if (!quoteReady) return;
-          trackEvent("begin_checkout", { value: total, currency: "YER" });
+        onCheckout={(discount) => {
+          setDiscountPercent(discount);
           setStep("delivery");
         }}
       />
@@ -202,14 +166,6 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
         >
           <div className="flex-1 cursor-pointer" onClick={props.onClose} />
           <motion.div
-            id="delivery-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-label="إتمام الطلب"
-            tabIndex={-1}
-            onKeyDown={(event) => {
-              if (event.key === "Escape" && !submitting) props.onClose();
-            }}
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -239,9 +195,6 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                 {whatsappUrl && (
                   <a
                     href={whatsappUrl}
-                    onClick={() =>
-                      trackEvent("click_whatsapp", { orderId, value: total, currency: "YER" })
-                    }
                     className="rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white"
                   >
                     إكمال الطلب عبر واتساب
@@ -314,10 +267,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                   </div>
 
                   <div className="mt-5 rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] p-4 text-xs">
-                    <Summary
-                      label="المجموع الفرعي"
-                      value={quoteReady ? formatPrice(subtotal, props.currency) : "—"}
-                    />
+                    <Summary label="المجموع الفرعي" value={formatPrice(subtotal, props.currency)} />
                     {discountPercent > 0 && (
                       <Summary
                         label={`الخصم (${discountPercent}%)`}
@@ -327,26 +277,18 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                     )}
                     <Summary
                       label="الشحن"
-                      value={
-                        !quoteReady
-                          ? "—"
-                          : shipping === 0
-                            ? "مجاني 🚚"
-                            : formatPrice(shipping, props.currency)
-                      }
-                      success={quoteReady && shipping === 0}
+                      value={shipping === 0 ? "مجاني 🚚" : formatPrice(shipping, props.currency)}
+                      success={shipping === 0}
                     />
                     <div className="mt-3 flex items-center justify-between border-t border-[var(--color-border-default)] pt-3 text-base font-black">
                       <span>الإجمالي</span>
-                      <span className="text-[#2F6BFF]">
-                        {quoteReady ? formatPrice(total, props.currency) : "—"}
-                      </span>
+                      <span className="text-[#2F6BFF]">{formatPrice(total, props.currency)}</span>
                     </div>
                   </div>
 
-                  {(submitError || quoteError) && (
+                  {submitError && (
                     <p className="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-500">
-                      {submitError || quoteError}
+                      {submitError}
                     </p>
                   )}
                 </div>
@@ -355,7 +297,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={submitting || !quoteReady}
+                    disabled={submitting}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#2F6BFF] to-[#3B75FF] py-3.5 text-sm font-black text-white shadow-lg shadow-blue-600/25 disabled:opacity-60"
                   >
                     {submitting ? (

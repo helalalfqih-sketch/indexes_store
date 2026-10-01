@@ -37,3 +37,9 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260907210000_checkout_001_atomic_order.sql
       - name: Verify transactional and tenant checkout contract
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/database/checkout-database-contract.sql
+      - name: Verify shared quote migration in isolated database
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'ALTER TABLE products ADD COLUMN IF NOT EXISTS reserved_stock integer NOT NULL DEFAULT 0'
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261001000001_store_audit_quote.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261001000001_store_audit_quote.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/database/store-audit-quote.sql

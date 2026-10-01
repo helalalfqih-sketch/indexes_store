@@ -71,8 +71,7 @@ export function validateYemenCheckoutVariant(
     currency: YEMEN_CURRENCY,
     brand: node.product.vendor || null,
     images,
-    stock:
-      typeof availableQuantity === "number" && availableQuantity >= 0 ? availableQuantity : 999,
+    stock: typeof availableQuantity === "number" && availableQuantity >= 0 ? availableQuantity : 0,
     sku: node.sku ?? null,
     barcode: node.barcode ?? null,
     tags: node.product.tags,
@@ -92,32 +91,11 @@ export async function resolveShopifyVariantsForYemenCheckout(
   const uniqueIds = [...new Set(variantIds)];
   if (uniqueIds.length === 0) return new Map();
 
-  const { storefront } = await import("@/lib/shopify/catalog.functions");
-  const result = await storefront<{ nodes: CheckoutVariantNode[] }>(
-    `query CheckoutVariants($ids: [ID!]!) {
-      nodes(ids: $ids) {
-        ... on ProductVariant {
-          id sku barcode availableForSale
-          price { amount currencyCode }
-          compareAtPrice { amount currencyCode }
-          image { url altText }
-          product {
-            id handle title description vendor tags
-            featuredImage { url altText }
-          }
-        }
-      }
-    }`,
-    { ids: uniqueIds },
-  );
-
-  if (result.nodes.length !== uniqueIds.length) {
-    throw new Error("تعذر التحقق من جميع منتجات السلة.");
-  }
+  const variants = await readYemenCheckoutVariants(uniqueIds);
 
   const resolved = new Map<string, string>();
   for (let index = 0; index < uniqueIds.length; index += 1) {
-    const variant = validateYemenCheckoutVariant(result.nodes[index], uniqueIds[index]);
+    const variant = variants[index];
     const productPayload = {
       tenant_id: tenantId,
       external_id: variant.externalId,
@@ -130,7 +108,6 @@ export async function resolveShopifyVariantsForYemenCheckout(
       brand: variant.brand,
       images: variant.images,
       stock: variant.stock,
-      reserved_stock: 0,
       sku: variant.sku,
       barcode: variant.barcode,
       tags: variant.tags,
@@ -185,4 +162,34 @@ export async function resolveShopifyVariantsForYemenCheckout(
   }
 
   return resolved;
+}
+
+export async function readYemenCheckoutVariants(
+  variantIds: string[],
+): Promise<YemenCheckoutVariant[]> {
+  if (!variantIds.length) return [];
+  const { storefront } = await import("@/lib/shopify/catalog.functions");
+  const result = await storefront<{ nodes: CheckoutVariantNode[] }>(
+    `query CheckoutVariants($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        ... on ProductVariant {
+          id sku barcode availableForSale quantityAvailable
+          price { amount currencyCode }
+          compareAtPrice { amount currencyCode }
+          image { url altText }
+          product {
+            id handle title description vendor tags
+            featuredImage { url altText }
+          }
+        }
+      }
+    }`,
+    { ids: variantIds },
+  );
+
+  if (result.nodes.length !== variantIds.length) {
+    throw new Error("تعذر التحقق من جميع منتجات السلة.");
+  }
+
+  return variantIds.map((id, index) => validateYemenCheckoutVariant(result.nodes[index], id));
 }

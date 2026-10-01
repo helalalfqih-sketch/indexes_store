@@ -1,7 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
+import { categoriesQuery } from "@/lib/queries/catalog";
 import React from "react";
-import { Bell, ChevronDown, Heart, Mail, Search, ShoppingCart } from "lucide-react";
+import { Bell, ChevronDown, Heart, Menu, Search, ShoppingCart } from "lucide-react";
 
 interface MobileReferenceHeaderProps {
+  selectedCategory?: string;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onSubmitSearch?: () => void;
@@ -14,15 +17,8 @@ interface MobileReferenceHeaderProps {
   onSelectCategory?: (categoryId: string) => void;
 }
 
-const categories = [
-  { id: "all", label: "كل" },
-  { id: "women", label: "نساء" },
-  { id: "home_appliances", label: "المنزل + الحيوانات الأليفة" },
-  { id: "men", label: "رجال" },
-  { id: "accessories", label: "مجوهرات وإكسسوارات" },
-];
-
 export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
+  selectedCategory = "all",
   searchQuery,
   onSearchChange,
   onSubmitSearch,
@@ -34,6 +30,16 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
   onOpenWishlist,
   onSelectCategory,
 }) => {
+  const { data: categoryRows = [] } = useQuery(categoriesQuery());
+  const categories = [
+    { id: "all", label: "الكل" },
+    ...categoryRows
+      .filter((category) => category.id !== "all")
+      .map((category) => ({
+        id: category.id,
+        label: category.id === "frontpage" ? "مختارات المتجر" : category.name,
+      })),
+  ];
   return (
     <header
       className="sticky top-0 z-40 border-b border-white/10 bg-black text-white shadow-[0_1px_5px_rgba(0,0,0,0.22)] md:hidden"
@@ -102,10 +108,10 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
         <button
           type="button"
           onClick={onOpenMenu}
-          aria-label="الرسائل والقائمة"
+          aria-label="القائمة"
           className="grid h-10 w-8 shrink-0 place-items-center text-white"
         >
-          <Mail className="h-[20px] w-[20px] stroke-[1.8]" />
+          <Menu className="h-[20px] w-[20px] stroke-[1.8]" />
         </button>
       </div>
 
@@ -113,16 +119,19 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
         className="flex h-9 items-end gap-5 overflow-x-auto border-t border-white/10 px-3 no-scrollbar"
         aria-label="أقسام المتجر"
       >
-        {categories.map((category, index) => (
+        {categories.map((category) => (
           <button
             type="button"
             key={category.id}
             aria-label={category.label}
+            aria-current={category.id === selectedCategory ? "page" : undefined}
             onClick={() => onSelectCategory?.(category.id)}
-            className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${index === 0 ? "font-black text-white" : "text-white/75"}`}
+            className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${category.id === selectedCategory ? "font-black text-white" : "text-white/75"}`}
           >
             {category.label}
-            {index === 0 && <span className="absolute inset-x-0 bottom-0 h-[2px] bg-white" />}
+            {category.id === selectedCategory && (
+              <span className="absolute inset-x-0 bottom-0 h-[2px] bg-white" />
+            )}
           </button>
         ))}
         <button

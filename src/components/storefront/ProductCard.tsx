@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Check, Heart, Plus, Star } from "lucide-react";
 import type { Currency, Product } from "./types";
@@ -16,6 +17,7 @@ interface ProductCardProps {
   onSelectProduct: (product: Product) => void;
   variant?: "horizontal" | "grid";
   index?: number;
+  sectionSource?: string;
 }
 
 export function ProductCard({
@@ -27,6 +29,7 @@ export function ProductCard({
   onSelectProduct,
   variant = "grid",
   index = 0,
+  sectionSource = variant,
 }: ProductCardProps) {
   const [added, setAdded] = useState(false);
   const hasRealDiscount =
@@ -41,7 +44,7 @@ export function ProductCard({
   return (
     <article
       data-storefront-product-id={product.id}
-      data-element-key="product-card"
+      data-element-key={`${sectionSource}:${product.id}:card`}
       data-product-name={product.name}
       data-price-yer={product.priceYER}
       data-previous-price-yer={hasRealDiscount ? product.originalPriceYER : undefined}
@@ -49,19 +52,24 @@ export function ProductCard({
       data-product-rating={product.rating}
       data-product-stock={product.stockCount}
       data-product-category={product.category}
-      className={`${widthClass} group min-w-0 cursor-pointer bg-white text-black`}
-      onClick={() => onSelectProduct(product)}
+      className={`${widthClass} group min-w-0 cursor-pointer bg-surface text-foreground`}
       dir="rtl"
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f7f7f7]">
-        <OptimizedImage
-          src={product.image || FALLBACK_IMAGE}
-          alt={product.name}
-          size="card"
-          eager={index < 4}
-          draggable={false}
-          className="h-full w-full bg-[#f7f7f7]"
-        />
+        <Link
+          to="/product/$slug"
+          params={{ slug: product.slug || product.id }}
+          aria-label={product.name}
+        >
+          <OptimizedImage
+            src={product.image || FALLBACK_IMAGE}
+            alt={product.name}
+            size="card"
+            eager={index < 4}
+            draggable={false}
+            className="h-full w-full bg-[#f7f7f7]"
+          />
+        </Link>
         {discountPercent ? (
           <span className="absolute right-1.5 top-1.5 bg-[#ff2442] px-1.5 py-0.5 text-[9px] font-black text-white">
             -{discountPercent}%
@@ -69,7 +77,7 @@ export function ProductCard({
         ) : null}
         <button
           type="button"
-          data-element-key="product-favorite"
+          data-element-key={`${sectionSource}:${product.id}:favorite`}
           aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
           onClick={(event) => {
             event.stopPropagation();
@@ -84,12 +92,18 @@ export function ProductCard({
       </div>
 
       <div className="px-1.5 pb-2 pt-1.5">
-        <h2 className="line-clamp-2 min-h-8 text-[11px] font-medium leading-4 text-black">
-          {product.name}
+        <h2 className="line-clamp-2 min-h-8 text-[11px] font-medium leading-4 text-foreground">
+          <Link
+            to="/product/$slug"
+            params={{ slug: product.slug || product.id }}
+            className="focus-visible:underline"
+          >
+            {product.name}
+          </Link>
         </h2>
         <div className="mt-1 flex items-center justify-between gap-1">
           <div className="min-w-0">
-            <strong className="block truncate text-[13px] font-black text-black">
+            <strong className="block truncate text-[13px] font-black text-foreground">
               {formatPrice(product.priceYER, currency)}
             </strong>
             {hasRealDiscount && (
@@ -100,7 +114,7 @@ export function ProductCard({
           </div>
           <button
             type="button"
-            data-element-key="product-add-to-cart"
+            data-element-key={`${sectionSource}:${product.id}:add-to-cart`}
             disabled={!isAvailable || added}
             onClick={(event) => {
               event.stopPropagation();

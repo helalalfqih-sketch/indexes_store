@@ -65,7 +65,7 @@ const createOrderInput = z.object({
   expectedTotal: z.number().nonnegative().optional(),
   paymentProvider: z.string().trim().max(60).optional(),
   /** Client-generated UUID to prevent duplicate order creation. */
-  idempotencyKey: z.string().uuid().optional(),
+  idempotencyKey: z.string().uuid(),
 });
 export type CreateOrderPayload = z.infer<typeof createOrderInput>;
 
@@ -74,6 +74,7 @@ export interface CreateOrderResult {
   total: number;
   currency: string;
   itemsCount: number;
+  quote: import("./checkout-quote").CheckoutQuote;
 }
 
 // ---------- helpers ----------

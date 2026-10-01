@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Zap, ChevronLeft, ChevronRight, ShoppingCart, Flame } from 'lucide-react';
-import { Product, Currency } from './types';
-import { formatPrice } from './currency';
+import { Link } from "@tanstack/react-router";
+import React, { useState, useEffect } from "react";
+import { Zap, ChevronLeft, ChevronRight, ShoppingCart, Flame } from "lucide-react";
+import { Product, Currency } from "./types";
+import { formatPrice } from "./currency";
 
 interface FlashDealsSectionProps {
   products: Product[];
@@ -16,7 +17,9 @@ export const FlashDealsSection: React.FC<FlashDealsSectionProps> = ({
   onSelectProduct,
   onAddToCart,
 }) => {
-  const dealProducts = products.length > 0 ? products.slice(0, 6) : [];
+  const dealProducts = products
+    .filter((product) => product.originalPriceYER > product.priceYER)
+    .slice(0, 6);
   const dealEnd = dealProducts.find((product) => product.dealEnd)?.dealEnd ?? null;
   const dealEndTime = dealEnd ? new Date(dealEnd).getTime() : NaN;
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -42,7 +45,10 @@ export const FlashDealsSection: React.FC<FlashDealsSectionProps> = ({
   if (dealProducts.length === 0) return null;
 
   return (
-    <section className="py-4 px-3 sm:px-6 w-full max-w-[1700px] mx-auto" aria-label="عروض فلاش الترويجية">
+    <section
+      className="py-4 px-3 sm:px-6 w-full max-w-[1700px] mx-auto"
+      aria-label="عروض فلاش الترويجية"
+    >
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-black via-neutral-900 to-black p-4 sm:p-5 text-white mb-4 shadow-sm">
         <div className="flex items-center gap-3">
@@ -51,35 +57,43 @@ export const FlashDealsSection: React.FC<FlashDealsSectionProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg sm:text-xl font-black">عروض فلاش اليومية</h3>
+              <h3 className="text-lg sm:text-xl font-black">عروض المتجر</h3>
               <span className="rounded bg-[#F93A00] px-2 py-0.5 text-[10px] font-black uppercase text-white">
                 FLASH SALE
               </span>
             </div>
-            <p className="text-xs text-neutral-400">تخفيضات محدودة على المنتجات الأكثر طلباً</p>
+            <p className="text-xs text-neutral-400">تخفيضات بحسب الأسعار السابقة المسجلة</p>
           </div>
         </div>
 
         {/* Countdown Box — shown only when the catalog provides a real end time */}
         {Number.isFinite(dealEndTime) ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-neutral-300 hidden sm:inline">ينتهي العرض خلال:</span>
-            <div className="flex items-center gap-1.5 font-mono font-black text-sm" dir="ltr" aria-label="الوقت المتبقي للعرض">
+            <span className="text-xs font-bold text-neutral-300 hidden sm:inline">
+              ينتهي العرض خلال:
+            </span>
+            <div
+              className="flex items-center gap-1.5 font-mono font-black text-sm"
+              dir="ltr"
+              aria-label="الوقت المتبقي للعرض"
+            >
               <div className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-neutral-800 border border-neutral-700 px-1 text-white shadow">
-                {String(timeLeft.hours).padStart(2, '0')}
+                {String(timeLeft.hours).padStart(2, "0")}
               </div>
               <span>:</span>
               <div className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-neutral-800 border border-neutral-700 px-1 text-white shadow">
-                {String(timeLeft.minutes).padStart(2, '0')}
+                {String(timeLeft.minutes).padStart(2, "0")}
               </div>
               <span>:</span>
               <div className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#F93A00] px-1 text-white shadow">
-                {String(timeLeft.seconds).padStart(2, '0')}
+                {String(timeLeft.seconds).padStart(2, "0")}
               </div>
             </div>
           </div>
         ) : (
-          <span className="rounded-lg bg-white/10 px-3 py-2 text-xs font-bold text-neutral-200">عروض محدودة</span>
+          <span className="rounded-lg bg-white/10 px-3 py-2 text-xs font-bold text-neutral-200">
+            الأسعار الحالية
+          </span>
         )}
       </div>
 
@@ -90,32 +104,38 @@ export const FlashDealsSection: React.FC<FlashDealsSectionProps> = ({
           const stockLabel = product.stockCount
             ? `متبقي ${product.stockCount}`
             : product.inStock
-              ? 'متوفر الآن'
-              : 'نفد المخزون';
+              ? "متوفر الآن"
+              : "نفد المخزون";
 
           return (
-            <div
+            <article
               key={product.id}
-              onClick={() => onSelectProduct(product)}
               className="group cursor-pointer rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm hover:shadow-md hover:border-black dark:hover:border-white transition-all flex flex-col justify-between"
             >
               {/* Product Image Box */}
               <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+                <Link
+                  to="/product/$slug"
+                  params={{ slug: product.slug || product.id }}
+                  aria-label={product.name}
+                >
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    loading="lazy"
+                    className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                  />
+                </Link>
 
                 {/* Discount Tag */}
                 <div className="absolute top-2 right-2 rounded-lg bg-[#F93A00] px-2 py-0.5 text-[11px] font-black text-white shadow">
-                  {product.discountBadge || '-35%'}
+                  {`-${Math.round((1 - product.priceYER / originalPrice) * 100)}%`}
                 </div>
 
                 {/* Quick Add Button on Hover */}
                 <button
                   type="button"
+                  disabled={!product.inStock}
                   onClick={(e) => {
                     e.stopPropagation();
                     onAddToCart(product, e);
@@ -130,11 +150,17 @@ export const FlashDealsSection: React.FC<FlashDealsSectionProps> = ({
               {/* Product Info */}
               <div className="p-3 flex-1 flex flex-col justify-between">
                 <div>
-                  <h4 className="text-xs font-bold text-neutral-900 dark:text-white line-clamp-1 group-hover:text-[#F93A00] transition-colors">
-                    {product.name}
+                  <h4 className="text-xs font-bold text-neutral-900 dark:text-white line-clamp-1 group-hover:text-[var(--color-text-primary)] transition-colors">
+                    <Link
+                      to="/product/$slug"
+                      params={{ slug: product.slug || product.id }}
+                      className="focus-visible:underline"
+                    >
+                      {product.name}
+                    </Link>
                   </h4>
                   <div className="mt-1 flex items-center gap-1.5">
-                    <span className="font-mono text-sm font-black text-[#F93A00]">
+                    <span className="font-mono text-sm font-black text-[var(--color-text-primary)]">
                       {formatPrice(product.priceYER, currency)}
                     </span>
                     {originalPrice && originalPrice > product.priceYER && (
@@ -146,13 +172,17 @@ export const FlashDealsSection: React.FC<FlashDealsSectionProps> = ({
                 </div>
 
                 <div className="mt-2.5 flex items-center justify-between text-[10px] font-bold text-neutral-500">
-                  <span className={product.inStock ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}>
+                  <span
+                    className={
+                      product.inStock ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"
+                    }
+                  >
                     {stockLabel}
                   </span>
-                  <Flame className="h-3 w-3 text-[#F93A00]" aria-hidden="true" />
+                  <Flame className="h-3 w-3 text-[var(--color-text-primary)]" aria-hidden="true" />
                 </div>
               </div>
-            </div>
+            </article>
           );
         })}
       </div>
