@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type ErrorTypeCategory =
   | "Admin UI"
@@ -125,19 +125,25 @@ export function generateSuggestedFix(
 // This starts empty; real errors are pushed via logLiveErrorFn()
 const inMemoryLiveLogs: SystemLiveLogEntry[] = [];
 
-// Helper to get service-role client on server or fallback safely to anon client
+// Sensitive runtime logs are server-only. Never fall back to an anonymous client.
 async function getDbClient() {
-  try {
-    const hasServiceKey = typeof process !== "undefined" && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
-    if (hasServiceKey) {
-      const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const admin = getSupabaseAdmin();
-      if (admin) return admin;
-    }
-  } catch {
-    // fallback
-  }
-  return supabase;
+  const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return getSupabaseAdmin();
+}
+
+async function requirePlatformAdmin(context: any) {
+  const db = context?.supabase;
+  const userId = context?.userId;
+  if (!db || !userId) throw new Error("Unauthenticated");
+
+  const { data, error } = await db
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (error || !data) throw new Error("Forbidden: platform admin required");
 }
 
 /**
@@ -226,6 +232,7 @@ export async function captureSupabaseQueryError<T>(
  * Server Fn: List system live logs with filtering and analytics.
  */
 export const listLiveLogsFn = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .validator(
     z.object({
       search: z.string().optional(),
@@ -236,7 +243,8 @@ export const listLiveLogsFn = createServerFn({ method: "GET" })
     })
   )
   .handler(
-    async ({ data }): Promise<{ logs: SystemLiveLogEntry[]; stats: LiveLogsStats }> => {
+    async ({ data, context }): Promise<{ logs: SystemLiveLogEntry[]; stats: LiveLogsStats }> => {
+      await requirePlatformAdmin(context);
       let dbLogs: SystemLiveLogEntry[] = [];
 
       try {
@@ -329,6 +337,7 @@ export const listLiveLogsFn = createServerFn({ method: "GET" })
  * Server Fn: Record a new error into system_live_logs.
  */
 export const logLiveErrorFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator(
     z.object({
       errorName: z.string().min(1),
@@ -352,7 +361,7 @@ export const logLiveErrorFn = createServerFn({ method: "POST" })
 
     const memEntry: SystemLiveLogEntry = {
       id: generatedId,
-      tenantId: data.tenantId || null,
+      tenantId: null,
       errorName: data.errorName,
       errorType: data.errorType,
       level: data.level,
@@ -382,7 +391,7 @@ export const logLiveErrorFn = createServerFn({ method: "POST" })
         suggested_fix: fix,
         stack_trace: data.stackTrace || null,
         context: data.context || {},
-        tenant_id: data.tenantId || null,
+        tenant_id: null,
         status: "open",
         created_at: nowIso,
       };
@@ -399,13 +408,15 @@ export const logLiveErrorFn = createServerFn({ method: "POST" })
  * Server Fn: Update status of a live log (e.g. resolve or investigate).
  */
 export const updateLiveLogStatusFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator(
     z.object({
       id: z.string(),
       status: z.enum(["open", "investigating", "resolved"]),
     })
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await requirePlatformAdmin(context);
     // Update in-memory log
     const memLog = inMemoryLiveLogs.find((l) => l.id === data.id);
     if (memLog) {
@@ -430,12 +441,14 @@ export const updateLiveLogStatusFn = createServerFn({ method: "POST" })
  * Server Fn: Clear resolved logs or clear all logs.
  */
 export const clearLiveLogsFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator(
     z.object({
       clearMode: z.enum(["resolved_only", "all"]),
     })
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await requirePlatformAdmin(context);
     if (data.clearMode === "resolved_only") {
       for (let i = inMemoryLiveLogs.length - 1; i >= 0; i--) {
         if (inMemoryLiveLogs[i].status === "resolved") {

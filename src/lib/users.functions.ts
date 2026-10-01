@@ -226,8 +226,11 @@ export const listTenantMembers = createServerFn({ method: "GET" })
       permission: "settings",
     });
 
-    // Query members — explicit error on DB failure (never return [])
-    const { data: members, error } = await authDb
+    // Authorization above used the caller's JWT. Cross-member directory reads are
+    // server-only after that gate so the Data API can remain self-only.
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const adminDb = getSupabaseAdmin();
+    const { data: members, error } = await adminDb
       .from("tenant_members")
       .select("id, tenant_id, user_id, role, permissions, created_at")
       .eq("tenant_id", tenantId)
@@ -238,9 +241,8 @@ export const listTenantMembers = createServerFn({ method: "GET" })
     }
 
     // Only expose profiles of members returned by the authorized tenant query.
-    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
     const userIds = members.map((m) => m.user_id);
-    const { data: profiles, error: profileError } = await getSupabaseAdmin()
+    const { data: profiles, error: profileError } = await adminDb
       .from("profiles")
       .select("id, full_name, avatar_url, phone")
       .in("id", userIds.length > 0 ? userIds : ["00000000-0000-0000-0000-000000000000"]);
@@ -287,8 +289,11 @@ export const updateMemberRole = createServerFn({ method: "POST" })
       permission: "settings",
     });
 
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const adminDb = getSupabaseAdmin();
+
     // Fetch target member record — must belong to this tenant
-    const { data: targetMember, error: targetErr } = await authDb
+    const { data: targetMember, error: targetErr } = await adminDb
       .from("tenant_members")
       .select("id, role, user_id, tenant_id")
       .eq("id", memberId)
@@ -341,7 +346,7 @@ export const updateMemberRole = createServerFn({ method: "POST" })
 
     // 5. The final owner cannot be demoted (check for other owners)
     if (targetMember.role === "owner" && newRole !== "owner") {
-      const { data: otherOwners, error: ownerCountErr } = await authDb
+      const { data: otherOwners, error: ownerCountErr } = await adminDb
         .from("tenant_members")
         .select("id")
         .eq("tenant_id", tenantId)
@@ -361,7 +366,7 @@ export const updateMemberRole = createServerFn({ method: "POST" })
 
     const nextPermissions = permissions || ROLE_PRESETS[newRole] || [];
 
-    const { error } = await authDb
+    const { error } = await adminDb
       .from("tenant_members")
       .update({
         role: newRole as Database["public"]["Enums"]["tenant_role"],
@@ -372,8 +377,8 @@ export const updateMemberRole = createServerFn({ method: "POST" })
 
     if (error) throw new ServiceUnavailableError(`Failed to update member role: ${error.message}`);
 
-    // Audit log
-    await authDb.from("tenant_audit_logs").insert({
+    // Audit log is append-only through the server-only client.
+    await adminDb.from("tenant_audit_logs").insert({
       tenant_id: tenantId,
       actor_id: userId,
       actor_email: context.claims?.email || null,
@@ -414,8 +419,11 @@ export const removeTenantMember = createServerFn({ method: "POST" })
       permission: "settings",
     });
 
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const adminDb = getSupabaseAdmin();
+
     // Fetch target member
-    const { data: member, error: memberErr } = await authDb
+    const { data: member, error: memberErr } = await adminDb
       .from("tenant_members")
       .select("role, user_id")
       .eq("id", memberId)
@@ -436,15 +444,15 @@ export const removeTenantMember = createServerFn({ method: "POST" })
       throw new PermissionDeniedError("فقط المالك يمكنه حذف مدير.");
     }
 
-    const { error } = await authDb
+    const { error } = await adminDb
       .from("tenant_members")
       .delete()
       .eq("id", memberId)
       .eq("tenant_id", tenantId);
     if (error) throw new ServiceUnavailableError(`Failed to remove member: ${error.message}`);
 
-    // Audit log
-    await authDb.from("tenant_audit_logs").insert({
+    // Audit log is append-only through the server-only client.
+    await adminDb.from("tenant_audit_logs").insert({
       tenant_id: tenantId,
       actor_id: userId,
       actor_email: context.claims?.email || null,

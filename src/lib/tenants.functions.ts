@@ -24,17 +24,23 @@ const assertPlatformAdmin = async (ctx: { supabase: SupabaseClient<Database>; us
   if (!(await isPlatformAdmin(ctx))) throw new Error("Forbidden: platform admin required");
 };
 
+const getPlatformAdminDb = async () => {
+  const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return getSupabaseAdmin();
+};
+
 // ---------- Reads ----------
 
 export const listTenants = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertPlatformAdmin(context);
-    const tenants = await tenantService.list(context.supabase);
+    const adminDb = await getPlatformAdminDb();
+    const tenants = await tenantService.list(adminDb);
     const withUsage = await Promise.all(
       tenants.map(async (t) => ({
         ...t,
-        usage: await tenantService.usage(context.supabase, t.id),
+        usage: await tenantService.usage(adminDb, t.id),
         limits: planService.limitsFor(t.plan),
       })),
     );
@@ -79,7 +85,7 @@ export const createTenant = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertPlatformAdmin(context);
-    return tenantService.create(context.supabase, data);
+    return tenantService.create(await getPlatformAdminDb(), data);
   });
 
 export const updateTenantPlan = createServerFn({ method: "POST" })
@@ -91,7 +97,7 @@ export const updateTenantPlan = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertPlatformAdmin(context);
-    return tenantService.setPlan(context.supabase, data.id, data.plan);
+    return tenantService.setPlan(await getPlatformAdminDb(), data.id, data.plan);
   });
 
 export const updateTenantStatus = createServerFn({ method: "POST" })
@@ -106,5 +112,5 @@ export const updateTenantStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertPlatformAdmin(context);
-    return tenantService.setStatus(context.supabase, data.id, data.status);
+    return tenantService.setStatus(await getPlatformAdminDb(), data.id, data.status);
   });
