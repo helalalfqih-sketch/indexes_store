@@ -20,6 +20,7 @@ import {
   listTikTokAccounts,
   refreshTikTokAccount,
 } from "@/lib/tiktok.functions";
+import { summarizeTikTokScopes, TIKTOK_SCOPE_DETAILS } from "@/lib/tiktok-scopes";
 
 function formatDate(value: string | null) {
   if (!value) return "—";
@@ -245,6 +246,7 @@ export function TikTokAccountsPanel() {
       <div className="grid gap-3">
         {accounts.map((account) => {
           const active = account.status === "active";
+          const scopeSummary = summarizeTikTokScopes(account.scopes);
           return (
             <article key={account.id} className="rounded-xl border border-border bg-background p-4">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -325,18 +327,84 @@ export function TikTokAccountsPanel() {
                 </div>
               </div>
 
-              {account.scopes.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
-                  {account.scopes.map((scope) => (
-                    <span
-                      key={scope}
-                      className="rounded-md bg-muted px-2 py-1 text-[10px] font-mono text-muted-foreground"
+              <div className="mt-4 border-t border-border pt-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-black text-foreground">صلاحيات الحساب</h4>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                      الصلاحيات الممنوحة فعليًا من TikTok لهذا الحساب، وليست صلاحيات لوحة الإدارة.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-[10px] font-bold text-muted-foreground">
+                    {scopeSummary.grantedCount}/{TIKTOK_SCOPE_DETAILS.length} ممنوحة
+                  </span>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  {scopeSummary.permissions.map((permission) => (
+                    <div
+                      key={permission.scope}
+                      className={`rounded-lg border p-3 ${
+                        permission.granted
+                          ? "border-emerald-500/25 bg-emerald-500/5"
+                          : "border-border bg-muted/40"
+                      }`}
                     >
-                      {scope}
-                    </span>
+                      <div className="flex items-start gap-2">
+                        {permission.granted ? (
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                        ) : (
+                          <CircleOff className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <p className="text-[11px] font-black text-foreground">
+                              {permission.label}
+                            </p>
+                            <span
+                              className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
+                                permission.granted
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : "bg-background text-muted-foreground"
+                              }`}
+                            >
+                              {permission.granted ? "ممنوحة" : "غير ممنوحة"}
+                            </span>
+                          </div>
+                          <code
+                            dir="ltr"
+                            className="mt-1 block break-all text-[10px] text-muted-foreground"
+                          >
+                            {permission.scope}
+                          </code>
+                          <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                            {permission.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              )}
+
+                {scopeSummary.unknownScopes.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-violet-500/20 bg-violet-500/5 p-3">
+                    <p className="text-[10px] font-bold text-foreground">
+                      صلاحيات إضافية أعادها TikTok
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {scopeSummary.unknownScopes.map((scope) => (
+                        <code
+                          key={scope}
+                          dir="ltr"
+                          className="rounded-md bg-background px-2 py-1 text-[10px] text-muted-foreground"
+                        >
+                          {scope}
+                        </code>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </article>
           );
         })}

@@ -1,3 +1,4 @@
+
 {
   "name": "tanstack_start_ts",
   "private": true,
@@ -68,11 +69,11 @@
     "@react-three/fiber": "^9.6.1",
     "@supabase/supabase-js": "^2.110.0",
     "@tailwindcss/vite": "^4.2.1",
-    "@tanstack/react-query": "^5.101.1",
-    "@tanstack/react-query-persist-client": "^5.101.4",
+    "@tanstack/react-query": "5.104.0",
+    "@tanstack/react-query-persist-client": "5.104.0",
     "@tanstack/react-router": "^1.170.16",
-    "@tanstack/react-router-ssr-query": "^1.167.1",
-    "@tanstack/react-start": "^1.168.26",
+    "@tanstack/react-router-ssr-query": "1.167.3",
+    "@tanstack/react-start": "1.168.60",
     "@tanstack/router-plugin": "^1.168.18",
     "ai": "^7.0.14",
     "class-variance-authority": "^0.7.1",
