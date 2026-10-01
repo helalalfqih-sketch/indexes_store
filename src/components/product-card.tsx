@@ -28,13 +28,15 @@ import { useFavorites } from "@/lib/use-favorites";
 import { requestProductVideo } from "@/lib/video-request.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import type { ProductCardQAProps } from "@/lib/qa/product-card-contract";
 
 export interface ProductCardProps {
   product: Product | LegacyProductShape;
+  qa: ProductCardQAProps;
   eager?: boolean;
 }
 
-export function ProductCard({ product, eager = false }: ProductCardProps) {
+export function ProductCard({ product, qa, eager = false }: ProductCardProps) {
   const { settings } = useAppearance();
   useModelViewer();
   const cart = useCart();
@@ -213,10 +215,17 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
     <motion.div
       whileHover={{ y: -3 }}
       transition={{ type: "spring", stiffness: 260, damping: 22 }}
-      data-product-id={product.id}
+      data-testid={`product-card-${qa.productId}`}
+      data-element-key={`product.card.${qa.productId}`}
+      data-product-id={qa.productId}
       data-product-slug={product.slug}
-      data-product-name={product.name}
-      data-product-price={product.price}
+      data-product-name={qa.name ?? undefined}
+      data-product-price={qa.price ?? undefined}
+      data-product-category={qa.category ?? undefined}
+      data-product-brand={qa.brand ?? undefined}
+      data-product-rating={qa.rating ?? undefined}
+      data-product-stock={qa.stock ?? undefined}
+      data-section-source={qa.sectionSource}
       className="group relative flex flex-col h-full overflow-hidden rounded-[24px] sm:rounded-[28px] border border-slate-800 bg-[#0F0C1B] p-3 sm:p-4 shadow-xl transition-all duration-300 hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(123,63,255,0.25)]"
     >
       <div className="flex flex-col h-full justify-between gap-2.5">
@@ -225,6 +234,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
           {/* Favorite button top-right */}
           <button
             type="button"
+            data-element-key={`product.favorite.${qa.productId}`}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -329,6 +339,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
           <button
             type="button"
             onClick={handleAddToCart}
+            data-element-key={`product.cart.${qa.productId}`}
             aria-label={`أضف ${product.name} إلى السلة`}
             className={`w-full text-white text-xs sm:text-sm font-bold py-2.5 sm:py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors border border-purple-500/30 ${
               addedToCartToast ? "bg-emerald-600 text-white" : "bg-[#1F1545] hover:bg-[#7B3FFF]"
@@ -549,8 +560,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
                     </div>
 
                     <p className="text-xs text-slate-300 leading-relaxed pt-2">
-                      {product.description ||
-                        "منتج عالي الجودة مع ضمان ومتوفر للتوصيل السريع لجميع المحافظات."}
+                      {product.description || "للاستفسار عن تفاصيل المنتج والتوصيل، تواصل معنا."}
                     </p>
                   </div>
 

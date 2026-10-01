@@ -78,7 +78,7 @@ export function mapProductionProductToDesignProduct(p: LegacyProductShape): Desi
   const priceYER =
     typeof rawPrice === "number" && !isNaN(rawPrice) && isFinite(rawPrice) && rawPrice > 0
       ? rawPrice
-      : 1000;
+      : 0;
 
   const rawOldPrice =
     p.oldPrice && typeof p.oldPrice === "number" && !isNaN(p.oldPrice) && isFinite(p.oldPrice)

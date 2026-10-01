@@ -12,11 +12,13 @@ export interface TrustBarProps {
 
 export const TrustBar: React.FC<TrustBarProps> = ({ trustBadges }) => {
   const badgeList = [
-    { icon: Truck, title: trustBadges?.badge1 },
-    { icon: ShieldCheck, title: trustBadges?.badge2 },
-    { icon: Headphones, title: trustBadges?.badge3 },
-    { icon: RotateCcw, title: trustBadges?.badge4 },
-  ].filter((item): item is { icon: typeof Truck; title: string } => Boolean(item.title?.trim()));
+    { icon: Truck, title: trustBadges?.badge1, source: "badge1" },
+    { icon: ShieldCheck, title: trustBadges?.badge2, source: "badge2" },
+    { icon: Headphones, title: trustBadges?.badge3, source: "badge3" },
+    { icon: RotateCcw, title: trustBadges?.badge4, source: "badge4" },
+  ].filter((item): item is { icon: typeof Truck; title: string; source: string } =>
+    Boolean(item.title?.trim()),
+  );
 
   if (badgeList.length === 0) return null;
 
@@ -39,6 +41,8 @@ export const TrustBar: React.FC<TrustBarProps> = ({ trustBadges }) => {
           return (
             <div
               key={`${item.title}-${idx}`}
+              data-claim-source={`storefront-settings.trustBadges.${item.source}`}
+              data-claim-verified="false"
               className="flex flex-col items-center justify-center p-1 text-center group cursor-default"
             >
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#2F6BFF]/10 border border-[#2F6BFF]/20 flex items-center justify-center text-[#2F6BFF] mb-1.5 shrink-0 transition-all">

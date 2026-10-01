@@ -5,12 +5,13 @@ const mocks = vi.hoisted(() => ({
   listShopifyProducts: vi.fn(),
   diagnoseShopifyCatalog: vi.fn(),
   listProducts: vi.fn(),
+  getShopifyProductBySlug: vi.fn(),
 }));
 
 vi.mock("@/lib/shopify/catalog.functions", () => ({
   listShopifyProducts: mocks.listShopifyProducts,
   diagnoseShopifyCatalog: mocks.diagnoseShopifyCatalog,
-  getShopifyProductBySlug: vi.fn(),
+  getShopifyProductBySlug: mocks.getShopifyProductBySlug,
   getShopifyProductsByIds: vi.fn(),
 }));
 
@@ -23,7 +24,7 @@ vi.mock("@/lib/catalog.functions", () => ({
 
 vi.mock("@/lib/actions/category.actions", () => ({ fetchCategories: vi.fn() }));
 
-import { fetchProducts } from "@/lib/actions/product.actions";
+import { fetchProducts, fetchProductBySlug } from "@/lib/actions/product.actions";
 
 const product = (overrides: Partial<ProductDTO> = {}): ProductDTO => ({
   id: "11111111-1111-4111-8111-111111111111",
@@ -53,6 +54,37 @@ describe("storefront catalog source fallback", () => {
     vi.clearAllMocks();
     mocks.diagnoseShopifyCatalog.mockResolvedValue({ source: "shopify" });
   });
+
+  it("opens a published product without gallery images instead of returning 404", async () => {
+    mocks.getShopifyProductBySlug.mockResolvedValue({
+      configured: true,
+      item: product({
+        id: "gid://shopify/Product/1",
+        slug: "أبجورة-كريستال-تعمل-باللمس",
+        images: [],
+        shopify_product_id: "gid://shopify/Product/1",
+        shopify_variant_id: "gid://shopify/ProductVariant/2",
+      }),
+    });
+    const item = await fetchProductBySlug("أبجورة-كريستال-تعمل-باللمس");
+    expect(item?.id).toBe("gid://shopify/Product/1");
+    expect(item?.image).toBe("");
+  });
+
+  it.each([{ price: 0 }, { is_published: false }, { shopify_variant_id: null }])(
+    "still rejects products that lack price, publication, or checkout identity: %j",
+    async (overrides) => {
+      mocks.getShopifyProductBySlug.mockResolvedValue({
+        configured: true,
+        item: product({
+          shopify_product_id: "gid://shopify/Product/1",
+          shopify_variant_id: "gid://shopify/ProductVariant/2",
+          ...overrides,
+        }),
+      });
+      expect(await fetchProductBySlug("ready-product")).toBeNull();
+    },
+  );
 
   it("uses a ready Shopify catalog without querying Supabase", async () => {
     mocks.listShopifyProducts.mockResolvedValue({

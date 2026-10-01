@@ -180,6 +180,8 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
       {/* 1. Announcement Bar — dual-info matching reference */}
       {settings.notifications?.announcementEnabled ? (
         <div
+          data-claim-source="appearance.notifications.announcementText"
+          data-claim-verified="false"
           style={{ backgroundColor: settings.notifications.announcementBg }}
           className="relative z-50 text-white text-xs font-bold py-2 px-4 text-center shrink-0"
         >
@@ -188,12 +190,22 @@ export function StoreThemeLayout({ children }: { children: React.ReactNode }) {
       ) : settings.navigation?.deliveryInfoText || hasRealFreeShipping ? (
         <div className="px-4 py-2 sm:px-6">
           <div className="flex items-center justify-between border border-slate-800/70 rounded-full px-4 sm:px-8 py-2.5 sm:py-3.5 text-xs sm:text-sm bg-[#0A0714] text-slate-300">
-            <div className="flex items-center gap-2">
-              <span className="text-amber-400 text-sm sm:text-base">⚡</span>
-              <span>{settings.navigation?.deliveryInfoText || "توصيل سريع خلال 24 - 48 ساعة"}</span>
-            </div>
+            {settings.navigation?.deliveryInfoText ? (
+              <div
+                data-claim-source="appearance.navigation.deliveryInfoText"
+                data-claim-verified="false"
+                className="flex items-center gap-2"
+              >
+                <span className="text-amber-400 text-sm sm:text-base">⚡</span>
+                <span>{settings.navigation.deliveryInfoText}</span>
+              </div>
+            ) : null}
             {hasRealFreeShipping && (
-              <div className="flex items-center gap-2">
+              <div
+                data-claim-source="appearance.cart_config.freeShippingThreshold"
+                data-claim-verified="false"
+                className="flex items-center gap-2"
+              >
                 <span>🚀</span>
                 <span>
                   شحن مجاني للطلبات فوق{" "}

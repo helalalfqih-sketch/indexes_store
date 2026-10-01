@@ -1,0 +1,55 @@
+name: V3 Live Preview QA
+
+on:
+  pull_request: {}
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: "Protected Indexes Store Vercel preview URL"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  storefront:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_TEST_BASE_URL: ${{ inputs.preview_url || vars.V3_QA_PREVIEW_URL }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Validate preview target and access
+        shell: bash
+        run: |
+          node - <<'NODE'
+          if (!process.env.PLAYWRIGHT_TEST_BASE_URL) {
+            throw new Error('Set V3_QA_PREVIEW_URL to the current PR deployment, or supply preview_url on manual dispatch.');
+          }
+          const url = new URL(process.env.PLAYWRIGHT_TEST_BASE_URL);
+          if (url.protocol !== 'https:' || !/^indexes-store-[a-z0-9]+-helalalfqih-2473s-projects\.vercel\.app$/.test(url.hostname) || url.pathname !== '/' || url.search || url.hash) {
+            throw new Error('Preview URL must be an Indexes Store deployment under the authorized Vercel project.');
+          }
+          if (!process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+            throw new Error('VERCEL_AUTOMATION_BYPASS_SECRET is required for the protected preview.');
+          }
+          NODE
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Validate real product cards and filters on desktop and mobile
+        run: npm run test:e2e:live
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-live-preview-playwright
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore

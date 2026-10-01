@@ -7,12 +7,22 @@ const base: QaState = {
   scroll: { x: 0, y: 0 },
   elements: [],
   products: [],
+  claims: [],
   filters: null,
   open_overlays: [],
   loaded_product_count: 0,
   truncated: false,
 };
 describe("V3 audit evidence", () => {
+  it("fails claims without a source and blocks unverified managed claims", () => {
+    const status = (source: string | null, verified: boolean) =>
+      auditState({ ...base, claims: [{ text: "ضمان", source, verified }] }).checks.find(
+        (check) => check.id === "commercial.claims",
+      )?.status;
+    expect(status(null, false)).toBe("FAIL");
+    expect(status("appearance.guarantee", false)).toBe("BLOCKED");
+    expect(status("appearance.guarantee", true)).toBe("PASS");
+  });
   it("never gives empty product grids or missing instrumentation an inferred pass", () => {
     const result = auditState(base);
     expect(result.checks.find((c) => c.id === "products.prices")?.status).toBe("NOT_TESTED");

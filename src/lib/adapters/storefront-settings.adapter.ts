@@ -1,7 +1,4 @@
-import {
-  DEFAULT_STOREFRONT_SETTINGS,
-  type StorefrontSettingsShape,
-} from "@/lib/domain/appearance";
+import { DEFAULT_STOREFRONT_SETTINGS, type StorefrontSettingsShape } from "@/lib/domain/appearance";
 
 export interface MappedStorefrontSettings {
   hero: {
@@ -51,10 +48,28 @@ export interface MappedStorefrontSettings {
     recommended: { enabled: boolean; title: string; limit: number };
     categories: { enabled: boolean; title: string; limit: number };
     showroom: { enabled: boolean; title: string; subtitle: string; badge: string; link: string };
-    cinematic: { enabled: boolean; title: string; subtitle: string; videoUrl: string; posterUrl: string };
-    whatsappCta: { enabled: boolean; title: string; subtitle: string; buttonText: string; phone: string };
+    cinematic: {
+      enabled: boolean;
+      title: string;
+      subtitle: string;
+      videoUrl: string;
+      posterUrl: string;
+    };
+    whatsappCta: {
+      enabled: boolean;
+      title: string;
+      subtitle: string;
+      buttonText: string;
+      phone: string;
+    };
     testimonials: { enabled: boolean; title: string; subtitle: string };
-    trustBadges: { enabled: boolean; badge1: string; badge2: string; badge3: string; badge4: string };
+    trustBadges: {
+      enabled: boolean;
+      badge1: string;
+      badge2: string;
+      badge3: string;
+      badge4: string;
+    };
   };
   shipping: {
     deliveryText: string;
@@ -121,14 +136,19 @@ export const DEFAULT_SECTION_ORDER = [
  */
 export function isSafeUrl(
   url: unknown,
-  options?: { allowImageData?: boolean; allowRelative?: boolean }
+  options?: { allowImageData?: boolean; allowRelative?: boolean },
 ): boolean {
   if (typeof url !== "string") return false;
   const trimmed = url.trim();
   if (!trimmed) return false;
 
   // Reject ASCII control characters
-  if (/[\x00-\x1f\x7f]/.test(trimmed)) return false;
+  if (
+    Array.from(trimmed).some(
+      (character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+    )
+  )
+    return false;
 
   // Reject dangerous pseudo-protocols
   if (/^(javascript|vbscript|file|about):/i.test(trimmed)) {
@@ -137,7 +157,10 @@ export function isSafeUrl(
 
   // Handle data: URLs
   if (/^data:/i.test(trimmed)) {
-    if (options?.allowImageData && /^data:image\/(png|jpeg|jpg|webp|svg\+xml);base64,/i.test(trimmed)) {
+    if (
+      options?.allowImageData &&
+      /^data:image\/(png|jpeg|jpg|webp|svg\+xml);base64,/i.test(trimmed)
+    ) {
       return true;
     }
     return false;
@@ -164,7 +187,7 @@ export function isSafeUrl(
 export function sanitizeUrl(
   url: unknown,
   fallback: string,
-  options?: { allowImageData?: boolean; allowRelative?: boolean }
+  options?: { allowImageData?: boolean; allowRelative?: boolean },
 ): string {
   return isSafeUrl(url, options) ? (url as string).trim() : fallback;
 }
@@ -191,7 +214,11 @@ export function normalizeSectionOrder(rawOrder: unknown): string[] {
 
   if (Array.isArray(rawOrder)) {
     for (const key of rawOrder) {
-      if (typeof key === "string" && (KNOWN_SECTION_KEYS as readonly string[]).includes(key) && !seen.has(key)) {
+      if (
+        typeof key === "string" &&
+        (KNOWN_SECTION_KEYS as readonly string[]).includes(key) &&
+        !seen.has(key)
+      ) {
         seen.add(key);
         result.push(key);
       }
@@ -214,7 +241,7 @@ export function normalizeSectionOrder(rawOrder: unknown): string[] {
  * with bulletproof fallbacks so that missing or draft settings never break the UI.
  */
 export function mapPublishedStorefrontSettings(
-  raw?: Partial<StorefrontSettingsShape> | null
+  raw?: Partial<StorefrontSettingsShape> | null,
 ): MappedStorefrontSettings {
   const s = raw || DEFAULT_STOREFRONT_SETTINGS;
   const hero = s.hero || DEFAULT_STOREFRONT_SETTINGS.hero;
@@ -268,7 +295,9 @@ export function mapPublishedStorefrontSettings(
       ctaText: hero.ctaText || "عالم المنتجات 🌎",
       ctaLink: sanitizeUrl(hero.ctaLink, "/offers", { allowRelative: true }),
       secondaryCtaText: hero.secondaryCtaText || "عرض الكل",
-      secondaryCtaLink: sanitizeUrl(hero.secondaryCtaLink, "/immersive-store", { allowRelative: true }),
+      secondaryCtaLink: sanitizeUrl(hero.secondaryCtaLink, "/immersive-store", {
+        allowRelative: true,
+      }),
       showParticles: hero.showParticles ?? true,
       slides,
       globe: {
@@ -352,11 +381,11 @@ export function mapPublishedStorefrontSettings(
         subtitle: sections.testimonials?.subtitle || "ماذا يقول عملاؤنا عن اندكس ستور",
       },
       trustBadges: {
-        enabled: sections.trustBadges?.enabled ?? true,
-        badge1: sections.trustBadges?.badge1 || "توصيل سريع",
-        badge2: sections.trustBadges?.badge2 || "ضمان أصلي",
-        badge3: sections.trustBadges?.badge3 || "دعم 24/7",
-        badge4: (sections.trustBadges as any)?.badge4 || "استبدال وإرجاع",
+        enabled: sections.trustBadges?.enabled ?? false,
+        badge1: sections.trustBadges?.badge1 || "",
+        badge2: sections.trustBadges?.badge2 || "",
+        badge3: sections.trustBadges?.badge3 || "",
+        badge4: (sections.trustBadges as { badge4?: string } | undefined)?.badge4 || "",
       },
     },
     shipping: {
@@ -366,7 +395,7 @@ export function mapPublishedStorefrontSettings(
         cart.freeShippingThreshold > 0 ? cart.freeShippingThreshold : nav.shippingBarThreshold,
         0,
         1_000_000,
-        30000
+        30000,
       ),
       shippingFee: clampNumber(cart.shippingFee, 0, 100_000, 3000),
     },
@@ -377,8 +406,9 @@ export function mapPublishedStorefrontSettings(
         brand.description ||
         nav.footerDescription ||
         "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد.",
-      address: general.address || nav.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية",
-      deliveryInfoText: nav.deliveryInfoText || "متوفر لدينا خدمة التوصيل السريع لجميع المحافظات",
+      address:
+        general.address || nav.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية",
+      deliveryInfoText: nav.deliveryInfoText || "",
       phone: general.phone || nav.whatsappPhone || cart.whatsappPhone || "967771370740",
       whatsappPhone: general.whatsapp || cart.whatsappPhone || nav.whatsappPhone || "967771370740",
       supportEmail: sanitizeUrl(general.email || nav.supportEmail, "support@indexes-store.com", {

@@ -40,13 +40,17 @@ describe("shared storefront filters", () => {
       selectedBrands: ["anker"],
       selectedRatings: ["4.5"],
     };
-    expect(matchesProductFilters(product(150), selected)).toBe(true);
+    expect(matchesProductFilters(product(150), selected)).toBe(false);
+    expect(matchesProductFilters(product(150, { brand: "Anker" }), selected)).toBe(true);
     expect(matchesProductFilters(product(150, { brand: "Samsung" }), selected)).toBe(false);
     expect(matchesProductFilters(product(150, { rating: 4 }), selected)).toBe(false);
     expect(matchesProductFilters(product(201), selected)).toBe(false);
-    expect(matchesProductFilters(product(150), { ...selected, customMaxPrice: undefined })).toBe(
-      true,
-    );
+    expect(
+      matchesProductFilters(product(150, { brand: "Anker" }), {
+        ...selected,
+        customMaxPrice: undefined,
+      }),
+    ).toBe(true);
     expect(matchesProductFilters(product(150), { ...selected, selectedBrands: ["unknown"] })).toBe(
       false,
     );

@@ -6,7 +6,12 @@ export interface BrandOption {
 }
 
 export const STORE_BRANDS: BrandOption[] = [
-  { id: "indexes", name: "إندكس", label: "إندكس INDEXES", keywords: ["إندكس", "indexes", "vip"] },
+  {
+    id: "indexes",
+    name: "إندكس",
+    label: "إندكس INDEXES",
+    keywords: ["إندكس", "indexes", "Indexes Store", "vip"],
+  },
   {
     id: "anker",
     name: "أنكر",

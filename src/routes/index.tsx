@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
+import { productCardQA } from "@/lib/qa/product-card-contract";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product as ProductionProduct } from "@/lib/store-data";
 import { useCart } from "@/lib/cart-store";
@@ -23,7 +24,6 @@ import { mapProductionProductToDesignProduct } from "@/components/storefront/ada
 import { Header } from "@/components/storefront/Header";
 import { MainMenu } from "@/components/main-menu";
 import { MobileReferenceHeader } from "@/components/storefront/MobileReferenceHeader";
-import { ShippingBanner } from "@/components/storefront/ShippingBanner";
 import { SalesHero } from "@/components/storefront/SalesHero";
 import { VisualCategoryCircles } from "@/components/storefront/VisualCategoryCircles";
 import { SheinPromoGrid } from "@/components/storefront/SheinPromoGrid";
@@ -73,13 +73,12 @@ export const Route = createFileRoute("/")({
       { title: "متجر إندكس — INDEXES STORE | التسوق الإلكتروني الفاخر في اليمن" },
       {
         name: "description",
-        content:
-          "اكتشف أحدث الإلكترونيات والمنتجات الأصلية في متجر إندكس: تسوق فاخر، عروض حصرية، توصيل سريع لجميع المحافظات.",
+        content: "تصفح الإلكترونيات والمنتجات والعروض الحالية في متجر إندكس.",
       },
       { property: "og:title", content: "متجر إندكس — INDEXES STORE" },
       {
         property: "og:description",
-        content: "عروض حصرية تصل إلى 50% وشحن مجاني للطلبات فوق 30,000 ريال.",
+        content: "تصفح المنتجات والعروض الحالية في اندكس ستور.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -135,7 +134,9 @@ function HomePage() {
   // Map production products to AI Studio design products
   const rawProductList = useMemo(() => {
     const unique = new Map<string, LegacyProductShape>();
-    [...dailyDeals, ...bestSellers].forEach((product) => unique.set(product.id, product));
+    [...dailyDeals, ...bestSellers].forEach((product) => {
+      if (Number.isFinite(product.price) && product.price > 0) unique.set(product.id, product);
+    });
     return [...unique.values()];
   }, [dailyDeals, bestSellers]);
 
@@ -282,7 +283,7 @@ function HomePage() {
     {
       id: "notif-1",
       title: "مرحباً بك في متجر إندكس 🎉",
-      message: "استمتع بتجربة تسوق فريدة وشحن مجاني للطلبات فوق 30,000 ريال.",
+      message: "تصفح المنتجات والعروض الحالية في اندكس ستور.",
       time: "منذ قليل",
       read: false,
       type: "offer",
@@ -534,14 +535,6 @@ function HomePage() {
           onSelectCategory={handleSelectCategoryWithLoading}
         />
 
-        {/* 2. Top Shipping Announcement Banner */}
-        <div className="hidden md:block">
-          <ShippingBanner
-            onOpenShippingInfo={() => setIsTrackerModalOpen(true)}
-            shippingConfig={mappedSettings.shipping}
-          />
-        </div>
-
         {/* Main Container - Extended width for SHEIN high-density layout */}
         <main className="flex-grow w-full max-w-[1700px] mx-auto pb-28 sm:pb-32">
           {mappedSettings.sections.sectionOrder.map((sectionKey) => {
@@ -565,41 +558,6 @@ function HomePage() {
                       onSelectCategory={handleSelectCategoryWithLoading}
                       onSelectProduct={handleSelectProduct}
                     />
-
-                    {/* Mobile reference-style offer strip using real store products. */}
-                    <section
-                      className="mx-2 overflow-hidden border-y border-[#f3d4d9] bg-[#fff6f7] p-2.5 shadow-none md:hidden"
-                      aria-label="عرض العملاء الجدد"
-                    >
-                      <div className="mb-2 flex items-center justify-between text-[13px] font-black text-[#e64a4a]">
-                        <span>للمستخدمين الجدد فقط</span>
-                        <span>شحن مجاني 🚚</span>
-                      </div>
-                      <div className="grid grid-cols-[1.05fr_0.95fr_0.95fr] items-center gap-2">
-                        <div className="rounded-lg bg-white/80 p-2 text-center">
-                          <span className="text-[10px] text-neutral-500">تطبق الشروط</span>
-                          <strong className="mt-1 block text-xl font-black text-[#4b9f3a]">
-                            5000
-                          </strong>
-                          <span className="text-[10px] text-neutral-500">رصيد ترحيبي</span>
-                        </div>
-                        {products.slice(0, 2).map((product) => (
-                          <button
-                            type="button"
-                            key={`new-user-${product.id}`}
-                            onClick={() => handleSelectProduct(product)}
-                            className="overflow-hidden rounded-lg bg-white shadow-sm"
-                          >
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              loading="lazy"
-                              className="h-[76px] w-full object-contain"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </section>
 
                     {/* SHEIN Visual Category Circles */}
                     <VisualCategoryCircles
@@ -666,7 +624,7 @@ function HomePage() {
               case "categories":
                 if (!mappedSettings.sections.categories.enabled) return null;
                 return (
-                  <div key="categories" data-section="categories" className="hidden md:block">
+                  <div key="categories" data-section="categories">
                     <CategoryBar
                       selectedCategoryId={selectedCategory}
                       onSelectCategory={handleSelectCategoryWithLoading}
@@ -684,6 +642,7 @@ function HomePage() {
                       onSelectBrands={setSelectedBrands}
                       selectedRatings={selectedRatings}
                       onSelectRatings={setSelectedRatings}
+                      ratingFilterAvailable={false}
                     />
                   </div>
                 );
@@ -722,7 +681,36 @@ function HomePage() {
                 return (
                   <div key="latest">
                     {/* Product Catalog Grid Section */}
-                    <section id="store-products" className="scroll-mt-24 px-2 py-5 sm:px-6">
+                    <section
+                      id="store-products"
+                      data-qa-section="new_products"
+                      data-qa-filter-state={JSON.stringify({
+                        category: selectedCategory,
+                        minPrice:
+                          priceRange === "under-20k"
+                            ? 0
+                            : priceRange === "20k-50k"
+                              ? 20000
+                              : priceRange === "over-50k"
+                                ? 50000
+                                : priceRange === "custom"
+                                  ? (customMinPrice ?? null)
+                                  : null,
+                        maxPrice:
+                          priceRange === "under-20k"
+                            ? 20000
+                            : priceRange === "20k-50k"
+                              ? 50000
+                              : priceRange === "custom"
+                                ? (customMaxPrice ?? null)
+                                : null,
+                        priceRange,
+                        brand: selectedBrands,
+                        rating: selectedRatings,
+                        sort: sortBy,
+                      })}
+                      className="scroll-mt-24 px-2 py-5 sm:px-6"
+                    >
                       <div className="dir-rtl mb-6 hidden flex-col justify-between gap-3 border-b border-[var(--color-border-default)] pb-4 sm:flex-row sm:items-center md:flex">
                         <div>
                           <h3 className="text-xl font-bold text-[var(--color-text-primary)] sm:text-2xl">
@@ -770,11 +758,12 @@ function HomePage() {
                         <div className="space-y-6">
                           <div className="rounded-2xl border border-dashed border-[#F93A00]/40 bg-[#FFF1EB] dark:bg-neutral-900 p-5 text-center">
                             <p className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white">
-                              لا توجد منتجات مسجلة في هذا التصنيف حالياً، جلبنا لك هذه المنتجات
-                              المميزة والأكثر طلباً في المتجر:
+                              لا توجد نتائج في أحدث المنتجات لهذه الفلاتر. راجع بقية الكتالوج أدناه
+                              أو أعد ضبط الفلاتر.
                             </p>
                             <button
                               type="button"
+                              data-element-key="cta.view_all_products"
                               aria-label="عرض جميع المنتجات المتوفرة"
                               onClick={() => {
                                 setSearchQuery("");
@@ -791,21 +780,6 @@ function HomePage() {
                               عرض جميع المنتجات المتوفرة
                             </button>
                           </div>
-
-                          <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-                            {(products.length > 0 ? products.slice(0, 8) : []).map((product) => (
-                              <ProductCard
-                                key={product.id}
-                                product={product}
-                                currency={currency}
-                                isFavorite={favorites.includes(product.id)}
-                                onToggleFavorite={handleToggleFavorite}
-                                onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                                onSelectProduct={handleSelectProduct}
-                                variant="grid"
-                              />
-                            ))}
-                          </div>
                         </div>
                       ) : (
                         <>
@@ -814,6 +788,7 @@ function HomePage() {
                               <ProductCard
                                 key={product.id}
                                 product={product}
+                                qa={productCardQA(product, "new_products")}
                                 currency={currency}
                                 isFavorite={favorites.includes(product.id)}
                                 onToggleFavorite={handleToggleFavorite}
@@ -855,6 +830,17 @@ function HomePage() {
 
           {/* Footer */}
           <StoreFooter
+            catalogFilters={{
+              category: selectedCategory,
+              query: searchQuery,
+              sort: sortBy,
+              priceRange,
+              minPrice: customMinPrice,
+              maxPrice: customMaxPrice,
+              brands: selectedBrands,
+              ratings: selectedRatings,
+              excludeIds: visibleProducts.map((product) => product.id),
+            }}
             onOpenTracker={() => setIsTrackerModalOpen(true)}
             onOpenAdmin={handleOpenAdmin}
             onOpenSupport={() => setIsSupportHubOpen(true)}

@@ -178,7 +178,7 @@ export const NavigationConfigSchema = z.object({
   whatsappPhone: z.string().catch("967771370740"),
   supportEmail: z.string().catch("support@indexes-store.com"),
   addressText: z.string().catch("صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية"),
-  deliveryInfoText: z.string().catch("متوفر لدينا خدمة التوصيل لجميع المحافظات 🇾🇪"),
+  deliveryInfoText: z.string().catch(""),
   footerDescription: z
     .string()
     .catch("المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد."),
@@ -281,11 +281,11 @@ export type TranslationConfig = z.infer<typeof TranslationConfigSchema>;
 // ── 10. Notification Center Schema ──────────────────────────────────────────
 export const NotificationsConfigSchema = z.object({
   announcementEnabled: z.boolean().catch(false),
-  announcementText: z.string().catch("شحن مجاني للطلبات فوق 50,000 ريال يمني! 🚚"),
+  announcementText: z.string().catch(""),
   announcementBg: z.string().catch("#4f8cff"),
   popupEnabled: z.boolean().catch(false),
-  popupTitle: z.string().catch("احصل على خصم 10%"),
-  popupText: z.string().catch("استخدم الكوبون FIRST10 عند إتمام طلبك الأول!"),
+  popupTitle: z.string().catch(""),
+  popupText: z.string().catch(""),
   popupImage: z.string().catch(""),
   popupCta: z.string().catch("احصل على الكوبون"),
   popupLink: z.string().catch("/offers"),
@@ -377,10 +377,10 @@ const CinematicSectionSchema = z.object({
 });
 
 const TrustBadgesSectionSchema = z.object({
-  enabled: z.boolean().catch(true),
-  badge1: z.string().catch("شحن سريع"),
-  badge2: z.string().catch("ضمان الجودة"),
-  badge3: z.string().catch("إرجاع سهل"),
+  enabled: z.boolean().catch(false),
+  badge1: z.string().catch(""),
+  badge2: z.string().catch(""),
+  badge3: z.string().catch(""),
 });
 
 export const SectionsConfigSchema = z.object({
@@ -472,10 +472,10 @@ export const SectionsConfigSchema = z.object({
     subtitle: "",
   }),
   trustBadges: TrustBadgesSectionSchema.catch({
-    enabled: true,
-    badge1: "شحن سريع",
-    badge2: "ضمان الجودة",
-    badge3: "إرجاع سهل",
+    enabled: false,
+    badge1: "",
+    badge2: "",
+    badge3: "",
   }),
 });
 export type SectionsConfig = z.infer<typeof SectionsConfigSchema>;

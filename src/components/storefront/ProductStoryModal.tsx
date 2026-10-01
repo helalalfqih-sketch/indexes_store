@@ -1,8 +1,8 @@
-﻿import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, ShoppingCart, Sparkles } from 'lucide-react';
-import { Product, Currency } from './types';
-import { formatPrice } from './currency';
+﻿import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, ChevronLeft, ChevronRight, ShoppingCart, Sparkles } from "lucide-react";
+import { Product, Currency } from "./types";
+import { formatPrice } from "./currency";
 
 interface ProductStoryModalProps {
   product: Product | null;
@@ -25,21 +25,22 @@ export const ProductStoryModal: React.FC<ProductStoryModalProps> = ({
 
   const slides = [
     {
-      title: 'استكشف الفخامة والأداء',
+      title: "استكشف الفخامة والأداء",
       subtitle: product.name,
-      badge: 'منتج أصلي 100%',
+      badge: "تفاصيل المنتج",
       image: product.image,
     },
     {
-      title: 'المواصفات العالية',
-      subtitle: product.description || 'تصميم عصري متين ومواصفات ممتازة تلبي جميع احتياجاتك اليومية.',
-      badge: 'ضمان الجودة',
+      title: "المواصفات العالية",
+      subtitle:
+        product.description || "تصميم عصري متين ومواصفات ممتازة تلبي جميع احتياجاتك اليومية.",
+      badge: "المواصفات",
       image: product.image,
     },
     {
-      title: 'جاهز للتوصيل السريع',
-      subtitle: `سعر خاص: ${formatPrice(product.priceYER, currency)}`,
-      badge: 'توصيل لجميع المحافظات',
+      title: "راجع السعر الحالي",
+      subtitle: `السعر: ${formatPrice(product.priceYER, currency)}`,
+      badge: "السعر المعروض",
       image: product.image,
     },
   ];
@@ -71,13 +72,10 @@ export const ProductStoryModal: React.FC<ProductStoryModalProps> = ({
           <div>
             <div className="flex items-center gap-1.5 mb-4">
               {slides.map((_, idx) => (
-                <div
-                  key={idx}
-                  className="h-1 flex-1 rounded-full bg-white/20 overflow-hidden"
-                >
+                <div key={idx} className="h-1 flex-1 rounded-full bg-white/20 overflow-hidden">
                   <div
                     className={`h-full bg-[#2F6BFF] transition-all duration-300 ${
-                      idx <= currentSlide ? 'w-full' : 'w-0'
+                      idx <= currentSlide ? "w-full" : "w-0"
                     }`}
                   />
                 </div>
@@ -112,9 +110,7 @@ export const ProductStoryModal: React.FC<ProductStoryModalProps> = ({
               <span className="inline-block bg-white/10 border border-white/20 px-3 py-1 rounded-full text-xs font-bold text-blue-300">
                 {slides[currentSlide].badge}
               </span>
-              <h3 className="text-lg font-black text-white">
-                {slides[currentSlide].title}
-              </h3>
+              <h3 className="text-lg font-black text-white">{slides[currentSlide].title}</h3>
               <p className="text-xs text-gray-300 line-clamp-3 leading-relaxed">
                 {slides[currentSlide].subtitle}
               </p>

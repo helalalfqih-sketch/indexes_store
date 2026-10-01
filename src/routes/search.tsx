@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { ProductCard } from "@/components/product-card";
+import { productCardQA } from "@/lib/qa/product-card-contract";
 import { ProductCardSkeleton } from "@/components/ui/skeleton";
 import type { LegacyCategoryShape, LegacyProductShape } from "@/lib/data-adapter";
 import type { Product } from "@/lib/store-data";
@@ -506,7 +507,11 @@ function SearchPage() {
               <h2 className="text-base font-semibold">قد يناسبك أيضًا</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {recommendations.map((product) => (
-                  <ProductCard key={product.id} product={product as unknown as Product} />
+                  <ProductCard
+                    key={product.id}
+                    product={product as unknown as Product}
+                    qa={productCardQA(product, "catalog")}
+                  />
                 ))}
               </div>
             </section>
@@ -515,7 +520,11 @@ function SearchPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {results.map((p) => (
-            <ProductCard key={p.id} product={p as unknown as Product} />
+            <ProductCard
+              key={p.id}
+              product={p as unknown as Product}
+              qa={productCardQA(p, "catalog")}
+            />
           ))}
         </div>
       )}

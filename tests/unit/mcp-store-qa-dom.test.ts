@@ -8,6 +8,21 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 describe("QA rendered evidence", () => {
+  it("discovers uninstrumented claims while retaining managed sources and ignoring hidden text", async () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function () {
+      return { width: this.hidden ? 0 : 100, height: 20, x: 0, y: 0 } as DOMRect;
+    });
+    document.body.innerHTML = `
+      <p>شحن مجاني</p><span>-25%</span>
+      <p data-claim-source="appearance.guarantee" data-claim-verified="false"><span>ضمان</span></p>
+      <p hidden>هدية مخفية</p><textarea>رصيد خاص</textarea>
+      <script>توفير</script>`;
+    expect((await readQaState(page)).claims).toEqual([
+      { text: "ضمان", source: "appearance.guarantee", verified: false },
+      { text: "شحن مجاني", source: null, verified: false },
+      { text: "-25%", source: null, verified: false },
+    ]);
+  });
   it("keeps explicit keys stable across unrelated DOM insertion and does not expose input values", async () => {
     document.body.innerHTML =
       '<section id="catalog"><button data-element-key="filter-all">All</button><input value="private value" type="password"></section>';
@@ -29,12 +44,23 @@ describe("QA rendered evidence", () => {
   });
   it("reads exact numeric card evidence and leaves absent inventory unknown", async () => {
     document.body.innerHTML =
-      '<section id="offers"><article data-storefront-product-id="p-1" data-price-yer="19900" data-product-name="Product"></article></section>';
+      '<section id="offers"><article data-testid="product-card-p-1" data-product-id="p-1" data-product-price="19900" data-section-source="offers" data-product-name="Product"></article></section>';
     expect((await readQaState(page)).products[0]).toMatchObject({
       product_id: "p-1",
       section: "offers",
+      section_source: "offers",
       price: 19900,
       stock: null,
     });
+  });
+  it("inspects both card implementations without substituting absent metadata", async () => {
+    document.body.innerHTML = `
+      <section data-qa-section="catalog"><article data-testid="product-card-1" data-element-key="product.card.1" data-product-id="1" data-product-price="20000" data-section-source="catalog" data-product-brand="Apple"></article></section>
+      <section data-qa-section="offers"><div data-testid="product-card-2" data-product-id="2" data-product-price="50001" data-section-source="offers"></div></section>`;
+    const { products } = await readQaState(page);
+    expect(products).toMatchObject([
+      { product_id: "1", price: 20000, brand: "Apple", rating: null, section_source: "catalog" },
+      { product_id: "2", price: 50001, brand: null, stock: null, section_source: "offers" },
+    ]);
   });
 });

@@ -19,6 +19,8 @@ import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as OrderCompletionRouteImport } from './routes/order-completion'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OffersRouteImport } from './routes/offers'
+import { Route as McpStoreAuthorizeRouteImport } from './routes/mcp-store-authorize'
+import { Route as McpAuthorizeRouteImport } from './routes/mcp-authorize'
 import { Route as ImmersiveStoreRouteImport } from './routes/immersive-store'
 import { Route as GoogleShoppingDotxmlRouteImport } from './routes/google-shopping[.]xml'
 import { Route as DataDeletionRouteImport } from './routes/data-deletion'
@@ -84,9 +86,16 @@ import { Route as AdminAiSettingsRouteImport } from './routes/admin.ai-settings'
 import { Route as AdminAiMemoryRouteImport } from './routes/admin.ai-memory'
 import { Route as AdminAiDeveloperRouteImport } from './routes/admin.ai-developer'
 import { Route as AdminAiAgentRouteImport } from './routes/admin.ai-agent'
+import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known.oauth-protected-resource'
+import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known.oauth-authorization-server'
+import { Route as ApiWhapiReadRouteImport } from './routes/api/whapi.read'
+import { Route as ApiWhapiHealthRouteImport } from './routes/api/whapi.health'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks.whatsapp'
+import { Route as ApiWebhooksWhapiRouteImport } from './routes/api/webhooks.whapi'
 import { Route as ApiWebhooksShopifyRouteImport } from './routes/api/webhooks.shopify'
 import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
+import { Route as ApiMcpWhatsappRouteImport } from './routes/api/mcp.whatsapp'
+import { Route as ApiMcpStoreRouteImport } from './routes/api/mcp.store'
 import { Route as ApiCustomerMeRouteImport } from './routes/api/customer.me'
 import { Route as ApiCustomerLogoutRouteImport } from './routes/api/customer.logout'
 import { Route as ApiCustomerLoginRouteImport } from './routes/api/customer.login'
@@ -100,6 +109,17 @@ import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
 import { Route as AdminIntegrationsWhatsappRouteImport } from './routes/admin.integrations.whatsapp'
 import { Route as AdminIntegrationsFacebookRouteImport } from './routes/admin.integrations.facebook'
 import { Route as AdminDiagnosticsWhatsappRouteImport } from './routes/admin.diagnostics.whatsapp'
+import { Route as ApiMcpOauthTokenRouteImport } from './routes/api/mcp.oauth.token'
+import { Route as ApiMcpOauthRegisterRouteImport } from './routes/api/mcp.oauth.register'
+import { Route as ApiMcpOauthAuthorizeRouteImport } from './routes/api/mcp.oauth.authorize'
+import { Route as ApiMcpOauthApproveRouteImport } from './routes/api/mcp.oauth.approve'
+import { Route as ApiMcpStoreOauthTokenRouteImport } from './routes/api/mcp.store.oauth.token'
+import { Route as ApiMcpStoreOauthRegisterRouteImport } from './routes/api/mcp.store.oauth.register'
+import { Route as ApiMcpStoreOauthAuthorizeRouteImport } from './routes/api/mcp.store.oauth.authorize'
+import { Route as ApiMcpStoreOauthApproveRouteImport } from './routes/api/mcp.store.oauth.approve'
+import { Route as DotwellKnownOauthProtectedResourceApiMcpWhatsappRouteImport } from './routes/[.]well-known.oauth-protected-resource.api.mcp.whatsapp'
+import { Route as DotwellKnownOauthProtectedResourceApiMcpStoreRouteImport } from './routes/[.]well-known.oauth-protected-resource.api.mcp.store'
+import { Route as DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRouteImport } from './routes/[.]well-known.oauth-authorization-server.api.mcp.store.oauth'
 
 const TrackRoute = TrackRouteImport.update({
   id: '/track',
@@ -149,6 +169,16 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const OffersRoute = OffersRouteImport.update({
   id: '/offers',
   path: '/offers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpStoreAuthorizeRoute = McpStoreAuthorizeRouteImport.update({
+  id: '/mcp-store-authorize',
+  path: '/mcp-store-authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpAuthorizeRoute = McpAuthorizeRouteImport.update({
+  id: '/mcp-authorize',
+  path: '/mcp-authorize',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImmersiveStoreRoute = ImmersiveStoreRouteImport.update({
@@ -476,9 +506,36 @@ const AdminAiAgentRoute = AdminAiAgentRouteImport.update({
   path: '/ai-agent',
   getParentRoute: () => AdminRoute,
 } as any)
+const DotwellKnownOauthProtectedResourceRoute =
+  DotwellKnownOauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotwellKnownOauthAuthorizationServerRoute =
+  DotwellKnownOauthAuthorizationServerRouteImport.update({
+    id: '/.well-known/oauth-authorization-server',
+    path: '/.well-known/oauth-authorization-server',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiWhapiReadRoute = ApiWhapiReadRouteImport.update({
+  id: '/api/whapi/read',
+  path: '/api/whapi/read',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWhapiHealthRoute = ApiWhapiHealthRouteImport.update({
+  id: '/api/whapi/health',
+  path: '/api/whapi/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWebhooksWhatsappRoute = ApiWebhooksWhatsappRouteImport.update({
   id: '/api/webhooks/whatsapp',
   path: '/api/webhooks/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWebhooksWhapiRoute = ApiWebhooksWhapiRouteImport.update({
+  id: '/api/webhooks/whapi',
+  path: '/api/webhooks/whapi',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiWebhooksShopifyRoute = ApiWebhooksShopifyRouteImport.update({
@@ -490,6 +547,16 @@ const ApiPublicImageProxyRoute = ApiPublicImageProxyRouteImport.update({
   id: '/api/public/image-proxy',
   path: '/api/public/image-proxy',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpWhatsappRoute = ApiMcpWhatsappRouteImport.update({
+  id: '/whatsapp',
+  path: '/whatsapp',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const ApiMcpStoreRoute = ApiMcpStoreRouteImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => ApiMcpRoute,
 } as any)
 const ApiCustomerMeRoute = ApiCustomerMeRouteImport.update({
   id: '/api/customer/me',
@@ -560,6 +627,66 @@ const AdminDiagnosticsWhatsappRoute =
     path: '/diagnostics/whatsapp',
     getParentRoute: () => AdminRoute,
   } as any)
+const ApiMcpOauthTokenRoute = ApiMcpOauthTokenRouteImport.update({
+  id: '/oauth/token',
+  path: '/oauth/token',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const ApiMcpOauthRegisterRoute = ApiMcpOauthRegisterRouteImport.update({
+  id: '/oauth/register',
+  path: '/oauth/register',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const ApiMcpOauthAuthorizeRoute = ApiMcpOauthAuthorizeRouteImport.update({
+  id: '/oauth/authorize',
+  path: '/oauth/authorize',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const ApiMcpOauthApproveRoute = ApiMcpOauthApproveRouteImport.update({
+  id: '/oauth/approve',
+  path: '/oauth/approve',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const ApiMcpStoreOauthTokenRoute = ApiMcpStoreOauthTokenRouteImport.update({
+  id: '/oauth/token',
+  path: '/oauth/token',
+  getParentRoute: () => ApiMcpStoreRoute,
+} as any)
+const ApiMcpStoreOauthRegisterRoute =
+  ApiMcpStoreOauthRegisterRouteImport.update({
+    id: '/oauth/register',
+    path: '/oauth/register',
+    getParentRoute: () => ApiMcpStoreRoute,
+  } as any)
+const ApiMcpStoreOauthAuthorizeRoute =
+  ApiMcpStoreOauthAuthorizeRouteImport.update({
+    id: '/oauth/authorize',
+    path: '/oauth/authorize',
+    getParentRoute: () => ApiMcpStoreRoute,
+  } as any)
+const ApiMcpStoreOauthApproveRoute = ApiMcpStoreOauthApproveRouteImport.update({
+  id: '/oauth/approve',
+  path: '/oauth/approve',
+  getParentRoute: () => ApiMcpStoreRoute,
+} as any)
+const DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute =
+  DotwellKnownOauthProtectedResourceApiMcpWhatsappRouteImport.update({
+    id: '/api/mcp/whatsapp',
+    path: '/api/mcp/whatsapp',
+    getParentRoute: () => DotwellKnownOauthProtectedResourceRoute,
+  } as any)
+const DotwellKnownOauthProtectedResourceApiMcpStoreRoute =
+  DotwellKnownOauthProtectedResourceApiMcpStoreRouteImport.update({
+    id: '/api/mcp/store',
+    path: '/api/mcp/store',
+    getParentRoute: () => DotwellKnownOauthProtectedResourceRoute,
+  } as any)
+const DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute =
+  DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRouteImport.update({
+    id: '/api/mcp/store/oauth',
+    path: '/api/mcp/store/oauth',
+    getParentRoute: () => DotwellKnownOauthAuthorizationServerRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -571,6 +698,8 @@ export interface FileRoutesByFullPath {
   '/data-deletion': typeof DataDeletionRoute
   '/google-shopping.xml': typeof GoogleShoppingDotxmlRoute
   '/immersive-store': typeof ImmersiveStoreRoute
+  '/mcp-authorize': typeof McpAuthorizeRoute
+  '/mcp-store-authorize': typeof McpStoreAuthorizeRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/order-completion': typeof OrderCompletionRoute
@@ -581,6 +710,8 @@ export interface FileRoutesByFullPath {
   '/store': typeof StoreRouteWithChildren
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/admin/ai-agent': typeof AdminAiAgentRoute
   '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
@@ -615,7 +746,7 @@ export interface FileRoutesByFullPath {
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/catalog-health': typeof ApiCatalogHealthRoute
-  '/api/mcp': typeof ApiMcpRoute
+  '/api/mcp': typeof ApiMcpRouteWithChildren
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -650,9 +781,25 @@ export interface FileRoutesByFullPath {
   '/api/customer/login': typeof ApiCustomerLoginRoute
   '/api/customer/logout': typeof ApiCustomerLogoutRoute
   '/api/customer/me': typeof ApiCustomerMeRoute
+  '/api/mcp/store': typeof ApiMcpStoreRouteWithChildren
+  '/api/mcp/whatsapp': typeof ApiMcpWhatsappRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
   '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
+  '/api/webhooks/whapi': typeof ApiWebhooksWhapiRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
+  '/api/whapi/health': typeof ApiWhapiHealthRoute
+  '/api/whapi/read': typeof ApiWhapiReadRoute
+  '/api/mcp/oauth/approve': typeof ApiMcpOauthApproveRoute
+  '/api/mcp/oauth/authorize': typeof ApiMcpOauthAuthorizeRoute
+  '/api/mcp/oauth/register': typeof ApiMcpOauthRegisterRoute
+  '/api/mcp/oauth/token': typeof ApiMcpOauthTokenRoute
+  '/.well-known/oauth-protected-resource/api/mcp/store': typeof DotwellKnownOauthProtectedResourceApiMcpStoreRoute
+  '/.well-known/oauth-protected-resource/api/mcp/whatsapp': typeof DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute
+  '/api/mcp/store/oauth/approve': typeof ApiMcpStoreOauthApproveRoute
+  '/api/mcp/store/oauth/authorize': typeof ApiMcpStoreOauthAuthorizeRoute
+  '/api/mcp/store/oauth/register': typeof ApiMcpStoreOauthRegisterRoute
+  '/api/mcp/store/oauth/token': typeof ApiMcpStoreOauthTokenRoute
+  '/.well-known/oauth-authorization-server/api/mcp/store/oauth': typeof DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -663,6 +810,8 @@ export interface FileRoutesByTo {
   '/data-deletion': typeof DataDeletionRoute
   '/google-shopping.xml': typeof GoogleShoppingDotxmlRoute
   '/immersive-store': typeof ImmersiveStoreRoute
+  '/mcp-authorize': typeof McpAuthorizeRoute
+  '/mcp-store-authorize': typeof McpStoreAuthorizeRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/order-completion': typeof OrderCompletionRoute
@@ -672,6 +821,8 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/admin/ai-agent': typeof AdminAiAgentRoute
   '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
@@ -706,7 +857,7 @@ export interface FileRoutesByTo {
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/catalog-health': typeof ApiCatalogHealthRoute
-  '/api/mcp': typeof ApiMcpRoute
+  '/api/mcp': typeof ApiMcpRouteWithChildren
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -741,9 +892,25 @@ export interface FileRoutesByTo {
   '/api/customer/login': typeof ApiCustomerLoginRoute
   '/api/customer/logout': typeof ApiCustomerLogoutRoute
   '/api/customer/me': typeof ApiCustomerMeRoute
+  '/api/mcp/store': typeof ApiMcpStoreRouteWithChildren
+  '/api/mcp/whatsapp': typeof ApiMcpWhatsappRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
   '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
+  '/api/webhooks/whapi': typeof ApiWebhooksWhapiRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
+  '/api/whapi/health': typeof ApiWhapiHealthRoute
+  '/api/whapi/read': typeof ApiWhapiReadRoute
+  '/api/mcp/oauth/approve': typeof ApiMcpOauthApproveRoute
+  '/api/mcp/oauth/authorize': typeof ApiMcpOauthAuthorizeRoute
+  '/api/mcp/oauth/register': typeof ApiMcpOauthRegisterRoute
+  '/api/mcp/oauth/token': typeof ApiMcpOauthTokenRoute
+  '/.well-known/oauth-protected-resource/api/mcp/store': typeof DotwellKnownOauthProtectedResourceApiMcpStoreRoute
+  '/.well-known/oauth-protected-resource/api/mcp/whatsapp': typeof DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute
+  '/api/mcp/store/oauth/approve': typeof ApiMcpStoreOauthApproveRoute
+  '/api/mcp/store/oauth/authorize': typeof ApiMcpStoreOauthAuthorizeRoute
+  '/api/mcp/store/oauth/register': typeof ApiMcpStoreOauthRegisterRoute
+  '/api/mcp/store/oauth/token': typeof ApiMcpStoreOauthTokenRoute
+  '/.well-known/oauth-authorization-server/api/mcp/store/oauth': typeof DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -756,6 +923,8 @@ export interface FileRoutesById {
   '/data-deletion': typeof DataDeletionRoute
   '/google-shopping.xml': typeof GoogleShoppingDotxmlRoute
   '/immersive-store': typeof ImmersiveStoreRoute
+  '/mcp-authorize': typeof McpAuthorizeRoute
+  '/mcp-store-authorize': typeof McpStoreAuthorizeRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/order-completion': typeof OrderCompletionRoute
@@ -766,6 +935,8 @@ export interface FileRoutesById {
   '/store': typeof StoreRouteWithChildren
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/admin/ai-agent': typeof AdminAiAgentRoute
   '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
@@ -800,7 +971,7 @@ export interface FileRoutesById {
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/catalog-health': typeof ApiCatalogHealthRoute
-  '/api/mcp': typeof ApiMcpRoute
+  '/api/mcp': typeof ApiMcpRouteWithChildren
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -835,9 +1006,25 @@ export interface FileRoutesById {
   '/api/customer/login': typeof ApiCustomerLoginRoute
   '/api/customer/logout': typeof ApiCustomerLogoutRoute
   '/api/customer/me': typeof ApiCustomerMeRoute
+  '/api/mcp/store': typeof ApiMcpStoreRouteWithChildren
+  '/api/mcp/whatsapp': typeof ApiMcpWhatsappRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
   '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
+  '/api/webhooks/whapi': typeof ApiWebhooksWhapiRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
+  '/api/whapi/health': typeof ApiWhapiHealthRoute
+  '/api/whapi/read': typeof ApiWhapiReadRoute
+  '/api/mcp/oauth/approve': typeof ApiMcpOauthApproveRoute
+  '/api/mcp/oauth/authorize': typeof ApiMcpOauthAuthorizeRoute
+  '/api/mcp/oauth/register': typeof ApiMcpOauthRegisterRoute
+  '/api/mcp/oauth/token': typeof ApiMcpOauthTokenRoute
+  '/.well-known/oauth-protected-resource/api/mcp/store': typeof DotwellKnownOauthProtectedResourceApiMcpStoreRoute
+  '/.well-known/oauth-protected-resource/api/mcp/whatsapp': typeof DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute
+  '/api/mcp/store/oauth/approve': typeof ApiMcpStoreOauthApproveRoute
+  '/api/mcp/store/oauth/authorize': typeof ApiMcpStoreOauthAuthorizeRoute
+  '/api/mcp/store/oauth/register': typeof ApiMcpStoreOauthRegisterRoute
+  '/api/mcp/store/oauth/token': typeof ApiMcpStoreOauthTokenRoute
+  '/.well-known/oauth-authorization-server/api/mcp/store/oauth': typeof DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -851,6 +1038,8 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/google-shopping.xml'
     | '/immersive-store'
+    | '/mcp-authorize'
+    | '/mcp-store-authorize'
     | '/offers'
     | '/onboarding'
     | '/order-completion'
@@ -861,6 +1050,8 @@ export interface FileRouteTypes {
     | '/store'
     | '/terms'
     | '/track'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/ai-agent'
     | '/admin/ai-developer'
     | '/admin/ai-memory'
@@ -930,9 +1121,25 @@ export interface FileRouteTypes {
     | '/api/customer/login'
     | '/api/customer/logout'
     | '/api/customer/me'
+    | '/api/mcp/store'
+    | '/api/mcp/whatsapp'
     | '/api/public/image-proxy'
     | '/api/webhooks/shopify'
+    | '/api/webhooks/whapi'
     | '/api/webhooks/whatsapp'
+    | '/api/whapi/health'
+    | '/api/whapi/read'
+    | '/api/mcp/oauth/approve'
+    | '/api/mcp/oauth/authorize'
+    | '/api/mcp/oauth/register'
+    | '/api/mcp/oauth/token'
+    | '/.well-known/oauth-protected-resource/api/mcp/store'
+    | '/.well-known/oauth-protected-resource/api/mcp/whatsapp'
+    | '/api/mcp/store/oauth/approve'
+    | '/api/mcp/store/oauth/authorize'
+    | '/api/mcp/store/oauth/register'
+    | '/api/mcp/store/oauth/token'
+    | '/.well-known/oauth-authorization-server/api/mcp/store/oauth'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -943,6 +1150,8 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/google-shopping.xml'
     | '/immersive-store'
+    | '/mcp-authorize'
+    | '/mcp-store-authorize'
     | '/offers'
     | '/onboarding'
     | '/order-completion'
@@ -952,6 +1161,8 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/ai-agent'
     | '/admin/ai-developer'
     | '/admin/ai-memory'
@@ -1021,9 +1232,25 @@ export interface FileRouteTypes {
     | '/api/customer/login'
     | '/api/customer/logout'
     | '/api/customer/me'
+    | '/api/mcp/store'
+    | '/api/mcp/whatsapp'
     | '/api/public/image-proxy'
     | '/api/webhooks/shopify'
+    | '/api/webhooks/whapi'
     | '/api/webhooks/whatsapp'
+    | '/api/whapi/health'
+    | '/api/whapi/read'
+    | '/api/mcp/oauth/approve'
+    | '/api/mcp/oauth/authorize'
+    | '/api/mcp/oauth/register'
+    | '/api/mcp/oauth/token'
+    | '/.well-known/oauth-protected-resource/api/mcp/store'
+    | '/.well-known/oauth-protected-resource/api/mcp/whatsapp'
+    | '/api/mcp/store/oauth/approve'
+    | '/api/mcp/store/oauth/authorize'
+    | '/api/mcp/store/oauth/register'
+    | '/api/mcp/store/oauth/token'
+    | '/.well-known/oauth-authorization-server/api/mcp/store/oauth'
   id:
     | '__root__'
     | '/'
@@ -1035,6 +1262,8 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/google-shopping.xml'
     | '/immersive-store'
+    | '/mcp-authorize'
+    | '/mcp-store-authorize'
     | '/offers'
     | '/onboarding'
     | '/order-completion'
@@ -1045,6 +1274,8 @@ export interface FileRouteTypes {
     | '/store'
     | '/terms'
     | '/track'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/ai-agent'
     | '/admin/ai-developer'
     | '/admin/ai-memory'
@@ -1114,9 +1345,25 @@ export interface FileRouteTypes {
     | '/api/customer/login'
     | '/api/customer/logout'
     | '/api/customer/me'
+    | '/api/mcp/store'
+    | '/api/mcp/whatsapp'
     | '/api/public/image-proxy'
     | '/api/webhooks/shopify'
+    | '/api/webhooks/whapi'
     | '/api/webhooks/whatsapp'
+    | '/api/whapi/health'
+    | '/api/whapi/read'
+    | '/api/mcp/oauth/approve'
+    | '/api/mcp/oauth/authorize'
+    | '/api/mcp/oauth/register'
+    | '/api/mcp/oauth/token'
+    | '/.well-known/oauth-protected-resource/api/mcp/store'
+    | '/.well-known/oauth-protected-resource/api/mcp/whatsapp'
+    | '/api/mcp/store/oauth/approve'
+    | '/api/mcp/store/oauth/authorize'
+    | '/api/mcp/store/oauth/register'
+    | '/api/mcp/store/oauth/token'
+    | '/.well-known/oauth-authorization-server/api/mcp/store/oauth'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1129,6 +1376,8 @@ export interface RootRouteChildren {
   DataDeletionRoute: typeof DataDeletionRoute
   GoogleShoppingDotxmlRoute: typeof GoogleShoppingDotxmlRoute
   ImmersiveStoreRoute: typeof ImmersiveStoreRoute
+  McpAuthorizeRoute: typeof McpAuthorizeRoute
+  McpStoreAuthorizeRoute: typeof McpStoreAuthorizeRoute
   OffersRoute: typeof OffersRoute
   OnboardingRoute: typeof OnboardingRoute
   OrderCompletionRoute: typeof OrderCompletionRoute
@@ -1139,8 +1388,10 @@ export interface RootRouteChildren {
   StoreRoute: typeof StoreRouteWithChildren
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
+  DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  DotwellKnownOauthProtectedResourceRoute: typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   ApiCatalogHealthRoute: typeof ApiCatalogHealthRoute
-  ApiMcpRoute: typeof ApiMcpRoute
+  ApiMcpRoute: typeof ApiMcpRouteWithChildren
   ApiOrdersRoute: typeof ApiOrdersRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
@@ -1161,7 +1412,10 @@ export interface RootRouteChildren {
   ApiCustomerMeRoute: typeof ApiCustomerMeRoute
   ApiPublicImageProxyRoute: typeof ApiPublicImageProxyRoute
   ApiWebhooksShopifyRoute: typeof ApiWebhooksShopifyRoute
+  ApiWebhooksWhapiRoute: typeof ApiWebhooksWhapiRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
+  ApiWhapiHealthRoute: typeof ApiWhapiHealthRoute
+  ApiWhapiReadRoute: typeof ApiWhapiReadRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1234,6 +1488,20 @@ declare module '@tanstack/react-router' {
       path: '/offers'
       fullPath: '/offers'
       preLoaderRoute: typeof OffersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp-store-authorize': {
+      id: '/mcp-store-authorize'
+      path: '/mcp-store-authorize'
+      fullPath: '/mcp-store-authorize'
+      preLoaderRoute: typeof McpStoreAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp-authorize': {
+      id: '/mcp-authorize'
+      path: '/mcp-authorize'
+      fullPath: '/mcp-authorize'
+      preLoaderRoute: typeof McpAuthorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/immersive-store': {
@@ -1691,11 +1959,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAiAgentRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-authorization-server': {
+      id: '/.well-known/oauth-authorization-server'
+      path: '/.well-known/oauth-authorization-server'
+      fullPath: '/.well-known/oauth-authorization-server'
+      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/whapi/read': {
+      id: '/api/whapi/read'
+      path: '/api/whapi/read'
+      fullPath: '/api/whapi/read'
+      preLoaderRoute: typeof ApiWhapiReadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/whapi/health': {
+      id: '/api/whapi/health'
+      path: '/api/whapi/health'
+      fullPath: '/api/whapi/health'
+      preLoaderRoute: typeof ApiWhapiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/webhooks/whatsapp': {
       id: '/api/webhooks/whatsapp'
       path: '/api/webhooks/whatsapp'
       fullPath: '/api/webhooks/whatsapp'
       preLoaderRoute: typeof ApiWebhooksWhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/webhooks/whapi': {
+      id: '/api/webhooks/whapi'
+      path: '/api/webhooks/whapi'
+      fullPath: '/api/webhooks/whapi'
+      preLoaderRoute: typeof ApiWebhooksWhapiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/webhooks/shopify': {
@@ -1711,6 +2014,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/image-proxy'
       preLoaderRoute: typeof ApiPublicImageProxyRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp/whatsapp': {
+      id: '/api/mcp/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/api/mcp/whatsapp'
+      preLoaderRoute: typeof ApiMcpWhatsappRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/api/mcp/store': {
+      id: '/api/mcp/store'
+      path: '/store'
+      fullPath: '/api/mcp/store'
+      preLoaderRoute: typeof ApiMcpStoreRouteImport
+      parentRoute: typeof ApiMcpRoute
     }
     '/api/customer/me': {
       id: '/api/customer/me'
@@ -1802,6 +2119,83 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/diagnostics/whatsapp'
       preLoaderRoute: typeof AdminDiagnosticsWhatsappRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/api/mcp/oauth/token': {
+      id: '/api/mcp/oauth/token'
+      path: '/oauth/token'
+      fullPath: '/api/mcp/oauth/token'
+      preLoaderRoute: typeof ApiMcpOauthTokenRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/api/mcp/oauth/register': {
+      id: '/api/mcp/oauth/register'
+      path: '/oauth/register'
+      fullPath: '/api/mcp/oauth/register'
+      preLoaderRoute: typeof ApiMcpOauthRegisterRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/api/mcp/oauth/authorize': {
+      id: '/api/mcp/oauth/authorize'
+      path: '/oauth/authorize'
+      fullPath: '/api/mcp/oauth/authorize'
+      preLoaderRoute: typeof ApiMcpOauthAuthorizeRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/api/mcp/oauth/approve': {
+      id: '/api/mcp/oauth/approve'
+      path: '/oauth/approve'
+      fullPath: '/api/mcp/oauth/approve'
+      preLoaderRoute: typeof ApiMcpOauthApproveRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/api/mcp/store/oauth/token': {
+      id: '/api/mcp/store/oauth/token'
+      path: '/oauth/token'
+      fullPath: '/api/mcp/store/oauth/token'
+      preLoaderRoute: typeof ApiMcpStoreOauthTokenRouteImport
+      parentRoute: typeof ApiMcpStoreRoute
+    }
+    '/api/mcp/store/oauth/register': {
+      id: '/api/mcp/store/oauth/register'
+      path: '/oauth/register'
+      fullPath: '/api/mcp/store/oauth/register'
+      preLoaderRoute: typeof ApiMcpStoreOauthRegisterRouteImport
+      parentRoute: typeof ApiMcpStoreRoute
+    }
+    '/api/mcp/store/oauth/authorize': {
+      id: '/api/mcp/store/oauth/authorize'
+      path: '/oauth/authorize'
+      fullPath: '/api/mcp/store/oauth/authorize'
+      preLoaderRoute: typeof ApiMcpStoreOauthAuthorizeRouteImport
+      parentRoute: typeof ApiMcpStoreRoute
+    }
+    '/api/mcp/store/oauth/approve': {
+      id: '/api/mcp/store/oauth/approve'
+      path: '/oauth/approve'
+      fullPath: '/api/mcp/store/oauth/approve'
+      preLoaderRoute: typeof ApiMcpStoreOauthApproveRouteImport
+      parentRoute: typeof ApiMcpStoreRoute
+    }
+    '/.well-known/oauth-protected-resource/api/mcp/whatsapp': {
+      id: '/.well-known/oauth-protected-resource/api/mcp/whatsapp'
+      path: '/api/mcp/whatsapp'
+      fullPath: '/.well-known/oauth-protected-resource/api/mcp/whatsapp'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceApiMcpWhatsappRouteImport
+      parentRoute: typeof DotwellKnownOauthProtectedResourceRoute
+    }
+    '/.well-known/oauth-protected-resource/api/mcp/store': {
+      id: '/.well-known/oauth-protected-resource/api/mcp/store'
+      path: '/api/mcp/store'
+      fullPath: '/.well-known/oauth-protected-resource/api/mcp/store'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceApiMcpStoreRouteImport
+      parentRoute: typeof DotwellKnownOauthProtectedResourceRoute
+    }
+    '/.well-known/oauth-authorization-server/api/mcp/store/oauth': {
+      id: '/.well-known/oauth-authorization-server/api/mcp/store/oauth'
+      path: '/api/mcp/store/oauth'
+      fullPath: '/.well-known/oauth-authorization-server/api/mcp/store/oauth'
+      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRouteImport
+      parentRoute: typeof DotwellKnownOauthAuthorizationServerRoute
     }
   }
 }
@@ -1930,6 +2324,78 @@ const StoreRouteChildren: StoreRouteChildren = {
 
 const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)
 
+interface DotwellKnownOauthAuthorizationServerRouteChildren {
+  DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute: typeof DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute
+}
+
+const DotwellKnownOauthAuthorizationServerRouteChildren: DotwellKnownOauthAuthorizationServerRouteChildren =
+  {
+    DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute:
+      DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute,
+  }
+
+const DotwellKnownOauthAuthorizationServerRouteWithChildren =
+  DotwellKnownOauthAuthorizationServerRoute._addFileChildren(
+    DotwellKnownOauthAuthorizationServerRouteChildren,
+  )
+
+interface DotwellKnownOauthProtectedResourceRouteChildren {
+  DotwellKnownOauthProtectedResourceApiMcpStoreRoute: typeof DotwellKnownOauthProtectedResourceApiMcpStoreRoute
+  DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute: typeof DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute
+}
+
+const DotwellKnownOauthProtectedResourceRouteChildren: DotwellKnownOauthProtectedResourceRouteChildren =
+  {
+    DotwellKnownOauthProtectedResourceApiMcpStoreRoute:
+      DotwellKnownOauthProtectedResourceApiMcpStoreRoute,
+    DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute:
+      DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute,
+  }
+
+const DotwellKnownOauthProtectedResourceRouteWithChildren =
+  DotwellKnownOauthProtectedResourceRoute._addFileChildren(
+    DotwellKnownOauthProtectedResourceRouteChildren,
+  )
+
+interface ApiMcpStoreRouteChildren {
+  ApiMcpStoreOauthApproveRoute: typeof ApiMcpStoreOauthApproveRoute
+  ApiMcpStoreOauthAuthorizeRoute: typeof ApiMcpStoreOauthAuthorizeRoute
+  ApiMcpStoreOauthRegisterRoute: typeof ApiMcpStoreOauthRegisterRoute
+  ApiMcpStoreOauthTokenRoute: typeof ApiMcpStoreOauthTokenRoute
+}
+
+const ApiMcpStoreRouteChildren: ApiMcpStoreRouteChildren = {
+  ApiMcpStoreOauthApproveRoute: ApiMcpStoreOauthApproveRoute,
+  ApiMcpStoreOauthAuthorizeRoute: ApiMcpStoreOauthAuthorizeRoute,
+  ApiMcpStoreOauthRegisterRoute: ApiMcpStoreOauthRegisterRoute,
+  ApiMcpStoreOauthTokenRoute: ApiMcpStoreOauthTokenRoute,
+}
+
+const ApiMcpStoreRouteWithChildren = ApiMcpStoreRoute._addFileChildren(
+  ApiMcpStoreRouteChildren,
+)
+
+interface ApiMcpRouteChildren {
+  ApiMcpStoreRoute: typeof ApiMcpStoreRouteWithChildren
+  ApiMcpWhatsappRoute: typeof ApiMcpWhatsappRoute
+  ApiMcpOauthApproveRoute: typeof ApiMcpOauthApproveRoute
+  ApiMcpOauthAuthorizeRoute: typeof ApiMcpOauthAuthorizeRoute
+  ApiMcpOauthRegisterRoute: typeof ApiMcpOauthRegisterRoute
+  ApiMcpOauthTokenRoute: typeof ApiMcpOauthTokenRoute
+}
+
+const ApiMcpRouteChildren: ApiMcpRouteChildren = {
+  ApiMcpStoreRoute: ApiMcpStoreRouteWithChildren,
+  ApiMcpWhatsappRoute: ApiMcpWhatsappRoute,
+  ApiMcpOauthApproveRoute: ApiMcpOauthApproveRoute,
+  ApiMcpOauthAuthorizeRoute: ApiMcpOauthAuthorizeRoute,
+  ApiMcpOauthRegisterRoute: ApiMcpOauthRegisterRoute,
+  ApiMcpOauthTokenRoute: ApiMcpOauthTokenRoute,
+}
+
+const ApiMcpRouteWithChildren =
+  ApiMcpRoute._addFileChildren(ApiMcpRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
@@ -1940,6 +2406,8 @@ const rootRouteChildren: RootRouteChildren = {
   DataDeletionRoute: DataDeletionRoute,
   GoogleShoppingDotxmlRoute: GoogleShoppingDotxmlRoute,
   ImmersiveStoreRoute: ImmersiveStoreRoute,
+  McpAuthorizeRoute: McpAuthorizeRoute,
+  McpStoreAuthorizeRoute: McpStoreAuthorizeRoute,
   OffersRoute: OffersRoute,
   OnboardingRoute: OnboardingRoute,
   OrderCompletionRoute: OrderCompletionRoute,
@@ -1950,8 +2418,12 @@ const rootRouteChildren: RootRouteChildren = {
   StoreRoute: StoreRouteWithChildren,
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
+  DotwellKnownOauthAuthorizationServerRoute:
+    DotwellKnownOauthAuthorizationServerRouteWithChildren,
+  DotwellKnownOauthProtectedResourceRoute:
+    DotwellKnownOauthProtectedResourceRouteWithChildren,
   ApiCatalogHealthRoute: ApiCatalogHealthRoute,
-  ApiMcpRoute: ApiMcpRoute,
+  ApiMcpRoute: ApiMcpRouteWithChildren,
   ApiOrdersRoute: ApiOrdersRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
@@ -1972,7 +2444,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCustomerMeRoute: ApiCustomerMeRoute,
   ApiPublicImageProxyRoute: ApiPublicImageProxyRoute,
   ApiWebhooksShopifyRoute: ApiWebhooksShopifyRoute,
+  ApiWebhooksWhapiRoute: ApiWebhooksWhapiRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
+  ApiWhapiHealthRoute: ApiWhapiHealthRoute,
+  ApiWhapiReadRoute: ApiWhapiReadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -25,16 +25,11 @@ export function matchesProductFilters(product: Product, filters: ProductFilters)
     selectedBrands.some((brandId) => {
       const brand = STORE_BRANDS.find((item) => item.id === brandId);
       if (!brand) return false;
-      if (product.brand?.trim()) {
-        const value = product.brand.trim().toLowerCase();
-        return (
-          value === brand.id.toLowerCase() ||
-          value === brand.name.toLowerCase() ||
-          brand.keywords.some((keyword) => value.includes(keyword.toLowerCase()))
-        );
-      }
-      return brand.keywords.some((keyword) =>
-        product.name.toLowerCase().includes(keyword.toLowerCase()),
+      const value = product.brand?.trim().toLowerCase();
+      return (
+        value === brand.id.toLowerCase() ||
+        value === brand.name.toLowerCase() ||
+        brand.keywords.some((alias) => value === alias.toLowerCase())
       );
     });
   const matchRating =

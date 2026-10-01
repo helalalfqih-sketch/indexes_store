@@ -61,7 +61,15 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
       setAlreadyRenderedIds([...new Set(ids)]);
     });
     return () => cancelAnimationFrame(frame);
-  }, [location.pathname, searchQuery, selectedCategory, minPrice, maxPrice, dealsOnly, inStockOnly]);
+  }, [
+    location.pathname,
+    searchQuery,
+    selectedCategory,
+    minPrice,
+    maxPrice,
+    dealsOnly,
+    inStockOnly,
+  ]);
 
   const handleAddToCart = (product: DesignProduct) => {
     const storeProduct: StoreProduct = {
@@ -70,8 +78,7 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
       name: product.name,
       description: product.description,
       price: product.priceYER,
-      oldPrice:
-        product.originalPriceYER > product.priceYER ? product.originalPriceYER : undefined,
+      oldPrice: product.originalPriceYER > product.priceYER ? product.originalPriceYER : undefined,
       stock: product.inStock === false ? 0 : Math.max(1, product.stockCount ?? 1),
       image: product.image,
       rating: product.rating,
@@ -180,7 +187,11 @@ export function SiteFooter({ isHome }: { isHome?: boolean }) {
               </li>
             )}
             {deliveryInfo && (
-              <li className="flex items-start gap-2.5">
+              <li
+                data-claim-source="appearance.navigation.deliveryInfoText"
+                data-claim-verified="false"
+                className="flex items-start gap-2.5"
+              >
                 <Truck className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-400" />
                 <span>{deliveryInfo}</span>
               </li>

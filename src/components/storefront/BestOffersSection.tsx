@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Product, Currency } from "./types";
 import { ProductCard } from "./ProductCard";
+import { productCardQA } from "@/lib/qa/product-card-contract";
 import { ProductCardSkeleton } from "./SkeletonLoader";
 import { ChevronRight, ChevronLeft, Flame, ArrowLeft, Clock, Zap } from "lucide-react";
 
@@ -153,7 +154,7 @@ export const BestOffersSection: React.FC<BestOffersSectionProps> = ({
   };
 
   return (
-    <section className="py-3 relative">
+    <section data-qa-section="offers" className="py-3 relative">
       {/* Header with Flash Deal Badge & Live Countdown Timer */}
       <div className="px-4 sm:px-6 flex flex-wrap justify-between items-center gap-2 mb-3 dir-rtl">
         <div className="flex items-center gap-3">
@@ -179,6 +180,7 @@ export const BestOffersSection: React.FC<BestOffersSectionProps> = ({
         <button
           onClick={onViewAll}
           type="button"
+          data-element-key="cta.view_offers"
           aria-label="عرض كل العروض"
           className="text-[#2F6BFF] text-xs sm:text-sm flex items-center gap-1 font-bold hover:underline cursor-pointer group"
         >
@@ -245,6 +247,7 @@ export const BestOffersSection: React.FC<BestOffersSectionProps> = ({
                 >
                   <ProductCard
                     product={product}
+                    qa={productCardQA(product, "offers")}
                     currency={currency}
                     isFavorite={favorites.includes(product.id)}
                     onToggleFavorite={onToggleFavorite}
