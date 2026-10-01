@@ -7,6 +7,10 @@ import { BottomNav } from "../../src/components/storefront/BottomNav";
 
 const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }));
 vi.mock("@tanstack/react-router", () => ({ useNavigate: () => navigate }));
+vi.mock("@tanstack/react-query", () => ({
+  queryOptions: (value: unknown) => value,
+  useQuery: () => ({ data: [{ id: "audio", name: "الصوتيات" }] }),
+}));
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -33,7 +37,7 @@ describe("storefront navigation actions", () => {
     fireEvent.click(screen.getByRole("button", { name: "المفضلة" }));
     expect(wishlist).toHaveBeenCalledTimes(1);
     expect(menu).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "الرسائل والقائمة" }));
+    fireEvent.click(screen.getByRole("button", { name: "القائمة", exact: true }));
     fireEvent.click(screen.getByRole("button", { name: "عرض جميع الفئات" }));
     expect(menu).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole("button", { name: "تنفيذ البحث" }));

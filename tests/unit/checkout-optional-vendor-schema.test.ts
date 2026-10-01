@@ -42,8 +42,32 @@ const payload: CreateOrderPayload = {
   customerPhone: "+967700000000",
   customerAddress: "Fixture staging address",
   paymentProvider: "cod",
+  idempotencyKey: "55555555-5555-4555-8555-555555555555",
 };
-const committed = { orderId, total: 4000, currency: "YER", itemsCount: 1 };
+const committed = {
+  orderId,
+  total: 4000,
+  currency: "YER",
+  itemsCount: 1,
+  quote: {
+    subtotal: 1000,
+    discount: 0,
+    shipping: 3000,
+    total: 4000,
+    currency: "YER",
+    couponCode: "",
+    freeShippingThreshold: 30000,
+    items: [
+      {
+        id: "22222222-2222-4222-8222-222222222222",
+        name: "Sandbox",
+        quantity: 1,
+        unitPrice: 1000,
+        stock: 1,
+      },
+    ],
+  },
+};
 let vendorColumn: boolean;
 let coreFailure: boolean;
 let unavailable: boolean;

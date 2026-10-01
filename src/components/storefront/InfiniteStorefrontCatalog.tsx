@@ -149,6 +149,7 @@ export function InfiniteStorefrontCatalog({
         <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
           {filteredProducts.map((product, index) => (
             <ProductCard
+              sectionSource="catalog-continuation"
               key={product.id}
               product={product}
               currency={currency}

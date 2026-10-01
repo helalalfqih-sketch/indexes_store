@@ -90,15 +90,7 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
     });
     if (shopify.configured) {
       const readyShopifyProducts = dtoToLegacy(shopify.items);
-      if (readyShopifyProducts.length > 0) return readyShopifyProducts;
-
-      // A healthy Shopify connection does not guarantee that the returned
-      // products are storefront-ready. For example, a product can still be
-      // missing a positive price, public image, or purchasable variant. In
-      // that case, continue to the tenant-scoped Supabase catalog instead of
-      // turning the whole storefront into an empty page. Supabase rows pass
-      // the same readiness gate below, so this never exposes an unpurchasable
-      // fallback product.
+      return readyShopifyProducts;
     }
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] Shopify catalog fallback:", err);
@@ -112,7 +104,7 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
     return dtoToLegacy(rows);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] fetchProducts fallback:", err);
-    return developmentFallbackProducts();
+    throw new Error("تعذر تحميل المنتجات. حاول مرة أخرى.");
   }
 }
 
@@ -228,12 +220,7 @@ export async function fetchOffers(limit = 20): Promise<LegacyProductShape[]> {
     return explicitOffers.slice(0, requested);
   }
 
-  // Fallback: pick products and compute deal pricing so offers page & home deals section are vibrant
-  return all.slice(0, Math.min(requested, 8)).map((p) => ({
-    ...p,
-    oldPrice: p.oldPrice || Math.round(p.price * 1.25),
-    badge: p.badge || "عرض خاص 🔥",
-  }));
+  return [];
 }
 
 export async function fetchBestSellers(limit = 20): Promise<LegacyProductShape[]> {

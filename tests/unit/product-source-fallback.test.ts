@@ -72,7 +72,7 @@ describe("storefront catalog source fallback", () => {
     expect(mocks.listProducts).not.toHaveBeenCalled();
   });
 
-  it("falls back to ready Supabase rows when configured Shopify rows are not purchasable", async () => {
+  it("does not substitute Supabase rows for an empty configured Shopify result", async () => {
     mocks.listShopifyProducts.mockResolvedValue({
       configured: true,
       items: [
@@ -87,13 +87,12 @@ describe("storefront catalog source fallback", () => {
 
     const rows = await fetchProducts({ limit: 12 });
 
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.id).toBe("11111111-1111-4111-8111-111111111111");
-    expect(mocks.listProducts).toHaveBeenCalledOnce();
+    expect(rows).toHaveLength(0);
+    expect(mocks.listProducts).not.toHaveBeenCalled();
   });
 
   it("still hides Supabase rows that fail the checkout readiness gate", async () => {
-    mocks.listShopifyProducts.mockResolvedValue({ configured: true, items: [] });
+    mocks.listShopifyProducts.mockResolvedValue({ configured: false, items: [] });
     mocks.listProducts.mockResolvedValue([product({ price: 0 })]);
 
     await expect(fetchProducts()).resolves.toEqual([]);

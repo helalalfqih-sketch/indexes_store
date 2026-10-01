@@ -1,8 +1,6 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import { createFileRoute, Link, redirect, notFound } from "@tanstack/react-router";
 import { BookOpen, ArrowRight, ShieldCheck, Home, Loader2 } from "lucide-react";
-import { getPublicCmsPage, sanitizeHtml } from "@/lib/pages.functions";
+import { getPublicCmsPage, sanitizeHtml, type CmsPageRecord } from "@/lib/pages.functions";
 
 const BUILT_IN_PAGE_ROUTES: Record<string, "/terms" | "/privacy-policy"> = {
   terms: "/terms",
@@ -10,7 +8,15 @@ const BUILT_IN_PAGE_ROUTES: Record<string, "/terms" | "/privacy-policy"> = {
 };
 
 export const Route = createFileRoute("/pages/$slug")({
-  head: ({ loaderData }: any) => {
+  ssr: true,
+  loader: async ({ params }): Promise<{ page: CmsPageRecord }> => {
+    const builtInRoute = BUILT_IN_PAGE_ROUTES[params.slug];
+    if (builtInRoute) throw redirect({ to: builtInRoute });
+    const page = await getPublicCmsPage({ data: { slug: params.slug } });
+    if (!page) throw notFound();
+    return { page };
+  },
+  head: ({ loaderData }) => {
     const page = loaderData?.page;
     if (!page) {
       return {
@@ -27,57 +33,11 @@ export const Route = createFileRoute("/pages/$slug")({
       ],
     };
   },
-  loader: async ({ params }) => {
-    const builtInRoute = BUILT_IN_PAGE_ROUTES[params.slug];
-    if (builtInRoute) throw redirect({ to: builtInRoute });
-    try {
-      const page = await getPublicCmsPage({ data: { slug: params.slug } });
-      return { page };
-    } catch {
-      return { page: null };
-    }
-  },
   component: PublicCmsPageComponent,
 });
 
 function PublicCmsPageComponent() {
-  const { slug } = Route.useParams();
-  const getPageFn = useServerFn(getPublicCmsPage);
-
-  const { data: page, isLoading } = useQuery({
-    queryKey: ["public-cms-page", slug],
-    queryFn: () => getPageFn({ data: { slug } }),
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!page) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-20 text-center" dir="rtl">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-muted">
-          <BookOpen className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h1 className="mt-4 text-2xl font-black">عذراً، الصفحة غير موجودة</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          الصفحة التي تبحث عنها غير متوفرة أو قد تم إزالتها.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-brand hover:bg-primary/90"
-          >
-            <Home className="h-4 w-4" /> العودة للرئيسية
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const { page } = Route.useLoaderData();
 
   const cleanContent = sanitizeHtml(page.content);
 
@@ -103,8 +63,10 @@ function PublicCmsPageComponent() {
             {page.title}
           </h1>
           <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
-            <ShieldCheck className="h-4 w-4 text-success" /> صفحة توثيق رسمية في اندكس ستور · آخر
-            تحديث: {new Date(page.updated_at).toLocaleDateString("ar-YE")}
+            <ShieldCheck className="h-4 w-4 text-success" /> اندكس ستور
+            {page.updated_at
+              ? ` · آخر تحديث: ${new Date(page.updated_at).toLocaleDateString("ar-YE")}`
+              : ""}
           </p>
         </header>
 

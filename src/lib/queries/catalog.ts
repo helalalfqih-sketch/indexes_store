@@ -79,7 +79,7 @@ export const catalogKeys = {
   categories: ["catalog", CATALOG_CACHE_VERSION, "categories"] as const,
   bestSellers: (limit: number) =>
     ["catalog", CATALOG_CACHE_VERSION, "best-sellers", limit] as const,
-  offers: ["catalog", CATALOG_CACHE_VERSION, "offers"] as const,
+  offers: (limit: number) => ["catalog", CATALOG_CACHE_VERSION, "offers", limit] as const,
   products: (limit: number) => ["catalog", CATALOG_CACHE_VERSION, "products", limit] as const,
   globePool: (perPage: number) =>
     ["catalog", CATALOG_CACHE_VERSION, "globe-pool", perPage] as const,
@@ -105,10 +105,10 @@ export const bestSellersQuery = (limit = 4) =>
 
 export const offersQuery = (limit = 6) =>
   queryOptions({
-    queryKey: catalogKeys.offers,
+    queryKey: catalogKeys.offers(limit),
     queryFn: async () => {
       const items = (await fetchOffers(limit)) as LegacyProductShape[];
-      return items.length ? items : fetchWiderCatalog(limit);
+      return items;
     },
     placeholderData: () => seededOffers(limit),
     ...CATALOG_POLICY,

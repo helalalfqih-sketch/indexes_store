@@ -244,6 +244,7 @@ export const BestOffersSection: React.FC<BestOffersSectionProps> = ({
                   }}
                 >
                   <ProductCard
+                    sectionSource="best-offers"
                     product={product}
                     currency={currency}
                     isFavorite={favorites.includes(product.id)}

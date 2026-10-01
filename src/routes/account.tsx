@@ -51,10 +51,7 @@ function AccountPage() {
   if (loading) return <Skeleton />;
   if (!customer)
     return (
-      <main
-        className="mx-auto w-full max-w-xl px-4 py-6 sm:py-10"
-        dir="rtl"
-      >
+      <main className="mx-auto w-full max-w-xl px-4 py-6 sm:py-10" dir="rtl">
         <section className="w-full space-y-5 rounded-3xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] p-5 text-center shadow-[var(--shadow-md)] sm:p-6">
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[var(--color-primary-ui-soft)] text-[var(--color-primary-ui)]">
             <User />
@@ -204,6 +201,7 @@ function Empty({ text }: { text: string }) {
 function Skeleton() {
   return (
     <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-6" aria-busy="true">
+      <h1 className="text-xl font-bold">حسابي</h1>
       <div className="h-24 animate-pulse rounded-3xl bg-[var(--color-surface-2)]" />
       <div className="h-44 animate-pulse rounded-3xl bg-[var(--color-surface-2)]" />
       <Loader2 className="mx-auto animate-spin text-[var(--color-primary-ui)]" />

@@ -28,6 +28,8 @@ type CartProduct = Product & {
 
 type CartState = {
   items: CartLine[];
+  couponCode: string;
+  setCouponCode: (code: string) => void;
   /** Deprecated compatibility fields. The storefront cart is no longer synced to Shopify. */
   cartId: string | null;
   checkoutUrl: string | null;
@@ -46,6 +48,8 @@ export const useCart = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      couponCode: "",
+      setCouponCode: (code) => set({ couponCode: code.trim().toUpperCase() }),
       cartId: null,
       checkoutUrl: null,
       syncError: null,
@@ -55,7 +59,7 @@ export const useCart = create<CartState>()(
       },
       add: (p: CartProduct, qty = 1) => {
         const isPublished = p.is_published !== false && p.status !== "archived";
-        if (!isPublished) return;
+        if (!isPublished || !Number.isInteger(qty) || qty < 1 || qty > 999) return;
 
         trackEvent("add_to_cart", { productId: p.id, name: p.name, price: p.price, qty });
 
@@ -64,7 +68,7 @@ export const useCart = create<CartState>()(
           if (existing) {
             return {
               items: state.items.map((item) =>
-                item.productId === p.id ? { ...item, qty: item.qty + qty } : item,
+                item.productId === p.id ? { ...item, qty: Math.min(999, item.qty + qty) } : item,
               ),
               cartId: null,
               checkoutUrl: null,
@@ -94,6 +98,14 @@ export const useCart = create<CartState>()(
         });
       },
       remove: (productId) => {
+        const line = get().items.find((item) => item.productId === productId);
+        if (line)
+          trackEvent("remove_from_cart", {
+            productId,
+            quantity: line.qty,
+            value: line.price * line.qty,
+            currency: "YER",
+          });
         set((state) => ({
           items: state.items.filter((item) => item.productId !== productId),
           cartId: null,
@@ -103,6 +115,7 @@ export const useCart = create<CartState>()(
         }));
       },
       setQty: (productId, qty) => {
+        if (!Number.isInteger(qty) || qty < 0 || qty > 999) return;
         set((state) => ({
           items: state.items
             .map((item) => (item.productId === productId ? { ...item, qty } : item))
@@ -114,7 +127,14 @@ export const useCart = create<CartState>()(
         }));
       },
       clear: () =>
-        set({ items: [], cartId: null, checkoutUrl: null, syncError: null, syncing: false }),
+        set({
+          items: [],
+          couponCode: "",
+          cartId: null,
+          checkoutUrl: null,
+          syncError: null,
+          syncing: false,
+        }),
       total: () => get().items.reduce((sum, item) => sum + item.price * item.qty, 0),
       count: () => get().items.reduce((sum, item) => sum + item.qty, 0),
     }),
@@ -122,7 +142,7 @@ export const useCart = create<CartState>()(
       name: "noqta-cart-v2",
       // Keep the server and the browser first render identical. Restore storage after mount.
       skipHydration: true,
-      partialize: (state) => ({ items: state.items }),
+      partialize: (state) => ({ items: state.items, couponCode: state.couponCode }),
     },
   ),
 );

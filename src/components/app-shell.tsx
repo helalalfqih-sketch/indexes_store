@@ -8,10 +8,8 @@ import {
   useTransform,
 } from "framer-motion";
 import {
-  Bell,
   Grid2X2,
   Menu,
-  ScanLine,
   Search,
   ShoppingBag,
   ShoppingCart,
@@ -46,9 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         className={hideStorefrontChrome ? "w-full" : "mx-auto w-full max-w-md lg:max-w-[1024px]"}
         style={{
           paddingBottom:
-            isProductPage || hideStorefrontChrome
-              ? 0
-              : "calc(104px + env(safe-area-inset-bottom))",
+            isProductPage || hideStorefrontChrome ? 0 : "calc(104px + env(safe-area-inset-bottom))",
         }}
       >
         {children}
@@ -95,10 +91,10 @@ function TopBar() {
       <Link
         to="/search"
         search={{ q: "" }}
-        aria-label="المسح الضوئي"
+        aria-label="البحث"
         className="press grid h-11 w-11 place-items-center rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-surface-1)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] lg:h-12 lg:w-12"
       >
-        <ScanLine className="h-5 w-5" />
+        <Search className="h-5 w-5" />
       </Link>
       <Link
         to="/search"
@@ -113,11 +109,10 @@ function TopBar() {
       </Link>
       <Link
         to="/account"
-        aria-label="الإشعارات والحساب"
+        aria-label="حسابي"
         className="press relative grid h-11 w-11 place-items-center rounded-[14px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] lg:h-12 lg:w-12"
       >
-        <Bell className="h-[21px] w-[21px]" />
-        <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--color-primary-ui)] ring-2 ring-[var(--color-bg-elevated)]" />
+        <User className="h-[21px] w-[21px]" />
       </Link>
       <Link
         to="/cart"
