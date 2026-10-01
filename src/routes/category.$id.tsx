@@ -84,7 +84,9 @@ export const Route = createFileRoute("/category/$id")({
     };
   },
   errorComponent: ({ error }) => (
-    <div className="p-8 text-center text-destructive">حدث خطأ: {error.message}</div>
+    <div className="p-8 text-center text-destructive">
+      حدث خطأ: {error instanceof Error ? error.message : String(error)}
+    </div>
   ),
   notFoundComponent: () => (
     <div className="p-8 text-center">
