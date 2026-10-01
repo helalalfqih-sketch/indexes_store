@@ -33,7 +33,7 @@ const products: Product[] = [14900, 21900].map((price, index) => ({
   description: "هذه المعاينة لا تنشئ طلباً حقيقياً.",
 }));
 
-function Preview() {
+export function Preview() {
   const Cart = params.get("version") === "before" ? BeforeCart : UnifiedCartFlow;
   const [items, setItems] = useState(products.map((product) => ({ product, quantity: 1 })));
   return (
