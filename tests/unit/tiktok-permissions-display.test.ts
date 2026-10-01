@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   summarizeTikTokScopes,
   TIKTOK_SCOPE_DETAILS,
-} from "@/components/admin/tiktok-accounts-panel";
+} from "@/lib/tiktok-scopes";
 
 describe("TikTok account permission display", () => {
   it("shows every supported permission as granted or missing", () => {
@@ -17,9 +17,7 @@ describe("TikTok account permission display", () => {
     expect(summary.permissions.find(({ scope }) => scope === "user.info.basic")?.granted).toBe(
       true,
     );
-    expect(summary.permissions.find(({ scope }) => scope === "video.publish")?.granted).toBe(
-      false,
-    );
+    expect(summary.permissions.find(({ scope }) => scope === "video.publish")?.granted).toBe(false);
     expect(summary.unknownScopes).toEqual(["provider.future.scope"]);
   });
 
