@@ -91,7 +91,9 @@ export const Route = createFileRoute("/category/$id")({
   notFoundComponent: () => (
     <div className="p-8 text-center">
       <p>التصنيف غير موجود</p>
-      <Link to="/" className="text-primary">الرئيسية</Link>
+      <Link to="/" className="text-primary">
+        الرئيسية
+      </Link>
     </div>
   ),
   component: CategoryPage,
@@ -107,8 +109,7 @@ function CategoryPage() {
   const catalog = useInfiniteQuery({
     queryKey: ["catalog", "category", id, "cursor-v1"],
     initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) =>
-      fetchCatalogPage({ categoryId: id, first: 24, after: pageParam }),
+    queryFn: ({ pageParam }) => fetchCatalogPage({ categoryId: id, first: 24, after: pageParam }),
     getNextPageParam: (lastPage) =>
       lastPage.hasNextPage && lastPage.endCursor ? lastPage.endCursor : undefined,
     staleTime: 5 * 60_000,
@@ -129,7 +130,7 @@ function CategoryPage() {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [catalog.hasNextPage, catalog.isFetchingNextPage, catalog.fetchNextPage]);
+  }, [catalog]);
 
   const items = catalog.data?.pages.flatMap((page) => page.items) ?? [];
   const lay = settings.products_layout;
@@ -156,13 +157,22 @@ function CategoryPage() {
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-2">
-      <nav aria-label="مسار التنقل" className="flex items-center gap-1.5 py-2 text-[11px] text-showcase-foreground/50">
-        <Link to="/" className="flex items-center gap-1 transition hover:text-showcase-foreground" aria-label="الرئيسية">
+      <nav
+        aria-label="مسار التنقل"
+        className="flex items-center gap-1.5 py-2 text-[11px] text-showcase-foreground/50"
+      >
+        <Link
+          to="/"
+          className="flex items-center gap-1 transition hover:text-showcase-foreground"
+          aria-label="الرئيسية"
+        >
           <Home className="h-3 w-3" aria-hidden="true" />
           <span>الرئيسية</span>
         </Link>
         <ChevronLeft className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
-        <span className="font-semibold text-showcase-foreground/80" aria-current="page">{cat.name}</span>
+        <span className="font-semibold text-showcase-foreground/80" aria-current="page">
+          {cat.name}
+        </span>
       </nav>
 
       <h1 className="text-lg font-black text-showcase-foreground">{cat.name}</h1>
@@ -174,7 +184,9 @@ function CategoryPage() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <p className="py-10 text-center text-sm text-showcase-muted">لا توجد منتجات في هذا التصنيف بعد.</p>
+        <p className="py-10 text-center text-sm text-showcase-muted">
+          لا توجد منتجات في هذا التصنيف بعد.
+        </p>
       ) : (
         <>
           <div className={gridClass} role="list" aria-label={`منتجات ${cat.name}`}>
@@ -184,7 +196,11 @@ function CategoryPage() {
               </div>
             ))}
           </div>
-          <div ref={loadMoreRef} className="flex min-h-24 items-center justify-center py-4" aria-live="polite">
+          <div
+            ref={loadMoreRef}
+            className="flex min-h-24 items-center justify-center py-4"
+            aria-live="polite"
+          >
             {catalog.isFetchingNextPage ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
