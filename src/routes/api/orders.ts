@@ -2,16 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createOrder } from "@/lib/order.functions";
 import { formatOrderNumber } from "@/lib/order-status";
 
-const SHOPIFY_STOREFRONT_ORIGIN = (() => {
+function shopifyStorefrontOrigin(): string | null {
   const domain = process.env.SHOPIFY_STORE_DOMAIN?.replace(/^https?:\/\//, "").replace(/\/$/, "");
   return domain ? `https://${domain}` : null;
-})();
+}
 
 function corsHeaders(request: Request): Headers {
   const origin = request.headers.get("origin");
   const ownOrigin = new URL(request.url).origin;
   const allowed = new Set([ownOrigin]);
-  if (SHOPIFY_STOREFRONT_ORIGIN) allowed.add(SHOPIFY_STOREFRONT_ORIGIN);
+  const storefrontOrigin = shopifyStorefrontOrigin();
+  if (storefrontOrigin) allowed.add(storefrontOrigin);
 
   const headers = new Headers({
     "Cache-Control": "no-store",
@@ -31,7 +32,7 @@ function originAllowed(request: Request): boolean {
   const origin = request.headers.get("origin");
   if (!origin) return true;
   const ownOrigin = new URL(request.url).origin;
-  return origin === ownOrigin || origin === SHOPIFY_STOREFRONT_ORIGIN;
+  return origin === ownOrigin || origin === shopifyStorefrontOrigin();
 }
 
 export const Route = createFileRoute("/api/orders")({
