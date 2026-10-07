@@ -161,12 +161,13 @@ function ProductPage() {
       if (product?.id) {
         trackEvent("view_product", {
           productId: product.id,
+          shopifyVariantId: product.shopifyVariantId,
           name: product.name,
           price: product.price,
         });
       }
     }, // eslint-disable-next-line react-hooks/exhaustive-deps
-    [product?.id],
+    [product?.id, product?.shopifyVariantId],
   );
 
   useEffect(() => {
