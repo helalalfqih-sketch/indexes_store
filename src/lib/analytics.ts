@@ -46,9 +46,7 @@ type MetaProductPayload = {
 };
 
 /** Build Meta product parameters separately from the general analytics allowlist. */
-export function buildMetaProductPayload(
-  payload: Record<string, unknown> = {},
-): MetaProductPayload {
+export function buildMetaProductPayload(payload: Record<string, unknown> = {}): MetaProductPayload {
   const result: MetaProductPayload = {};
   const id = metaCatalogVariantId(payload.shopifyVariantId);
   const requestedQuantity = payload.qty ?? payload.quantity ?? 1;
