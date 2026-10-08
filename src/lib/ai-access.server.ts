@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { createSupabaseFetch } from "@/integrations/supabase/resilience";
 
 import { checkTenantPermission, PermissionDeniedError } from "@/lib/users.functions";
 
@@ -15,7 +16,10 @@ export async function authorizeAI(request: Request): Promise<Response | null> {
   try {
     const db = createClient<Database>(url, key, {
       auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: `Bearer ${token}` } },
+      global: {
+        fetch: createSupabaseFetch(key),
+        headers: { Authorization: `Bearer ${token}` },
+      },
     });
     const { data, error } = await db.auth.getUser(token);
     if (error || !data.user) return Response.json({ error: "Unauthorized" }, { status: 401 });

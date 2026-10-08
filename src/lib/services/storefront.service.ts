@@ -22,12 +22,29 @@
  *    fully removed.
  */
 
+import { STOREFRONT_SETTINGS_CACHE_TTL_MS } from "@/lib/storefront-cache-policy";
+
 type Db = any;
 
 /** null = global/platform scope; string = tenant (store) scope. */
 export type CmsScope = string | null;
 
 const now = () => new Date().toISOString();
+type PublishedRow = { key: string; value: unknown };
+const publishedRowsCache = new Map<string, { expiresAt: number; rows: PublishedRow[] }>();
+const publishedRowsInFlight = new Map<string, Promise<PublishedRow[] | null>>();
+
+const publishedRowsCacheKey = (scope?: CmsScope): string => scope ?? "__global__";
+
+function invalidatePublishedRowsCache(scope: CmsScope): void {
+  // Global settings are inherited by every tenant, so a global write affects
+  // every cached storefront. A tenant write only affects that storefront.
+  if (scope === null) {
+    publishedRowsCache.clear();
+    return;
+  }
+  publishedRowsCache.delete(publishedRowsCacheKey(scope));
+}
 
 function scoped(q: any, scope: CmsScope) {
   if (scope === undefined) return q;
@@ -53,30 +70,66 @@ function mergeRows<T extends { key: string; tenant_id?: string | null }>(rows: T
 export async function fetchPublishedRows(
   db: Db,
   tenantId?: string | null,
-): Promise<Array<{ key: string; value: unknown }> | null> {
-  try {
-    let q = db.from("storefront_settings").select(tenantId ? "key, value, tenant_id" : "key, value");
-    if (tenantId) {
-      q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
-    }
-    const { data, error } = await q;
-    if (error || !data || data.length === 0) {
-      if (error) {
-        console.error("[fetchPublishedRows] Query error:", error.message);
-        return null;
-      }
-      // Fallback: load platform defaults (tenant_id IS NULL) strictly
-      const { data: globalData, error: globalErr } = await db
+): Promise<PublishedRow[] | null> {
+  const cacheKey = publishedRowsCacheKey(tenantId);
+  const cached = publishedRowsCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.rows;
+  if (cached) publishedRowsCache.delete(cacheKey);
+
+  const existingRequest = publishedRowsInFlight.get(cacheKey);
+  if (existingRequest) return existingRequest;
+
+  const request = (async (): Promise<PublishedRow[] | null> => {
+    try {
+      let q = db
         .from("storefront_settings")
-        .select("key, value")
-        .is("tenant_id", null);
-      if (globalErr || !globalData || globalData.length === 0) return null;
-      return globalData.map((r: any) => ({ key: r.key, value: r.value }));
+        .select(tenantId ? "key, value, tenant_id" : "key, value");
+      if (tenantId) {
+        q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
+      } else {
+        q = q.is("tenant_id", null);
+      }
+      const { data, error } = await q;
+      if (error || !data || data.length === 0) {
+        if (error) {
+          console.error("[fetchPublishedRows] Query error:", error.message);
+          return null;
+        }
+        // A global read already queried the complete public settings set.
+        if (!tenantId) return null;
+
+        // Tenant reads fall back to platform defaults when no override is found.
+        const { data: globalData, error: globalErr } = await db
+          .from("storefront_settings")
+          .select("key, value")
+          .is("tenant_id", null);
+        if (globalErr || !globalData || globalData.length === 0) return null;
+        const rows = globalData.map((r: any) => ({ key: r.key, value: r.value }));
+        publishedRowsCache.set(cacheKey, {
+          expiresAt: Date.now() + STOREFRONT_SETTINGS_CACHE_TTL_MS,
+          rows,
+        });
+        return rows;
+      }
+      const rows = mergeRows(data as any[]).map((r: any) => ({ key: r.key, value: r.value }));
+      publishedRowsCache.set(cacheKey, {
+        expiresAt: Date.now() + STOREFRONT_SETTINGS_CACHE_TTL_MS,
+        rows,
+      });
+      return rows;
+    } catch (err: any) {
+      console.error("[fetchPublishedRows] Exception:", err?.message || err);
+      return null;
     }
-    return mergeRows(data as any[]).map((r: any) => ({ key: r.key, value: r.value }));
-  } catch (err: any) {
-    console.error("[fetchPublishedRows] Exception:", err?.message || err);
-    return null;
+  })();
+
+  publishedRowsInFlight.set(cacheKey, request);
+  try {
+    return await request;
+  } finally {
+    if (publishedRowsInFlight.get(cacheKey) === request) {
+      publishedRowsInFlight.delete(cacheKey);
+    }
   }
 }
 
@@ -86,7 +139,9 @@ export async function fetchRowsWithDrafts(
   tenantId?: string | null,
 ): Promise<Array<{ key: string; value: unknown; draft_value: unknown }> | null> {
   try {
-    let q = db.from("storefront_settings").select(tenantId ? "key, value, draft_value, tenant_id" : "key, value, draft_value");
+    let q = db
+      .from("storefront_settings")
+      .select(tenantId ? "key, value, draft_value, tenant_id" : "key, value, draft_value");
     if (tenantId) {
       q = q.or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
     }
@@ -228,7 +283,10 @@ export async function publishDraftKey(
     uq = scoped(uq, scope);
     const { error } = await uq;
     if (error) {
-      let uq2 = db.from("storefront_settings").update({ value: row.draft_value, updated_at: now() }).eq("key", key);
+      let uq2 = db
+        .from("storefront_settings")
+        .update({ value: row.draft_value, updated_at: now() })
+        .eq("key", key);
       uq2 = scoped(uq2, scope);
       const { error: e2 } = await uq2;
       if (e2) return { ok: false, message: `فشل نشر المسودة: ${e2.message}` };
@@ -237,6 +295,7 @@ export async function publishDraftKey(
     return { ok: false, message: `خطأ أثناء النشر: ${err?.message || String(err)}` };
   }
 
+  invalidatePublishedRowsCache(scope);
   return { ok: true, oldValue: row.value, newValue: row.draft_value };
 }
 
@@ -265,6 +324,7 @@ export async function publishAllDraftKeys(
         published.push({ key: row.key, oldValue: row.value, newValue: row.draft_value });
       }
     }
+    if (published.length > 0) invalidatePublishedRowsCache(scope);
     return published;
   } catch {
     return [];
@@ -297,14 +357,12 @@ export async function saveLiveValue(
     const { error } = await uq;
     if (error) {
       // Retry without draft_value (column may not exist in production)
-      let uq2 = db
-        .from("storefront_settings")
-        .update({ value, updated_at: now() })
-        .eq("key", key);
+      let uq2 = db.from("storefront_settings").update({ value, updated_at: now() }).eq("key", key);
       uq2 = scoped(uq2, scope);
       const { error: e2 } = await uq2;
       if (e2) return { ok: false, message: e2.message, oldValue };
     }
+    invalidatePublishedRowsCache(scope);
     return { ok: true, oldValue };
   } else {
     // Try insert with draft_value
@@ -318,15 +376,13 @@ export async function saveLiveValue(
       const { error: fbErr } = await db.from("storefront_settings").insert(fbPayload);
       if (fbErr) {
         // Last resort: attempt update if row created concurrently
-        let uq = db
-          .from("storefront_settings")
-          .update({ value, updated_at: now() })
-          .eq("key", key);
+        let uq = db.from("storefront_settings").update({ value, updated_at: now() }).eq("key", key);
         uq = scoped(uq, scope);
         const { error: updErr } = await uq;
         if (updErr) return { ok: false, message: fbErr.message, oldValue };
       }
     }
+    invalidatePublishedRowsCache(scope);
     return { ok: true, oldValue };
   }
 }
@@ -418,5 +474,6 @@ export async function applyRestore(
   const { error } = await uq;
   if (error) return { ok: false, message: error.message };
 
+  invalidatePublishedRowsCache(scope);
   return { ok: true, previousValue };
 }

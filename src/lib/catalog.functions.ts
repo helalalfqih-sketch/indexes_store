@@ -9,6 +9,7 @@ import { createServerFn, createMiddleware } from "@tanstack/react-start";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
+import { createSupabaseFetch } from "@/integrations/supabase/resilience";
 import type { ProductDTO } from "@/lib/domain/product";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +36,7 @@ import { resolveTenantId } from "@/lib/saas/tenant-context";
 
 const publicClient = () =>
   createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    global: { fetch: createSupabaseFetch(process.env.SUPABASE_PUBLISHABLE_KEY!) },
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
   });
 
@@ -98,17 +100,23 @@ export const listProducts = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const db = publicClient();
     const tenantId = await resolvePublicTenant(db, data.tenantId ?? null);
+    let categoryId = data.categoryId;
+    if (categoryId === "all") categoryId = undefined;
+    if (
+      categoryId &&
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId)
+    ) {
+      const category = await categoriesRepo.getBySlug(db, categoryId, tenantId);
+      if (!category) return [];
+      categoryId = category.id;
+    }
     const products = await productsRepo.list(db, {
       tenantId,
-      categoryId: data.categoryId,
+      categoryId,
       search: data.search,
+      limit: data.limit,
+      offset: data.offset,
     });
-
-    if (data.offset != null && data.limit) {
-      return products.slice(data.offset, data.offset + data.limit);
-    }
-    if (data.offset != null) return products.slice(data.offset);
-    if (data.limit) return products.slice(0, data.limit);
     return products;
   });
 

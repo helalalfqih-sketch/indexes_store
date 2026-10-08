@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { mapAuthError } from "@/lib/auth-errors";
 import { signInSchema, signUpSchema } from "@/lib/validators/auth";
 
 const searchSchema = z.object({
@@ -27,23 +28,6 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-/** Map Supabase/OAuth errors to friendly Arabic messages. Zod issues pass through (already Arabic). */
-function mapAuthError(err: unknown): string {
-  if (err instanceof z.ZodError) return err.issues[0]?.message ?? "بيانات غير صالحة";
-  const msg = err instanceof Error ? err.message : String(err);
-  const m = msg.toLowerCase();
-  if (m.includes("invalid login credentials")) return "بيانات الدخول غير صحيحة — تحقق من البريد وكلمة المرور.";
-  if (m.includes("already registered") || m.includes("already exists"))
-    return "هذا البريد مسجَّل مسبقاً — جرّب تسجيل الدخول.";
-  if (m.includes("email not confirmed")) return "بريدك غير مؤكَّد بعد — افتح رسالة التأكيد في صندوق بريدك.";
-  if (m.includes("password should be")) return "كلمة المرور ضعيفة — 8 أحرف على الأقل مع حرف ورقم.";
-  if (m.includes("rate limit") || m.includes("too many")) return "محاولات كثيرة — انتظر قليلاً ثم أعد المحاولة.";
-  if (m.includes("access_denied") || m.includes("cancelled") || m.includes("canceled"))
-    return "تم إلغاء تسجيل الدخول.";
-  if (m.includes("failed to fetch") || m.includes("network")) return "تعذّر الاتصال بالخادم — تحقق من الإنترنت.";
-  return msg;
-}
-
 function sanitizeNext(next?: string): string | null {
   if (!next) return null;
   if (!next.startsWith("/") || next.startsWith("//")) return null;
@@ -65,7 +49,11 @@ async function resolveDestination(userId: string, next?: string): Promise<string
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { next, error: oauthError, error_description: oauthErrorDesc } = useSearch({ from: "/auth" });
+  const {
+    next,
+    error: oauthError,
+    error_description: oauthErrorDesc,
+  } = useSearch({ from: "/auth" });
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -189,7 +177,8 @@ function AuthPage() {
       }
     } catch (err) {
       try {
-        const redirectUrl = window.location.origin + (import.meta.env.BASE_URL || "").replace(/\/$/, "") + "/auth";
+        const redirectUrl =
+          window.location.origin + (import.meta.env.BASE_URL || "").replace(/\/$/, "") + "/auth";
         const { error: supaErr } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: { redirectTo: redirectUrl },

@@ -45,6 +45,9 @@ import {
   ErrorStatus,
 } from "@/services/live-logs.service";
 import { reportLiveError } from "@/lib/live-error-capturer";
+import { createAdaptivePollingInterval } from "@/lib/query-polling";
+
+const LIVE_LOGS_POLLING_INTERVAL = createAdaptivePollingInterval(10_000, 60_000);
 
 export const Route = createFileRoute("/admin/live-logs")({
   head: () => ({
@@ -91,7 +94,10 @@ function AdminLiveLogsPage() {
           limit: 150,
         },
       }),
-    refetchInterval: autoRefresh ? 3000 : false,
+    staleTime: 10_000,
+    refetchInterval: autoRefresh ? LIVE_LOGS_POLLING_INTERVAL : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 
   const logs = data?.logs || [];
@@ -114,16 +120,30 @@ function AdminLiveLogsPage() {
     }
 
     if (statusCodeFilter !== "ALL") {
-      const code = String(log.context?.status || (log.errorName.includes("403") ? "403" : log.errorName.includes("404") ? "404" : log.errorName.includes("503") ? "503" : "200"));
-      if (statusCodeFilter === "ERROR" && !["403", "404", "500", "503"].includes(code)) return false;
+      const code = String(
+        log.context?.status ||
+          (log.errorName.includes("403")
+            ? "403"
+            : log.errorName.includes("404")
+              ? "404"
+              : log.errorName.includes("503")
+                ? "503"
+                : "200"),
+      );
+      if (statusCodeFilter === "ERROR" && !["403", "404", "500", "503"].includes(code))
+        return false;
       if (statusCodeFilter !== "ERROR" && code !== statusCodeFilter) return false;
     }
 
     return true;
   });
 
-  const warnCount = logs.filter((l) => l.level === "warn" || l.errorName.includes("403") || l.errorName.includes("404")).length;
-  const errorCount = logs.filter((l) => l.level === "error" || l.errorName.includes("500") || l.errorName.includes("503")).length;
+  const warnCount = logs.filter(
+    (l) => l.level === "warn" || l.errorName.includes("403") || l.errorName.includes("404"),
+  ).length;
+  const errorCount = logs.filter(
+    (l) => l.level === "error" || l.errorName.includes("500") || l.errorName.includes("503"),
+  ).length;
   const fatalCount = logs.filter((l) => l.level === "fatal").length;
 
   const handleUpdateStatus = async (id: string, newStatus: ErrorStatus) => {
@@ -169,8 +189,14 @@ function AdminLiveLogsPage() {
         level: "error",
         location: "supabase/migrations/products_table",
         cause: "new row violates row-level security policy for table 'products'",
-        stackTrace: "PostgrestError: permission denied for table products at fetch (src/lib/order.functions.ts:45)",
-        context: { method: "POST", status: 403, host: "indexes-store.vercel.app", action: "INSERT" },
+        stackTrace:
+          "PostgrestError: permission denied for table products at fetch (src/lib/order.functions.ts:45)",
+        context: {
+          method: "POST",
+          status: 403,
+          host: "indexes-store.vercel.app",
+          action: "INSERT",
+        },
       });
     } else if (randomType === "GitHub Integration") {
       reportLiveError({
@@ -179,8 +205,14 @@ function AdminLiveLogsPage() {
         level: "error",
         location: "src/services/github-sync.ts",
         cause: "API rate limit exceeded for user ID 849204. Token scope expired.",
-        stackTrace: "HttpError: API rate limit exceeded at Octokit.request (node_modules/@octokit/request/dist-src/fetch-wrapper.js:80)",
-        context: { method: "GET", status: 403, host: "indexes-store.vercel.app", endpoint: "GET /user/repos" },
+        stackTrace:
+          "HttpError: API rate limit exceeded at Octokit.request (node_modules/@octokit/request/dist-src/fetch-wrapper.js:80)",
+        context: {
+          method: "GET",
+          status: 403,
+          host: "indexes-store.vercel.app",
+          endpoint: "GET /user/repos",
+        },
       });
     } else if (randomType === "Storefront UI") {
       reportLiveError({
@@ -189,7 +221,8 @@ function AdminLiveLogsPage() {
         level: "error",
         location: "/store/products/checkout-modal",
         cause: "المكون حاول عرض السعر لمنتج غير مهيأ بعد",
-        stackTrace: "TypeError: Cannot read properties of undefined (reading 'price')\n    at ProductPriceTag (src/components/ProductCard.tsx:32:15)",
+        stackTrace:
+          "TypeError: Cannot read properties of undefined (reading 'price')\n    at ProductPriceTag (src/components/ProductCard.tsx:32:15)",
         context: { method: "GET", status: 500, host: "indexes-store.vercel.app" },
       });
     } else {
@@ -200,7 +233,12 @@ function AdminLiveLogsPage() {
         location: "src/routes/api/ai.agent.ts",
         cause: "HTTP 500: Server Timeout while invoking Vertex AI API provider",
         stackTrace: "Error: Socket hang up at ServerFnHandler (src/routes/api/ai.agent.ts:112:9)",
-        context: { method: "POST", status: 503, host: "indexes-store.vercel.app", provider: "Google Vertex AI" },
+        context: {
+          method: "POST",
+          status: 503,
+          host: "indexes-store.vercel.app",
+          provider: "Google Vertex AI",
+        },
       });
     }
 
@@ -241,7 +279,10 @@ function AdminLiveLogsPage() {
       const d = new Date(isoString);
       const monthStr = d.toLocaleDateString("en-US", { month: "short" });
       const dayStr = String(d.getDate()).padStart(2, "0");
-      const timeStr = d.toTimeString().split(" ")[0] + "." + String(d.getMilliseconds()).padStart(2, "0").slice(0, 2);
+      const timeStr =
+        d.toTimeString().split(" ")[0] +
+        "." +
+        String(d.getMilliseconds()).padStart(2, "0").slice(0, 2);
       return `${monthStr} ${dayStr} ${timeStr}`;
     } catch {
       return isoString;
@@ -249,7 +290,18 @@ function AdminLiveLogsPage() {
   };
 
   const getStatusBadge = (log: SystemLiveLogEntry) => {
-    const statusCode = Number(log.context?.status || (log.errorName.includes("403") ? 403 : log.errorName.includes("404") ? 404 : log.errorName.includes("503") ? 503 : log.level === "fatal" ? 500 : 200));
+    const statusCode = Number(
+      log.context?.status ||
+        (log.errorName.includes("403")
+          ? 403
+          : log.errorName.includes("404")
+            ? 404
+            : log.errorName.includes("503")
+              ? 503
+              : log.level === "fatal"
+                ? 500
+                : 200),
+    );
 
     if (statusCode === 200) {
       return (
@@ -279,7 +331,9 @@ function AdminLiveLogsPage() {
   };
 
   const getMethodBadge = (log: SystemLiveLogEntry) => {
-    const method = String(log.context?.method || (log.stackTrace?.includes("POST") ? "POST" : "GET")).toUpperCase();
+    const method = String(
+      log.context?.method || (log.stackTrace?.includes("POST") ? "POST" : "GET"),
+    ).toUpperCase();
     if (method === "POST") {
       return <span className="text-[11px] font-mono font-black text-emerald-400">POST</span>;
     } else if (method === "PUT" || method === "PATCH") {
@@ -291,7 +345,10 @@ function AdminLiveLogsPage() {
   };
 
   return (
-    <div className="space-y-5 bg-[#000000] text-zinc-100 p-4 sm:p-6 rounded-3xl border border-zinc-800 shadow-2xl font-sans" dir="rtl">
+    <div
+      className="space-y-5 bg-[#000000] text-zinc-100 p-4 sm:p-6 rounded-3xl border border-zinc-800 shadow-2xl font-sans"
+      dir="rtl"
+    >
       {/* Top Header - Vercel Console Style */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-800 pb-5">
         <div>
@@ -322,7 +379,9 @@ function AdminLiveLogsPage() {
                 : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800"
             }`}
           >
-            <span className={`h-2 w-2 rounded-full ${autoRefresh ? "bg-emerald-400 animate-ping" : "bg-zinc-600"}`} />
+            <span
+              className={`h-2 w-2 rounded-full ${autoRefresh ? "bg-emerald-400 animate-ping" : "bg-zinc-600"}`}
+            />
             {autoRefresh ? "Live Mode ●" : "Live Mode (Paused)"}
           </button>
 
@@ -332,7 +391,9 @@ function AdminLiveLogsPage() {
             disabled={isRefetching}
             className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-zinc-200 hover:bg-zinc-800 transition border border-zinc-800 disabled:opacity-50"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin text-emerald-400" : ""}`} />
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin text-emerald-400" : ""}`}
+            />
             تحديث
           </button>
 
@@ -527,12 +588,15 @@ function AdminLiveLogsPage() {
                         <span className="text-emerald-400 text-2xl">✓</span>
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-zinc-300">لا توجد أخطاء مسجَّلة حالياً</p>
+                        <p className="text-sm font-bold text-zinc-300">
+                          لا توجد أخطاء مسجَّلة حالياً
+                        </p>
                         <p className="text-xs text-zinc-600 mt-1">
                           النظام نشط وجاهز — ستظهر الأخطاء الحقيقية هنا فور حدوثها تلقائياً
                         </p>
                         <p className="text-[10px] text-zinc-700 mt-0.5 font-mono">
-                          Listening: /api/public/image-proxy · /api/webhooks/whatsapp · /api/ai/agent · Admin UI · Storefront UI
+                          Listening: /api/public/image-proxy · /api/webhooks/whatsapp ·
+                          /api/ai/agent · Admin UI · Storefront UI
                         </p>
                       </div>
                     </div>
@@ -578,7 +642,15 @@ function AdminLiveLogsPage() {
 
                         {/* Message */}
                         <td className="py-3 px-4 text-zinc-200 font-mono text-[11px] max-w-[340px] truncate dir-ltr text-right">
-                          <span className={log.level === "warn" ? "text-amber-300" : log.level === "error" || log.level === "fatal" ? "text-rose-300 font-bold" : "text-zinc-300"}>
+                          <span
+                            className={
+                              log.level === "warn"
+                                ? "text-amber-300"
+                                : log.level === "error" || log.level === "fatal"
+                                  ? "text-rose-300 font-bold"
+                                  : "text-zinc-300"
+                            }
+                          >
                             {log.cause}
                           </span>
                         </td>
@@ -593,7 +665,11 @@ function AdminLiveLogsPage() {
                             }}
                             className="p-1 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition"
                           >
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
                           </button>
                         </td>
                       </tr>
@@ -611,7 +687,9 @@ function AdminLiveLogsPage() {
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => copyToClipboard(buildCopyableCodeBlock(log), log.id)}
+                                  onClick={() =>
+                                    copyToClipboard(buildCopyableCodeBlock(log), log.id)
+                                  }
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 text-xs font-mono font-bold text-white hover:bg-zinc-700 transition"
                                 >
                                   {copiedId === log.id ? (
@@ -627,7 +705,12 @@ function AdminLiveLogsPage() {
 
                                 <button
                                   type="button"
-                                  onClick={() => handleUpdateStatus(log.id, log.status === "resolved" ? "open" : "resolved")}
+                                  onClick={() =>
+                                    handleUpdateStatus(
+                                      log.id,
+                                      log.status === "resolved" ? "open" : "resolved",
+                                    )
+                                  }
                                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition ${
                                     log.status === "resolved"
                                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
@@ -651,7 +734,9 @@ function AdminLiveLogsPage() {
 
                             {/* Code Block Box */}
                             <div className="rounded-xl border border-zinc-800 bg-[#020305] p-3 overflow-x-auto font-mono text-[11px] text-zinc-300 dir-ltr">
-                              <pre className="whitespace-pre-wrap">{buildCopyableCodeBlock(log)}</pre>
+                              <pre className="whitespace-pre-wrap">
+                                {buildCopyableCodeBlock(log)}
+                              </pre>
                             </div>
                           </td>
                         </tr>

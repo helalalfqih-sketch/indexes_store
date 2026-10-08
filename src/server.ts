@@ -2,6 +2,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { logServerError } from "@/services/live-logs.service";
+import { shouldPersistHttpFailure } from "@/lib/monitoring/telemetry-policy";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -53,15 +54,17 @@ export default {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
 
-      // Auto-log Vercel server request stream (skip self live-logs polling)
-      if (!pathname.includes("live-logs") && !pathname.includes("listLiveLogs")) {
-        const status = response.status;
+      // Persist only server failures. Recording every successful request here
+      // previously produced one Supabase INSERT per page/API hit and amplified
+      // the quota outage with hundreds of doomed telemetry writes.
+      const status = response.status;
+      if (
+        shouldPersistHttpFailure(status) &&
+        !pathname.includes("live-logs") &&
+        !pathname.includes("listLiveLogs")
+      ) {
         const method = request.method;
         const host = url.hostname;
-
-        let level: "info" | "warn" | "error" | "fatal" = "info";
-        if (status >= 500) level = "error";
-        else if (status >= 400) level = "warn";
 
         let cause = `HTTP ${status} ${method} ${pathname}`;
         if (pathname.includes("/image-proxy")) {
@@ -79,7 +82,7 @@ export default {
         logServerError({
           errorName: `[${method}] ${pathname}`,
           errorType: pathname.startsWith("/api") ? "Server Function" : "Storefront UI",
-          level,
+          level: "error",
           location: pathname,
           cause,
           context: { method, status, host, path: pathname },

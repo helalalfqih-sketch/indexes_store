@@ -7,8 +7,13 @@
  * duplication of network calls.
  */
 import { queryOptions } from "@tanstack/react-query";
-import { fetchCategories } from "@/lib/actions/category.actions";
-import { fetchBestSellers, fetchOffers, fetchProducts } from "@/lib/actions/product.actions";
+import { fetchCategories, normalizeCategorySlug } from "@/lib/actions/category.actions";
+import {
+  fetchBestSellers,
+  fetchOffers,
+  fetchProducts,
+  type ListProductsInput,
+} from "@/lib/actions/product.actions";
 import {
   fallbackProducts,
   toLegacyProduct,
@@ -16,34 +21,58 @@ import {
   type LegacyCategoryShape,
 } from "@/lib/data-adapter";
 
-/**
- * Product availability changes in Shopify must reach the storefront quickly.
- * Catalog queries are still cached briefly for performance, but unlike the
- * previous policy they always revalidate on mount/reconnect/focus so deleted,
- * archived, or newly-published Shopify products do not remain visible from a
- * persisted IndexedDB snapshot.
- */
-const CATALOG_POLICY = {
-  staleTime: 60_000,
-  gcTime: 10 * 60_000,
-  refetchOnWindowFocus: true,
-  refetchOnMount: "always" as const,
-  refetchOnReconnect: true,
+export const CATALOG_QUERY_POLICY = {
+  staleTime: 10 * 60_000,
+  gcTime: 60 * 60_000,
+  refetchOnWindowFocus: false,
+  refetchOnMount: true,
+  refetchOnReconnect: false,
+} as const;
+
+export const INFINITE_CATALOG_QUERY_POLICY = {
+  ...CATALOG_QUERY_POLICY,
+  // `true` is stale-only in TanStack Query. Persisted pages therefore
+  // revalidate after the ten-minute stale window, while focus/reconnect stay
+  // disabled so browsing does not repeatedly replay the retained page set.
+  refetchOnMount: true,
 } as const;
 
 /**
  * Increment when catalog persistence semantics change. This deliberately
  * invalidates old persisted React Query catalog snapshots after deployment.
  */
-const CATALOG_CACHE_VERSION = "v3" as const;
+const CATALOG_CACHE_VERSION = "v5" as const;
+export const DEFAULT_CATALOG_PAGE_SIZE = 24;
+
+export type CatalogProductsQueryInput = Pick<
+  ListProductsInput,
+  "categoryId" | "search" | "limit" | "offset"
+>;
+
+const clampLimit = (limit: number | undefined, fallback: number): number =>
+  Math.min(100, Math.max(1, Math.trunc(limit ?? fallback)));
+
+export const normalizeCatalogProductsInput = (
+  input: CatalogProductsQueryInput = {},
+): Required<Pick<ListProductsInput, "limit" | "offset">> &
+  Pick<ListProductsInput, "categoryId" | "search"> => {
+  const categoryId = input.categoryId?.trim();
+  const search = input.search?.trim();
+  return {
+    categoryId: categoryId && categoryId !== "all" ? normalizeCategorySlug(categoryId) : undefined,
+    search: search || undefined,
+    limit: clampLimit(input.limit, DEFAULT_CATALOG_PAGE_SIZE),
+    offset: Math.max(0, Math.trunc(input.offset ?? 0)),
+  };
+};
 
 /**
  * Server-rendered fallback content.
  *
  * The home route uses non-suspense React Query hooks. Without placeholder data,
  * SSR rendered an empty catalog ("0 products") before Shopify completed on the
- * client, which search engines could index. These seeded rows are replaced by
- * fresh Shopify data immediately because refetchOnMount is always enabled.
+ * client, which search engines could index. Placeholder rows are never written
+ * into the query cache and are replaced by the bounded catalog request.
  */
 const seededCatalog = (): LegacyProductShape[] => {
   if (!import.meta.env.DEV) return [];
@@ -66,64 +95,80 @@ const seededOffers = (limit: number): LegacyProductShape[] => {
   return (offers.length ? offers : seeded).slice(0, limit);
 };
 
-async function fetchWiderCatalog(limit: number): Promise<LegacyProductShape[]> {
-  // Many newly imported Shopify products may temporarily have a 0 price while
-  // prices are still being approved. fetchProducts intentionally hides those
-  // rows, so scan a wider slice before declaring the storefront empty.
-  const scanLimit = Math.min(100, Math.max(limit * 8, 64));
-  return (await fetchProducts({ limit: scanLimit })).slice(0, limit);
-}
-
 /** Stable, primitive-only query keys */
 export const catalogKeys = {
+  all: ["catalog"] as const,
+  version: ["catalog", CATALOG_CACHE_VERSION] as const,
   categories: ["catalog", CATALOG_CACHE_VERSION, "categories"] as const,
   bestSellers: (limit: number) =>
-    ["catalog", CATALOG_CACHE_VERSION, "best-sellers", limit] as const,
-  offers: (limit: number) => ["catalog", CATALOG_CACHE_VERSION, "offers", limit] as const,
-  products: (limit: number) => ["catalog", CATALOG_CACHE_VERSION, "products", limit] as const,
+    ["catalog", CATALOG_CACHE_VERSION, "best-sellers", clampLimit(limit, 4)] as const,
+  offers: (limit: number) =>
+    ["catalog", CATALOG_CACHE_VERSION, "offers", clampLimit(limit, 6)] as const,
+  products: (input: CatalogProductsQueryInput = {}) => {
+    const normalized = normalizeCatalogProductsInput(input);
+    return [
+      "catalog",
+      CATALOG_CACHE_VERSION,
+      "products",
+      normalized.categoryId ?? "all",
+      normalized.search ?? "",
+      normalized.limit,
+      normalized.offset,
+    ] as const;
+  },
+  infiniteProducts: (input: CatalogProductsQueryInput = {}) => {
+    const normalized = normalizeCatalogProductsInput(input);
+    return [
+      "catalog",
+      CATALOG_CACHE_VERSION,
+      "products-infinite",
+      normalized.categoryId ?? "all",
+      normalized.search ?? "",
+      normalized.limit,
+    ] as const;
+  },
+  product: (slug: string) => ["catalog", CATALOG_CACHE_VERSION, "product", slug.trim()] as const,
+  category: (slug: string) =>
+    ["catalog", CATALOG_CACHE_VERSION, "category", normalizeCategorySlug(slug)] as const,
   globePool: (perPage: number) =>
-    ["catalog", CATALOG_CACHE_VERSION, "globe-pool", perPage] as const,
+    ["catalog", CATALOG_CACHE_VERSION, "globe-pool", clampLimit(perPage, 100)] as const,
 };
 
 export const categoriesQuery = () =>
   queryOptions({
     queryKey: catalogKeys.categories,
     queryFn: () => fetchCategories() as Promise<LegacyCategoryShape[]>,
-    ...CATALOG_POLICY,
+    ...CATALOG_QUERY_POLICY,
   });
 
 export const bestSellersQuery = (limit = 4) =>
   queryOptions({
     queryKey: catalogKeys.bestSellers(limit),
-    queryFn: async () => {
-      const items = (await fetchBestSellers(limit)) as LegacyProductShape[];
-      return items.length ? items : fetchWiderCatalog(limit);
-    },
+    queryFn: () => fetchBestSellers(clampLimit(limit, 4)) as Promise<LegacyProductShape[]>,
     placeholderData: () => seededBestSellers(limit),
-    ...CATALOG_POLICY,
+    ...CATALOG_QUERY_POLICY,
   });
 
 export const offersQuery = (limit = 6) =>
   queryOptions({
     queryKey: catalogKeys.offers(limit),
-    queryFn: async () => {
-      const items = (await fetchOffers(limit)) as LegacyProductShape[];
-      return items;
-    },
+    queryFn: () => fetchOffers(clampLimit(limit, 6)) as Promise<LegacyProductShape[]>,
     placeholderData: () => seededOffers(limit),
-    ...CATALOG_POLICY,
+    ...CATALOG_QUERY_POLICY,
   });
 
-export const productsQuery = (limit = 12) =>
-  queryOptions({
-    queryKey: catalogKeys.products(limit),
-    queryFn: async () => {
-      const items = (await fetchProducts({ limit })) as LegacyProductShape[];
-      return items.length ? items : fetchWiderCatalog(limit);
-    },
-    placeholderData: () => seededCatalog().slice(0, limit),
-    ...CATALOG_POLICY,
+export const productsQuery = (input: number | CatalogProductsQueryInput = 12) => {
+  const normalized = normalizeCatalogProductsInput(
+    typeof input === "number" ? { limit: input } : input,
+  );
+  return queryOptions({
+    queryKey: catalogKeys.products(normalized),
+    queryFn: () => fetchProducts(normalized) as Promise<LegacyProductShape[]>,
+    placeholderData: () =>
+      seededCatalog().slice(normalized.offset, normalized.offset + normalized.limit),
+    ...CATALOG_QUERY_POLICY,
   });
+};
 
 /**
  * Larger pool used by the immersive globe. Oversampled from both ends
@@ -132,11 +177,10 @@ export const productsQuery = (limit = 12) =>
 export const globePoolQuery = (perPage = 100) =>
   queryOptions({
     queryKey: catalogKeys.globePool(perPage),
-    queryFn: async () => {
-      // fetchProducts doesn't support oldestFirst, so we fetch a single large pool.
-      // The globe oversamples naturally because perPage defaults to 100.
-      return fetchProducts({ limit: perPage }) as Promise<LegacyProductShape[]>;
-    },
+    queryFn: () =>
+      fetchProducts({ limit: clampLimit(perPage, 100), offset: 0 }) as Promise<
+        LegacyProductShape[]
+      >,
     placeholderData: () => seededCatalog().slice(0, perPage),
-    ...CATALOG_POLICY,
+    ...CATALOG_QUERY_POLICY,
   });

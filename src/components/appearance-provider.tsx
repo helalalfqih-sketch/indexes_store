@@ -1,10 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import {
-  DEFAULT_STOREFRONT_SETTINGS,
-  type StorefrontSettingsShape,
-} from "@/lib/domain/appearance";
+import { DEFAULT_STOREFRONT_SETTINGS, type StorefrontSettingsShape } from "@/lib/domain/appearance";
 import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
 import { StorefrontRealtimeService } from "@/lib/services/storefront-realtime.service";
+import { STOREFRONT_REALTIME_REVALIDATE_DELAY_MS } from "@/lib/storefront-cache-policy";
 
 /**
  * Notify all open storefront tabs that CMS settings changed.
@@ -64,7 +62,8 @@ export function AppearanceProvider({
   useEffect(() => {
     if (typeof window === "undefined") return;
     let active = true;
-    const unsubscribe = StorefrontRealtimeService.subscribe(async () => {
+    let guaranteedRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const refresh = async () => {
       try {
         const fresh = await getStorefrontAppearance();
         if (active && fresh && typeof fresh === "object" && "theme" in fresh) {
@@ -73,9 +72,21 @@ export function AppearanceProvider({
       } catch {
         /* keep current settings on fetch failure */
       }
+    };
+    const unsubscribe = StorefrontRealtimeService.subscribe(() => {
+      // A request may land on an instance with a warm pre-publish cache. Try
+      // immediately, then coalesce one guaranteed revalidation after the
+      // bounded cache TTL. This keeps the public endpoint cache-protected.
+      void refresh();
+      if (guaranteedRefreshTimer) clearTimeout(guaranteedRefreshTimer);
+      guaranteedRefreshTimer = setTimeout(() => {
+        guaranteedRefreshTimer = null;
+        void refresh();
+      }, STOREFRONT_REALTIME_REVALIDATE_DELAY_MS);
     });
     return () => {
       active = false;
+      if (guaranteedRefreshTimer) clearTimeout(guaranteedRefreshTimer);
       unsubscribe();
     };
   }, []);

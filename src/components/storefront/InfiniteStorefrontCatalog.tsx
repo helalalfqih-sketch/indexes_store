@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchCatalogPage } from "@/lib/actions/catalog-page.actions";
+import { normalizeCategorySlug } from "@/lib/actions/category.actions";
+import { INFINITE_CATALOG_QUERY_POLICY, catalogKeys } from "@/lib/queries/catalog";
 import { mapProductionProductToDesignProduct } from "@/components/storefront/adapters";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { ProductGridSkeleton } from "@/components/storefront/SkeletonLoader";
@@ -49,23 +51,29 @@ export function InfiniteStorefrontCatalog({
   onSelectProduct,
 }: InfiniteStorefrontCatalogProps) {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const normalizedSearch = searchQuery.trim();
+  const normalizedCategoryId =
+    selectedCategoryId !== "all" ? normalizeCategorySlug(selectedCategoryId) : undefined;
 
   const query = useInfiniteQuery({
-    queryKey: ["storefront", "catalog", "infinite", selectedCategoryId, searchQuery],
+    queryKey: catalogKeys.infiniteProducts({
+      categoryId: normalizedCategoryId,
+      search: normalizedSearch,
+      limit: PAGE_SIZE,
+    }),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) =>
       fetchCatalogPage({
-        search: searchQuery.trim() || undefined,
-        categoryId: selectedCategoryId !== "all" ? selectedCategoryId : undefined,
+        search: normalizedSearch || undefined,
+        categoryId: normalizedCategoryId,
         first: PAGE_SIZE,
         after: pageParam,
       }),
     getNextPageParam: (lastPage) =>
       lastPage.hasNextPage && lastPage.endCursor ? lastPage.endCursor : undefined,
-    staleTime: 60_000,
-    gcTime: 10 * 60_000,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    // Keep retained cursor pages across remounts; explicit catalog invalidation
+    // still refreshes them when the underlying catalog actually changes.
+    ...INFINITE_CATALOG_QUERY_POLICY,
   });
 
   const products = useMemo(
