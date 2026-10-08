@@ -31,8 +31,9 @@ import {
 // data layer). This actions file keeps only: auth, validation, logging calls.
 import { validateSettingValue } from "@/lib/validators/storefront";
 import * as storefrontService from "@/lib/services/storefront.service";
-import { resolveTenantId } from "@/lib/saas/tenant-context";
+import { parseTenantSubdomainSlug, resolveTenantId } from "@/lib/saas/tenant-context";
 import { resolveCurrentTenant } from "@/lib/saas/tenant-resolver";
+import { createDeadlineCoordinator } from "@/lib/utils/deadline-coordinator";
 
 /**
  * P5 — CMS write scope resolution (Fail-Closed):
@@ -93,10 +94,58 @@ function sanitizePublicSettings(settings: StorefrontSettingsShape): StorefrontSe
   return stripOversizedPublicDataUris(settings) as StorefrontSettingsShape;
 }
 
+// This is an outer deadline for the whole public settings pipeline (tenant
+// resolution plus the settings read). Individual Supabase requests are already
+// bounded, but tenant resolution may perform more than one sequential request.
+// Keeping the render-path deadline here guarantees that SSR can always render
+// local defaults even if a runtime fetch implementation fails to honour abort.
+const PUBLIC_STOREFRONT_SETTINGS_DEADLINE_MS = 6_000;
+const PUBLIC_STOREFRONT_SETTINGS_COOLDOWN_MS = 30_000;
+const PUBLIC_STOREFRONT_SETTINGS_MAX_IN_FLIGHT = 32;
+
+export type PublishedStorefrontAppearanceResult = {
+  settings: StorefrontSettingsShape;
+  degraded: boolean;
+  retryAfterMs: number | null;
+};
+
+type LoadedPublicAppearance = Omit<PublishedStorefrontAppearanceResult, "retryAfterMs">;
+
+const publicSettingsDeadline = createDeadlineCoordinator<LoadedPublicAppearance>({
+  deadlineMs: PUBLIC_STOREFRONT_SETTINGS_DEADLINE_MS,
+  cooldownMs: PUBLIC_STOREFRONT_SETTINGS_COOLDOWN_MS,
+  maxInFlight: PUBLIC_STOREFRONT_SETTINGS_MAX_IN_FLIGHT,
+  recoverySlots: 3,
+});
+
+async function readPublicRequestHeaders(): Promise<Headers | null> {
+  try {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    return getRequest()?.headers ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function publicSettingsRequestKey(headers: Headers | null): string {
+  if (!headers) return "default";
+
+  const headerId = headers.get("x-tenant-id") ?? "";
+  if (/^[0-9a-f-]{36}$/i.test(headerId)) return `id:${headerId.toLowerCase()}`;
+
+  // Keep explicit header bytes intact because resolveTenantId currently uses
+  // the header verbatim. Normalizing or truncating only the dedupe key could
+  // make two distinct tenant lookups share one tenant's result.
+  const headerSlug = headers.get("x-tenant-slug");
+  if (headerSlug === "") return "default";
+  if (headerSlug) return `slug:${headerSlug}`;
+
+  const hostSlug = parseTenantSubdomainSlug(headers.get("host"));
+  return hostSlug ? `slug:${hostSlug}` : "default";
+}
+
 /** Resolve the storefront tenant for PUBLIC reads from request headers. */
-async function resolvePublicCmsTenant(db: any): Promise<string | null> {
-  const { getRequest } = await import("@tanstack/react-start/server");
-  const headers = getRequest()?.headers ?? null;
+async function resolvePublicCmsTenant(db: any, headers: Headers | null): Promise<string | null> {
   return resolveTenantId(db, { headers });
 }
 
@@ -208,18 +257,67 @@ function rowsToSettings(
  * Fetch published storefront settings.
  * Publicly accessible — reads published "value" column ONLY. Never uses Service Role.
  */
-export const getPublishedStorefrontAppearance = createServerFn({ method: "GET" }).handler(
-  async (): Promise<StorefrontSettingsShape> => {
-    try {
-      const publicTenantId = await resolvePublicCmsTenant(supabase);
-      const rows = await storefrontService.fetchPublishedRows(supabase, publicTenantId);
-      if (!rows || rows.length === 0) return sanitizePublicSettings(DEFAULT_STOREFRONT_SETTINGS);
-      return sanitizePublicSettings(rowsToSettings(rows, false));
-    } catch (err) {
-      console.warn("[getPublishedStorefrontAppearance] Returning fallback defaults:", err);
-      return sanitizePublicSettings(DEFAULT_STOREFRONT_SETTINGS);
+async function loadPublishedStorefrontAppearance(): Promise<PublishedStorefrontAppearanceResult> {
+  const fallback = sanitizePublicSettings(DEFAULT_STOREFRONT_SETTINGS);
+  const fallbackResult: LoadedPublicAppearance = { settings: fallback, degraded: true };
+  const headers = await readPublicRequestHeaders();
+
+  try {
+    const deadlineResult = await publicSettingsDeadline.run(
+      publicSettingsRequestKey(headers),
+      async (): Promise<LoadedPublicAppearance> => {
+        const publicTenantId = await resolvePublicCmsTenant(supabase, headers);
+        const rows = await storefrontService.fetchPublishedRows(supabase, publicTenantId);
+        // null means the read failed. A successful empty result is valid and
+        // publishes the local schema defaults until an override is stored.
+        if (rows === null) {
+          throw new Error("Published storefront settings are unavailable.");
+        }
+        return {
+          settings:
+            rows.length === 0 ? fallback : sanitizePublicSettings(rowsToSettings(rows, false)),
+          degraded: false,
+        };
+      },
+      fallbackResult,
+    );
+
+    if (deadlineResult.degraded) {
+      if (deadlineResult.reason === "timeout") {
+        console.warn(
+          `[getPublishedStorefrontAppearance] Supabase read exceeded ${PUBLIC_STOREFRONT_SETTINGS_DEADLINE_MS}ms; using local defaults.`,
+        );
+      } else if (deadlineResult.reason === "capacity") {
+        console.warn(
+          "[getPublishedStorefrontAppearance] Public settings read capacity reached; using local defaults.",
+        );
+      }
+      return {
+        settings: fallback,
+        degraded: true,
+        retryAfterMs: deadlineResult.retryAfterMs,
+      };
     }
-  },
+
+    return {
+      ...deadlineResult.value,
+      retryAfterMs: deadlineResult.value.degraded ? 5_000 : null,
+    };
+  } catch (err) {
+    console.warn("[getPublishedStorefrontAppearance] Returning fallback defaults:", err);
+    return { settings: fallback, degraded: true, retryAfterMs: 5_000 };
+  }
+}
+
+/** Status-aware API for SSR loaders that must not cache degraded defaults as healthy data. */
+export const getPublishedStorefrontAppearanceResult = createServerFn({ method: "GET" }).handler(
+  loadPublishedStorefrontAppearance,
+);
+
+/** Backward-compatible public API: callers still receive the settings object directly. */
+export const getPublishedStorefrontAppearance = createServerFn({ method: "GET" }).handler(
+  async (): Promise<StorefrontSettingsShape> =>
+    (await loadPublishedStorefrontAppearance()).settings,
 );
 
 /**

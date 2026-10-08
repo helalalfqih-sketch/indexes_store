@@ -24,12 +24,34 @@ export type TenantSummary = {
   status: Database["public"]["Enums"]["tenant_status"];
 };
 
-const parseSubdomainSlug = (host: string | null | undefined): string | null => {
+const PLATFORM_HOST_SUFFIXES = [
+  ".vercel.app",
+  ".lovable.app",
+  ".lovableproject.com",
+  ".pages.dev",
+  ".netlify.app",
+  ".workers.dev",
+];
+
+/**
+ * Extract a tenant slug only from a custom storefront hostname.
+ *
+ * Deployment-provider hostnames encode the project/deployment in their first
+ * label (for example `indexes-store-git-main-team.vercel.app`). Treating that
+ * label as a tenant caused every SSR render to make a doomed tenant lookup
+ * before the real default-tenant lookup. During a provider outage that doubled
+ * the render-path timeout.
+ */
+export const parseTenantSubdomainSlug = (host: string | null | undefined): string | null => {
   if (!host) return null;
-  const clean = host.split(":")[0];
+  const clean = host.split(":")[0].toLowerCase().replace(/\.$/, "");
+  // IP literals are local/edge hosts, never tenant-bearing custom domains.
+  // (Bracketed IPv6 is already rejected by the label-count check below.)
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(clean)) return null;
+  if (PLATFORM_HOST_SUFFIXES.some((suffix) => clean.endsWith(suffix))) return null;
   const parts = clean.split(".");
   if (parts.length < 3) return null;
-  const sub = parts[0].toLowerCase();
+  const sub = parts[0];
   if (["www", "app", "admin", "api", "localhost", DEFAULT_TENANT_SLUG].includes(sub)) return null;
   return sub;
 };
@@ -54,10 +76,15 @@ export async function resolveTenantId(
   const headerId = readHeader("x-tenant-id");
   if (headerId && /^[0-9a-f-]{36}$/i.test(headerId)) return headerId;
 
-  const headerSlug = readHeader("x-tenant-slug") ?? parseSubdomainSlug(readHeader("host"));
+  const headerSlug = readHeader("x-tenant-slug") ?? parseTenantSubdomainSlug(readHeader("host"));
   if (headerSlug) {
     const bySlug = await db.from("tenants").select("id").eq("slug", headerSlug).maybeSingle();
-    if (bySlug.data) return bySlug.data.id;
+    // Fail closed on an unavailable tenant lookup. Falling through to the
+    // default tenant would both repeat the same failed network request and
+    // risk serving the wrong storefront for a valid custom subdomain.
+    if (bySlug.error) throw bySlug.error;
+    if (!bySlug.data) throw new Error("Requested tenant was not found.");
+    return bySlug.data.id;
   }
 
   // User-owned membership

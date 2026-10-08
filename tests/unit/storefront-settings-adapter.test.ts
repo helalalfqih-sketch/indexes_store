@@ -21,7 +21,11 @@ describe("storefront-settings.adapter", () => {
     expect(result.sections.latest.limit).toBe(12);
     expect(result.sections.deals.limit).toBe(6);
     expect(result.sections.categories.limit).toBe(8);
-    expect(result.shipping.deliveryText).toContain("توصيل سريع");
+    expect(result.shipping.deliveryText).toBe("تُحدَّد تفاصيل التوصيل عند تأكيد الطلب");
+    expect(result.shipping.freeText).toBe("");
+    expect(result.shipping.threshold).toBe(0);
+    expect(result.sections.trustBadges.enabled).toBe(false);
+    expect(result.sections.trustBadges.badge1).toBe("");
     expect(result.contact.whatsappPhone).toBe("967771370740");
     expect(result.sections.sectionOrder).toEqual(DEFAULT_SECTION_ORDER);
   });
@@ -39,7 +43,15 @@ describe("storefront-settings.adapter", () => {
   });
 
   it("3. duplicates and unknown keys are removed from sectionOrder", () => {
-    const rawOrder = ["hero", "malicious_script", "hero", "categories", "unknown_key", "deals", "deals"];
+    const rawOrder = [
+      "hero",
+      "malicious_script",
+      "hero",
+      "categories",
+      "unknown_key",
+      "deals",
+      "deals",
+    ];
     const normalized = normalizeSectionOrder(rawOrder);
 
     expect(normalized).not.toContain("malicious_script");
@@ -58,15 +70,15 @@ describe("storefront-settings.adapter", () => {
     const mapped = mapPublishedStorefrontSettings({
       hero: {
         sphereMaxProducts: 500, // Should clamp to 120
-        sphereRadius: 0.1,       // Should clamp to 1.0
-        sphereTileScale: 10,     // Should clamp to 2.0
+        sphereRadius: 0.1, // Should clamp to 1.0
+        sphereTileScale: 10, // Should clamp to 2.0
         sphereRotationSpeed: -5, // Should clamp to 0
         globeTitleFontSize: 100, // Should clamp to 48
-        globeSubtitleFontSize: 2,// Should clamp to 8
+        globeSubtitleFontSize: 2, // Should clamp to 8
       } as any,
       sections: {
         latest: { limit: 100 } as any, // Should clamp to 24
-        deals: { limit: 0 } as any,     // Should clamp to 2
+        deals: { limit: 0 } as any, // Should clamp to 2
       } as any,
     });
 
@@ -92,8 +104,9 @@ describe("storefront-settings.adapter", () => {
   });
 
   it("6. allowed relative/https/image-data URLs follow field-specific rules", () => {
-    const validDataImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-    
+    const validDataImage =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
     // Banner image allows data:image
     expect(isSafeUrl(validDataImage, { allowImageData: true })).toBe(true);
     // CTA link disallows data: URLs
@@ -148,10 +161,59 @@ describe("storefront-settings.adapter", () => {
     const mapped = mapPublishedStorefrontSettings(publishedInput as any);
     expect(mapped.hero.title).toBe("Published Live Title");
   });
+
+  it("10. preserves explicitly configured shipping and trust claims", () => {
+    const mapped = mapPublishedStorefrontSettings({
+      cart_config: {
+        freeShippingThreshold: 45_000,
+      } as any,
+      navigation: {
+        shippingBarDeliveryText: "التوصيل خلال المدة المتفق عليها",
+        shippingBarFreeText: "شحن مجاني للطلبات المؤهلة فوق",
+      } as any,
+      sections: {
+        trustBadges: {
+          enabled: true,
+          badge1: "سياسة توصيل منشورة",
+          badge2: "",
+          badge3: "",
+        },
+      } as any,
+    });
+
+    expect(mapped.shipping).toMatchObject({
+      deliveryText: "التوصيل خلال المدة المتفق عليها",
+      freeText: "شحن مجاني للطلبات المؤهلة فوق",
+      threshold: 45_000,
+    });
+    expect(mapped.sections.trustBadges).toMatchObject({
+      enabled: true,
+      badge1: "سياسة توصيل منشورة",
+      badge2: "",
+      badge3: "",
+      badge4: "",
+    });
+  });
+
+  it("11. uses neutral copy when optional hero text is blank", () => {
+    const mapped = mapPublishedStorefrontSettings({
+      hero: { badgeText: "", title: "", subtitle: "" } as any,
+    });
+
+    expect(mapped.hero).toMatchObject({
+      badgeText: "INDEXES",
+      title: "استكشف المنتجات",
+      subtitle: "الأسعار والتوفر من بيانات الكتالوج",
+    });
+    expect(`${mapped.hero.badgeText} ${mapped.hero.title}`).not.toMatch(/50%|خصم/);
+  });
 });
 
 describe("countdown calculation logic", () => {
-  function calculateNearestDealEnd(products: Array<{ dealEnd?: string | null }>, now: number): number | null {
+  function calculateNearestDealEnd(
+    products: Array<{ dealEnd?: string | null }>,
+    now: number,
+  ): number | null {
     const validEnds = products
       .map((p) => (p.dealEnd ? new Date(p.dealEnd).getTime() : NaN))
       .filter((t) => !isNaN(t) && t > now);

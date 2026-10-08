@@ -32,7 +32,13 @@ export type CmsScope = string | null;
 const now = () => new Date().toISOString();
 type PublishedRow = { key: string; value: unknown };
 const publishedRowsCache = new Map<string, { expiresAt: number; rows: PublishedRow[] }>();
-const publishedRowsInFlight = new Map<string, Promise<PublishedRow[] | null>>();
+type PublishedRowsInFlight = {
+  promise: Promise<PublishedRow[] | null>;
+  startedAt: number;
+  token: symbol;
+};
+export const PUBLISHED_ROWS_IN_FLIGHT_STALE_MS = 10_000;
+const publishedRowsInFlight = new Map<string, PublishedRowsInFlight>();
 
 const publishedRowsCacheKey = (scope?: CmsScope): string => scope ?? "__global__";
 
@@ -77,7 +83,24 @@ export async function fetchPublishedRows(
   if (cached) publishedRowsCache.delete(cacheKey);
 
   const existingRequest = publishedRowsInFlight.get(cacheKey);
-  if (existingRequest) return existingRequest;
+  if (
+    existingRequest &&
+    Date.now() - existingRequest.startedAt < PUBLISHED_ROWS_IN_FLIGHT_STALE_MS
+  ) {
+    return existingRequest.promise;
+  }
+  if (existingRequest) publishedRowsInFlight.delete(cacheKey);
+
+  const requestToken = Symbol(cacheKey);
+  const cacheRows = (rows: PublishedRow[]) => {
+    // A stale request may finish after a replacement has started. Only the
+    // current generation may populate the shared cache.
+    if (publishedRowsInFlight.get(cacheKey)?.token !== requestToken) return;
+    publishedRowsCache.set(cacheKey, {
+      expiresAt: Date.now() + STOREFRONT_SETTINGS_CACHE_TTL_MS,
+      rows,
+    });
+  };
 
   const request = (async (): Promise<PublishedRow[] | null> => {
     try {
@@ -90,32 +113,30 @@ export async function fetchPublishedRows(
         q = q.is("tenant_id", null);
       }
       const { data, error } = await q;
-      if (error || !data || data.length === 0) {
-        if (error) {
-          console.error("[fetchPublishedRows] Query error:", error.message);
-          return null;
+      if (error || !data) {
+        if (error) console.error("[fetchPublishedRows] Query error:", error.message);
+        return null;
+      }
+      if (data.length === 0) {
+        // An empty successful global read is valid: the schema defaults are the
+        // published appearance until an administrator stores an override.
+        if (!tenantId) {
+          cacheRows([]);
+          return [];
         }
-        // A global read already queried the complete public settings set.
-        if (!tenantId) return null;
 
         // Tenant reads fall back to platform defaults when no override is found.
         const { data: globalData, error: globalErr } = await db
           .from("storefront_settings")
           .select("key, value")
           .is("tenant_id", null);
-        if (globalErr || !globalData || globalData.length === 0) return null;
+        if (globalErr || !globalData) return null;
         const rows = globalData.map((r: any) => ({ key: r.key, value: r.value }));
-        publishedRowsCache.set(cacheKey, {
-          expiresAt: Date.now() + STOREFRONT_SETTINGS_CACHE_TTL_MS,
-          rows,
-        });
+        cacheRows(rows);
         return rows;
       }
       const rows = mergeRows(data as any[]).map((r: any) => ({ key: r.key, value: r.value }));
-      publishedRowsCache.set(cacheKey, {
-        expiresAt: Date.now() + STOREFRONT_SETTINGS_CACHE_TTL_MS,
-        rows,
-      });
+      cacheRows(rows);
       return rows;
     } catch (err: any) {
       console.error("[fetchPublishedRows] Exception:", err?.message || err);
@@ -123,11 +144,16 @@ export async function fetchPublishedRows(
     }
   })();
 
-  publishedRowsInFlight.set(cacheKey, request);
+  const inFlightEntry: PublishedRowsInFlight = {
+    promise: request,
+    startedAt: Date.now(),
+    token: requestToken,
+  };
+  publishedRowsInFlight.set(cacheKey, inFlightEntry);
   try {
     return await request;
   } finally {
-    if (publishedRowsInFlight.get(cacheKey) === request) {
+    if (publishedRowsInFlight.get(cacheKey)?.token === requestToken) {
       publishedRowsInFlight.delete(cacheKey);
     }
   }

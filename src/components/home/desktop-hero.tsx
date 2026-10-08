@@ -55,7 +55,7 @@ export function DesktopHero({ products }: { products: LegacyProductShape[] }) {
   return (
     <div ref={boxRef}>
       <section
-        aria-label="عروض حصرية"
+        aria-label="استكشاف المنتجات"
         className="relative overflow-hidden rounded-[24px] border border-[rgba(139,92,246,0.42)] bg-[linear-gradient(145deg,rgba(15,21,43,0.96),rgba(5,8,22,0.98))]"
         style={{ height: geom.heroH }}
       >

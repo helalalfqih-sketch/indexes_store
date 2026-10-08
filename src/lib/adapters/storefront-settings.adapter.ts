@@ -1,7 +1,4 @@
-import {
-  DEFAULT_STOREFRONT_SETTINGS,
-  type StorefrontSettingsShape,
-} from "@/lib/domain/appearance";
+import { DEFAULT_STOREFRONT_SETTINGS, type StorefrontSettingsShape } from "@/lib/domain/appearance";
 
 export interface MappedStorefrontSettings {
   hero: {
@@ -51,10 +48,28 @@ export interface MappedStorefrontSettings {
     recommended: { enabled: boolean; title: string; limit: number };
     categories: { enabled: boolean; title: string; limit: number };
     showroom: { enabled: boolean; title: string; subtitle: string; badge: string; link: string };
-    cinematic: { enabled: boolean; title: string; subtitle: string; videoUrl: string; posterUrl: string };
-    whatsappCta: { enabled: boolean; title: string; subtitle: string; buttonText: string; phone: string };
+    cinematic: {
+      enabled: boolean;
+      title: string;
+      subtitle: string;
+      videoUrl: string;
+      posterUrl: string;
+    };
+    whatsappCta: {
+      enabled: boolean;
+      title: string;
+      subtitle: string;
+      buttonText: string;
+      phone: string;
+    };
     testimonials: { enabled: boolean; title: string; subtitle: string };
-    trustBadges: { enabled: boolean; badge1: string; badge2: string; badge3: string; badge4: string };
+    trustBadges: {
+      enabled: boolean;
+      badge1: string;
+      badge2: string;
+      badge3: string;
+      badge4: string;
+    };
   };
   shipping: {
     deliveryText: string;
@@ -121,7 +136,7 @@ export const DEFAULT_SECTION_ORDER = [
  */
 export function isSafeUrl(
   url: unknown,
-  options?: { allowImageData?: boolean; allowRelative?: boolean }
+  options?: { allowImageData?: boolean; allowRelative?: boolean },
 ): boolean {
   if (typeof url !== "string") return false;
   const trimmed = url.trim();
@@ -137,7 +152,10 @@ export function isSafeUrl(
 
   // Handle data: URLs
   if (/^data:/i.test(trimmed)) {
-    if (options?.allowImageData && /^data:image\/(png|jpeg|jpg|webp|svg\+xml);base64,/i.test(trimmed)) {
+    if (
+      options?.allowImageData &&
+      /^data:image\/(png|jpeg|jpg|webp|svg\+xml);base64,/i.test(trimmed)
+    ) {
       return true;
     }
     return false;
@@ -164,7 +182,7 @@ export function isSafeUrl(
 export function sanitizeUrl(
   url: unknown,
   fallback: string,
-  options?: { allowImageData?: boolean; allowRelative?: boolean }
+  options?: { allowImageData?: boolean; allowRelative?: boolean },
 ): string {
   return isSafeUrl(url, options) ? (url as string).trim() : fallback;
 }
@@ -179,6 +197,10 @@ export function clampNumber(value: unknown, min: number, max: number, fallback: 
   return Math.min(Math.max(value, min), max);
 }
 
+function cleanText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 /**
  * Normalizes published section order:
  * 1. Filter out unknown keys.
@@ -191,7 +213,11 @@ export function normalizeSectionOrder(rawOrder: unknown): string[] {
 
   if (Array.isArray(rawOrder)) {
     for (const key of rawOrder) {
-      if (typeof key === "string" && (KNOWN_SECTION_KEYS as readonly string[]).includes(key) && !seen.has(key)) {
+      if (
+        typeof key === "string" &&
+        (KNOWN_SECTION_KEYS as readonly string[]).includes(key) &&
+        !seen.has(key)
+      ) {
         seen.add(key);
         result.push(key);
       }
@@ -214,7 +240,7 @@ export function normalizeSectionOrder(rawOrder: unknown): string[] {
  * with bulletproof fallbacks so that missing or draft settings never break the UI.
  */
 export function mapPublishedStorefrontSettings(
-  raw?: Partial<StorefrontSettingsShape> | null
+  raw?: Partial<StorefrontSettingsShape> | null,
 ): MappedStorefrontSettings {
   const s = raw || DEFAULT_STOREFRONT_SETTINGS;
   const hero = s.hero || DEFAULT_STOREFRONT_SETTINGS.hero;
@@ -223,6 +249,7 @@ export function mapPublishedStorefrontSettings(
   const cart = s.cart_config || DEFAULT_STOREFRONT_SETTINGS.cart_config;
   const general = s.general_settings || DEFAULT_STOREFRONT_SETTINGS.general_settings;
   const brand = s.brand_settings || DEFAULT_STOREFRONT_SETTINGS.brand_settings;
+  const freeShippingThreshold = clampNumber(cart.freeShippingThreshold, 0, 1_000_000, 0);
 
   const sectionOrder = normalizeSectionOrder(raw?.sections?.sectionOrder ?? DEFAULT_SECTION_ORDER);
 
@@ -254,9 +281,9 @@ export function mapPublishedStorefrontSettings(
     hero: {
       enabled: hero.enabled ?? true,
       type: heroType,
-      badgeText: hero.badgeText || "عروض حصرية 50%",
-      title: hero.title || "خصومات تصل إلى 50%",
-      subtitle: hero.subtitle || "تصفح تشكيلة إندكس المتميزة من الساعات والإلكترونيات",
+      badgeText: hero.badgeText || "INDEXES",
+      title: hero.title || "استكشف المنتجات",
+      subtitle: hero.subtitle || "الأسعار والتوفر من بيانات الكتالوج",
       bannerImageUrl: sanitizeUrl(hero.bannerImageUrl, "", {
         allowImageData: true,
         allowRelative: true,
@@ -268,7 +295,9 @@ export function mapPublishedStorefrontSettings(
       ctaText: hero.ctaText || "عالم المنتجات 🌎",
       ctaLink: sanitizeUrl(hero.ctaLink, "/offers", { allowRelative: true }),
       secondaryCtaText: hero.secondaryCtaText || "عرض الكل",
-      secondaryCtaLink: sanitizeUrl(hero.secondaryCtaLink, "/immersive-store", { allowRelative: true }),
+      secondaryCtaLink: sanitizeUrl(hero.secondaryCtaLink, "/immersive-store", {
+        allowRelative: true,
+      }),
       showParticles: hero.showParticles ?? true,
       slides,
       globe: {
@@ -352,33 +381,31 @@ export function mapPublishedStorefrontSettings(
         subtitle: sections.testimonials?.subtitle || "ماذا يقول عملاؤنا عن اندكس ستور",
       },
       trustBadges: {
-        enabled: sections.trustBadges?.enabled ?? true,
-        badge1: sections.trustBadges?.badge1 || "توصيل سريع",
-        badge2: sections.trustBadges?.badge2 || "ضمان أصلي",
-        badge3: sections.trustBadges?.badge3 || "دعم 24/7",
-        badge4: (sections.trustBadges as any)?.badge4 || "استبدال وإرجاع",
+        enabled: sections.trustBadges?.enabled === true,
+        badge1: cleanText(sections.trustBadges?.badge1),
+        badge2: cleanText(sections.trustBadges?.badge2),
+        badge3: cleanText(sections.trustBadges?.badge3),
+        badge4: cleanText((sections.trustBadges as any)?.badge4),
       },
     },
     shipping: {
-      deliveryText: nav.shippingBarDeliveryText || "توصيل سريع خلال 24 - 48 ساعة للمحافظات",
-      freeText: nav.shippingBarFreeText || "شحن مجاني فوق",
-      threshold: clampNumber(
-        cart.freeShippingThreshold > 0 ? cart.freeShippingThreshold : nav.shippingBarThreshold,
-        0,
-        1_000_000,
-        30000
-      ),
+      deliveryText:
+        cleanText(nav.shippingBarDeliveryText) || "تُحدَّد تفاصيل التوصيل عند تأكيد الطلب",
+      freeText:
+        freeShippingThreshold > 0
+          ? cleanText(nav.shippingBarFreeText) || "شحن مجاني للطلبات المؤهلة فوق"
+          : "",
+      threshold: freeShippingThreshold,
       shippingFee: clampNumber(cart.shippingFee, 0, 100_000, 3000),
     },
     contact: {
       storeName: brand.storeName || nav.storeName || "متجر إندكس - INDEXES STORE",
       tagline: brand.tagline || nav.tagline || "اختيارك الأفضل",
       description:
-        brand.description ||
-        nav.footerDescription ||
-        "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد.",
-      address: general.address || nav.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية",
-      deliveryInfoText: nav.deliveryInfoText || "متوفر لدينا خدمة التوصيل السريع لجميع المحافظات",
+        brand.description || nav.footerDescription || "متجر إندكس للتسوق الإلكتروني في اليمن.",
+      address:
+        general.address || nav.addressText || "صنعاء - شارع بينون - مقابل صيدلية الرعاية الصحية",
+      deliveryInfoText: cleanText(nav.deliveryInfoText) || "تُحدَّد تفاصيل التوصيل عند تأكيد الطلب",
       phone: general.phone || nav.whatsappPhone || cart.whatsappPhone || "967771370740",
       whatsappPhone: general.whatsapp || cart.whatsappPhone || nav.whatsappPhone || "967771370740",
       supportEmail: sanitizeUrl(general.email || nav.supportEmail, "support@indexes-store.com", {
