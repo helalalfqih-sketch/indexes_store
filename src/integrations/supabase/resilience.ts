@@ -1,4 +1,7 @@
 const DEFAULT_RESTRICTION_COOLDOWN_MS = 60_000;
+// Keep the general client generous for media uploads on slower mobile
+// networks. Render-path clients opt into the much shorter timeout below.
+const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
 
 export const SUPABASE_UNAVAILABLE_CODE = "SUPABASE_TEMPORARILY_UNAVAILABLE";
 export const SUPABASE_UNAVAILABLE_MESSAGE =
@@ -17,6 +20,7 @@ type SupabaseFetchOptions = {
   cooldownMs?: number;
   fetch?: typeof fetch;
   now?: () => number;
+  timeoutMs?: number;
 };
 
 function requestOrigin(input: RequestInfo | URL): string {
@@ -117,6 +121,7 @@ export function createSupabaseFetch(
   const baseFetch = options.fetch ?? globalThis.fetch.bind(globalThis);
   const now = options.now ?? Date.now;
   const cooldownMs = options.cooldownMs ?? DEFAULT_RESTRICTION_COOLDOWN_MS;
+  const timeoutMs = options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
 
   return async (input, init) => {
     const origin = requestOrigin(input);
@@ -145,7 +150,47 @@ export function createSupabaseFetch(
     }
 
     headers.set("apikey", supabaseKey);
-    const response = await baseFetch(input, { ...init, headers });
+    const controller = new AbortController();
+    const requestSignal =
+      init?.signal ??
+      (typeof Request !== "undefined" && input instanceof Request ? input.signal : undefined);
+    const abortState: { source: "none" | "caller" | "timeout" } = {
+      source: requestSignal?.aborted ? "caller" : "none",
+    };
+    const abortFromCaller = () => {
+      if (abortState.source === "none") abortState.source = "caller";
+      controller.abort(requestSignal?.reason);
+    };
+
+    if (requestSignal) {
+      if (requestSignal.aborted) abortFromCaller();
+      else requestSignal.addEventListener("abort", abortFromCaller, { once: true });
+    }
+
+    const timeout = setTimeout(() => {
+      if (abortState.source !== "none") return;
+      abortState.source = "timeout";
+      controller.abort(new DOMException("Supabase request timed out", "TimeoutError"));
+    }, timeoutMs);
+
+    let response: Response;
+    try {
+      response = await baseFetch(input, { ...init, headers, signal: controller.signal });
+    } catch (error) {
+      // Preserve explicit caller cancellation. A provider/network timeout is
+      // converted into a bounded, sanitized outage response so SSR can render
+      // its local fallback promptly. A transient timeout must not open the
+      // project-wide quota circuit because another endpoint or request may
+      // still succeed (including authenticated and service-role operations).
+      if (abortState.source === "caller") throw error;
+      if (abortState.source !== "timeout") throw error;
+
+      const nextAttemptAt = now() + cooldownMs;
+      return unavailableResponse(nextAttemptAt, now());
+    } finally {
+      clearTimeout(timeout);
+      requestSignal?.removeEventListener("abort", abortFromCaller);
+    }
 
     if (!(await isRestrictionResponse(response))) return response;
 

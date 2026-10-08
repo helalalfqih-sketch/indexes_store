@@ -26,7 +26,9 @@ const publicClient = () => {
     );
   }
   return createClient<Database>(url, key, {
-    global: { fetch: createSupabaseFetch(key) },
+    // Tenant discovery is on the storefront render path. Keep it bounded so
+    // a stalled Supabase data plane cannot hold a server-rendered page open.
+    global: { fetch: createSupabaseFetch(key, { timeoutMs: 4_000 }) },
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
   });
 };

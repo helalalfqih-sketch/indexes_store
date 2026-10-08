@@ -1,10 +1,10 @@
-
 {
   "name": "tanstack_start_ts",
   "private": true,
   "sideEffects": false,
   "type": "module",
   "overrides": {
+    "dompurify": "3.4.16",
     "stats-gl": {
       "three": "$three"
     }

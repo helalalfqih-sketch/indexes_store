@@ -1,5 +1,5 @@
 -- Read-only post-migration assertions for
--- 20261008190000_database_advisor_safe_remediation.sql.
+-- 20261008163526_database_advisor_safe_remediation.sql.
 -- Run against a preview/shadow database after applying the migration.
 
 BEGIN READ ONLY;

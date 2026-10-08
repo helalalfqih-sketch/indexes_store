@@ -19,11 +19,7 @@ import type { LegacyCategoryShape, LegacyProductShape } from "@/lib/data-adapter
 import type { Product } from "@/lib/store-data";
 import { z } from "zod";
 import { trackEvent } from "@/lib/analytics";
-import {
-  searchProductsAdvanced,
-  getRecommendations,
-  type SearchSuggestionItem,
-} from "@/lib/search-engine";
+import { searchProductsAdvanced, type SearchSuggestionItem } from "@/lib/search-engine";
 import { fetchCategories } from "@/lib/actions/category.actions";
 import { formatPrice } from "@/lib/store-data";
 
@@ -75,8 +71,6 @@ function SearchPage() {
   const [results, setResults] = useState<LegacyProductShape[]>([]);
   const [searchState, setSearchState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [recommendations, setRecommendations] = useState<LegacyProductShape[]>([]);
-
   // Suggestions state
   const [suggestions, setSuggestions] = useState<SearchSuggestionItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -161,7 +155,6 @@ function SearchPage() {
               slug: product.slug,
             })),
           );
-          setRecommendations(q.trim() && data.length === 0 ? await getRecommendations(8) : []);
           setSearchState("done");
         }
       } catch (err) {
@@ -360,7 +353,7 @@ function SearchPage() {
               className="bg-transparent text-foreground font-bold outline-none text-xs"
             >
               <option value="bestselling" className="bg-surface text-foreground">
-                الأكثر تفاعلاً
+                الأكثر صلة
               </option>
               <option value="latest" className="bg-surface text-foreground">
                 الأحدث
@@ -544,16 +537,6 @@ function SearchPage() {
               ))}
             </div>
           </div>
-          {recommendations.length > 0 && (
-            <section aria-label="قد يناسبك أيضًا" className="space-y-4">
-              <h2 className="text-base font-semibold">قد يناسبك أيضًا</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {recommendations.map((product) => (
-                  <ProductCard key={product.id} product={product as unknown as Product} />
-                ))}
-              </div>
-            </section>
-          )}
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">

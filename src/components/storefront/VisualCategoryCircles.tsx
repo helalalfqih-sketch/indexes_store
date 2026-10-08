@@ -1,91 +1,22 @@
-import React, { useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  ChevronLeft,
-  ChevronRight,
-  Grid,
-  Watch,
-  Headphones,
-  Smartphone,
-  Home,
-  Sparkles,
-  Dumbbell,
-  Car,
-  Wrench,
   Baby,
+  BriefcaseBusiness,
+  Camera,
+  Car,
+  Dumbbell,
+  Gift,
+  Grid3X3,
+  Home,
+  Package,
+  ShoppingBag,
+  Smartphone,
+  Sparkles,
+  Wrench,
+  type LucideIcon,
 } from "lucide-react";
-import { Product } from "./types";
-
-export interface CategoryMeta {
-  id: string;
-  name: string;
-  icon: React.ElementType<{ className?: string }>;
-  badge?: string;
-  gradient: string;
-}
-
-export const CATEGORIES_META: CategoryMeta[] = [
-  {
-    id: "all",
-    name: "الكل",
-    icon: Grid,
-    badge: "الكل",
-    gradient: "from-black to-neutral-800 text-white",
-  },
-  {
-    id: "smartwatches",
-    name: "ساعات ذكية",
-    icon: Watch,
-    gradient: "from-blue-600 to-indigo-700 text-white",
-  },
-  {
-    id: "audio",
-    name: "سماعات وصوتيات",
-    icon: Headphones,
-    gradient: "from-purple-600 to-violet-800 text-white",
-  },
-  {
-    id: "accessories",
-    name: "شواحن وإكسسوارات",
-    icon: Smartphone,
-    gradient: "from-emerald-600 to-teal-700 text-white",
-  },
-  {
-    id: "home_appliances",
-    name: "أجهزة ومنزل",
-    icon: Home,
-    gradient: "from-amber-600 to-orange-700 text-white",
-  },
-  {
-    id: "perfumes",
-    name: "عطور وبخور",
-    icon: Sparkles,
-    gradient: "from-rose-600 to-pink-700 text-white",
-  },
-  {
-    id: "health_fitness",
-    name: "الصحة واللياقة",
-    icon: Dumbbell,
-    gradient: "from-cyan-600 to-blue-700 text-white",
-  },
-  {
-    id: "automotive",
-    name: "مستلزمات سيارات",
-    icon: Car,
-    gradient: "from-red-600 to-rose-700 text-white",
-  },
-  {
-    id: "tools",
-    name: "أدوات ومعدات",
-    icon: Wrench,
-    gradient: "from-slate-700 to-zinc-900 text-white",
-  },
-  {
-    id: "baby_kids",
-    name: "مستلزمات الأطفال",
-    icon: Baby,
-    gradient: "from-yellow-500 to-amber-600 text-white",
-  },
-];
+import { categoriesQuery } from "@/lib/queries/catalog";
+import type { Product } from "./types";
 
 interface VisualCategoryCirclesProps {
   selectedCategoryId: string;
@@ -93,144 +24,107 @@ interface VisualCategoryCirclesProps {
   products?: Product[];
 }
 
-export const VisualCategoryCircles: React.FC<VisualCategoryCirclesProps> = ({
+const iconForCategory = (id: string, name: string): LucideIcon => {
+  const value = `${id} ${name}`.toLowerCase();
+  if (/سيار|automotive|auto/.test(value)) return Car;
+  if (/منزل|مطبخ|kitchen|home|storage/.test(value)) return Home;
+  if (/صحة|جمال|عناية|beauty|health/.test(value)) return Sparkles;
+  if (/رياض|لياقة|sport|fitness/.test(value)) return Dumbbell;
+  if (/أطفال|ألعاب|kids|toy|baby/.test(value)) return Baby;
+  if (/أدوات|معدات|tool|hardware/.test(value)) return Wrench;
+  if (/كامير|أمن|camera|security/.test(value)) return Camera;
+  if (/مكتب|قرطاس|office/.test(value)) return BriefcaseBusiness;
+  if (/هدايا|هوايات|gift|hobb/.test(value)) return Gift;
+  if (/أزياء|حقائب|fashion|bag/.test(value)) return ShoppingBag;
+  if (/إلكترون|هواتف|electronic|phone/.test(value)) return Smartphone;
+  return Package;
+};
+
+const categoryTerms = (id: string): string[] => {
+  const normalized = id.toLowerCase();
+  const aliases: Record<string, string[]> = {
+    "السيارات-وملحقاتها": ["automotive", "auto", "سيارات"],
+    "المنزل-والمطبخ": ["kitchen", "home", "storage", "منزل", "مطبخ"],
+    "الصحة-والجمال": ["beauty", "health", "care", "صحة", "جمال"],
+    "الأدوات-والمعدات": ["tools", "hardware", "أدوات", "معدات"],
+    "الإلكترونيات-والهواتف": ["electronics", "phone", "إلكترون", "هواتف"],
+    "الرياضة-واللياقة": ["sports", "fitness", "رياض", "لياقة"],
+    "الألعاب-والأطفال": ["kids", "toys", "baby", "أطفال", "ألعاب"],
+  };
+  return [normalized, ...(aliases[normalized] ?? [])];
+};
+
+const categoryProduct = (products: Product[], categoryId: string): Product | undefined => {
+  if (categoryId === "all") return products.find((product) => product.image);
+  const terms = categoryTerms(categoryId);
+  return products.find((product) => {
+    const value = product.category.toLowerCase();
+    return terms.some((term) => value === term || value.includes(term));
+  });
+};
+
+export function VisualCategoryCircles({
   selectedCategoryId,
   onSelectCategory,
   products = [],
-}) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scroll = (direction: "left" | "right") => {
-    if (!scrollRef.current) return;
-    const offset = direction === "left" ? -320 : 320;
-    scrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
-  };
-
-  // Find real product images from store catalog for each category
-  const getCategoryImage = (categoryId: string): string | null => {
-    if (categoryId === "all") {
-      const featured = products.find((p) => p.image && !p.image.includes("data:image/svg"));
-      return featured?.image || null;
-    }
-    const match = products.find(
-      (p) =>
-        (p.category === categoryId ||
-          p.category.toLowerCase().includes(categoryId.toLowerCase())) &&
-        p.image &&
-        !p.image.includes("data:image/svg"),
-    );
-    return match?.image || null;
-  };
+}: VisualCategoryCirclesProps) {
+  const isBrowser = typeof window !== "undefined";
+  const query = useQuery({
+    ...categoriesQuery(),
+    enabled: isBrowser,
+  });
+  const categories = [
+    { id: "all", name: "كل المنتجات", imageUrl: null },
+    ...(query.data ?? [])
+      .filter((category) => category.id !== "all")
+      .map((category) => ({
+        id: category.id,
+        name: category.id === "frontpage" ? "مختارات المتجر" : category.name,
+        imageUrl: category.imageUrl ?? null,
+      })),
+  ];
 
   return (
-    <section
-      className="relative bg-white py-3 px-2 sm:bg-transparent sm:px-6 w-full max-w-[1700px] mx-auto select-none"
-      aria-label="أقسام المتجر"
-      data-section="categories"
-    >
-      {/* Section Sub-header */}
-      <div className="flex items-center justify-between mb-2 px-1">
-        <div className="flex items-center gap-2">
-          <span className="hidden" />
-          <h2 className="text-[13px] font-black text-black tracking-wide">تصفح الأقسام</h2>
-          <span className="hidden">منتجات المتجر المعتمدة</span>
-        </div>
-        <div className="hidden sm:flex items-center gap-1.5">
-          <button
-            onClick={() => scroll("right")}
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 shadow-sm transition-all"
-            aria-label="السابق"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => scroll("left")}
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 shadow-sm transition-all"
-            aria-label="التالي"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+    <section className="ix-template-categories" aria-labelledby="ix-template-categories-title">
+      <div className="ix-template-section-heading">
+        <div>
+          <h2 id="ix-template-categories-title">تصفح الأقسام</h2>
+          <p>الأقسام الفعلية المسجلة في كتالوج المتجر</p>
         </div>
       </div>
 
-      {/* Horizontal Scroll Track */}
-      <div
-        ref={scrollRef}
-        className="grid grid-cols-5 items-start gap-x-1 gap-y-4 overflow-visible px-0 pb-1 sm:flex sm:gap-6 sm:overflow-x-auto sm:px-2 sm:pb-2"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        {CATEGORIES_META.map((cat) => {
-          const isSelected = selectedCategoryId === cat.id;
-          const realImage = getCategoryImage(cat.id);
-          const IconComponent = cat.icon;
+      {!isBrowser || query.isLoading ? (
+        <div className="ix-template-category-grid" aria-label="جارٍ تحميل الأقسام">
+          {Array.from({ length: 6 }, (_, index) => (
+            <span className="ix-template-category-skeleton" key={index} />
+          ))}
+        </div>
+      ) : (
+        <div className="ix-template-category-grid">
+          {categories.map((category, index) => {
+            const selected = selectedCategoryId === category.id;
+            const product = categoryProduct(products, category.id);
+            const image = category.imageUrl || product?.image;
+            const Icon =
+              category.id === "all" ? Grid3X3 : iconForCategory(category.id, category.name);
 
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              aria-label={`تصفح قسم: ${cat.name}`}
-              aria-pressed={isSelected}
-              onClick={() => onSelectCategory(cat.id)}
-              className="group flex w-full flex-col items-center transition-transform active:scale-95 focus-visible:outline-none sm:w-auto sm:flex-shrink-0"
-            >
-              {/* Circular Thumbnail Container */}
-              <div className="relative">
-                <div
-                  className={`relative flex h-[58px] w-[58px] sm:h-20 sm:w-20 md:h-24 md:w-24 items-center justify-center rounded-full overflow-hidden transition-all duration-200 ${
-                    isSelected
-                      ? "ring-2 ring-[#F93A00] ring-offset-2 ring-offset-white dark:ring-offset-neutral-900 scale-105 shadow-md shadow-[#F93A00]/20"
-                      : "border-2 border-neutral-200 dark:border-neutral-800 group-hover:border-neutral-400 dark:group-hover:border-neutral-600 shadow-sm"
-                  }`}
-                >
-                  {realImage ? (
-                    <img
-                      src={realImage}
-                      alt={cat.name}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110 bg-white dark:bg-neutral-900"
-                    />
-                  ) : (
-                    <div
-                      className={`h-full w-full bg-gradient-to-br ${cat.gradient} flex items-center justify-center p-3 shadow-inner`}
-                    >
-                      <IconComponent className="h-7 w-7 sm:h-8 sm:w-8 transition-transform group-hover:scale-110 drop-shadow" />
-                    </div>
-                  )}
-
-                  {/* Dark subtle overlay on hover */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                </div>
-
-                {/* Badge if any */}
-                {cat.badge && (
-                  <span
-                    className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-black leading-none text-white shadow-sm ${
-                      cat.badge.includes("خصم")
-                        ? "bg-[#F93A00]"
-                        : cat.badge === "جديد"
-                          ? "bg-emerald-600"
-                          : "bg-black"
-                    }`}
-                  >
-                    {cat.badge}
-                  </span>
-                )}
-              </div>
-
-              {/* Title underneath */}
-              <span
-                className={`mt-1.5 max-w-[66px] text-center text-[10px] font-medium leading-tight transition-colors line-clamp-2 sm:max-w-[95px] sm:text-xs ${
-                  isSelected
-                    ? "text-[#F93A00] font-black"
-                    : "text-neutral-800 dark:text-neutral-200 group-hover:text-black dark:group-hover:text-white"
-                }`}
+            return (
+              <button
+                type="button"
+                key={category.id}
+                onClick={() => onSelectCategory(category.id)}
+                aria-pressed={selected}
+                className={`ix-template-category-card ix-template-category-card--${(index % 6) + 1}${selected ? " is-selected" : ""}`}
               >
-                {cat.name}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+                <span className="ix-template-category-card__media" aria-hidden="true">
+                  {image ? <img src={image} alt="" loading="lazy" /> : <Icon />}
+                </span>
+                <strong>{category.name}</strong>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
-};
+}

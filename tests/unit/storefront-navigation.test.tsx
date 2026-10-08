@@ -41,7 +41,7 @@ describe("storefront navigation actions", () => {
     fireEvent.click(screen.getByRole("button", { name: "عرض جميع الفئات" }));
     expect(menu).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole("button", { name: "تنفيذ البحث" }));
-    fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Enter" });
     expect(search).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole("button", { name: "البحث بالكاميرا" })).toBeNull();
   });

@@ -13,8 +13,10 @@ import {
 import { useEffect, useMemo, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import indexesThemeCss from "../themes/indexes.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/app-shell";
+import { StorefrontThemeProvider } from "../components/storefront-theme-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { TenantProvider } from "@/components/tenant-provider";
 import { AppearanceProvider } from "@/components/appearance-provider";
@@ -269,6 +271,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     });
 
     const linkTags: Record<string, string>[] = [
+      { rel: "stylesheet", href: indexesThemeCss },
       { rel: "stylesheet", href: appCss },
       {
         rel: "icon",
@@ -406,23 +409,25 @@ function RootComponent() {
   }, [queryClient]);
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{ persister: idbPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}
-    >
-      <AppearanceProvider initialSettings={settings}>
-        <TenantProvider>
-          {isAdmin || isBare ? (
-            <Outlet />
-          ) : (
-            <AppShell>
+    <StorefrontThemeProvider>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{ persister: idbPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}
+      >
+        <AppearanceProvider initialSettings={settings}>
+          <TenantProvider>
+            {isAdmin || isBare ? (
               <Outlet />
-            </AppShell>
-          )}
-          <Toaster />
-          <NetworkManager />
-        </TenantProvider>
-      </AppearanceProvider>
-    </PersistQueryClientProvider>
+            ) : (
+              <AppShell>
+                <Outlet />
+              </AppShell>
+            )}
+            <Toaster />
+            <NetworkManager />
+          </TenantProvider>
+        </AppearanceProvider>
+      </PersistQueryClientProvider>
+    </StorefrontThemeProvider>
   );
 }

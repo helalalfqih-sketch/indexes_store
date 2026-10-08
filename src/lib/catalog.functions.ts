@@ -94,6 +94,11 @@ export const listProducts = createServerFn({ method: "GET" })
         search: z.string().optional(),
         limit: z.number().int().min(1).max(100).optional(),
         offset: z.number().int().min(0).optional(),
+        sortBy: z.enum(["default", "price-high", "price-low", "best-selling", "newest"]).optional(),
+        minPrice: z.number().nonnegative().optional(),
+        maxPrice: z.number().nonnegative().optional(),
+        brands: z.array(z.string().trim().min(1).max(80)).max(60).optional(),
+        inStockOnly: z.boolean().optional(),
       })
       .parse(raw ?? {}),
   )
@@ -116,6 +121,11 @@ export const listProducts = createServerFn({ method: "GET" })
       search: data.search,
       limit: data.limit,
       offset: data.offset,
+      sortBy: data.sortBy,
+      minPrice: data.minPrice,
+      maxPrice: data.maxPrice,
+      brands: data.brands,
+      inStockOnly: data.inStockOnly,
     });
     return products;
   });

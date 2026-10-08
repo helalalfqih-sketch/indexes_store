@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { Bell, Heart, Menu, Search, ShoppingCart } from "lucide-react";
 import { categoriesQuery } from "@/lib/queries/catalog";
-import React from "react";
-import { Bell, ChevronDown, Heart, Menu, Search, ShoppingCart } from "lucide-react";
 
 interface MobileReferenceHeaderProps {
   selectedCategory?: string;
@@ -11,13 +10,13 @@ interface MobileReferenceHeaderProps {
   cartCount: number;
   unreadNotificationsCount: number;
   onOpenCart: () => void;
-  onOpenNotifications: () => void;
+  onOpenNotifications?: () => void;
   onOpenMenu: () => void;
   onOpenWishlist?: () => void;
   onSelectCategory?: (categoryId: string) => void;
 }
 
-export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
+export function MobileReferenceHeader({
   selectedCategory = "all",
   searchQuery,
   onSearchChange,
@@ -29,8 +28,12 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
   onOpenMenu,
   onOpenWishlist,
   onSelectCategory,
-}) => {
-  const { data: categoryRows = [] } = useQuery(categoriesQuery());
+}: MobileReferenceHeaderProps) {
+  const isBrowser = typeof window !== "undefined";
+  const { data: categoryRows = [] } = useQuery({
+    ...categoriesQuery(),
+    enabled: isBrowser,
+  });
   const categories = [
     { id: "all", label: "الكل" },
     ...categoryRows
@@ -40,109 +43,93 @@ export const MobileReferenceHeader: React.FC<MobileReferenceHeaderProps> = ({
         label: category.id === "frontpage" ? "مختارات المتجر" : category.name,
       })),
   ];
+
   return (
-    <header
-      className="sticky top-0 z-40 border-b border-white/10 bg-black text-white shadow-[0_1px_5px_rgba(0,0,0,0.22)] md:hidden"
-      dir="rtl"
-    >
-      <div className="flex h-12 items-center gap-1 px-2" dir="ltr">
-        {onOpenWishlist && (
-          <button
-            type="button"
-            onClick={onOpenWishlist}
-            aria-label="المفضلة"
-            className="grid h-10 w-9 shrink-0 place-items-center text-white"
-          >
-            <Heart className="h-[21px] w-[21px] stroke-[1.8]" />
-          </button>
-        )}
-
-        <div
-          className="flex h-9 min-w-0 flex-1 items-center border border-white bg-white"
-          dir="rtl"
-        >
-          <input
-            value={searchQuery}
-            onChange={(event) => onSearchChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") onSubmitSearch?.();
-            }}
-            placeholder="البحث"
-            aria-label="البحث عن المنتجات"
-            className="min-w-0 flex-1 bg-transparent px-2 text-right text-[12px] font-medium text-black outline-none placeholder:text-neutral-500"
-          />
-          <button
-            type="button"
-            onClick={onSubmitSearch}
-            aria-label="تنفيذ البحث"
-            className="grid h-9 w-9 shrink-0 place-items-center border-r border-neutral-200 text-black"
-          >
-            <Search className="h-[18px] w-[18px] stroke-[2]" />
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={onOpenCart}
-          aria-label="السلة"
-          className="relative grid h-10 w-9 shrink-0 place-items-center text-white"
-        >
-          <ShoppingCart className="h-[22px] w-[22px] stroke-[1.8]" />
-          {cartCount > 0 && (
-            <span className="absolute right-0 top-0 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-[#ff2442] px-0.5 text-[8px] font-black text-white">
-              {cartCount}
-            </span>
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={onOpenNotifications}
-          aria-label="الإشعارات"
-          className="relative grid h-10 w-9 shrink-0 place-items-center text-white"
-        >
-          <Bell className="h-[21px] w-[21px] stroke-[1.8]" />
-          {unreadNotificationsCount > 0 && (
-            <span className="absolute right-0.5 top-1 h-2 w-2 rounded-full bg-[#ff2442]" />
-          )}
-        </button>
+    <header className="ix-template-mobile-header md:hidden" dir="rtl">
+      <div className="ix-template-mobile-header__bar">
         <button
           type="button"
           onClick={onOpenMenu}
           aria-label="القائمة"
-          className="grid h-10 w-8 shrink-0 place-items-center text-white"
+          className="ix-template-mobile-header__icon"
         >
-          <Menu className="h-[20px] w-[20px] stroke-[1.8]" />
+          <Menu aria-hidden="true" />
         </button>
+
+        <a href="/" className="ix-template-mobile-header__brand" aria-label="اندكس ستور - الرئيسية">
+          <strong>
+            indexes <span>Store</span>
+          </strong>
+        </a>
+
+        <div className="ix-template-mobile-header__actions">
+          {onOpenWishlist && (
+            <button type="button" onClick={onOpenWishlist} aria-label="المفضلة">
+              <Heart aria-hidden="true" />
+            </button>
+          )}
+          {onOpenNotifications && (
+            <button type="button" onClick={onOpenNotifications} aria-label="الإشعارات">
+              <Bell aria-hidden="true" />
+              {unreadNotificationsCount > 0 && (
+                <span className="ix-template-mobile-header__dot" aria-hidden="true" />
+              )}
+            </button>
+          )}
+          <button type="button" onClick={onOpenCart} aria-label="سلة التسوق">
+            <ShoppingCart aria-hidden="true" />
+            {cartCount > 0 && <span className="ix-template-mobile-header__count">{cartCount}</span>}
+          </button>
+        </div>
       </div>
 
-      <nav
-        className="flex h-9 items-end gap-5 overflow-x-auto border-t border-white/10 px-3 no-scrollbar"
-        aria-label="أقسام المتجر"
+      <form
+        className="ix-template-mobile-header__search"
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmitSearch?.();
+        }}
       >
+        <Search aria-hidden="true" />
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => onSearchChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              onSubmitSearch?.();
+            }
+          }}
+          placeholder="ابحث عن منتج أو قسم أو علامة تجارية..."
+          aria-label="البحث عن المنتجات"
+        />
+        <button type="submit" aria-label="تنفيذ البحث">
+          بحث
+        </button>
+      </form>
+
+      <p className="ix-template-mobile-header__tagline">
+        كل ما تحتاجه لمنزلك وسيارتك والعناية الشخصية
+      </p>
+
+      <nav className="ix-template-mobile-header__quick" aria-label="أقسام المتجر">
         {categories.map((category) => (
           <button
             type="button"
             key={category.id}
-            aria-label={category.label}
             aria-current={category.id === selectedCategory ? "page" : undefined}
             onClick={() => onSelectCategory?.(category.id)}
-            className={`relative h-9 shrink-0 whitespace-nowrap text-[11px] font-bold ${category.id === selectedCategory ? "font-black text-white" : "text-white/75"}`}
+            className={category.id === selectedCategory ? "is-active" : undefined}
           >
             {category.label}
-            {category.id === selectedCategory && (
-              <span className="absolute inset-x-0 bottom-0 h-[2px] bg-white" />
-            )}
           </button>
         ))}
-        <button
-          type="button"
-          onClick={onOpenMenu}
-          aria-label="عرض جميع الفئات"
-          className="grid h-9 shrink-0 place-items-center text-white/80"
-        >
-          <ChevronDown className="h-3.5 w-3.5" />
+        <button type="button" onClick={onOpenMenu} aria-label="عرض جميع الفئات">
+          جميع الأقسام
         </button>
       </nav>
     </header>
   );
-};
+}

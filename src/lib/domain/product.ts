@@ -19,6 +19,8 @@ export type ProductDTO = {
   media?: ProductMediaItem[] | null;
   model_url: string | null;
   stock: number;
+  /** False when the source only exposes availability and not an exact quantity. */
+  stock_is_exact?: boolean;
   reserved_stock: number;
   rating: number;
   reviews_count: number;

@@ -278,6 +278,11 @@ export interface ProductFilters {
   limit?: number;
   offset?: number;
   includeUnpublished?: boolean;
+  sortBy?: "default" | "price-high" | "price-low" | "best-selling" | "newest";
+  minPrice?: number;
+  maxPrice?: number;
+  brands?: string[];
+  inStockOnly?: boolean;
 }
 
 export type ProductCreateInput = Omit<
@@ -287,11 +292,35 @@ export type ProductCreateInput = Omit<
 
 export const productsRepo = {
   async list(db: DB, filters: ProductFilters = {}): Promise<ProductDTO[]> {
-    let q = db.from("products").select("*").order("created_at", { ascending: false });
+    let q = db.from("products").select("*");
     if (filters.tenantId) q = q.eq("tenant_id", filters.tenantId);
     if (!filters.includeUnpublished) q = q.eq("is_published", true);
     if (filters.categoryId) q = q.eq("category_id", filters.categoryId);
     if (filters.search) q = q.ilike("name", `%${filters.search}%`);
+    if (filters.minPrice !== undefined) q = q.gte("price", filters.minPrice);
+    if (filters.maxPrice !== undefined) q = q.lte("price", filters.maxPrice);
+    if (filters.brands?.length) q = q.in("brand", filters.brands);
+    if (filters.inStockOnly) q = q.gt("stock", 0);
+    switch (filters.sortBy) {
+      case "price-high":
+        q = q.order("price", { ascending: false }).order("created_at", { ascending: false });
+        break;
+      case "price-low":
+        q = q.order("price", { ascending: true }).order("created_at", { ascending: false });
+        break;
+      case "best-selling":
+        // The legacy table has no sales counter. Reviews provide a stable
+        // popularity order without claiming a purchase count.
+        q = q.order("reviews_count", { ascending: false }).order("created_at", {
+          ascending: false,
+        });
+        break;
+      case "newest":
+      case "default":
+      default:
+        q = q.order("created_at", { ascending: false });
+        break;
+    }
     if (filters.limit) q = q.limit(filters.limit);
     if (filters.offset != null && filters.limit) {
       q = q.range(filters.offset, filters.offset + filters.limit - 1);

@@ -59,6 +59,62 @@ describe("Supabase quota resilience", () => {
     expect(headers.get("authorization")).toBeNull();
   });
 
+  it("bounds a stalled provider request without blocking the next request", async () => {
+    const baseFetch = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce((_input, init) => {
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            "abort",
+            () => reject(init.signal?.reason ?? new DOMException("Aborted", "AbortError")),
+            { once: true },
+          );
+        });
+      })
+      .mockResolvedValueOnce(new Response("[]", { status: 200 }));
+    const resilientFetch = createSupabaseFetch("sb_publishable_fixture", {
+      fetch: baseFetch,
+      timeoutMs: 5,
+      cooldownMs: 60_000,
+    });
+
+    const timedOut = await resilientFetch(
+      "https://timeout-fixture.supabase.co/rest/v1/storefront_settings",
+    );
+    expect(timedOut.status).toBe(503);
+    await expect(timedOut.json()).resolves.toMatchObject({ code: SUPABASE_UNAVAILABLE_CODE });
+
+    const followingResponse = await resilientFetch(
+      "https://timeout-fixture.supabase.co/rest/v1/tenants",
+    );
+    expect(followingResponse.status).toBe(200);
+    expect(baseFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("preserves an explicit caller abort instead of reporting a provider outage", async () => {
+    const baseFetch = vi.fn<typeof fetch>().mockImplementation((_input, init) => {
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener(
+          "abort",
+          () => reject(init.signal?.reason ?? new DOMException("Aborted", "AbortError")),
+          { once: true },
+        );
+      });
+    });
+    const controller = new AbortController();
+    const resilientFetch = createSupabaseFetch("sb_publishable_fixture", {
+      fetch: baseFetch,
+      timeoutMs: 1_000,
+    });
+    const request = resilientFetch("https://caller-abort-fixture.supabase.co/rest/v1/products", {
+      signal: controller.signal,
+    });
+
+    controller.abort(new DOMException("Navigation cancelled", "AbortError"));
+
+    await expect(request).rejects.toMatchObject({ name: "AbortError" });
+  });
+
   it("does not open the provider circuit for an unrelated payment-required response", async () => {
     const baseFetch = vi
       .fn<typeof fetch>()

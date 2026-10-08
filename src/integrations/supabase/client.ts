@@ -27,7 +27,12 @@ function createSupabaseClient() {
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
+      // SSR must never spend the full platform runtime waiting for an
+      // unavailable data plane. Browser mutations/uploads retain the more
+      // generous default timeout from the resilience layer.
+      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY, {
+        timeoutMs: typeof window === "undefined" ? 4_000 : undefined,
+      }),
     },
     auth: {
       storage: typeof window !== "undefined" ? localStorage : undefined,

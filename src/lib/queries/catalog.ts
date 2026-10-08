@@ -41,7 +41,7 @@ export const INFINITE_CATALOG_QUERY_POLICY = {
  * Increment when catalog persistence semantics change. This deliberately
  * invalidates old persisted React Query catalog snapshots after deployment.
  */
-const CATALOG_CACHE_VERSION = "v5" as const;
+const CATALOG_CACHE_VERSION = "v6" as const;
 export const DEFAULT_CATALOG_PAGE_SIZE = 24;
 
 export type CatalogProductsQueryInput = Pick<
@@ -88,11 +88,9 @@ const seededOffers = (limit: number): LegacyProductShape[] => {
   const seeded = seededCatalog();
   const offers = seeded.filter(
     (product) =>
-      product.isDeal ||
-      (typeof product.oldPrice === "number" && product.oldPrice > product.price) ||
-      Boolean(product.badge),
+      product.isDeal || (typeof product.oldPrice === "number" && product.oldPrice > product.price),
   );
-  return (offers.length ? offers : seeded).slice(0, limit);
+  return offers.slice(0, limit);
 };
 
 /** Stable, primitive-only query keys */

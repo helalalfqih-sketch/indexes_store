@@ -1,17 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { SortOption } from "./types";
 import {
   Grid,
-  Watch,
-  Headphones,
   Sparkles,
-  Home,
-  Smartphone,
-  Wrench,
-  Car,
-  Dumbbell,
-  Baby,
   SlidersHorizontal,
   TrendingUp,
   TrendingDown,
@@ -34,6 +27,7 @@ import {
 export type PriceRangePreset = "all" | "under-20k" | "20k-50k" | "over-50k" | "custom";
 
 import { STORE_BRANDS, RATING_OPTIONS } from "./filter-options";
+import { categoriesQuery } from "@/lib/queries/catalog";
 
 export interface CategoryBarProps {
   selectedCategoryId: string;
@@ -48,20 +42,8 @@ export interface CategoryBarProps {
   onSelectBrands?: (brands: string[]) => void;
   selectedRatings?: string[];
   onSelectRatings?: (ratings: string[]) => void;
+  onResetFilters?: () => void;
 }
-
-const CATEGORY_ITEMS = [
-  { id: "all", name: "الكل", icon: Grid },
-  { id: "tools", name: "أدوات ومعدات", icon: Wrench },
-  { id: "automotive", name: "مستلزمات السيارات", icon: Car },
-  { id: "health_fitness", name: "الصحة واللياقة", icon: Dumbbell },
-  { id: "home_appliances", name: "أجهزة ومنزل", icon: Home },
-  { id: "baby_kids", name: "مستلزمات الأطفال", icon: Baby },
-  { id: "smartwatches", name: "ساعات ذكية", icon: Watch },
-  { id: "audio", name: "سماعات وصوتيات", icon: Headphones },
-  { id: "perfumes", name: "عطور وبخور", icon: Sparkles },
-  { id: "accessories", name: "إكسسوارات وهواتف", icon: Smartphone },
-];
 
 const PRICE_PRESETS: {
   id: PriceRangePreset;
@@ -84,7 +66,7 @@ const SORT_OPTIONS: {
   { id: "default", label: "الترتيب الافتراضي", icon: SlidersHorizontal },
   { id: "price-low", label: "الأقل سعراً (منخفض-مرتفع)", icon: TrendingDown, badge: "رخيص" },
   { id: "price-high", label: "الأعلى سعراً (مرتفع-منخفض)", icon: TrendingUp, badge: "فاخر" },
-  { id: "best-selling", label: "الأكثر مبيعاً", icon: Flame, badge: "شائع" },
+  { id: "best-selling", label: "الأكثر رواجاً", icon: Flame, badge: "شائع" },
   { id: "newest", label: "الأحدث وصولاً", icon: Sparkles, badge: "جديد" },
 ];
 
@@ -101,6 +83,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   onSelectBrands,
   selectedRatings = [],
   onSelectRatings,
+  onResetFilters,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCustomDrawerOpen, setIsCustomDrawerOpen] = useState(false);
@@ -108,6 +91,21 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   const [isRatingDrawerOpen, setIsRatingDrawerOpen] = useState(false);
   const [tempMin, setTempMin] = useState<string>(customMinPrice ? String(customMinPrice) : "");
   const [tempMax, setTempMax] = useState<string>(customMaxPrice ? String(customMaxPrice) : "");
+  const clientQueriesEnabled = typeof window !== "undefined";
+  const { data: catalogCategories = [] } = useQuery({
+    ...categoriesQuery(),
+    enabled: clientQueriesEnabled,
+  });
+  const categoryItems = [
+    { id: "all", name: "الكل", icon: Grid },
+    ...catalogCategories
+      .filter((category) => category.id !== "all")
+      .map((category) => ({
+        id: category.id,
+        name: category.id === "frontpage" ? "مختارات المتجر" : category.name,
+        icon: Tag,
+      })),
+  ];
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -154,6 +152,13 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   };
 
   const handleResetAllFilters = () => {
+    if (onResetFilters) {
+      onResetFilters();
+      setIsCustomDrawerOpen(false);
+      setIsBrandDrawerOpen(false);
+      setIsRatingDrawerOpen(false);
+      return;
+    }
     onSelectCategory("all");
     if (onSelectPriceRange) onSelectPriceRange("all");
     if (onSelectBrands) onSelectBrands([]);
@@ -205,7 +210,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
         className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 scroll-smooth dir-rtl"
         style={{ touchAction: "pan-x pan-y", scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {CATEGORY_ITEMS.map((cat) => {
+        {categoryItems.map((cat) => {
           const isSelected = selectedCategoryId === cat.id;
           const IconComp = cat.icon;
           return (
