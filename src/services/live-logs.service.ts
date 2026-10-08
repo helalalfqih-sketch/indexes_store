@@ -1,6 +1,7 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createMiddleware, createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type ErrorTypeCategory =
   | "Admin UI"
@@ -48,7 +49,7 @@ export function generateSuggestedFix(
   cause: string,
   location: string,
   stackTrace?: string | null,
-  errorType?: string
+  errorType?: string,
 ): string {
   const lowerName = (errorName || "").toLowerCase();
   const lowerCause = (cause || "").toLowerCase();
@@ -124,20 +125,142 @@ export function generateSuggestedFix(
 // In-memory ring buffer — stores ONLY real captured errors (max 200)
 // This starts empty; real errors are pushed via logLiveErrorFn()
 const inMemoryLiveLogs: SystemLiveLogEntry[] = [];
+const SERVER_LOG_DEDUPE_MS = 5 * 60_000;
+const PUBLIC_REPORT_WINDOW_MS = 60_000;
+const PUBLIC_REPORT_LIMIT = 5;
+const PUBLIC_REPORT_MAX_KEYS = 2_000;
+const recentServerLogs = new Map<string, number>();
+const publicReportWindows = new Map<string, { startedAt: number; count: number }>();
 
-// Helper to get service-role client on server or fallback safely to anon client
+function sanitizeLogText(value: unknown, maxLength: number): string {
+  return String(value ?? "")
+    .replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]")
+    .replace(/sb_secret_[A-Za-z0-9_-]+/g, "[SECRET_KEY_REDACTED]")
+    .replace(/sb_publishable_[A-Za-z0-9_-]+/g, "[PUB_KEY_REDACTED]")
+    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[EMAIL_REDACTED]")
+    .replace(/(?:\+?967|0)?\s*[7137][0-9]{8}/g, "[PHONE_REDACTED]")
+    .slice(0, maxLength);
+}
+
+function sanitizeLogContext(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const sanitized = Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .slice(0, 30)
+      .map(([key, item]) => [
+        sanitizeLogText(key, 80),
+        typeof item === "string"
+          ? sanitizeLogText(item, 500)
+          : typeof item === "number" || typeof item === "boolean" || item == null
+            ? item
+            : sanitizeLogText(safeSerialize(item), 1_000),
+      ]),
+  );
+  return JSON.stringify(sanitized).length <= 8_000 ? sanitized : {};
+}
+
+function safeSerialize(value: unknown): string {
+  const seen = new WeakSet<object>();
+  try {
+    return (
+      JSON.stringify(value, (_key, nestedValue) => {
+        if (typeof nestedValue === "bigint") return nestedValue.toString();
+        if (nestedValue && typeof nestedValue === "object") {
+          if (seen.has(nestedValue)) return "[Circular]";
+          seen.add(nestedValue);
+        }
+        return nestedValue;
+      }) ?? String(value)
+    );
+  } catch {
+    return "[Unserializable context]";
+  }
+}
+
+function isDuplicateServerLog(signature: string): boolean {
+  const currentTime = Date.now();
+  const lastSeen = recentServerLogs.get(signature) ?? 0;
+  if (currentTime - lastSeen < SERVER_LOG_DEDUPE_MS) return true;
+  recentServerLogs.set(signature, currentTime);
+  if (recentServerLogs.size > 500) {
+    for (const [key, seenAt] of recentServerLogs) {
+      if (currentTime - seenAt >= SERVER_LOG_DEDUPE_MS) recentServerLogs.delete(key);
+    }
+  }
+  return false;
+}
+
+async function publicReportKey(): Promise<string> {
+  try {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const headers = getRequest().headers;
+    const clientAddress =
+      headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+      headers.get("x-real-ip") ||
+      headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "unknown";
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(clientAddress));
+    return Array.from(new Uint8Array(digest).slice(0, 12), (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
+  } catch {
+    return "unknown";
+  }
+}
+
+function allowPublicReport(key: string): boolean {
+  const currentTime = Date.now();
+  const window = publicReportWindows.get(key);
+  if (!window || currentTime - window.startedAt >= PUBLIC_REPORT_WINDOW_MS) {
+    if (!window && publicReportWindows.size >= PUBLIC_REPORT_MAX_KEYS) {
+      for (const [existingKey, existingWindow] of publicReportWindows) {
+        if (currentTime - existingWindow.startedAt >= PUBLIC_REPORT_WINDOW_MS) {
+          publicReportWindows.delete(existingKey);
+        }
+      }
+      while (publicReportWindows.size >= PUBLIC_REPORT_MAX_KEYS) {
+        const oldestKey = publicReportWindows.keys().next().value;
+        if (typeof oldestKey !== "string") break;
+        publicReportWindows.delete(oldestKey);
+      }
+    }
+    if (window) publicReportWindows.delete(key);
+    publicReportWindows.set(key, { startedAt: currentTime, count: 1 });
+    return true;
+  }
+  if (window.count >= PUBLIC_REPORT_LIMIT) return false;
+  window.count += 1;
+  return true;
+}
+
+const liveLogsAuth = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return next({ headers: token ? { Authorization: `Bearer ${token}` } : {} });
+});
+
+async function assertLiveLogsAdmin(context: any): Promise<void> {
+  const { data, error } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "admin",
+  });
+  if (error || data !== true) throw new Error("Forbidden");
+}
+
+// Telemetry persistence is a privileged server operation. If the server key is
+// unavailable, keep the bounded in-memory copy instead of attempting a public
+// anonymous insert.
 async function getDbClient() {
   try {
-    const hasServiceKey = typeof process !== "undefined" && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
-    if (hasServiceKey) {
-      const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const admin = getSupabaseAdmin();
-      if (admin) return admin;
-    }
+    const hasServiceKey =
+      typeof process !== "undefined" && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+    if (!hasServiceKey) return null;
+
+    const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return getSupabaseAdmin();
   } catch {
-    // fallback
+    return null;
   }
-  return supabase;
 }
 
 /**
@@ -153,24 +276,29 @@ export async function logServerError(opts: {
   stackTrace?: string;
   context?: Record<string, any>;
 }): Promise<void> {
-  const fix = generateSuggestedFix(
-    opts.errorName,
-    opts.cause,
-    opts.location,
-    opts.stackTrace,
-    opts.errorType || "Server Function"
-  );
+  const level = opts.level || "error";
+  if (level === "info") return;
+
+  const errorName = sanitizeLogText(opts.errorName, 160);
+  const errorType = sanitizeLogText(opts.errorType || "Server Function", 80);
+  const location = sanitizeLogText(opts.location, 500);
+  const cause = sanitizeLogText(opts.cause, 2_000);
+  const stackTrace = opts.stackTrace ? sanitizeLogText(opts.stackTrace, 8_000) : null;
+  const signature = `${errorName}:${location}:${cause}`;
+  if (isDuplicateServerLog(signature)) return;
+
+  const fix = generateSuggestedFix(errorName, cause, location, stackTrace, errorType);
   const entry: SystemLiveLogEntry = {
     id: crypto.randomUUID(),
     tenantId: null,
-    errorName: opts.errorName,
-    errorType: opts.errorType || "Server Function",
-    level: opts.level || "error",
-    location: opts.location,
-    cause: opts.cause,
+    errorName,
+    errorType,
+    level,
+    location,
+    cause,
     suggestedFix: fix,
-    stackTrace: opts.stackTrace || null,
-    context: opts.context || {},
+    stackTrace,
+    context: sanitizeLogContext(opts.context),
     status: "open",
     createdAt: new Date().toISOString(),
   };
@@ -180,7 +308,8 @@ export async function logServerError(opts: {
   // Persist to DB using admin client (bypasses RLS across all serverless instances)
   try {
     const db = await getDbClient();
-    await (db as any).from("system_live_logs").insert({
+    if (!db) return;
+    const { error } = await (db as any).from("system_live_logs").insert({
       id: entry.id,
       error_name: entry.errorName,
       error_type: entry.errorType,
@@ -194,8 +323,9 @@ export async function logServerError(opts: {
       status: "open",
       created_at: entry.createdAt,
     });
-  } catch (err) {
-    console.warn("Log DB insert notice:", err);
+    if (error && import.meta.env.DEV) console.warn("Live log persistence unavailable");
+  } catch {
+    if (import.meta.env.DEV) console.warn("Live log persistence unavailable");
   }
 }
 
@@ -204,7 +334,7 @@ export async function logServerError(opts: {
  */
 export async function captureSupabaseQueryError<T>(
   promise: Promise<{ data: T | null; error: any }>,
-  location: string
+  location: string,
 ): Promise<{ data: T | null; error: any }> {
   const result = await promise;
   if (result.error) {
@@ -216,7 +346,12 @@ export async function captureSupabaseQueryError<T>(
       location,
       cause: err.message || err.details || "فشل تنفيذ الاستعلام في سوبا بيس",
       stackTrace: `Code: ${err.code || "N/A"}\nMessage: ${err.message || ""}\nDetails: ${err.details || ""}\nHint: ${err.hint || ""}`,
-      context: { status: 500, host: "indexes-store.vercel.app", code: err.code, details: err.details },
+      context: {
+        status: 500,
+        host: "indexes-store.vercel.app",
+        code: err.code,
+        details: err.details,
+      },
     }).catch(() => {});
   }
   return result;
@@ -226,21 +361,23 @@ export async function captureSupabaseQueryError<T>(
  * Server Fn: List system live logs with filtering and analytics.
  */
 export const listLiveLogsFn = createServerFn({ method: "GET" })
+  .middleware([liveLogsAuth, requireSupabaseAuth])
   .validator(
     z.object({
-      search: z.string().optional(),
-      errorType: z.string().optional(),
-      level: z.string().optional(),
-      status: z.string().optional(),
-      limit: z.number().optional().default(100),
-    })
+      search: z.string().max(200).optional(),
+      errorType: z.string().max(80).optional(),
+      level: z.string().max(20).optional(),
+      status: z.string().max(20).optional(),
+      limit: z.number().int().min(1).max(200).optional().default(100),
+    }),
   )
   .handler(
-    async ({ data }): Promise<{ logs: SystemLiveLogEntry[]; stats: LiveLogsStats }> => {
+    async ({ data, context }): Promise<{ logs: SystemLiveLogEntry[]; stats: LiveLogsStats }> => {
+      await assertLiveLogsAdmin(context);
       let dbLogs: SystemLiveLogEntry[] = [];
 
       try {
-        const db = await getDbClient();
+        const db = context.supabase;
         let query = (db as any)
           .from("system_live_logs")
           .select("*")
@@ -260,7 +397,13 @@ export const listLiveLogsFn = createServerFn({ method: "GET" })
             cause: row.cause,
             suggestedFix:
               row.suggested_fix ||
-              generateSuggestedFix(row.error_name, row.cause, row.location, row.stack_trace, row.error_type),
+              generateSuggestedFix(
+                row.error_name,
+                row.cause,
+                row.location,
+                row.stack_trace,
+                row.error_type,
+              ),
             stackTrace: row.stack_trace,
             context: row.context,
             status: row.status,
@@ -282,7 +425,9 @@ export const listLiveLogsFn = createServerFn({ method: "GET" })
       }
 
       // Sort by created_at DESC
-      combinedLogs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      combinedLogs.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
 
       // Apply filtering
       let filteredLogs = combinedLogs;
@@ -306,7 +451,7 @@ export const listLiveLogsFn = createServerFn({ method: "GET" })
             l.errorName.toLowerCase().includes(s) ||
             l.cause.toLowerCase().includes(s) ||
             l.location.toLowerCase().includes(s) ||
-            l.suggestedFix.toLowerCase().includes(s)
+            l.suggestedFix.toLowerCase().includes(s),
         );
       }
 
@@ -322,7 +467,7 @@ export const listLiveLogsFn = createServerFn({ method: "GET" })
       };
 
       return { logs: filteredLogs, stats };
-    }
+    },
   );
 
 /**
@@ -331,36 +476,52 @@ export const listLiveLogsFn = createServerFn({ method: "GET" })
 export const logLiveErrorFn = createServerFn({ method: "POST" })
   .validator(
     z.object({
-      errorName: z.string().min(1),
-      errorType: z.string().default("System"),
+      errorName: z.string().min(1).max(160),
+      errorType: z.string().max(80).default("System"),
       level: z.enum(["error", "warn", "fatal", "info"]).default("error"),
-      location: z.string().min(1),
-      cause: z.string().min(1),
-      suggestedFix: z.string().optional(),
-      stackTrace: z.string().optional(),
-      context: z.record(z.any()).optional(),
-      tenantId: z.string().optional(),
-    })
+      location: z.string().min(1).max(500),
+      cause: z.string().min(1).max(2_000),
+      suggestedFix: z.string().max(2_000).optional(),
+      stackTrace: z.string().max(8_000).optional(),
+      context: z
+        .record(z.any())
+        .refine((value) => JSON.stringify(value).length <= 8_000, "Context is too large")
+        .optional(),
+    }),
   )
   .handler(async ({ data }) => {
+    if (data.level === "info") return { success: true as const, ignored: true as const };
+
+    const reportKey = await publicReportKey();
+    if (!allowPublicReport(reportKey)) return { success: false as const, reason: "rate_limited" };
+
+    const errorName = sanitizeLogText(data.errorName, 160);
+    const errorType = sanitizeLogText(data.errorType, 80);
+    const location = sanitizeLogText(data.location, 500);
+    const cause = sanitizeLogText(data.cause, 2_000);
+    const stackTrace = data.stackTrace ? sanitizeLogText(data.stackTrace, 8_000) : null;
+    if (isDuplicateServerLog(`client:${errorName}:${location}:${cause}`)) {
+      return { success: true as const, deduplicated: true as const };
+    }
+
     const fix =
-      data.suggestedFix ||
-      generateSuggestedFix(data.errorName, data.cause, data.location, data.stackTrace, data.errorType);
+      (data.suggestedFix ? sanitizeLogText(data.suggestedFix, 2_000) : null) ||
+      generateSuggestedFix(errorName, cause, location, stackTrace, errorType);
 
     const generatedId = crypto.randomUUID();
     const nowIso = new Date().toISOString();
 
     const memEntry: SystemLiveLogEntry = {
       id: generatedId,
-      tenantId: data.tenantId || null,
-      errorName: data.errorName,
-      errorType: data.errorType,
+      tenantId: null,
+      errorName,
+      errorType,
       level: data.level,
-      location: data.location,
-      cause: data.cause,
+      location,
+      cause,
       suggestedFix: fix,
-      stackTrace: data.stackTrace || null,
-      context: data.context || {},
+      stackTrace,
+      context: sanitizeLogContext(data.context),
       status: "open",
       createdAt: nowIso,
     };
@@ -372,24 +533,26 @@ export const logLiveErrorFn = createServerFn({ method: "POST" })
     // Try saving to Supabase DB table
     try {
       const db = await getDbClient();
+      if (!db) return { success: true as const, log: memEntry };
       const payload = {
         id: generatedId,
-        error_name: data.errorName,
-        error_type: data.errorType,
+        error_name: errorName,
+        error_type: errorType,
         level: data.level,
-        location: data.location,
-        cause: data.cause,
+        location,
+        cause,
         suggested_fix: fix,
-        stack_trace: data.stackTrace || null,
-        context: data.context || {},
-        tenant_id: data.tenantId || null,
+        stack_trace: stackTrace,
+        context: memEntry.context || {},
+        tenant_id: null,
         status: "open",
         created_at: nowIso,
       };
 
-      await (db as any).from("system_live_logs").insert(payload);
-    } catch (err) {
-      console.warn("Database persistence for live log notice:", err);
+      const { error } = await (db as any).from("system_live_logs").insert(payload);
+      if (error && import.meta.env.DEV) console.warn("Live log persistence unavailable");
+    } catch {
+      if (import.meta.env.DEV) console.warn("Live log persistence unavailable");
     }
 
     return { success: true, log: memEntry };
@@ -399,29 +562,25 @@ export const logLiveErrorFn = createServerFn({ method: "POST" })
  * Server Fn: Update status of a live log (e.g. resolve or investigate).
  */
 export const updateLiveLogStatusFn = createServerFn({ method: "POST" })
+  .middleware([liveLogsAuth, requireSupabaseAuth])
   .validator(
     z.object({
       id: z.string(),
       status: z.enum(["open", "investigating", "resolved"]),
-    })
+    }),
   )
-  .handler(async ({ data }) => {
-    // Update in-memory log
-    const memLog = inMemoryLiveLogs.find((l) => l.id === data.id);
-    if (memLog) {
-      memLog.status = data.status;
-    }
+  .handler(async ({ data, context }) => {
+    await assertLiveLogsAdmin(context);
+    const db = await getDbClient();
+    if (!db) throw new Error("Live log storage is unavailable");
+    const { error } = await (db as any)
+      .from("system_live_logs")
+      .update({ status: data.status })
+      .eq("id", data.id);
+    if (error) throw new Error("Unable to update the live log");
 
-    // Try updating Supabase DB
-    try {
-      const db = await getDbClient();
-      await (db as any)
-        .from("system_live_logs")
-        .update({ status: data.status })
-        .eq("id", data.id);
-    } catch (err) {
-      console.warn("Database status update notice:", err);
-    }
+    const memLog = inMemoryLiveLogs.find((l) => l.id === data.id);
+    if (memLog) memLog.status = data.status;
 
     return { success: true };
   });
@@ -430,12 +589,26 @@ export const updateLiveLogStatusFn = createServerFn({ method: "POST" })
  * Server Fn: Clear resolved logs or clear all logs.
  */
 export const clearLiveLogsFn = createServerFn({ method: "POST" })
+  .middleware([liveLogsAuth, requireSupabaseAuth])
   .validator(
     z.object({
       clearMode: z.enum(["resolved_only", "all"]),
-    })
+    }),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertLiveLogsAdmin(context);
+    const db = await getDbClient();
+    if (!db) throw new Error("Live log storage is unavailable");
+
+    let query = (db as any).from("system_live_logs").delete();
+    if (data.clearMode === "resolved_only") {
+      query = query.eq("status", "resolved");
+    } else {
+      query = query.neq("id", "00000000-0000-0000-0000-000000000000");
+    }
+    const { error } = await query;
+    if (error) throw new Error("Unable to clear live logs");
+
     if (data.clearMode === "resolved_only") {
       for (let i = inMemoryLiveLogs.length - 1; i >= 0; i--) {
         if (inMemoryLiveLogs[i].status === "resolved") {
@@ -444,19 +617,6 @@ export const clearLiveLogsFn = createServerFn({ method: "POST" })
       }
     } else {
       inMemoryLiveLogs.length = 0;
-    }
-
-    try {
-      const db = await getDbClient();
-      let query = (db as any).from("system_live_logs").delete();
-      if (data.clearMode === "resolved_only") {
-        query = query.eq("status", "resolved");
-      } else {
-        query = query.neq("id", "00000000-0000-0000-0000-000000000000");
-      }
-      await query;
-    } catch (err) {
-      console.warn("Database delete logs notice:", err);
     }
 
     return { success: true };

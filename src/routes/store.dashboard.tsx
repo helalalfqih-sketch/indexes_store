@@ -5,6 +5,9 @@ import { DollarSign, ShoppingBag, Users, Package, AlertTriangle, Sparkles } from
 import { getAdminDashboardStats, type AdminDashboardStats } from "@/lib/admin-dashboard.functions";
 import { useStoreContext } from "@/components/store/store-shell";
 import { formatPrice } from "@/lib/store-data";
+import { createAdaptivePollingInterval } from "@/lib/query-polling";
+
+const STORE_DASHBOARD_POLLING_INTERVAL = createAdaptivePollingInterval(60_000, 10 * 60_000);
 
 export const Route = createFileRoute("/store/dashboard")({
   component: StoreDashboardPage,
@@ -15,9 +18,11 @@ function StoreDashboardPage() {
   // RLS-scoped stats: for a store member this returns THEIR tenant's numbers.
   const fetchStats = useServerFn(getAdminDashboardStats);
   const statsQ = useQuery({
-    queryKey: ["store-dashboard-stats"],
+    queryKey: ["store-dashboard-stats", store.tenantId],
     queryFn: () => fetchStats(),
-    refetchInterval: 60_000,
+    staleTime: 30_000,
+    refetchInterval: STORE_DASHBOARD_POLLING_INTERVAL,
+    refetchIntervalInBackground: false,
   });
   const s = statsQ.data as AdminDashboardStats | undefined;
 
@@ -25,20 +30,33 @@ function StoreDashboardPage() {
     { label: "إيرادات 7 أيام", value: s ? formatPrice(s.revenue7d) : "…", icon: DollarSign },
     { label: "طلبات 7 أيام", value: s ? String(s.orders7d) : "…", icon: ShoppingBag },
     { label: "عملاء مسجَّلون", value: s ? String(s.customersCount) : "…", icon: Users },
-    { label: "المنتجات", value: s ? `${s.productsCount} (${s.publishedCount} منشور)` : "…", icon: Package },
+    {
+      label: "المنتجات",
+      value: s ? `${s.productsCount} (${s.publishedCount} منشور)` : "…",
+      icon: Package,
+    },
     { label: "مخزون منخفض", value: s ? String(s.lowStock.length) : "…", icon: AlertTriangle },
   ];
 
   const insights: Array<{ text: string; to: string }> = [];
   if (s) {
-    if (s.pendingOrders > 0) insights.push({ text: `📦 ${s.pendingOrders} طلب بانتظار التأكيد.`, to: "/store/orders" });
+    if (s.pendingOrders > 0)
+      insights.push({ text: `📦 ${s.pendingOrders} طلب بانتظار التأكيد.`, to: "/store/orders" });
     if (s.lowStock.length > 0)
       insights.push({
-        text: `⚠️ مخزون منخفض: ${s.lowStock.slice(0, 3).map((p) => p.name).join("، ")}${s.lowStock.length > 3 ? "…" : ""}`,
+        text: `⚠️ مخزون منخفض: ${s.lowStock
+          .slice(0, 3)
+          .map((p) => p.name)
+          .join("، ")}${s.lowStock.length > 3 ? "…" : ""}`,
         to: "/store/inventory",
       });
-    if (s.metaUnsyncedCount > 0) insights.push({ text: `🔄 ${s.metaUnsyncedCount} منتجاً غير متزامن مع Meta.`, to: "/store/products" });
-    if (insights.length === 0) insights.push({ text: "✨ كل شيء على ما يرام — لا تنبيهات.", to: "/store/dashboard" });
+    if (s.metaUnsyncedCount > 0)
+      insights.push({
+        text: `🔄 ${s.metaUnsyncedCount} منتجاً غير متزامن مع Meta.`,
+        to: "/store/products",
+      });
+    if (insights.length === 0)
+      insights.push({ text: "✨ كل شيء على ما يرام — لا تنبيهات.", to: "/store/dashboard" });
   }
 
   const daily = s?.dailyRevenue ?? [];
@@ -47,13 +65,17 @@ function StoreDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black lg:text-3xl">مرحباً بك في {store.profile?.display_name || store.name} 👋</h1>
+        <h1 className="text-2xl font-black lg:text-3xl">
+          مرحباً بك في {store.profile?.display_name || store.name} 👋
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">نظرة سريعة على أداء متجرك</p>
       </div>
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {statsQ.isLoading
-          ? Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-24 animate-pulse rounded-2xl glass" />)
+          ? Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-24 animate-pulse rounded-2xl glass" />
+            ))
           : cards.map((c) => {
               const Icon = c.icon;
               return (
@@ -98,10 +120,15 @@ function StoreDashboardPage() {
           <h2 className="text-sm font-black">رؤى ذكية</h2>
           <ul className="mt-3 space-y-2 text-xs">
             {statsQ.isLoading
-              ? Array.from({ length: 3 }).map((_, i) => <li key={i} className="h-10 animate-pulse rounded-xl bg-accent/50" />)
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <li key={i} className="h-10 animate-pulse rounded-xl bg-accent/50" />
+                ))
               : insights.map((tip, i) => (
                   <li key={i}>
-                    <Link to={tip.to} className="flex items-start gap-2 rounded-xl bg-accent/50 p-2.5 transition hover:bg-accent">
+                    <Link
+                      to={tip.to}
+                      className="flex items-start gap-2 rounded-xl bg-accent/50 p-2.5 transition hover:bg-accent"
+                    >
                       <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                       <span>{tip.text}</span>
                     </Link>

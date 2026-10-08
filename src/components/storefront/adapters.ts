@@ -60,28 +60,21 @@ export function resolveProductGallery(p: LegacyProductShape): string[] {
   return gallery;
 }
 
-function isPromotionalBadge(value: string | undefined): value is string {
-  if (!value) return false;
-  const badge = value.trim();
-  if (
-    !badge ||
-    badge.startsWith("_") ||
-    /^(color|size|material|pattern|gender|age|gcat|fbcat)_?:/i.test(badge)
-  ) {
-    return false;
-  }
-  return /(خصم|عرض|تخفيض|جديد|وصل حديث|new|sale|offer|discount)/i.test(badge);
-}
-
 export function mapProductionProductToDesignProduct(p: LegacyProductShape): DesignProduct {
   const rawPrice = p.price;
-  const priceYER =
-    typeof rawPrice === "number" && !isNaN(rawPrice) && isFinite(rawPrice) && rawPrice > 0
-      ? rawPrice
-      : 1000;
+  const hasValidPrice =
+    typeof rawPrice === "number" &&
+    !Number.isNaN(rawPrice) &&
+    Number.isFinite(rawPrice) &&
+    rawPrice > 0;
+  const priceYER = hasValidPrice ? rawPrice : 0;
 
   const rawOldPrice =
-    p.oldPrice && typeof p.oldPrice === "number" && !isNaN(p.oldPrice) && isFinite(p.oldPrice)
+    hasValidPrice &&
+    p.oldPrice &&
+    typeof p.oldPrice === "number" &&
+    !Number.isNaN(p.oldPrice) &&
+    Number.isFinite(p.oldPrice)
       ? p.oldPrice
       : undefined;
 
@@ -90,9 +83,7 @@ export function mapProductionProductToDesignProduct(p: LegacyProductShape): Desi
   const discountBadge =
     rawOldPrice && rawOldPrice > priceYER
       ? `خصم ${Math.round(((rawOldPrice - priceYER) / rawOldPrice) * 100)}%`
-      : isPromotionalBadge(p.badge)
-        ? p.badge
-        : undefined;
+      : undefined;
 
   const mainImage = resolveProductImage(p);
   const gallery = resolveProductGallery(p);
@@ -147,7 +138,12 @@ export function mapProductionProductToDesignProduct(p: LegacyProductShape): Desi
     videoUrl,
     category: p.categoryId || "all",
     brand: p.brand || pAny.brand_id || undefined,
-    inStock: p.stock > 0,
+    // A missing/invalid price must never become an invented purchasable value.
+    inStock: hasValidPrice && p.stock > 0,
+    stockCount:
+      p.stockIsExact === false
+        ? undefined
+        : Math.max(0, Number.isFinite(p.stock) ? Math.trunc(p.stock) : 0),
     isBestOffer: p.isDeal || Boolean(rawOldPrice && rawOldPrice > priceYER),
     isNewArrival: p.featured || false,
     isFeatured: p.featured || false,

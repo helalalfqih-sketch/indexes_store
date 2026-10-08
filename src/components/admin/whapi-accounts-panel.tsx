@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -19,6 +19,10 @@ import {
   logoutWhapiAccount,
   reconnectWhapiAccount,
 } from "@/lib/whapi-accounts.functions";
+import { createAdaptivePollingInterval } from "@/lib/query-polling";
+
+const WHAPI_QR_POLLING_INTERVAL = createAdaptivePollingInterval(10_000, 60_000);
+const WHAPI_QR_POLLING_WINDOW_MS = 5 * 60_000;
 
 export function WhapiAccountsPanel() {
   const queryClient = useQueryClient();
@@ -29,14 +33,37 @@ export function WhapiAccountsPanel() {
   const logoutFn = useServerFn(logoutWhapiAccount);
   const [newLabel, setNewLabel] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [qr, setQr] = useState<{ accountId: string; dataUrl: string } | null>(null);
+  const [qr, setQr] = useState<{
+    accountId: string;
+    dataUrl: string;
+    startedAt: number;
+  } | null>(null);
 
   const query = useQuery({
     queryKey: ["whapi-whatsapp-accounts"],
     queryFn: () => listAccountsFn(),
-    refetchInterval: 15000,
+    staleTime: 60_000,
+    refetchInterval: qr
+      ? (currentQuery) =>
+          Date.now() - qr.startedAt < WHAPI_QR_POLLING_WINDOW_MS
+            ? WHAPI_QR_POLLING_INTERVAL(currentQuery)
+            : false
+      : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
+
+  useEffect(() => {
+    if (!qr || !query.data?.accounts) return;
+    const connected = query.data.accounts.some(
+      (account) => account.id === qr.accountId && account.isLoggedIn,
+    );
+    if (connected) {
+      setQr(null);
+      toast.success("تم ربط حساب واتساب بنجاح");
+    }
+  }, [qr, query.data?.accounts]);
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ["whapi-whatsapp-accounts"] });
@@ -61,7 +88,8 @@ export function WhapiAccountsPanel() {
 
   const qrMutation = useMutation({
     mutationFn: (accountId: string) => getQrFn({ data: { accountId } }),
-    onSuccess: (result) => setQr({ accountId: result.accountId, dataUrl: result.qrDataUrl }),
+    onSuccess: (result) =>
+      setQr({ accountId: result.accountId, dataUrl: result.qrDataUrl, startedAt: Date.now() }),
     onError: (error: Error) => toast.error(error.message || "تعذر إنشاء QR"),
   });
 

@@ -90,6 +90,7 @@ export type LegacyProductShape = {
   price: number;
   oldPrice?: number;
   stock: number;
+  stockIsExact?: boolean;
   image: string;
   images?: string[];
   videos?: string[] | null;
@@ -139,6 +140,7 @@ export const toLegacyProduct = (p: ProductDTO): LegacyProductShape => ({
         ? p.compare_at_price
         : undefined,
   stock: p.stock,
+  stockIsExact: p.stock_is_exact,
   image: p.images.find(Boolean) ?? "",
   images: p.images,
   videos: p.videos ?? null,

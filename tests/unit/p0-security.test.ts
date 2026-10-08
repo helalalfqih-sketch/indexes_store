@@ -276,7 +276,9 @@ describe("P0 Security Suite — UI State & Polling Constraints", () => {
       "utf-8",
     );
     expect(developerFile).toContain("refetchIntervalInBackground: false");
-    expect(developerFile).toContain("refetchInterval: isExecuting ? 5000 : false");
+    expect(developerFile).toContain(
+      "refetchInterval: isExecuting ? EXECUTION_POLLING_INTERVAL : false",
+    );
   });
 
   it("admin.products.tsx does not leak CATALOG_IMPORT_URL to browser bundle", () => {
@@ -312,6 +314,16 @@ describe("P0 Security Suite — UI State & Polling Constraints", () => {
     expect(catalogFunctionsFile).not.toContain("process.env.CATALOG_IMPORT_URL");
     expect(catalogFunctionsFile).not.toContain("fetchCsvProducts");
     expect(catalogFunctionsFile).not.toContain("firebasestorage.googleapis.com");
+  });
+
+  it("keeps catalog sync identity deterministic for non-Latin products", () => {
+    const edgeFunctionFile = fs.readFileSync(
+      path.resolve(__dirname, "../../supabase/functions/sync-firebase-catalog/index.ts"),
+      "utf-8",
+    );
+    expect(edgeFunctionFile).toContain("deterministicProductSlug");
+    expect(edgeFunctionFile).toContain('crypto.subtle.digest(\n    "SHA-256"');
+    expect(edgeFunctionFile).not.toMatch(/prod-\$\{Date\.now\(\)\}/);
   });
 
   it("keeps catalog database reads and writes in bounded batches", () => {

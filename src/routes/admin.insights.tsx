@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import {
   Brain,
   TrendingUp,
@@ -11,10 +12,15 @@ import {
   AlertTriangle,
   BarChart3,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listAdminProducts } from "@/lib/actions/admin.actions";
 import { getAdminDashboardStats, type AdminDashboardStats } from "@/lib/admin-dashboard.functions";
 import { formatPrice } from "@/lib/store-data";
+import { createAdaptivePollingInterval } from "@/lib/query-polling";
+import { StorefrontRealtimeService } from "@/lib/services/storefront-realtime.service";
+
+const INSIGHTS_STALE_TIME = 5 * 60_000;
+const INSIGHTS_POLLING_INTERVAL = createAdaptivePollingInterval(INSIGHTS_STALE_TIME, 30 * 60_000);
 
 export const Route = createFileRoute("/admin/insights")({
   component: InsightsPage,
@@ -24,15 +30,22 @@ function MiniBar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
     <div className="h-2 w-24 rounded-full bg-muted overflow-hidden">
-      <div
-        className="h-full rounded-full bg-primary transition-all"
-        style={{ width: `${pct}%` }}
-      />
+      <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
 function InsightsPage() {
+  const queryClient = useQueryClient();
+
+  useEffect(
+    () =>
+      StorefrontRealtimeService.subscribeFinancial(() => {
+        void queryClient.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
+      }),
+    [queryClient],
+  );
+
   const productsQ = useQuery({
     queryKey: ["admin-products"],
     queryFn: () => listAdminProducts(),
@@ -40,7 +53,10 @@ function InsightsPage() {
   const statsQ = useQuery({
     queryKey: ["admin-dashboard-stats"],
     queryFn: () => getAdminDashboardStats(),
-    refetchInterval: 60_000,
+    staleTime: INSIGHTS_STALE_TIME,
+    refetchInterval: INSIGHTS_POLLING_INTERVAL,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 
   const products = (productsQ.data ?? []) as Array<{
@@ -74,9 +90,7 @@ function InsightsPage() {
           <Brain className="h-6 w-6 text-primary" />
           رؤى الذكاء الاصطناعي
         </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          تحليل أداء المتجر وتوصيات التحسين
-        </p>
+        <p className="text-sm text-muted-foreground mt-0.5">تحليل أداء المتجر وتوصيات التحسين</p>
       </div>
 
       {isLoading ? (
@@ -118,7 +132,9 @@ function InsightsPage() {
               },
             ].map((kpi) => (
               <div key={kpi.label} className="rounded-2xl border border-border bg-surface p-4">
-                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${kpi.bg} mb-3`}>
+                <div
+                  className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${kpi.bg} mb-3`}
+                >
                   <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
                 </div>
                 <div className={`text-2xl font-black ${kpi.color}`}>{kpi.value}</div>
@@ -138,7 +154,9 @@ function InsightsPage() {
                 {lowStock.map((p) => (
                   <div key={p.id} className="flex items-center justify-between px-4 py-2.5">
                     <span className="text-sm font-medium truncate max-w-[60%]">{p.name}</span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${p.stock <= 0 ? "bg-destructive/20 text-destructive" : "bg-warning/20 text-warning"}`}>
+                    <span
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full ${p.stock <= 0 ? "bg-destructive/20 text-destructive" : "bg-warning/20 text-warning"}`}
+                    >
                       {p.stock <= 0 ? "نفد المخزون" : `${p.stock} قطعة`}
                     </span>
                   </div>
@@ -165,7 +183,9 @@ function InsightsPage() {
                     </div>
                   </div>
                   <MiniBar value={p.price} max={maxPrice} />
-                  <span className="text-xs font-bold text-primary shrink-0">{formatPrice(p.price)}</span>
+                  <span className="text-xs font-bold text-primary shrink-0">
+                    {formatPrice(p.price)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -210,7 +230,10 @@ function InsightsPage() {
                     danger: "border-destructive/30 bg-destructive/5 text-destructive",
                   };
                   return (
-                    <div key={i} className={`rounded-xl border px-4 py-3 text-sm font-medium ${colors[rec.type]}`}>
+                    <div
+                      key={i}
+                      className={`rounded-xl border px-4 py-3 text-sm font-medium ${colors[rec.type]}`}
+                    >
                       {rec.type === "warning" && "⚠️ "}
                       {rec.type === "info" && "💡 "}
                       {rec.type === "tip" && "✅ "}

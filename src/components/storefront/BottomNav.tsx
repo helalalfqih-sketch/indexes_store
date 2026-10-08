@@ -56,12 +56,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
   };
 
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-neutral-200 bg-white pb-[calc(5px+env(safe-area-inset-bottom,0px))] text-black md:hidden"
-      aria-label="التنقل السفلي"
-      dir="rtl"
-    >
-      <div className="mx-auto grid h-[58px] max-w-md grid-cols-5 items-center px-1">
+    <nav className="ix-template-bottom-nav md:hidden" aria-label="التنقل السفلي" dir="rtl">
+      <div className="mx-auto grid h-[64px] max-w-md grid-cols-5 items-center px-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
           return (
@@ -71,7 +67,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
               whileTap={{ scale: 0.94 }}
               onClick={() => activate(tab.key)}
               aria-label={tab.ariaLabel}
-              className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${isActive ? "font-black text-black" : "text-neutral-500"}`}
+              className={`relative flex h-full min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${isActive ? "font-black text-[var(--ix-primary)]" : "text-slate-500"}`}
             >
               <span className="relative grid h-6 place-items-center">
                 {React.cloneElement(tab.icon as React.ReactElement<{ className?: string }>, {
@@ -84,7 +80,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, c
                 )}
               </span>
               <span className="max-w-full truncate px-0.5">{tab.label}</span>
-              {isActive && <span className="absolute inset-x-4 bottom-0 h-[2px] bg-black" />}
+              {isActive && (
+                <span className="absolute inset-x-4 bottom-0 h-[2px] bg-[var(--ix-primary)]" />
+              )}
             </motion.button>
           );
         })}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { BadgeCheck, ShoppingBag } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { ProductGlobeCanvas } from "@/components/product-sphere-hero";
 import { AiSearchPanel } from "@/components/home/ai-search-panel";
@@ -30,7 +30,6 @@ const TRUST_H = 74;
 const PANEL_GAP = 8;
 /** Space reserved for the floating bottom navigation (nav height + gap). */
 const NAV_RESERVE = 76;
-
 
 type Geometry = {
   cw: number;
@@ -105,7 +104,13 @@ function useStageGeometry(stageRef: React.RefObject<HTMLDivElement | null>): Geo
     // measured from the real stage offset — so the AI and trust panels always
     // stay fully visible above the floating bottom navigation.
     const available =
-      vh - Math.max(stageTop, header) - IDENTITY_H - GLOBE_GAP - AI_H - TRUST_H - PANEL_GAP * 2 -
+      vh -
+      Math.max(stageTop, header) -
+      IDENTITY_H -
+      GLOBE_GAP -
+      AI_H -
+      TRUST_H -
+      PANEL_GAP * 2 -
       (vw >= 768 ? NAV_RESERVE + 34 : NAV_RESERVE);
     // The planet reads edge-to-edge like the reference: the canvas box may
     // bleed past the page gutters, but never past the viewport, so no orbiting
@@ -138,8 +143,6 @@ function useStageGeometry(stageRef: React.RefObject<HTMLDivElement | null>): Geo
     // Sticky release point expressed as scroll progress (offset end→start).
     const pEnd = Math.min(0.94, Math.max(0.5, (sectionH - heroH) / sectionH));
 
-
-
     // Text-protection zone: wide enough that no tile crosses the headline,
     // subline or CTA while the initial state is on screen.
     const zoneW = desktop ? 270 : Math.min(cw * 0.7, 262);
@@ -147,7 +150,7 @@ function useStageGeometry(stageRef: React.RefObject<HTMLDivElement | null>): Geo
 
     const xEnd = cw / 2 - 21 - compactDiameter * 0.58;
     // Copy column stops before the globe's visual edge (tiles included), so the
-    // headline, "50%" and CTA are never covered by the sphere.
+    // headline, catalog label and CTA are never covered by the sphere.
     const copyW = Math.max(
       118,
       Math.min(desktop ? 300 : 210, cw / 2 + xEnd - compactDiameter * 0.62 - 26),
@@ -181,7 +184,6 @@ function useStageGeometry(stageRef: React.RefObject<HTMLDivElement | null>): Geo
       pEnd,
       exclusion: { x: zoneW / base, y0: -zoneH / base, y1: zoneH / base },
     };
-
   }, [cw, vh, vw, stageTop]);
 }
 
@@ -192,7 +194,6 @@ function StoreIdentity() {
         <div className="min-w-0 text-end">
           <p className="flex items-center justify-end gap-1.5 truncate text-[17.5px] font-bold leading-tight">
             اندكس ستور
-            <BadgeCheck className="h-[16px] w-[16px] shrink-0 fill-neon text-ink" />
           </p>
           <p className="truncate text-[12.5px] leading-tight text-ink-muted">
             كل ما تحتاجه في مكان واحد
@@ -208,7 +209,6 @@ function StoreIdentity() {
     </div>
   );
 }
-
 
 export function ScrollGlobeHero({ products }: { products: LegacyProductShape[] }) {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -315,7 +315,7 @@ export function ScrollGlobeHero({ products }: { products: LegacyProductShape[] }
       <div ref={stageRef} className="sticky" style={{ top: geom.header, height: geom.heroH }}>
         {/* Compact banner shell (final state) — fades and scales into place */}
         <motion.section
-          aria-label="عروض حصرية"
+          aria-label="استكشاف المنتجات"
           style={{ opacity: shellOpacity, scale: shellScale, height: geom.heroH }}
           className="relative z-10 overflow-hidden rounded-[24px] border border-[rgba(139,92,246,0.42)] bg-[linear-gradient(145deg,rgba(15,21,43,0.96),rgba(5,8,22,0.98))] will-change-transform"
         >
@@ -394,7 +394,6 @@ export function ScrollGlobeHero({ products }: { products: LegacyProductShape[] }
         >
           <TrustStrip />
         </motion.div>
-
       </div>
     </div>
   );

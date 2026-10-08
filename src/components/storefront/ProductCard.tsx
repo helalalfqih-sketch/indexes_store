@@ -37,7 +37,7 @@ export function ProductCard({
   const discountPercent = hasRealDiscount
     ? Math.round((1 - product.priceYER / product.originalPriceYER) * 100)
     : null;
-  const isAvailable = product.inStock !== false && product.stockCount !== 0;
+  const isAvailable = product.priceYER > 0 && product.inStock !== false && product.stockCount !== 0;
   const widthClass =
     variant === "horizontal" ? "w-[148px] shrink-0 snap-start sm:w-[180px]" : "w-full";
 
@@ -52,14 +52,18 @@ export function ProductCard({
       data-product-rating={product.rating}
       data-product-stock={product.stockCount}
       data-product-category={product.category}
-      className={`${widthClass} group min-w-0 cursor-pointer bg-surface text-foreground`}
+      className={`${widthClass} ix-template-product-card group min-w-0 bg-surface text-foreground`}
       dir="rtl"
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-[#f7f7f7]">
+      <div className="ix-template-product-card__media">
         <Link
           to="/product/$slug"
           params={{ slug: product.slug || product.id }}
           aria-label={product.name}
+          onClick={(event) => {
+            event.preventDefault();
+            onSelectProduct(product);
+          }}
         >
           <OptimizedImage
             src={product.image || FALLBACK_IMAGE}
@@ -67,13 +71,11 @@ export function ProductCard({
             size="card"
             eager={index < 4}
             draggable={false}
-            className="h-full w-full bg-[#f7f7f7]"
+            className="h-full w-full bg-[#f7f7f7] object-contain p-2 transition-transform duration-300 group-hover:scale-[1.03]"
           />
         </Link>
         {discountPercent ? (
-          <span className="absolute right-1.5 top-1.5 bg-[#ff2442] px-1.5 py-0.5 text-[9px] font-black text-white">
-            -{discountPercent}%
-          </span>
+          <span className="ix-template-product-card__badge">-{discountPercent}%</span>
         ) : null}
         <button
           type="button"
@@ -91,20 +93,24 @@ export function ProductCard({
         </button>
       </div>
 
-      <div className="px-1.5 pb-2 pt-1.5">
-        <h2 className="line-clamp-2 min-h-8 text-[11px] font-medium leading-4 text-foreground">
+      <div className="ix-template-product-card__body">
+        <h2 className="line-clamp-2 min-h-[38px] text-xs font-bold leading-[1.55] text-foreground">
           <Link
             to="/product/$slug"
             params={{ slug: product.slug || product.id }}
             className="focus-visible:underline"
+            onClick={(event) => {
+              event.preventDefault();
+              onSelectProduct(product);
+            }}
           >
             {product.name}
           </Link>
         </h2>
-        <div className="mt-1 flex items-center justify-between gap-1">
+        <div className="mt-2 flex items-end justify-between gap-2">
           <div className="min-w-0">
-            <strong className="block truncate text-[13px] font-black text-foreground">
-              {formatPrice(product.priceYER, currency)}
+            <strong className="block truncate text-base font-black text-[var(--ix-danger)]">
+              {product.priceYER > 0 ? formatPrice(product.priceYER, currency) : "السعر غير متاح"}
             </strong>
             {hasRealDiscount && (
               <span className="block truncate text-[10px] text-neutral-400 line-through">
@@ -124,7 +130,7 @@ export function ProductCard({
               window.setTimeout(() => setAdded(false), 1400);
             }}
             aria-label={added ? "تمت الإضافة إلى السلة" : "إضافة إلى السلة"}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-black text-black transition-colors hover:bg-black hover:text-white disabled:border-neutral-200 disabled:text-neutral-300"
+            className="ix-template-product-card__add"
           >
             {added ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
           </button>

@@ -1,4 +1,8 @@
 import { WhapiError } from "./whapi.server";
+import {
+  createSupabaseFetch,
+  isSupabaseServiceRestriction,
+} from "@/integrations/supabase/resilience";
 
 export interface WhapiAuthClient {
   auth: {
@@ -16,7 +20,10 @@ async function createAuthClient(token: string): Promise<WhapiAuthClient> {
   if (!url || !key) throw new WhapiError("AUTH_NOT_CONFIGURED", 503);
   const { createClient } = await import("@supabase/supabase-js");
   return createClient(url, key, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
+    global: {
+      fetch: createSupabaseFetch(key),
+      headers: { Authorization: `Bearer ${token}` },
+    },
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
 }
@@ -31,6 +38,9 @@ export async function requireWhapiAdmin(
   if (!match || match[1].length > 8192) throw new WhapiError("UNAUTHORIZED", 401);
   const client = await factory(match[1]);
   const { data, error } = await client.auth.getUser(match[1]);
+  if (isSupabaseServiceRestriction(error)) {
+    throw new WhapiError("AUTHENTICATION_UNAVAILABLE", 503);
+  }
   if (error || !data.user?.id) throw new WhapiError("UNAUTHORIZED", 401);
   // A deployment-wide WHAPI_TOKEN must NOT be available to tenant admins/customers.
   const role = await client.rpc("has_role", { _user_id: data.user.id, _role: "admin" });

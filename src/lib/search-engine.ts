@@ -197,7 +197,8 @@ export async function searchProductsAdvanced(
       break;
     case "bestselling":
     default:
-      filtered.sort((a, b) => b.rating * b.reviews - a.rating * a.reviews);
+      // `rankCandidates` already produced relevance order. Shopify does not
+      // expose sales counts on these DTOs, so do not relabel ratings as sales.
       break;
   }
 

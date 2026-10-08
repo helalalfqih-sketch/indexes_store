@@ -2,8 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 
 /**
- * Exclusive-offers banner pieces. The banner is the final state of the
- * scroll-driven hero: offer copy on the left column, the globe on the right,
+ * Catalog banner pieces. The banner is the final state of the scroll-driven
+ * hero: catalog copy on the left column, the globe on the right,
  * carousel indicators centred at the bottom. Promotion copy is storefront
  * content — no product, price or discount record is hard-coded here.
  */
@@ -18,22 +18,20 @@ export function OfferContent({ compact, width }: { compact: boolean; width?: num
         className="font-bold leading-none"
         style={{ fontSize: compact ? "clamp(17px, 5vw, 26px)" : 44 }}
       >
-        عروض حصرية
+        استكشف المنتجات
       </h2>
-      <p
-        className="text-ink-muted"
-        style={{ fontSize: compact ? "clamp(11px, 3.2vw, 15px)" : 26 }}
-      >
-        خصومات تصل إلى
+      <p className="text-ink-muted" style={{ fontSize: compact ? "clamp(11px, 3.2vw, 15px)" : 26 }}>
+        الأسعار والتوفر من بيانات الكتالوج
       </p>
       <p
         className="bg-linear-to-l from-neon to-neon-2 bg-clip-text font-extrabold leading-[1.05] text-transparent"
         style={{ fontSize: compact ? "clamp(38px, 12vw, 64px)" : 112 }}
       >
-        50%
+        INDEXES
       </p>
       <Link
-        to="/offers"
+        to="/search"
+        search={{ q: "" }}
         className="press mt-1 inline-flex items-center justify-center gap-1.5 rounded-full bg-linear-to-l from-neon to-neon-2 font-bold text-white shadow-[0_10px_25px_-8px_var(--neon)]"
         style={{
           height: compact ? 42 : 56,
@@ -41,7 +39,7 @@ export function OfferContent({ compact, width }: { compact: boolean; width?: num
           fontSize: compact ? 14 : 21,
         }}
       >
-        تسوق الآن
+        تصفّح الآن
         <ChevronLeft className="h-4 w-4" />
       </Link>
     </div>

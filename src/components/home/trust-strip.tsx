@@ -1,15 +1,14 @@
-import { Headphones, RotateCcw, ShieldCheck, Truck } from "lucide-react";
+import { BadgeDollarSign, MessageCircle, PackageCheck, ShoppingBasket } from "lucide-react";
 
 /**
- * Storefront trust benefits. Values are storefront settings, not product data;
- * they render identically wherever the strip is used so the two placements in
- * the approved reference stay consistent.
+ * Storefront order facts. Keep these labels limited to behavior implemented by
+ * the local catalog/order flow; policy claims belong in verified CMS settings.
  */
 const PERKS = [
-  { icon: Headphones, title: "دعم 24/7", sub: "خدمة عملاء مميزة" },
-  { icon: RotateCcw, title: "إرجاع سهل", sub: "خلال 14 يوم" },
-  { icon: Truck, title: "شحن مجاني", sub: "فوق 30,000 ريال" },
-  { icon: ShieldCheck, title: "ضمان سنتين", sub: "على جميع المنتجات" },
+  { icon: BadgeDollarSign, title: "السعر المسجل", sub: "يُراجع عند الطلب" },
+  { icon: PackageCheck, title: "حالة المخزون", sub: "تُتحقق قبل التأكيد" },
+  { icon: ShoppingBasket, title: "الدفع عند الاستلام", sub: "وفق تأكيد الطلب" },
+  { icon: MessageCircle, title: "الطلب عبر واتساب", sub: "خيار متاح للتواصل" },
 ] as const;
 
 export function TrustStrip({
@@ -25,7 +24,9 @@ export function TrustStrip({
     <section
       aria-label="مزايا المتجر"
       className={`grid grid-cols-4 items-center rounded-2xl border border-ink-line bg-ink-card ${
-        stacked ? "gap-1.5 px-1.5 py-3.5" : "gap-1 px-1 py-3 lg:h-[78px] lg:gap-0 lg:divide-x lg:divide-ink-line lg:px-2 lg:py-0"
+        stacked
+          ? "gap-1.5 px-1.5 py-3.5"
+          : "gap-1 px-1 py-3 lg:h-[78px] lg:gap-0 lg:divide-x lg:divide-ink-line lg:px-2 lg:py-0"
       } ${className}`}
     >
       {PERKS.map((p) => (
