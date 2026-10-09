@@ -322,7 +322,7 @@ describe("P0 Security Suite — UI State & Polling Constraints", () => {
       "utf-8",
     );
     expect(edgeFunctionFile).toContain("deterministicProductSlug");
-    expect(edgeFunctionFile).toContain('crypto.subtle.digest(\n    "SHA-256"');
+    expect(edgeFunctionFile).toMatch(/crypto\.subtle\.digest\(\s*["']SHA-256["']/);
     expect(edgeFunctionFile).not.toMatch(/prod-\$\{Date\.now\(\)\}/);
   });
 

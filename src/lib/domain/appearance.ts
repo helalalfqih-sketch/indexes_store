@@ -181,7 +181,7 @@ export const NavigationConfigSchema = z.object({
   deliveryInfoText: z.string().catch("تُحدَّد تفاصيل التوصيل عند تأكيد الطلب"),
   footerDescription: z
     .string()
-    .catch("المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد."),
+    .catch("متجر إلكتروني يمني للتسوق عبر الإنترنت مع تجربة ثلاثية الأبعاد."),
   copyrightText: z.string().catch("جميع الحقوق محفوظة"),
   // Additional Storefront Elements Control
   shippingBarDeliveryText: z.string().catch("تُحدَّد تفاصيل التوصيل عند تأكيد الطلب"),
@@ -475,10 +475,8 @@ export type StoreIdentity = z.infer<typeof StoreIdentitySchema>;
 // ── 13. Brand Settings Schema ─────────────────────────────────────────────────
 export const BrandSettingsSchema = z.object({
   storeName: z.string().catch("اندكس ستور"),
-  shortName: z.string().catch("NOQTA"),
-  description: z
-    .string()
-    .catch("المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد."),
+  shortName: z.string().catch("Indexes Store"),
+  description: z.string().catch("متجر إلكتروني يمني للتسوق عبر الإنترنت مع تجربة ثلاثية الأبعاد."),
   tagline: z.string().catch("اختيارك الأفضل"),
   primaryColor: z.string().catch("#4f8cff"),
   secondaryColor: z.string().catch("#a259ff"),

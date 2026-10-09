@@ -1,13 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Product } from './types';
-import { HolographicGlobe } from './HolographicGlobe';
-import { Sparkles, ChevronLeft, ChevronRight, Maximize2, Minimize2, Orbit, ArrowUpRight, Play, Image as ImageIcon } from 'lucide-react';
-import type { MappedStorefrontSettings } from '@/lib/adapters/storefront-settings.adapter';
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { Product } from "./types";
+import { HolographicGlobe } from "./HolographicGlobe";
+import {
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  Minimize2,
+  Orbit,
+  ArrowUpRight,
+  Play,
+  Pause,
+  Image as ImageIcon,
+} from "lucide-react";
+import type { MappedStorefrontSettings } from "@/lib/adapters/storefront-settings.adapter";
 
 interface HeroCarouselProps {
   products: Product[];
-  heroConfig?: MappedStorefrontSettings['hero'];
+  heroConfig?: MappedStorefrontSettings["hero"];
   onSelectCategory: (categoryId: string) => void;
   onSelectProduct: (product: Product) => void;
   onOpenDeconstruction?: () => void;
@@ -24,33 +35,38 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
 }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const heroType = heroConfig?.type || 'sphere_3d';
+  const heroType = heroConfig?.type || "sphere_3d";
   const slides = heroConfig?.slides || [];
-  const totalSlides = heroType === 'slideshow' && slides.length > 0 ? slides.length : 4;
+  const totalSlides = heroType === "slideshow" && slides.length > 0 ? slides.length : 4;
 
   useEffect(() => {
-    if (totalSlides <= 1) return;
+    if (totalSlides <= 1 || prefersReducedMotion || isPaused) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % totalSlides);
     }, 5000);
     return () => clearInterval(timer);
-  }, [totalSlides]);
+  }, [totalSlides, prefersReducedMotion, isPaused]);
 
   const floatingproducts = products.slice(0, 8);
 
   // Active slide for slideshow mode
-  const activeSlide = heroType === 'slideshow' && slides.length > 0
-    ? slides[currentSlide % slides.length]
-    : null;
+  const activeSlide =
+    heroType === "slideshow" && slides.length > 0 ? slides[currentSlide % slides.length] : null;
 
   return (
     <div className="px-3 sm:px-6 py-2">
       <motion.div
         ref={containerRef}
         layout
-        transition={{ type: 'spring', stiffness: 220, damping: 25 }}
+        transition={{ type: "spring", stiffness: 220, damping: 25 }}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onFocusCapture={() => setIsPaused(true)}
+        onBlurCapture={() => setIsPaused(false)}
         className="relative w-full rounded-[28px] sm:rounded-[36px] overflow-hidden bg-[var(--color-surface-1)]/90 backdrop-blur-md border border-[var(--color-border-default)] shadow-[var(--shadow-md)] p-4 sm:p-7 flex flex-col justify-between relative group min-h-[220px]"
       >
         {/* Subtle Rim Lighting Highlights */}
@@ -58,25 +74,25 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
         <div className="absolute -bottom-12 -left-12 w-56 sm:w-80 h-56 sm:h-80 bg-[#38bdf8]/08 rounded-full blur-3xl pointer-events-none" />
 
         {/* ── 1. BANNER IMAGE MODE ── */}
-        {heroType === 'banner_image' && heroConfig?.bannerImageUrl ? (
+        {heroType === "banner_image" && heroConfig?.bannerImageUrl ? (
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 min-h-[180px]">
             <div className="flex flex-col items-start text-right gap-1 w-full md:max-w-lg z-10">
               <div className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#2F6BFF] bg-[#2F6BFF]/10 px-2.5 py-0.5 rounded-full border border-[#2F6BFF]/20">
                 <Sparkles className="w-3 h-3 text-blue-400" />
-                <span>{heroConfig?.badgeText || 'عروض سبتمبر الحصرية'}</span>
+                <span>{heroConfig?.badgeText || "عروض سبتمبر الحصرية"}</span>
               </div>
               <h2 className="text-xl sm:text-3xl font-black text-[var(--color-text-primary)] tracking-tight mt-1">
-                {heroConfig?.title || 'خصومات حصرية في متجر إندكس'}
+                {heroConfig?.title || "خصومات حصرية في متجر إندكس"}
               </h2>
               <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm font-medium leading-normal max-w-md">
-                {heroConfig?.subtitle || 'تصفح تشكيلة إندكس المتميزة بأفضل الأسعار'}
+                {heroConfig?.subtitle || "تصفح تشكيلة إندكس المتميزة بأفضل الأسعار"}
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <button
-                  onClick={() => onSelectCategory('all')}
+                  onClick={() => onSelectCategory("all")}
                   className="bg-gradient-to-r from-[#2F6BFF] to-purple-600 text-white font-black px-4 py-2 rounded-full text-xs shadow-md"
                 >
-                  {heroConfig?.ctaText || 'تسوق الآن'}
+                  {heroConfig?.ctaText || "تسوق الآن"}
                 </button>
               </div>
             </div>
@@ -88,26 +104,26 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
               />
             </div>
           </div>
-        ) : heroType === 'video' && heroConfig?.bannerVideoUrl ? (
+        ) : heroType === "video" && heroConfig?.bannerVideoUrl ? (
           /* ── 2. VIDEO BANNER MODE ── */
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 min-h-[180px]">
             <div className="flex flex-col items-start text-right gap-1 w-full md:max-w-lg z-10">
               <div className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#2F6BFF] bg-[#2F6BFF]/10 px-2.5 py-0.5 rounded-full border border-[#2F6BFF]/20">
                 <Play className="w-3 h-3 text-blue-400" />
-                <span>{heroConfig?.badgeText || 'فيديو حصري'}</span>
+                <span>{heroConfig?.badgeText || "فيديو حصري"}</span>
               </div>
               <h2 className="text-xl sm:text-3xl font-black text-[var(--color-text-primary)] tracking-tight mt-1">
-                {heroConfig?.title || 'عرض فيديو المنتجات'}
+                {heroConfig?.title || "عرض فيديو المنتجات"}
               </h2>
               <p className="text-[var(--color-text-secondary)] text-xs sm:text-sm font-medium leading-normal max-w-md">
-                {heroConfig?.subtitle || 'شاهد تفاصيل وأداء منتجاتنا بجودة فائقة'}
+                {heroConfig?.subtitle || "شاهد تفاصيل وأداء منتجاتنا بجودة فائقة"}
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <button
-                  onClick={() => onSelectCategory('all')}
+                  onClick={() => onSelectCategory("all")}
                   className="bg-gradient-to-r from-[#2F6BFF] to-purple-600 text-white font-black px-4 py-2 rounded-full text-xs shadow-md"
                 >
-                  {heroConfig?.ctaText || 'استكشف المنتجات'}
+                  {heroConfig?.ctaText || "استكشف المنتجات"}
                 </button>
               </div>
             </div>
@@ -122,7 +138,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
               />
             </div>
           </div>
-        ) : heroType === 'slideshow' && activeSlide ? (
+        ) : heroType === "slideshow" && activeSlide ? (
           /* ── 3. REAL SLIDESHOW MODE ── */
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 min-h-[180px]">
             <div className="flex flex-col items-start text-right gap-1 w-full md:max-w-lg z-10">
@@ -140,16 +156,16 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <button
-                  onClick={() => onSelectCategory('all')}
+                  onClick={() => onSelectCategory("all")}
                   className="bg-gradient-to-r from-[#2F6BFF] to-purple-600 text-white font-black px-4 py-2 rounded-full text-xs shadow-md"
                 >
-                  {activeSlide.ctaText || heroConfig?.ctaText || 'تصفح الآن'}
+                  {activeSlide.ctaText || heroConfig?.ctaText || "تصفح الآن"}
                 </button>
               </div>
             </div>
             {activeSlide.mediaUrl && (
               <div className="w-full md:w-1/2 h-44 sm:h-56 rounded-2xl overflow-hidden border border-white/10 relative">
-                {activeSlide.mediaType === 'video' ? (
+                {activeSlide.mediaType === "video" ? (
                   <video
                     src={activeSlide.mediaUrl}
                     autoPlay
@@ -232,13 +248,15 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
                     <div className="text-lg sm:text-2xl md:text-3xl font-black text-[var(--color-text-primary)] tracking-tight mt-0.5">
                       {heroConfig?.title || (
                         <>
-                          خصومات تصل إلى <span className="text-[#2F6BFF] font-black text-xl sm:text-3xl">50%</span>
+                          خصومات تصل إلى{" "}
+                          <span className="text-[#2F6BFF] font-black text-xl sm:text-3xl">50%</span>
                         </>
                       )}
                     </div>
 
                     <p className="text-[var(--color-text-secondary)] text-[11px] sm:text-sm font-medium leading-normal max-w-xs line-clamp-1 sm:line-clamp-2">
-                      {heroConfig?.subtitle || "تصفح تشكيلة إندكس المتميزة من الساعات والإلكترونيات"}
+                      {heroConfig?.subtitle ||
+                        "تصفح تشكيلة إندكس المتميزة من الساعات والإلكترونيات"}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2 mt-1.5">
@@ -251,7 +269,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
                       </button>
 
                       <button
-                        onClick={() => onSelectCategory('all')}
+                        onClick={() => onSelectCategory("all")}
                         aria-label="عرض المنتجات"
                         className="bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-[11px] sm:text-xs font-bold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border border-[var(--color-border-default)] shadow-sm flex items-center gap-1 transition-all cursor-pointer"
                       >
@@ -287,9 +305,9 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
               <motion.div
                 key="expanded-globe"
                 initial={{ opacity: 0, height: 0, scale: 0.95 }}
-                animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                animate={{ opacity: 1, height: "auto", scale: 1 }}
                 exit={{ opacity: 0, height: 0, scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 22 }}
+                transition={{ type: "spring", stiffness: 200, damping: 22 }}
                 className="relative z-10 flex flex-col items-center justify-between text-center space-y-4 py-2"
               >
                 <div className="w-full flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-3">
@@ -312,7 +330,8 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
                     {heroConfig?.globe?.titleText || "معرض المنتجات التفاعلي"}
                   </h2>
                   <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-medium">
-                    {heroConfig?.globe?.subtitleText || "اسحب الكرة — كل وجه منتج، اضغط لفتحه واستعراض تفاصيل العرض"}
+                    {heroConfig?.globe?.subtitleText ||
+                      "اسحب الكرة — كل وجه منتج، اضغط لفتحه واستعراض تفاصيل العرض"}
                   </p>
                 </div>
 
@@ -339,7 +358,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
 
                 <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                   <button
-                    onClick={() => onSelectCategory('offers')}
+                    onClick={() => onSelectCategory("offers")}
                     className="bg-[#2F6BFF] hover:bg-[#2458D8] text-white font-extrabold px-5 py-2 rounded-full shadow-md flex items-center gap-2 transition-all active:scale-95 text-xs sm:text-sm cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4 text-amber-300" />
@@ -368,11 +387,20 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
               aria-label={`الشريحة ${idx + 1}`}
               className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 cursor-pointer ${
                 idx === currentSlide
-                  ? 'w-5 sm:w-6 bg-[#2F6BFF]'
-                  : 'w-1.5 sm:w-2 bg-[var(--color-border-default)] hover:bg-[var(--color-border-strong)]'
+                  ? "w-5 sm:w-6 bg-[#2F6BFF]"
+                  : "w-1.5 sm:w-2 bg-[var(--color-border-default)] hover:bg-[var(--color-border-strong)]"
               }`}
             />
           ))}
+          {totalSlides > 1 && !prefersReducedMotion && (
+            <button
+              onClick={() => setIsPaused((prev) => !prev)}
+              aria-label={isPaused ? "تشغيل التمرير التلقائي" : "إيقاف التمرير التلقائي مؤقتاً"}
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] p-0.5 ml-1 transition-colors cursor-pointer"
+            >
+              {isPaused ? <Play className="w-2.5 h-2.5" /> : <Pause className="w-2.5 h-2.5" />}
+            </button>
+          )}
         </div>
       </motion.div>
     </div>

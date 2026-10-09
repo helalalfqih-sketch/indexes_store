@@ -370,7 +370,6 @@ export function generateOrganizationJsonLd(
         "@type": "ContactPoint",
         telephone: phone,
         contactType: "customer service",
-        contactOption: "TollFree",
         areaServed: STORE_COUNTRY,
         availableLanguage: ["Arabic"],
       },
@@ -408,7 +407,7 @@ export function generateLocalBusinessJsonLd(
     url: baseUrl,
     logo,
     image: DEFAULT_OG_IMAGE,
-    description: "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد",
+    description: "متجر إلكتروني يمني للتسوق عبر الإنترنت مع تجربة ثلاثية الأبعاد",
     telephone: phone,
     email,
     address: {
@@ -458,7 +457,7 @@ export function generateWebsiteJsonLd(baseUrl: string): Record<string, unknown> 
     url: baseUrl,
     name: SITE_NAME,
     alternateName: SITE_NAME_EN,
-    description: "المتجر اليمني الإلكتروني الرائد للتسوق الفاخر والتجربة ثلاثية الأبعاد",
+    description: "متجر إلكتروني يمني للتسوق عبر الإنترنت مع تجربة ثلاثية الأبعاد",
     inLanguage: "ar",
     publisher: {
       "@id": `${baseUrl}/#organization`,
