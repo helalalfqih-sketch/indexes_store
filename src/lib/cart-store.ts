@@ -61,14 +61,16 @@ export const useCart = create<CartState>()(
         const isPublished = p.is_published !== false && p.status !== "archived";
         if (!isPublished || !Number.isInteger(qty) || qty < 1 || qty > 999) return;
 
-        trackEvent("add_to_cart", { productId: p.id, name: p.name, price: p.price, qty });
+        const currentLine = get().items.find((item) => item.productId === p.id);
+        const addedQty = Math.min(qty, 999 - (currentLine?.qty ?? 0));
+        if (addedQty < 1) return;
 
         set((state) => {
           const existing = state.items.find((item) => item.productId === p.id);
           if (existing) {
             return {
               items: state.items.map((item) =>
-                item.productId === p.id ? { ...item, qty: Math.min(999, item.qty + qty) } : item,
+                item.productId === p.id ? { ...item, qty: item.qty + addedQty } : item,
               ),
               cartId: null,
               checkoutUrl: null,
@@ -87,7 +89,7 @@ export const useCart = create<CartState>()(
                 name: p.name,
                 price: p.price,
                 image: p.image,
-                qty,
+                qty: addedQty,
               },
             ],
             cartId: null,
@@ -95,6 +97,14 @@ export const useCart = create<CartState>()(
             syncError: null,
             syncing: false,
           };
+        });
+
+        // Report only the quantity actually added, using the explicit catalog variant.
+        trackEvent("add_to_cart", {
+          productId: p.id,
+          shopifyVariantId: currentLine?.variantId ?? p.shopifyVariantId,
+          price: currentLine?.price ?? p.price,
+          qty: addedQty,
         });
       },
       remove: (productId) => {
