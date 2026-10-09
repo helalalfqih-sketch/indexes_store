@@ -196,7 +196,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // Dynamic Structured Data
     const customSchemaConfig = {
       name: seo?.schemaOrgName || storeName,
-      alternateName: brandSettings?.shortName || "Indexes Store",
+      // Pass alternateName only when the admin has set a shortName — omitting
+      // the field is cleaner than emitting a generic unconfigured string.
+      ...(brandSettings?.shortName?.trim()
+        ? { alternateName: brandSettings.shortName.trim() }
+        : {}),
       logoUrl,
       phone: seo?.schemaPhone || generalSettings?.phone || navigation?.whatsappPhone,
       email: seo?.schemaEmail || generalSettings?.email || navigation?.supportEmail,

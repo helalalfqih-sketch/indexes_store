@@ -345,7 +345,9 @@ export function generateOrganizationJsonLd(
   config?: SchemaCustomConfig,
 ): Record<string, unknown> {
   const name = config?.name || SITE_NAME;
-  const alternateName = config?.alternateName || SITE_NAME_EN;
+  // Only emit alternateName when the admin has explicitly set one — avoids
+  // surfacing a generic fallback string that was never verified by the store.
+  const alternateName = config?.alternateName?.trim() || "";
   const logo = config?.logoUrl || logoUrl || DEFAULT_OG_IMAGE;
   const phone = config?.phone || STORE_PHONE;
   const email = config?.email || STORE_EMAIL;
@@ -357,7 +359,7 @@ export function generateOrganizationJsonLd(
     "@type": "Organization",
     "@id": `${baseUrl}/#organization`,
     name,
-    alternateName,
+    ...(alternateName ? { alternateName } : {}),
     url: baseUrl,
     logo: {
       "@type": "ImageObject",
@@ -389,7 +391,8 @@ export function generateLocalBusinessJsonLd(
   config?: SchemaCustomConfig,
 ): Record<string, unknown> {
   const name = config?.name || SITE_NAME;
-  const alternateName = config?.alternateName || SITE_NAME_EN;
+  // Only emit alternateName when the admin has explicitly set one.
+  const alternateName = config?.alternateName?.trim() || "";
   const logo = config?.logoUrl || logoUrl || DEFAULT_OG_IMAGE;
   const phone = config?.phone || STORE_PHONE;
   const email = config?.email || STORE_EMAIL;
@@ -403,7 +406,7 @@ export function generateLocalBusinessJsonLd(
     "@type": "Store",
     "@id": `${baseUrl}/#localbusiness`,
     name,
-    alternateName,
+    ...(alternateName ? { alternateName } : {}),
     url: baseUrl,
     logo,
     image: DEFAULT_OG_IMAGE,
