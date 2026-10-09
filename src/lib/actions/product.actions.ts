@@ -16,9 +16,8 @@ import {
   listProducts,
   getProductBySlug as getProductBySlugFn,
   getProductsByIds as getProductsByIdsFn,
-  inferCategorySlug,
 } from "@/lib/catalog.functions";
-import { fetchCategories } from "@/lib/actions/category.actions";
+import { normalizeCategorySlug } from "@/lib/actions/category.actions";
 import { fallbackProducts, toLegacyProduct, type LegacyProductShape } from "@/lib/data-adapter";
 import type { ProductDTO } from "@/lib/domain/product";
 import { isCatalogProductReady, shouldUseDemoCatalog } from "@/lib/catalog-readiness";
@@ -44,6 +43,10 @@ export const listProductsInput = z
   })
   .partial();
 export type ListProductsInput = z.infer<typeof listProductsInput>;
+
+const DEFAULT_CATALOG_PAGE_SIZE = 24;
+const CURATED_CATALOG_OVERSCAN_FACTOR = 2;
+const MIN_CURATED_CANDIDATES = 16;
 
 // ---------- Enrichment (until oldPrice / badges live in DB) ----------
 
@@ -78,7 +81,13 @@ async function rethrowWhenShopifyIsRequired(error: unknown): Promise<void> {
 // ---------- Actions ----------
 
 export async function fetchProducts(input: ListProductsInput = {}): Promise<LegacyProductShape[]> {
-  const data = listProductsInput.parse(input);
+  const parsed = listProductsInput.parse(input);
+  const data = {
+    ...parsed,
+    categoryId: parsed.categoryId ? normalizeCategorySlug(parsed.categoryId) : undefined,
+    limit: parsed.limit ?? DEFAULT_CATALOG_PAGE_SIZE,
+    offset: parsed.offset ?? 0,
+  };
   try {
     const shopify = await listShopifyProducts({
       data: {
@@ -90,15 +99,7 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
     });
     if (shopify.configured) {
       const readyShopifyProducts = dtoToLegacy(shopify.items);
-      if (readyShopifyProducts.length > 0) return readyShopifyProducts;
-
-      // A healthy Shopify connection does not guarantee that the returned
-      // products are storefront-ready. For example, a product can still be
-      // missing a positive price, public image, or purchasable variant. In
-      // that case, continue to the tenant-scoped Supabase catalog instead of
-      // turning the whole storefront into an empty page. Supabase rows pass
-      // the same readiness gate below, so this never exposes an unpurchasable
-      // fallback product.
+      return readyShopifyProducts;
     }
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] Shopify catalog fallback:", err);
@@ -107,12 +108,25 @@ export async function fetchProducts(input: ListProductsInput = {}): Promise<Lega
   try {
     const rows = await listProducts({ data });
     if (rows.length === 0) {
-      return developmentFallbackProducts();
+      const normalizedSearch = data.search?.toLocaleLowerCase();
+      const fallback = developmentFallbackProducts().filter((product) => {
+        if (
+          data.categoryId &&
+          normalizeCategorySlug(product.categoryId ?? "") !== data.categoryId
+        ) {
+          return false;
+        }
+        if (normalizedSearch && !product.name.toLocaleLowerCase().includes(normalizedSearch)) {
+          return false;
+        }
+        return true;
+      });
+      return fallback.slice(data.offset, data.offset + data.limit);
     }
     return dtoToLegacy(rows);
   } catch (err) {
     if (import.meta.env.DEV) console.warn("[product.actions] fetchProducts fallback:", err);
-    return developmentFallbackProducts();
+    throw new Error("تعذر تحميل المنتجات. حاول مرة أخرى.");
   }
 }
 
@@ -176,32 +190,13 @@ export async function fetchProductsByIds(ids: string[]): Promise<LegacyProductSh
  */
 export async function fetchProductsByCategory(
   categoryIdOrSlug: string,
+  options: Pick<ListProductsInput, "limit" | "offset"> = {},
 ): Promise<LegacyProductShape[]> {
-  const key = categoryIdOrSlug.trim();
-  const cleanKey = key.toLowerCase().replace(/_/g, "-");
-  const aliasKey = cleanKey === "tools-hardware" ? "tools" : cleanKey;
-
-  let categories: Awaited<ReturnType<typeof fetchCategories>> = [];
-  try {
-    categories = await fetchCategories();
-  } catch {
-    /* ignore */
-  }
-
-  const matchedCat = categories.find((category) => {
-    const categoryKey = category.id.toLowerCase().replace(/_/g, "-");
-    return category.id === key || categoryKey === aliasKey;
-  });
-  const targetSlug = matchedCat?.id ?? aliasKey;
-  const targetId = matchedCat?.id ?? key;
-
-  const all = await fetchProducts();
-  return all.filter((p) => {
-    if (p.categoryId === targetId || p.categoryId === targetSlug || p.categoryId === cleanKey) {
-      return true;
-    }
-    const inferred = inferCategorySlug(p.name, [], p.description ?? "");
-    return inferred === targetSlug || inferred === cleanKey;
+  const categoryId = normalizeCategorySlug(z.string().trim().min(1).parse(categoryIdOrSlug));
+  return fetchProducts({
+    categoryId,
+    limit: options.limit ?? DEFAULT_CATALOG_PAGE_SIZE,
+    offset: options.offset ?? 0,
   });
 }
 
@@ -211,11 +206,20 @@ export async function searchProducts(q: string): Promise<LegacyProductShape[]> {
   return fetchProducts({ search: query });
 }
 
+const curatedSectionLimits = (limit: number): { requested: number; candidates: number } => {
+  const requested = Math.min(100, Math.max(1, Math.trunc(limit)));
+  return {
+    requested,
+    candidates: Math.min(
+      100,
+      Math.max(MIN_CURATED_CANDIDATES, requested * CURATED_CATALOG_OVERSCAN_FACTOR),
+    ),
+  };
+};
+
 export async function fetchOffers(limit = 20): Promise<LegacyProductShape[]> {
-  const requested = Math.max(1, Math.min(limit, 100));
-  // Offer badges and compare-at prices are already present in the newest catalog rows.
-  // Do not download the entire Shopify catalog just to render a small storefront section.
-  const all = await fetchProducts({ limit: Math.min(100, Math.max(requested * 2, 16)) });
+  const { requested, candidates } = curatedSectionLimits(limit);
+  const all = await fetchProducts({ limit: candidates, offset: 0 });
   const explicitOffers = all.filter(
     (p) =>
       p.isDeal ||
@@ -228,16 +232,11 @@ export async function fetchOffers(limit = 20): Promise<LegacyProductShape[]> {
     return explicitOffers.slice(0, requested);
   }
 
-  // Fallback: pick products and compute deal pricing so offers page & home deals section are vibrant
-  return all.slice(0, Math.min(requested, 8)).map((p) => ({
-    ...p,
-    oldPrice: p.oldPrice || Math.round(p.price * 1.25),
-    badge: p.badge || "عرض خاص 🔥",
-  }));
+  return [];
 }
 
 export async function fetchBestSellers(limit = 20): Promise<LegacyProductShape[]> {
-  const requested = Math.max(1, Math.min(limit, 100));
-  const all = await fetchProducts({ limit: Math.min(100, Math.max(requested * 2, 16)) });
-  return [...all].sort((a, b) => b.rating * b.reviews - a.rating * a.reviews).slice(0, limit);
+  const { requested, candidates } = curatedSectionLimits(limit);
+  const all = await fetchProducts({ limit: candidates, offset: 0 });
+  return [...all].sort((a, b) => b.rating * b.reviews - a.rating * a.reviews).slice(0, requested);
 }

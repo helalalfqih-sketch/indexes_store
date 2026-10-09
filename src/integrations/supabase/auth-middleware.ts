@@ -3,6 +3,11 @@ import { createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
+import {
+  createSupabaseFetch,
+  isSupabaseServiceRestriction,
+  SUPABASE_UNAVAILABLE_MESSAGE,
+} from "./resilience";
 
 export interface SupabaseAuthContext {
   supabase: SupabaseClient<Database>;
@@ -23,33 +28,6 @@ function createAuthContext(
     supabase,
     userId,
     claims: { sub: userId, email },
-  };
-}
-
-function isNewSupabaseApiKey(value: string): boolean {
-  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
-}
-
-function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
-    const headers = new Headers(
-      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
-    );
-
-    if (init?.headers) {
-      new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-    }
-
-    // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (
-      isNewSupabaseApiKey(supabaseKey) &&
-      headers.get("Authorization") === `Bearer ${supabaseKey}`
-    ) {
-      headers.delete("Authorization");
-    }
-
-    headers.set("apikey", supabaseKey);
-    return fetch(input, { ...init, headers });
   };
 }
 
@@ -79,7 +57,9 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
 
     if (!authHeader) {
       if (process.env.NODE_ENV === "development") {
-        const mockSupabase = createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!);
+        const mockSupabase = createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!, {
+          global: { fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY!) },
+        });
         return next({
           context: createAuthContext(
             mockSupabase,
@@ -119,6 +99,9 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     });
 
     const { data, error } = await supabase.auth.getClaims(token);
+    if (isSupabaseServiceRestriction(error)) {
+      throw new Error(SUPABASE_UNAVAILABLE_MESSAGE);
+    }
     if (error || !data?.claims) {
       throw new Error("Unauthorized: Invalid token");
     }

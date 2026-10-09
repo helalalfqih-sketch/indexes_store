@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { checkoutQuoteSchema } from "./checkout-quote";
 
 const uuidSchema = z.string().uuid();
 const shopifyGidSchema = z.string().regex(/^gid:\/\/shopify\/(?:Product|ProductVariant)\/[^/]+$/);
@@ -96,6 +97,7 @@ const committedOrderSchema = z.object({
   total: z.number().nonnegative(),
   currency: z.string().min(1).max(12),
   itemsCount: z.number().int().positive(),
+  quote: checkoutQuoteSchema,
 });
 
 export type CommittedCheckoutOrder = z.infer<typeof committedOrderSchema>;

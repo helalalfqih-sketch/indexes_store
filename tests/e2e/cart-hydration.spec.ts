@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("a saved cart restores on direct entry, reload and Yemen checkout", async ({ page }) => {
+test("a saved cart restores but cannot checkout without server verification", async ({ page }) => {
   test.setTimeout(90_000);
   const hydrationErrors: string[] = [];
   const capture = (message: string) => {
@@ -10,10 +10,8 @@ test("a saved cart restores on direct entry, reload and Yemen checkout", async (
   page.on("console", (message) => {
     if (message.type() === "error") capture(message.text());
   });
-  const orderRequests: string[] = [];
   await page.route("**/_serverFn/**", (route) => {
     if (route.request().method() === "POST") {
-      orderRequests.push(route.request().url());
       return route.abort();
     }
     return route.continue();
@@ -45,15 +43,16 @@ test("a saved cart restores on direct entry, reload and Yemen checkout", async (
   });
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByText("Hydration cart fixture", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "المتابعة لإتمام الطلب", exact: true }).click();
+  // This saved fixture has no valid server product reference, and the network is
+  // unavailable. Hydration must preserve it without trusting its cached price.
+  await expect(
+    page.getByRole("button", { name: "المتابعة لإتمام الطلب", exact: true }),
+  ).toBeDisabled();
   await expect(page).toHaveURL(/\/cart$/);
-  const checkoutUrl = page.url();
   await expect(
     page.getByRole("button", { name: "تأكيد الطلب عبر واتساب", exact: true }),
-  ).toBeVisible();
-  expect(page.url()).toBe(checkoutUrl);
+  ).not.toBeVisible();
   expect(hydrationErrors).toEqual([]);
-  expect(orderRequests).toEqual([]);
 });
 
 test("saved favorites, cart, theme and Lite Mode survive a homepage reload", async ({ page }) => {

@@ -1,4 +1,4 @@
-import { QueryClient, queryOptions } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { get, set, del } from "idb-keyval";
 import {
@@ -13,13 +13,19 @@ import {
 import { useEffect, useMemo, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import indexesThemeCss from "../themes/indexes.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/app-shell";
+import { StorefrontThemeProvider } from "../components/storefront-theme-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { TenantProvider } from "@/components/tenant-provider";
-import { AppearanceProvider } from "@/components/appearance-provider";
+import {
+  AppearanceProvider,
+  getFreshStorefrontSettings,
+  STOREFRONT_SETTINGS_QUERY_KEY,
+} from "@/components/appearance-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { getStorefrontAppearance } from "@/lib/actions/appearance.actions";
+import { getPublishedStorefrontAppearanceResult } from "@/lib/actions/appearance.actions";
 import type { StorefrontSettingsShape } from "@/lib/domain/appearance";
 import { NetworkManager } from "@/components/network-manager";
 import { useHydrateCart } from "@/lib/cart-store";
@@ -89,7 +95,7 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
     () => (error instanceof Error ? error : new Error(String(error))),
     [error],
   );
-  console.error(normalizedError);
+  if (import.meta.env.DEV) console.error(normalizedError);
   const router = useRouter();
   useEffect(() => {
     reportLovableError(normalizedError, { boundary: "tanstack_root_error_component" });
@@ -101,7 +107,7 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
       <div className="max-w-md text-center">
         <h1 className="text-xl font-bold text-foreground">حدث خطأ غير متوقع</h1>
         <p className="mt-2 text-sm text-muted-foreground">حاول مرة أخرى أو ارجع للصفحة الرئيسية.</p>
-        {error != null && (
+        {import.meta.env.DEV && error != null && (
           <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-mono text-left overflow-auto max-h-40 whitespace-pre-wrap">
             <strong>Error:</strong> {normalizedError.message}
           </div>
@@ -127,16 +133,6 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
     </div>
   );
 }
-
-/** Storefront settings query — shared cache key for the root loader (5-min fresh). */
-const storefrontSettingsQueryOptions = queryOptions({
-  queryKey: ["storefront-settings"],
-  queryFn: async (): Promise<StorefrontSettingsShape> => {
-    const res = await getStorefrontAppearance();
-    return res as unknown as StorefrontSettingsShape;
-  },
-  staleTime: 5 * 60 * 1000,
-});
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: ({ loaderData }) => {
@@ -200,7 +196,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // Dynamic Structured Data
     const customSchemaConfig = {
       name: seo?.schemaOrgName || storeName,
-      alternateName: brandSettings?.shortName || "Indexes Store",
+      // Pass alternateName only when the admin has set a shortName — omitting
+      // the field is cleaner than emitting a generic unconfigured string.
+      ...(brandSettings?.shortName?.trim()
+        ? { alternateName: brandSettings.shortName.trim() }
+        : {}),
       logoUrl,
       phone: seo?.schemaPhone || generalSettings?.phone || navigation?.whatsappPhone,
       email: seo?.schemaEmail || generalSettings?.email || navigation?.supportEmail,
@@ -269,6 +269,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     });
 
     const linkTags: Record<string, string>[] = [
+      { rel: "stylesheet", href: indexesThemeCss },
       { rel: "stylesheet", href: appCss },
       {
         rel: "icon",
@@ -316,15 +317,33 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   loader: async (ctx: any) => {
-    // PERF: route the settings fetch through react-query so navigation never
-    // repeats the server roundtrip — cached 5min, deduped, refreshed silently
-    // in the background. (Realtime publish events still refresh instantly via
-    // the AppearanceProvider broadcast subscription.)
     const queryClient = ctx.context.queryClient as QueryClient;
-    const settings: StorefrontSettingsShape = await queryClient.ensureQueryData(
-      storefrontSettingsQueryOptions,
+    const freshSettings = getFreshStorefrontSettings(queryClient);
+    if (freshSettings) {
+      return {
+        settings: freshSettings,
+        settingsDegraded: false,
+        settingsRetryAfterMs: null,
+      };
+    }
+
+    const result = await getPublishedStorefrontAppearanceResult();
+
+    if (!result.degraded) {
+      queryClient.setQueryData(STOREFRONT_SETTINGS_QUERY_KEY, result.settings);
+    }
+
+    // A client-side loader rerun may already have known-good settings. Keep
+    // those visible during a degraded read instead of replacing them with the
+    // local fallback. Fresh SSR requests have no cache and use the fallback.
+    const cachedSettings = queryClient.getQueryData<StorefrontSettingsShape>(
+      STOREFRONT_SETTINGS_QUERY_KEY,
     );
-    return { settings };
+    return {
+      settings: result.degraded && cachedSettings ? cachedSettings : result.settings,
+      settingsDegraded: result.degraded,
+      settingsRetryAfterMs: result.retryAfterMs,
+    };
   },
   shellComponent: RootShell,
   component: RootComponent,
@@ -354,7 +373,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   useHydrateCart();
   const { queryClient } = Route.useRouteContext();
-  const { settings } = Route.useLoaderData();
+  const { settings, settingsDegraded, settingsRetryAfterMs } = Route.useLoaderData();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const cleanPath = pathname.replace(/^\/app/, "");
@@ -406,23 +425,29 @@ function RootComponent() {
   }, [queryClient]);
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{ persister: idbPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}
-    >
-      <AppearanceProvider initialSettings={settings}>
-        <TenantProvider>
-          {isAdmin || isBare ? (
-            <Outlet />
-          ) : (
-            <AppShell>
+    <StorefrontThemeProvider>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{ persister: idbPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}
+      >
+        <AppearanceProvider
+          initialSettings={settings}
+          initialSettingsDegraded={settingsDegraded}
+          initialRetryAfterMs={settingsRetryAfterMs}
+        >
+          <TenantProvider>
+            {isAdmin || isBare ? (
               <Outlet />
-            </AppShell>
-          )}
-          <Toaster />
-          <NetworkManager />
-        </TenantProvider>
-      </AppearanceProvider>
-    </PersistQueryClientProvider>
+            ) : (
+              <AppShell>
+                <Outlet />
+              </AppShell>
+            )}
+            <Toaster />
+            <NetworkManager />
+          </TenantProvider>
+        </AppearanceProvider>
+      </PersistQueryClientProvider>
+    </StorefrontThemeProvider>
   );
 }

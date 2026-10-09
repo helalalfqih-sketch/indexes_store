@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
+import { z } from "zod";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product as ProductionProduct } from "@/lib/store-data";
 import { useCart } from "@/lib/cart-store";
@@ -24,27 +25,22 @@ import { Header } from "@/components/storefront/Header";
 import { MainMenu } from "@/components/main-menu";
 import { MobileReferenceHeader } from "@/components/storefront/MobileReferenceHeader";
 import { ShippingBanner } from "@/components/storefront/ShippingBanner";
-import { SalesHero } from "@/components/storefront/SalesHero";
 import { VisualCategoryCircles } from "@/components/storefront/VisualCategoryCircles";
 import { SheinPromoGrid } from "@/components/storefront/SheinPromoGrid";
 import { FlashDealsSection } from "@/components/storefront/FlashDealsSection";
 import { AppDownloadModal } from "@/components/storefront/AppDownloadModal";
 import { AppInstallBanner } from "@/components/app-install-banner";
 import { CategoryBar, type PriceRangePreset } from "@/components/storefront/CategoryBar";
-import { matchesProductFilters, sortProducts } from "@/components/storefront/product-filters";
 import { BestOffersSection } from "@/components/storefront/BestOffersSection";
-import { ProductCard } from "@/components/storefront/ProductCard";
+import { InfiniteStorefrontCatalog } from "@/components/storefront/InfiniteStorefrontCatalog";
 import { TrustBar } from "@/components/storefront/TrustBar";
 import { StoreFooter } from "@/components/storefront/StoreFooter";
 import { BottomNav } from "@/components/storefront/BottomNav";
 import { FloatingWhatsAppButton } from "@/components/storefront/FloatingWhatsAppButton";
 import { useAppearance } from "@/components/appearance-provider";
+import { useStorefrontTheme } from "@/components/storefront-theme-context";
 import { mapPublishedStorefrontSettings } from "@/lib/adapters/storefront-settings.adapter";
-import {
-  ProductCardSkeleton,
-  HeroCarouselSkeleton,
-  ProductGridSkeleton,
-} from "@/components/storefront/SkeletonLoader";
+import { HeroCarouselSkeleton, ProductGridSkeleton } from "@/components/storefront/SkeletonLoader";
 
 import { ProductDetailModal } from "@/components/storefront/ProductDetailModal";
 import { CinematicProductDeconstruction } from "@/components/storefront/CinematicProductDeconstruction";
@@ -67,19 +63,31 @@ import {
   type FlyingCartItem,
 } from "@/components/storefront/AddToCartAnimation";
 
+const homeSearchParamsSchema = z.object({
+  category: z.string().trim().max(255).optional(),
+  sort: z.enum(["default", "price-high", "price-low", "best-selling", "newest"]).optional(),
+  price: z.enum(["all", "under-20k", "20k-50k", "over-50k", "custom"]).optional(),
+  minPrice: z.number().nonnegative().optional(),
+  maxPrice: z.number().nonnegative().optional(),
+  brands: z.array(z.string().trim().max(80)).max(20).optional(),
+});
+
+type HomeSearchParams = z.infer<typeof homeSearchParamsSchema>;
+
 export const Route = createFileRoute("/")({
+  validateSearch: (search) => homeSearchParamsSchema.parse(search),
   head: () => ({
     meta: [
       { title: "متجر إندكس — INDEXES STORE | التسوق الإلكتروني الفاخر في اليمن" },
       {
         name: "description",
         content:
-          "اكتشف أحدث الإلكترونيات والمنتجات الأصلية في متجر إندكس: تسوق فاخر، عروض حصرية، توصيل سريع لجميع المحافظات.",
+          "تصفح منتجات متجر إندكس المتاحة مع الأسعار والمخزون المسجلين، وراجع رسوم الشحن قبل تأكيد الطلب.",
       },
       { property: "og:title", content: "متجر إندكس — INDEXES STORE" },
       {
         property: "og:description",
-        content: "عروض حصرية تصل إلى 50% وشحن مجاني للطلبات فوق 30,000 ريال.",
+        content: "تصفح المنتجات والأسعار والتوفر، وراجع رسوم الشحن في السلة.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -111,10 +119,7 @@ export const Route = createFileRoute("/")({
 
 function HomeSkeleton() {
   return (
-    <div
-      dir="rtl"
-      className="min-h-screen space-y-6 bg-[var(--color-bg,#08090B)] p-4 text-[var(--color-text-primary,#F5F7FA)]"
-    >
+    <div dir="rtl" className="min-h-screen space-y-6 bg-[var(--ix-bg)] p-4 text-[var(--ix-text)]">
       <HeroCarouselSkeleton />
       <ProductGridSkeleton count={8} />
     </div>
@@ -122,15 +127,29 @@ function HomeSkeleton() {
 }
 
 function HomePage() {
+  const navigate = useNavigate();
+  const homeSearch = Route.useSearch();
   const { settings: rawAppearanceSettings } = useAppearance();
   const mappedSettings = useMemo(
     () => mapPublishedStorefrontSettings(rawAppearanceSettings),
     [rawAppearanceSettings],
   );
 
-  const { data: bestSellers = [], isLoading: bestSellersLoading } = useQuery(bestSellersQuery(12));
-  const { data: dailyDeals = [], isLoading: dailyDealsLoading } = useQuery(offersQuery(8));
-  const catalogLoading = bestSellersLoading || dailyDealsLoading;
+  // These are client queries, not route-loader data. Starting them during SSR
+  // leaves pending external Shopify/Supabase promises in the dehydrated query
+  // cache and can keep the response stream open during provider outages.
+  const clientCatalogEnabled = typeof window !== "undefined";
+  const { data: bestSellers = [], isLoading: bestSellersLoading } = useQuery({
+    ...bestSellersQuery(12),
+    enabled: clientCatalogEnabled,
+  });
+  const { data: dailyDeals = [], isLoading: dailyDealsLoading } = useQuery({
+    ...offersQuery(8),
+    enabled: clientCatalogEnabled,
+  });
+  // Keep the SSR and initial hydration trees identical: disabled queries are
+  // not reported as loading by React Query on the server.
+  const catalogLoading = !clientCatalogEnabled || bestSellersLoading || dailyDealsLoading;
 
   // Map production products to AI Studio design products
   const rawProductList = useMemo(() => {
@@ -195,35 +214,9 @@ function HomePage() {
     });
   }, [cartStoreItems, rawProductMap]);
 
-  // Theme State
-  // Keep the first render deterministic on server and client; restore the saved theme after mount.
-  const [theme, setTheme] = useState<"dark" | "light">("light");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("indexes_store_theme");
-    if (saved === "dark" || saved === "light") {
-      setTheme(saved);
-    } else if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark");
-    }
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    if (theme === "light") {
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-    }
-    localStorage.setItem("indexes_store_theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
+  const { mode: theme, toggleMode: toggleTheme } = useStorefrontTheme();
 
   // Admin navigation via TanStack router — the /admin route has its own AdminGate
-  const navigate = useNavigate();
   const handleOpenAdmin = useCallback(() => navigate({ to: "/admin" }), [navigate]);
 
   // Admin role check: verify confirmed role 'admin' or 'owner' in Supabase user_roles
@@ -257,22 +250,29 @@ function HomePage() {
 
   // UI State
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const selectedCategory = homeSearch.category || "all";
   const [searchQuery, setSearchQuery] = useState<string>("");
   const currency: Currency = "YER";
   const [activeTab, setActiveTab] = useState<ActiveTab>("home");
-  const [sortBy, setSortBy] = useState<SortOption>("default");
-  const [priceRange, setPriceRange] = useState<PriceRangePreset>("all");
-  const [customMinPrice, setCustomMinPrice] = useState<number | undefined>();
-  const [customMaxPrice, setCustomMaxPrice] = useState<number | undefined>();
+  const sortBy: SortOption = homeSearch.sort || "default";
+  const priceRange: PriceRangePreset = homeSearch.price || "all";
+  const customMinPrice = homeSearch.minPrice;
+  const customMaxPrice = homeSearch.maxPrice;
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
+  const selectedBrands = homeSearch.brands || [];
+
+  const updateHomeSearch = useCallback(
+    (patch: Partial<HomeSearchParams>) =>
+      navigate({ to: "/", search: { ...homeSearch, ...patch }, replace: true }),
+    [homeSearch, navigate],
+  );
+  const setSortBy = (sort: SortOption) =>
+    updateHomeSearch({ sort: sort === "default" ? undefined : sort });
 
   // Category change loading feedback
   const handleSelectCategoryWithLoading = (catId: string) => {
     setIsLoading(true);
-    setSelectedCategory(catId);
+    void updateHomeSearch({ category: catId === "all" ? undefined : catId });
     setTimeout(() => setIsLoading(false), 250);
   };
 
@@ -282,7 +282,7 @@ function HomePage() {
     {
       id: "notif-1",
       title: "مرحباً بك في متجر إندكس 🎉",
-      message: "استمتع بتجربة تسوق فريدة وشحن مجاني للطلبات فوق 30,000 ريال.",
+      message: "تصفح المنتجات المتاحة، وستظهر رسوم الشحن الفعلية قبل تأكيد الطلب.",
       time: "منذ قليل",
       read: false,
       type: "offer",
@@ -341,55 +341,9 @@ function HomePage() {
   );
 
   const bestOffers = useMemo(
-    () => products.filter((p) => p.isBestOffer || (p.discountBadge && p.discountBadge.length > 0)),
+    () => products.filter((p) => p.isBestOffer && p.originalPriceYER > p.priceYER),
     [products],
   );
-
-  const filteredProducts = useMemo(() => {
-    const list = products.filter((p) => {
-      const matchCategory = selectedCategory === "all" || p.category === selectedCategory;
-      const matchSearch =
-        !searchQuery ||
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilters = matchesProductFilters(p, {
-        priceRange,
-        customMinPrice,
-        customMaxPrice,
-        selectedBrands,
-        selectedRatings,
-      });
-      return matchCategory && matchSearch && matchesFilters;
-    });
-
-    return sortProducts(list, sortBy);
-  }, [
-    products,
-    selectedCategory,
-    searchQuery,
-    sortBy,
-    priceRange,
-    customMinPrice,
-    customMaxPrice,
-    selectedBrands,
-    selectedRatings,
-  ]);
-
-  const [visibleProductCount, setVisibleProductCount] = useState(12);
-  useEffect(() => {
-    setVisibleProductCount(12);
-  }, [
-    selectedCategory,
-    searchQuery,
-    sortBy,
-    priceRange,
-    customMinPrice,
-    customMaxPrice,
-    selectedBrands,
-    selectedRatings,
-  ]);
-  const visibleProducts = filteredProducts.slice(0, visibleProductCount);
 
   // Track recently viewed products (max 10) and open the full cinematic product route.
   // The modal remains as a safe fallback for legacy products that do not have a slug.
@@ -430,7 +384,7 @@ function HomePage() {
       description: product.description,
       price: product.priceYER,
       oldPrice: product.originalPriceYER > product.priceYER ? product.originalPriceYER : undefined,
-      stock: product.inStock ? 50 : 0,
+      stock: product.inStock ? Math.max(1, product.stockCount ?? 1) : 0,
       image: product.image,
       rating: product.rating,
       reviews: product.reviewsCount,
@@ -474,14 +428,14 @@ function HomePage() {
     } else if (tab === "account") {
       navigate({ to: "/account" });
     } else if (tab === "search") {
-      window.scrollTo({ top: 400, behavior: "smooth" });
+      navigate({ to: "/search", search: { q: "" } });
     } else if (tab === ("categories" as ActiveTab)) {
       setIsMenuOpen(true);
     }
   };
 
   return (
-    <div className="dir-rtl relative flex min-h-screen flex-col overflow-x-hidden bg-white pb-20 text-right font-sans text-black transition-colors duration-200 selection:bg-black selection:text-white md:bg-[var(--color-bg,#08090B)] md:pb-28 md:text-[var(--color-text-primary,#F5F7FA)]">
+    <div className="dir-rtl relative flex min-h-screen flex-col overflow-x-hidden bg-[var(--ix-bg)] pb-20 text-right font-sans text-[var(--ix-text)] transition-colors duration-200 selection:bg-[var(--ix-primary)] selection:text-white md:pb-28">
       {/* Global Toast Notifications */}
       <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
       <MainMenu open={isMenuOpen} onOpenChange={setIsMenuOpen} />
@@ -498,6 +452,7 @@ function HomePage() {
           <Header
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            onSubmitSearch={(query) => navigate({ to: "/search", search: { q: query } })}
             cartCount={cartStoreCount}
             unreadNotificationsCount={unreadNotificationsCount}
             wishlistCount={favorites.length}
@@ -522,6 +477,7 @@ function HomePage() {
         </div>
 
         <MobileReferenceHeader
+          selectedCategory={selectedCategory}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onSubmitSearch={() => navigate({ to: "/search", search: { q: searchQuery.trim() } })}
@@ -542,18 +498,13 @@ function HomePage() {
           />
         </div>
 
-        {/* Main Container - Extended width for SHEIN high-density layout */}
-        <main className="flex-grow w-full max-w-[1700px] mx-auto pb-28 sm:pb-32">
+        <main className="mx-auto w-full max-w-[1180px] flex-grow pb-28 sm:pb-32">
           {mappedSettings.sections.sectionOrder.map((sectionKey) => {
             switch (sectionKey) {
               case "hero":
                 if (!mappedSettings.hero.enabled) return null;
                 return (
                   <div key="hero-shein-block" className="space-y-2">
-                    <h1 className="sr-only">
-                      {mappedSettings.hero.title || "اندكس ستور - التسوق الإلكتروني في اليمن"}
-                    </h1>
-                    {/* SHEIN Campaign & Promotional Collage Grid */}
                     <SheinPromoGrid
                       products={products}
                       currency={currency}
@@ -566,41 +517,6 @@ function HomePage() {
                       onSelectProduct={handleSelectProduct}
                     />
 
-                    {/* Mobile reference-style offer strip using real store products. */}
-                    <section
-                      className="mx-2 overflow-hidden border-y border-[#f3d4d9] bg-[#fff6f7] p-2.5 shadow-none md:hidden"
-                      aria-label="عرض العملاء الجدد"
-                    >
-                      <div className="mb-2 flex items-center justify-between text-[13px] font-black text-[#e64a4a]">
-                        <span>للمستخدمين الجدد فقط</span>
-                        <span>شحن مجاني 🚚</span>
-                      </div>
-                      <div className="grid grid-cols-[1.05fr_0.95fr_0.95fr] items-center gap-2">
-                        <div className="rounded-lg bg-white/80 p-2 text-center">
-                          <span className="text-[10px] text-neutral-500">تطبق الشروط</span>
-                          <strong className="mt-1 block text-xl font-black text-[#4b9f3a]">
-                            5000
-                          </strong>
-                          <span className="text-[10px] text-neutral-500">رصيد ترحيبي</span>
-                        </div>
-                        {products.slice(0, 2).map((product) => (
-                          <button
-                            type="button"
-                            key={`new-user-${product.id}`}
-                            onClick={() => handleSelectProduct(product)}
-                            className="overflow-hidden rounded-lg bg-white shadow-sm"
-                          >
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              loading="lazy"
-                              className="h-[76px] w-full object-contain"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </section>
-
                     {/* SHEIN Visual Category Circles */}
                     <VisualCategoryCircles
                       selectedCategoryId={selectedCategory}
@@ -608,35 +524,40 @@ function HomePage() {
                       products={products}
                     />
 
-                    {/* Mobile reference-style product tabs. */}
                     <div
-                      className="mx-2 mt-2 grid grid-cols-4 gap-0 border-y border-neutral-200 bg-white p-0 text-[11px] font-black md:hidden"
-                      role="tablist"
+                      className="mx-2 mt-3 grid grid-cols-4 gap-1 rounded-xl border border-[var(--ix-line)] bg-[var(--ix-surface)] p-1 text-[10px] font-black shadow-sm md:hidden"
+                      role="navigation"
                       aria-label="تصفية المنتجات السريعة"
                     >
-                      {["من أجلك", "مداخل جديدة", "تخفيضات", "الأكثر مبيعاً"].map(
-                        (label, index) => (
-                          <button
-                            type="button"
-                            key={label}
-                            onClick={() =>
-                              document
-                                .getElementById("store-products")
-                                ?.scrollIntoView({ behavior: "smooth" })
-                            }
-                            className={`rounded-md px-1 py-2 ${index === 0 ? "bg-black text-white" : "text-neutral-700"}`}
-                            role="tab"
-                          >
-                            {label}
-                          </button>
-                        ),
-                      )}
+                      {[
+                        { label: "المنتجات", sortBy: "bestselling" as const },
+                        { label: "وصل حديثاً", sortBy: "latest" as const },
+                        { label: "العروض", sortBy: "bestselling" as const, dealsOnly: true },
+                        { label: "الأقل سعراً", sortBy: "price_asc" as const },
+                      ].map((item) => (
+                        <button
+                          type="button"
+                          key={item.label}
+                          onClick={() =>
+                            navigate({
+                              to: "/search",
+                              search: {
+                                sortBy: item.sortBy,
+                                dealsOnly: item.dealsOnly,
+                              },
+                            })
+                          }
+                          className="rounded-lg px-1 py-2 text-[var(--ix-text)] transition-colors hover:bg-[var(--color-primary-ui-soft)] hover:text-[var(--ix-primary-contrast)]"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
                     </div>
 
                     {/* SHEIN Flash Deals Section with live countdown */}
                     <div className="hidden md:block">
                       <FlashDealsSection
-                        products={bestOffers.length ? bestOffers : products}
+                        products={bestOffers}
                         currency={currency}
                         onSelectProduct={handleSelectProduct}
                         onAddToCart={(prod) => {
@@ -676,30 +597,39 @@ function HomePage() {
                       customMinPrice={customMinPrice}
                       customMaxPrice={customMaxPrice}
                       onSelectPriceRange={(range, min, max) => {
-                        setPriceRange(range);
-                        setCustomMinPrice(min);
-                        setCustomMaxPrice(max);
+                        void updateHomeSearch({
+                          price: range === "all" ? undefined : range,
+                          minPrice: range === "custom" ? min : undefined,
+                          maxPrice: range === "custom" ? max : undefined,
+                        });
                       }}
                       selectedBrands={selectedBrands}
-                      onSelectBrands={setSelectedBrands}
-                      selectedRatings={selectedRatings}
-                      onSelectRatings={setSelectedRatings}
+                      onSelectBrands={(brands) =>
+                        void updateHomeSearch({ brands: brands.length ? brands : undefined })
+                      }
+                      onResetFilters={() =>
+                        void updateHomeSearch({
+                          category: undefined,
+                          sort: undefined,
+                          price: undefined,
+                          minPrice: undefined,
+                          maxPrice: undefined,
+                          brands: undefined,
+                        })
+                      }
                     />
                   </div>
                 );
 
               case "deals":
                 if (!mappedSettings.sections.deals.enabled) return null;
-                if (selectedCategory !== "all" || searchQuery) return null;
+                if (selectedCategory !== "all") return null;
+                if (!catalogLoading && bestOffers.length === 0) return null;
                 return (
                   <div key="deals" className="hidden md:block">
                     <BestOffersSection
                       key="deals"
-                      bestOffers={
-                        bestOffers.length
-                          ? bestOffers.slice(0, mappedSettings.sections.deals.limit)
-                          : products.slice(0, mappedSettings.sections.deals.limit)
-                      }
+                      bestOffers={bestOffers.slice(0, mappedSettings.sections.deals.limit)}
                       currency={currency}
                       favorites={favorites}
                       isLoading={isLoading || catalogLoading}
@@ -725,21 +655,19 @@ function HomePage() {
                     <section id="store-products" className="scroll-mt-24 px-2 py-5 sm:px-6">
                       <div className="dir-rtl mb-6 hidden flex-col justify-between gap-3 border-b border-[var(--color-border-default)] pb-4 sm:flex-row sm:items-center md:flex">
                         <div>
-                          <h3 className="text-xl font-bold text-[var(--color-text-primary)] sm:text-2xl">
+                          <h2 className="text-xl font-bold text-[var(--color-text-primary)] sm:text-2xl">
                             {selectedCategory === "all"
-                              ? searchQuery
-                                ? `نتائج البحث عن "${searchQuery}"`
-                                : mappedSettings.sections.latest.title || "جميع المنتجات المتوفرة"
+                              ? mappedSettings.sections.latest.title || "جميع المنتجات المتوفرة"
                               : "منتجات القسم المختار"}
-                          </h3>
+                          </h2>
                           <p className="mt-1 text-xs text-[var(--color-text-secondary)] sm:text-sm">
-                            عرض {filteredProducts.length} منتجًا بالسعر والتوفر المسجلين في المتجر
+                            النتائج أدناه تستخدم السعر والتوفر المسجلين في الكتالوج
                           </p>
                         </div>
                         {sortBy !== "default" ? (
                           <div className="flex items-center gap-2 self-start sm:self-center">
-                            <div className="inline-flex items-center gap-1.5 rounded-full border border-[#2F6BFF]/40 bg-[#2F6BFF]/15 px-3 py-1.5 text-xs font-black text-[#2F6BFF] shadow-sm">
-                              <span className="h-2 w-2 animate-pulse rounded-full bg-[#2F6BFF]" />
+                            <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-primary-border)] bg-[var(--color-primary-ui-soft)] px-3 py-1.5 text-xs font-black text-[var(--ix-primary-contrast)] shadow-sm">
+                              <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--ix-primary)]" />
                               <span>
                                 الترتيب المطبق:{" "}
                                 {sortBy === "price-high"
@@ -747,13 +675,13 @@ function HomePage() {
                                   : sortBy === "price-low"
                                     ? "الأقل سعراً"
                                     : sortBy === "best-selling"
-                                      ? "الأكثر مبيعاً"
+                                      ? "الأكثر رواجاً"
                                       : "الأحدث وصولاً"}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => setSortBy("default")}
-                                className="cursor-pointer rounded-full p-1 text-[#2F6BFF] transition-colors hover:bg-rose-500/20 hover:text-rose-500"
+                                className="cursor-pointer rounded-full p-1 text-[var(--ix-primary-contrast)] transition-colors hover:bg-rose-500/20 hover:text-rose-500"
                                 title="إلغاء الترتيب والإعادة للافتراضي"
                                 aria-label="إلغاء الترتيب"
                               >
@@ -764,77 +692,21 @@ function HomePage() {
                         ) : null}
                       </div>
 
-                      {isLoading || catalogLoading ? (
-                        <ProductGridSkeleton count={8} />
-                      ) : filteredProducts.length === 0 ? (
-                        <div className="space-y-6">
-                          <div className="rounded-2xl border border-dashed border-[#F93A00]/40 bg-[#FFF1EB] dark:bg-neutral-900 p-5 text-center">
-                            <p className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white">
-                              لا توجد منتجات مسجلة في هذا التصنيف حالياً، جلبنا لك هذه المنتجات
-                              المميزة والأكثر طلباً في المتجر:
-                            </p>
-                            <button
-                              type="button"
-                              aria-label="عرض جميع المنتجات المتوفرة"
-                              onClick={() => {
-                                setSearchQuery("");
-                                setPriceRange("all");
-                                setCustomMinPrice(undefined);
-                                setCustomMaxPrice(undefined);
-                                setSelectedBrands([]);
-                                setSelectedRatings([]);
-                                setSortBy("default");
-                                handleSelectCategoryWithLoading("all");
-                              }}
-                              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-black px-5 py-2 text-xs font-black text-white hover:bg-neutral-800 transition-colors shadow"
-                            >
-                              عرض جميع المنتجات المتوفرة
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-                            {(products.length > 0 ? products.slice(0, 8) : []).map((product) => (
-                              <ProductCard
-                                key={product.id}
-                                product={product}
-                                currency={currency}
-                                isFavorite={favorites.includes(product.id)}
-                                onToggleFavorite={handleToggleFavorite}
-                                onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                                onSelectProduct={handleSelectProduct}
-                                variant="grid"
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-2 gap-x-1 gap-y-5 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-                            {visibleProducts.map((product, index) => (
-                              <ProductCard
-                                key={product.id}
-                                product={product}
-                                currency={currency}
-                                isFavorite={favorites.includes(product.id)}
-                                onToggleFavorite={handleToggleFavorite}
-                                onAddToCart={(prod) => handleAddToCart(prod, 1)}
-                                onSelectProduct={handleSelectProduct}
-                                variant="grid"
-                                index={index}
-                              />
-                            ))}
-                          </div>
-                          {visibleProducts.length < filteredProducts.length && (
-                            <button
-                              type="button"
-                              onClick={() => setVisibleProductCount((count) => count + 12)}
-                              className="mx-auto mt-5 block border border-black bg-white px-8 py-2.5 text-xs font-black text-black"
-                            >
-                              عرض المزيد من المنتجات
-                            </button>
-                          )}
-                        </>
-                      )}
+                      <InfiniteStorefrontCatalog
+                        selectedCategoryId={selectedCategory}
+                        searchQuery=""
+                        sortBy={sortBy}
+                        priceRange={priceRange}
+                        customMinPrice={customMinPrice}
+                        customMaxPrice={customMaxPrice}
+                        selectedBrands={selectedBrands}
+                        selectedRatings={[]}
+                        currency={currency}
+                        favorites={favorites}
+                        onToggleFavorite={handleToggleFavorite}
+                        onAddToCart={(product) => handleAddToCart(product, 1)}
+                        onSelectProduct={handleSelectProduct}
+                      />
                     </section>
                   </div>
                 );

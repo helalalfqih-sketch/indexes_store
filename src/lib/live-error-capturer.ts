@@ -1,4 +1,8 @@
-import { logLiveErrorFn, generateSuggestedFix, ErrorTypeCategory } from "@/services/live-logs.service";
+import {
+  logLiveErrorFn,
+  generateSuggestedFix,
+  ErrorTypeCategory,
+} from "@/services/live-logs.service";
 
 interface CapturerOptions {
   errorName: string;
@@ -29,7 +33,8 @@ function sanitizePii(str: string): string {
  */
 export async function reportLiveError(opts: CapturerOptions): Promise<void> {
   try {
-    const loc = opts.location || (typeof window !== "undefined" ? window.location.pathname : "System/Server");
+    const loc =
+      opts.location || (typeof window !== "undefined" ? window.location.pathname : "System/Server");
     const dedupeKey = `${opts.errorName}:${opts.cause}:${loc}`;
 
     if (recentlyLoggedErrors.has(dedupeKey)) {
@@ -39,12 +44,13 @@ export async function reportLiveError(opts: CapturerOptions): Promise<void> {
     recentlyLoggedErrors.add(dedupeKey);
     setTimeout(() => recentlyLoggedErrors.delete(dedupeKey), 30000); // 30s deduplication window
 
-    const isStorefront = typeof window !== "undefined" && !window.location.pathname.startsWith("/admin");
+    const isStorefront =
+      typeof window !== "undefined" && !window.location.pathname.startsWith("/admin");
     const defaultType = isStorefront ? "Storefront UI" : "Admin UI";
 
     const errorType = opts.errorType || defaultType;
     const cleanCause = sanitizePii(opts.cause);
-    const cleanStack = sanitizePii(opts.stackTrace || (new Error().stack || ""));
+    const cleanStack = sanitizePii(opts.stackTrace || new Error().stack || "");
 
     const suggestedFix =
       opts.suggestedFix ||
@@ -60,8 +66,7 @@ export async function reportLiveError(opts: CapturerOptions): Promise<void> {
         suggestedFix,
         stackTrace: cleanStack,
         context: {
-          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "Server",
-          url: typeof window !== "undefined" ? window.location.href : "Server",
+          path: typeof window !== "undefined" ? window.location.pathname : "Server",
           ...(opts.context || {}),
         },
       },
@@ -77,7 +82,7 @@ export async function reportLiveError(opts: CapturerOptions): Promise<void> {
  */
 export async function captureSupabaseError<T>(
   promise: Promise<{ data: T | null; error: any }>,
-  locationName: string
+  locationName: string,
 ): Promise<{ data: T | null; error: any }> {
   const result = await promise;
   if (result.error) {
@@ -100,7 +105,7 @@ export async function captureSupabaseError<T>(
  */
 export async function captureGitHubError<T>(
   action: () => Promise<T>,
-  locationName: string
+  locationName: string,
 ): Promise<T> {
   try {
     return await action();
@@ -164,7 +169,9 @@ export function initGlobalLiveErrorListeners(): void {
       level: "error",
       location: loc,
       cause: causeMsg,
-      stackTrace: reason?.stack || (typeof reason === "object" ? JSON.stringify(reason, null, 2) : String(reason)),
+      stackTrace:
+        reason?.stack ||
+        (typeof reason === "object" ? JSON.stringify(reason, null, 2) : String(reason)),
     });
   });
 

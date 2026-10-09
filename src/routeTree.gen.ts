@@ -9,181 +9,125 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TrackRouteImport } from './routes/track'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as StoreRouteImport } from './routes/store'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as SearchRouteImport } from './routes/search'
-import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
-import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
-import { Route as OrderCompletionRouteImport } from './routes/order-completion'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as OffersRouteImport } from './routes/offers'
-import { Route as ImmersiveStoreRouteImport } from './routes/immersive-store'
-import { Route as GoogleShoppingDotxmlRouteImport } from './routes/google-shopping[.]xml'
-import { Route as DataDeletionRouteImport } from './routes/data-deletion'
-import { Route as CheckoutRouteImport } from './routes/checkout'
-import { Route as CartRouteImport } from './routes/cart'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as StoreIndexRouteImport } from './routes/store.index'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CartRouteImport } from './routes/cart'
+import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as DataDeletionRouteImport } from './routes/data-deletion'
+import { Route as GoogleShoppingDotxmlRouteImport } from './routes/google-shopping[.]xml'
+import { Route as ImmersiveStoreRouteImport } from './routes/immersive-store'
+import { Route as McpAuthorizeRouteImport } from './routes/mcp-authorize'
+import { Route as McpStoreAuthorizeRouteImport } from './routes/mcp-store-authorize'
+import { Route as OffersRouteImport } from './routes/offers'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as OrderCompletionRouteImport } from './routes/order-completion'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as StoreRouteImport } from './routes/store'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TrackRouteImport } from './routes/track'
+import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known.oauth-authorization-server'
+import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known.oauth-protected-resource'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
-import { Route as VendorSlugRouteImport } from './routes/vendor.$slug'
-import { Route as StoreSettingsRouteImport } from './routes/store.settings'
-import { Route as StoreProductsRouteImport } from './routes/store.products'
-import { Route as StoreOrdersRouteImport } from './routes/store.orders'
-import { Route as StoreMarketingRouteImport } from './routes/store.marketing'
-import { Route as StoreInventoryRouteImport } from './routes/store.inventory'
-import { Route as StoreEarningsRouteImport } from './routes/store.earnings'
-import { Route as StoreDashboardRouteImport } from './routes/store.dashboard'
-import { Route as StoreCustomersRouteImport } from './routes/store.customers'
-import { Route as StoreAnalyticsRouteImport } from './routes/store.analytics'
-import { Route as ProductSlugRouteImport } from './routes/product.$slug'
-import { Route as PagesShippingPolicyRouteImport } from './routes/pages.shipping-policy'
-import { Route as PagesReturnPolicyRouteImport } from './routes/pages.return-policy'
-import { Route as PagesFaqRouteImport } from './routes/pages.faq'
-import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
-import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
-import { Route as CategoryIdRouteImport } from './routes/category.$id'
-import { Route as ApiOrdersRouteImport } from './routes/api/orders'
-import { Route as ApiMcpRouteImport } from './routes/api/mcp'
-import { Route as ApiCatalogHealthRouteImport } from './routes/api/catalog-health'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminSystemHealthRouteImport } from './routes/admin.system-health'
-import { Route as AdminStudioRouteImport } from './routes/admin.studio'
-import { Route as AdminStoresRouteImport } from './routes/admin.stores'
-import { Route as AdminStorefrontRouteImport } from './routes/admin.storefront'
-import { Route as AdminShippingRouteImport } from './routes/admin.shipping'
-import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
-import { Route as AdminSessionsRouteImport } from './routes/admin.sessions'
-import { Route as AdminSeoRouteImport } from './routes/admin.seo'
-import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
-import { Route as AdminProductsRouteImport } from './routes/admin.products'
-import { Route as AdminPlatformRouteImport } from './routes/admin.platform'
-import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
-import { Route as AdminPagesRouteImport } from './routes/admin.pages'
-import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
-import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
-import { Route as AdminMediaRouteImport } from './routes/admin.media'
-import { Route as AdminLiveLogsRouteImport } from './routes/admin.live-logs'
-import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
-import { Route as AdminInsightsRouteImport } from './routes/admin.insights'
-import { Route as AdminDealsRouteImport } from './routes/admin.deals'
-import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
-import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
-import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
-import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
-import { Route as AdminBranchesRouteImport } from './routes/admin.branches'
-import { Route as AdminBannersRouteImport } from './routes/admin.banners'
-import { Route as AdminAuditLogsRouteImport } from './routes/admin.audit-logs'
-import { Route as AdminAppearanceRouteImport } from './routes/admin.appearance'
-import { Route as AdminAiSettingsRouteImport } from './routes/admin.ai-settings'
-import { Route as AdminAiMemoryRouteImport } from './routes/admin.ai-memory'
-import { Route as AdminAiDeveloperRouteImport } from './routes/admin.ai-developer'
 import { Route as AdminAiAgentRouteImport } from './routes/admin.ai-agent'
-import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks.whatsapp'
-import { Route as ApiWebhooksShopifyRouteImport } from './routes/api/webhooks.shopify'
-import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
-import { Route as ApiCustomerMeRouteImport } from './routes/api/customer.me'
-import { Route as ApiCustomerLogoutRouteImport } from './routes/api/customer.logout'
-import { Route as ApiCustomerLoginRouteImport } from './routes/api/customer.login'
-import { Route as ApiCustomerCallbackRouteImport } from './routes/api/customer.callback'
-import { Route as ApiCatalogChar123idChar125DotcsvRouteImport } from './routes/api/catalog.{$id}[.]csv'
-import { Route as ApiAiDebugRouteImport } from './routes/api/ai.debug'
-import { Route as ApiAiAnalyzeProductRouteImport } from './routes/api/ai.analyze-product'
-import { Route as ApiAiAgentRouteImport } from './routes/api/ai.agent'
-import { Route as AdminStoresTenantIdRouteImport } from './routes/admin.stores.$tenantId'
-import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
-import { Route as AdminIntegrationsWhatsappRouteImport } from './routes/admin.integrations.whatsapp'
-import { Route as AdminIntegrationsFacebookRouteImport } from './routes/admin.integrations.facebook'
+import { Route as AdminAiDeveloperRouteImport } from './routes/admin.ai-developer'
+import { Route as AdminAiMemoryRouteImport } from './routes/admin.ai-memory'
+import { Route as AdminAiSettingsRouteImport } from './routes/admin.ai-settings'
+import { Route as AdminAppearanceRouteImport } from './routes/admin.appearance'
+import { Route as AdminAuditLogsRouteImport } from './routes/admin.audit-logs'
+import { Route as AdminBannersRouteImport } from './routes/admin.banners'
+import { Route as AdminBranchesRouteImport } from './routes/admin.branches'
+import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
+import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
+import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as AdminDealsRouteImport } from './routes/admin.deals'
+import { Route as AdminInsightsRouteImport } from './routes/admin.insights'
+import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
+import { Route as AdminLiveLogsRouteImport } from './routes/admin.live-logs'
+import { Route as AdminMediaRouteImport } from './routes/admin.media'
+import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
+import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminPagesRouteImport } from './routes/admin.pages'
+import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
+import { Route as AdminPlatformRouteImport } from './routes/admin.platform'
+import { Route as AdminProductsRouteImport } from './routes/admin.products'
+import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
+import { Route as AdminSeoRouteImport } from './routes/admin.seo'
+import { Route as AdminSessionsRouteImport } from './routes/admin.sessions'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminShippingRouteImport } from './routes/admin.shipping'
+import { Route as AdminStorefrontRouteImport } from './routes/admin.storefront'
+import { Route as AdminStoresRouteImport } from './routes/admin.stores'
+import { Route as AdminStudioRouteImport } from './routes/admin.studio'
+import { Route as AdminSystemHealthRouteImport } from './routes/admin.system-health'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminWhatsappAccountsRouteImport } from './routes/admin.whatsapp-accounts'
+import { Route as ApiCatalogHealthRouteImport } from './routes/api/catalog-health'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
+import { Route as ApiOrdersRouteImport } from './routes/api/orders'
+import { Route as CategoryIdRouteImport } from './routes/category.$id'
+import { Route as Demo3dViewerRouteImport } from './routes/demo.3d-viewer'
+import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
+import { Route as PagesFaqRouteImport } from './routes/pages.faq'
+import { Route as PagesReturnPolicyRouteImport } from './routes/pages.return-policy'
+import { Route as PagesShippingPolicyRouteImport } from './routes/pages.shipping-policy'
+import { Route as ProductSlugRouteImport } from './routes/product.$slug'
+import { Route as StoreIndexRouteImport } from './routes/store.index'
+import { Route as StoreAnalyticsRouteImport } from './routes/store.analytics'
+import { Route as StoreCustomersRouteImport } from './routes/store.customers'
+import { Route as StoreDashboardRouteImport } from './routes/store.dashboard'
+import { Route as StoreEarningsRouteImport } from './routes/store.earnings'
+import { Route as StoreInventoryRouteImport } from './routes/store.inventory'
+import { Route as StoreMarketingRouteImport } from './routes/store.marketing'
+import { Route as StoreOrdersRouteImport } from './routes/store.orders'
+import { Route as StoreProductsRouteImport } from './routes/store.products'
+import { Route as StoreSettingsRouteImport } from './routes/store.settings'
+import { Route as VendorSlugRouteImport } from './routes/vendor.$slug'
+import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
 import { Route as AdminDiagnosticsWhatsappRouteImport } from './routes/admin.diagnostics.whatsapp'
+import { Route as AdminIntegrationsFacebookRouteImport } from './routes/admin.integrations.facebook'
+import { Route as AdminIntegrationsTiktokRouteImport } from './routes/admin.integrations.tiktok'
+import { Route as AdminIntegrationsWhatsappRouteImport } from './routes/admin.integrations.whatsapp'
+import { Route as AdminProductIdRouteImport } from './routes/admin.product.$id'
+import { Route as AdminStoresTenantIdRouteImport } from './routes/admin.stores.$tenantId'
+import { Route as ApiAiAgentRouteImport } from './routes/api/ai.agent'
+import { Route as ApiAiAnalyzeProductRouteImport } from './routes/api/ai.analyze-product'
+import { Route as ApiAiDebugRouteImport } from './routes/api/ai.debug'
+import { Route as ApiCatalogChar123idChar125DotcsvRouteImport } from './routes/api/catalog.{$id}[.]csv'
+import { Route as ApiCustomerCallbackRouteImport } from './routes/api/customer.callback'
+import { Route as ApiCustomerLoginRouteImport } from './routes/api/customer.login'
+import { Route as ApiCustomerLogoutRouteImport } from './routes/api/customer.logout'
+import { Route as ApiCustomerMeRouteImport } from './routes/api/customer.me'
+import { Route as ApiMcpStoreRouteImport } from './routes/api/mcp.store'
+import { Route as ApiMcpWhatsappRouteImport } from './routes/api/mcp.whatsapp'
+import { Route as ApiPublicImageProxyRouteImport } from './routes/api/public.image-proxy'
+import { Route as ApiTiktokCallbackRouteImport } from './routes/api.tiktok.callback'
+import { Route as ApiTiktokDeviceRouteImport } from './routes/api.tiktok.device'
+import { Route as ApiWebhooksShopifyRouteImport } from './routes/api/webhooks.shopify'
+import { Route as ApiWebhooksWhapiRouteImport } from './routes/api/webhooks.whapi'
+import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks.whatsapp'
+import { Route as ApiWhapiHealthRouteImport } from './routes/api/whapi.health'
+import { Route as ApiWhapiReadRouteImport } from './routes/api/whapi.read'
+import { Route as ApiMcpOauthApproveRouteImport } from './routes/api/mcp.oauth.approve'
+import { Route as ApiMcpOauthAuthorizeRouteImport } from './routes/api/mcp.oauth.authorize'
+import { Route as ApiMcpOauthRegisterRouteImport } from './routes/api/mcp.oauth.register'
+import { Route as ApiMcpOauthTokenRouteImport } from './routes/api/mcp.oauth.token'
+import { Route as DotwellKnownOauthProtectedResourceApiMcpStoreRouteImport } from './routes/[.]well-known.oauth-protected-resource.api.mcp.store'
+import { Route as DotwellKnownOauthProtectedResourceApiMcpWhatsappRouteImport } from './routes/[.]well-known.oauth-protected-resource.api.mcp.whatsapp'
+import { Route as ApiMcpStoreOauthApproveRouteImport } from './routes/api/mcp.store.oauth.approve'
+import { Route as ApiMcpStoreOauthAuthorizeRouteImport } from './routes/api/mcp.store.oauth.authorize'
+import { Route as ApiMcpStoreOauthRegisterRouteImport } from './routes/api/mcp.store.oauth.register'
+import { Route as ApiMcpStoreOauthTokenRouteImport } from './routes/api/mcp.store.oauth.token'
+import { Route as DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRouteImport } from './routes/[.]well-known.oauth-authorization-server.api.mcp.store.oauth'
 
-const TrackRoute = TrackRouteImport.update({
-  id: '/track',
-  path: '/track',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StoreRoute = StoreRouteImport.update({
-  id: '/store',
-  path: '/store',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SearchRoute = SearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
-  id: '/robots.txt',
-  path: '/robots.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
-  id: '/privacy-policy',
-  path: '/privacy-policy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrderCompletionRoute = OrderCompletionRouteImport.update({
-  id: '/order-completion',
-  path: '/order-completion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OffersRoute = OffersRouteImport.update({
-  id: '/offers',
-  path: '/offers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ImmersiveStoreRoute = ImmersiveStoreRouteImport.update({
-  id: '/immersive-store',
-  path: '/immersive-store',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GoogleShoppingDotxmlRoute = GoogleShoppingDotxmlRouteImport.update({
-  id: '/google-shopping.xml',
-  path: '/google-shopping.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DataDeletionRoute = DataDeletionRouteImport.update({
-  id: '/data-deletion',
-  path: '/data-deletion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutRoute = CheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CartRoute = CartRouteImport.update({
-  id: '/cart',
-  path: '/cart',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountRoute = AccountRouteImport.update({
@@ -191,284 +135,116 @@ const AccountRoute = AccountRouteImport.update({
   path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StoreIndexRoute = StoreIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => StoreRoute,
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
 } as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataDeletionRoute = DataDeletionRouteImport.update({
+  id: '/data-deletion',
+  path: '/data-deletion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoogleShoppingDotxmlRoute = GoogleShoppingDotxmlRouteImport.update({
+  id: '/google-shopping.xml',
+  path: '/google-shopping.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImmersiveStoreRoute = ImmersiveStoreRouteImport.update({
+  id: '/immersive-store',
+  path: '/immersive-store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpAuthorizeRoute = McpAuthorizeRouteImport.update({
+  id: '/mcp-authorize',
+  path: '/mcp-authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpStoreAuthorizeRoute = McpStoreAuthorizeRouteImport.update({
+  id: '/mcp-store-authorize',
+  path: '/mcp-store-authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OffersRoute = OffersRouteImport.update({
+  id: '/offers',
+  path: '/offers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderCompletionRoute = OrderCompletionRouteImport.update({
+  id: '/order-completion',
+  path: '/order-completion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoreRoute = StoreRouteImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackRoute = TrackRouteImport.update({
+  id: '/track',
+  path: '/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownOauthAuthorizationServerRoute =
+  DotwellKnownOauthAuthorizationServerRouteImport.update({
+    id: '/.well-known/oauth-authorization-server',
+    path: '/.well-known/oauth-authorization-server',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotwellKnownOauthProtectedResourceRoute =
+  DotwellKnownOauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const VendorDashboardRoute = VendorDashboardRouteImport.update({
-  id: '/vendor/dashboard',
-  path: '/vendor/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VendorSlugRoute = VendorSlugRouteImport.update({
-  id: '/vendor/$slug',
-  path: '/vendor/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StoreSettingsRoute = StoreSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreProductsRoute = StoreProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreOrdersRoute = StoreOrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreMarketingRoute = StoreMarketingRouteImport.update({
-  id: '/marketing',
-  path: '/marketing',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreInventoryRoute = StoreInventoryRouteImport.update({
-  id: '/inventory',
-  path: '/inventory',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreEarningsRoute = StoreEarningsRouteImport.update({
-  id: '/earnings',
-  path: '/earnings',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreDashboardRoute = StoreDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreCustomersRoute = StoreCustomersRouteImport.update({
-  id: '/customers',
-  path: '/customers',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreAnalyticsRoute = StoreAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => StoreRoute,
-} as any)
-const ProductSlugRoute = ProductSlugRouteImport.update({
-  id: '/product/$slug',
-  path: '/product/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PagesShippingPolicyRoute = PagesShippingPolicyRouteImport.update({
-  id: '/pages/shipping-policy',
-  path: '/pages/shipping-policy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PagesReturnPolicyRoute = PagesReturnPolicyRouteImport.update({
-  id: '/pages/return-policy',
-  path: '/pages/return-policy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PagesFaqRoute = PagesFaqRouteImport.update({
-  id: '/pages/faq',
-  path: '/pages/faq',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PagesSlugRoute = PagesSlugRouteImport.update({
-  id: '/pages/$slug',
-  path: '/pages/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Demo3dViewerRoute = Demo3dViewerRouteImport.update({
-  id: '/demo/3d-viewer',
-  path: '/demo/3d-viewer',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CategoryIdRoute = CategoryIdRouteImport.update({
-  id: '/category/$id',
-  path: '/category/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiOrdersRoute = ApiOrdersRouteImport.update({
-  id: '/api/orders',
-  path: '/api/orders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiMcpRoute = ApiMcpRouteImport.update({
-  id: '/api/mcp',
-  path: '/api/mcp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCatalogHealthRoute = ApiCatalogHealthRouteImport.update({
-  id: '/api/catalog-health',
-  path: '/api/catalog-health',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSystemHealthRoute = AdminSystemHealthRouteImport.update({
-  id: '/system-health',
-  path: '/system-health',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStudioRoute = AdminStudioRouteImport.update({
-  id: '/studio',
-  path: '/studio',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStoresRoute = AdminStoresRouteImport.update({
-  id: '/stores',
-  path: '/stores',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStorefrontRoute = AdminStorefrontRouteImport.update({
-  id: '/storefront',
-  path: '/storefront',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminShippingRoute = AdminShippingRouteImport.update({
-  id: '/shipping',
-  path: '/shipping',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSettingsRoute = AdminSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSessionsRoute = AdminSessionsRouteImport.update({
-  id: '/sessions',
-  path: '/sessions',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSeoRoute = AdminSeoRouteImport.update({
-  id: '/seo',
-  path: '/seo',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminReviewsRoute = AdminReviewsRouteImport.update({
-  id: '/reviews',
-  path: '/reviews',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminProductsRoute = AdminProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPlatformRoute = AdminPlatformRouteImport.update({
-  id: '/platform',
-  path: '/platform',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
-  id: '/payments',
-  path: '/payments',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPagesRoute = AdminPagesRouteImport.update({
-  id: '/pages',
-  path: '/pages',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminOrdersRoute = AdminOrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMediaRoute = AdminMediaRouteImport.update({
-  id: '/media',
-  path: '/media',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLiveLogsRoute = AdminLiveLogsRouteImport.update({
-  id: '/live-logs',
-  path: '/live-logs',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminInventoryRoute = AdminInventoryRouteImport.update({
-  id: '/inventory',
-  path: '/inventory',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminInsightsRoute = AdminInsightsRouteImport.update({
-  id: '/insights',
-  path: '/insights',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminDealsRoute = AdminDealsRouteImport.update({
-  id: '/deals',
-  path: '/deals',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCustomersRoute = AdminCustomersRouteImport.update({
-  id: '/customers',
-  path: '/customers',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCouponsRoute = AdminCouponsRouteImport.update({
-  id: '/coupons',
-  path: '/coupons',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCampaignsRoute = AdminCampaignsRouteImport.update({
-  id: '/campaigns',
-  path: '/campaigns',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBranchesRoute = AdminBranchesRouteImport.update({
-  id: '/branches',
-  path: '/branches',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBannersRoute = AdminBannersRouteImport.update({
-  id: '/banners',
-  path: '/banners',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAuditLogsRoute = AdminAuditLogsRouteImport.update({
-  id: '/audit-logs',
-  path: '/audit-logs',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAppearanceRoute = AdminAppearanceRouteImport.update({
-  id: '/appearance',
-  path: '/appearance',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAiSettingsRoute = AdminAiSettingsRouteImport.update({
-  id: '/ai-settings',
-  path: '/ai-settings',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAiMemoryRoute = AdminAiMemoryRouteImport.update({
-  id: '/ai-memory',
-  path: '/ai-memory',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAiDeveloperRoute = AdminAiDeveloperRouteImport.update({
-  id: '/ai-developer',
-  path: '/ai-developer',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAiAgentRoute = AdminAiAgentRouteImport.update({
@@ -476,76 +252,285 @@ const AdminAiAgentRoute = AdminAiAgentRouteImport.update({
   path: '/ai-agent',
   getParentRoute: () => AdminRoute,
 } as any)
-const ApiWebhooksWhatsappRoute = ApiWebhooksWhatsappRouteImport.update({
-  id: '/api/webhooks/whatsapp',
-  path: '/api/webhooks/whatsapp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiWebhooksShopifyRoute = ApiWebhooksShopifyRouteImport.update({
-  id: '/api/webhooks/shopify',
-  path: '/api/webhooks/shopify',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicImageProxyRoute = ApiPublicImageProxyRouteImport.update({
-  id: '/api/public/image-proxy',
-  path: '/api/public/image-proxy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCustomerMeRoute = ApiCustomerMeRouteImport.update({
-  id: '/api/customer/me',
-  path: '/api/customer/me',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCustomerLogoutRoute = ApiCustomerLogoutRouteImport.update({
-  id: '/api/customer/logout',
-  path: '/api/customer/logout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCustomerLoginRoute = ApiCustomerLoginRouteImport.update({
-  id: '/api/customer/login',
-  path: '/api/customer/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCustomerCallbackRoute = ApiCustomerCallbackRouteImport.update({
-  id: '/api/customer/callback',
-  path: '/api/customer/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCatalogChar123idChar125DotcsvRoute =
-  ApiCatalogChar123idChar125DotcsvRouteImport.update({
-    id: '/api/catalog/{$id}.csv',
-    path: '/api/catalog/{$id}.csv',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiAiDebugRoute = ApiAiDebugRouteImport.update({
-  id: '/api/ai/debug',
-  path: '/api/ai/debug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAiAnalyzeProductRoute = ApiAiAnalyzeProductRouteImport.update({
-  id: '/api/ai/analyze-product',
-  path: '/api/ai/analyze-product',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAiAgentRoute = ApiAiAgentRouteImport.update({
-  id: '/api/ai/agent',
-  path: '/api/ai/agent',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminStoresTenantIdRoute = AdminStoresTenantIdRouteImport.update({
-  id: '/$tenantId',
-  path: '/$tenantId',
-  getParentRoute: () => AdminStoresRoute,
-} as any)
-const AdminProductIdRoute = AdminProductIdRouteImport.update({
-  id: '/product/$id',
-  path: '/product/$id',
+const AdminAiDeveloperRoute = AdminAiDeveloperRouteImport.update({
+  id: '/ai-developer',
+  path: '/ai-developer',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminIntegrationsWhatsappRoute =
-  AdminIntegrationsWhatsappRouteImport.update({
-    id: '/integrations/whatsapp',
-    path: '/integrations/whatsapp',
+const AdminAiMemoryRoute = AdminAiMemoryRouteImport.update({
+  id: '/ai-memory',
+  path: '/ai-memory',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAiSettingsRoute = AdminAiSettingsRouteImport.update({
+  id: '/ai-settings',
+  path: '/ai-settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAppearanceRoute = AdminAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditLogsRoute = AdminAuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBannersRoute = AdminBannersRouteImport.update({
+  id: '/banners',
+  path: '/banners',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBranchesRoute = AdminBranchesRouteImport.update({
+  id: '/branches',
+  path: '/branches',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCampaignsRoute = AdminCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCouponsRoute = AdminCouponsRouteImport.update({
+  id: '/coupons',
+  path: '/coupons',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCustomersRoute = AdminCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDealsRoute = AdminDealsRouteImport.update({
+  id: '/deals',
+  path: '/deals',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminInsightsRoute = AdminInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminInventoryRoute = AdminInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLiveLogsRoute = AdminLiveLogsRouteImport.update({
+  id: '/live-logs',
+  path: '/live-logs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMediaRoute = AdminMediaRouteImport.update({
+  id: '/media',
+  path: '/media',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOrdersRoute = AdminOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPagesRoute = AdminPagesRouteImport.update({
+  id: '/pages',
+  path: '/pages',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPlatformRoute = AdminPlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProductsRoute = AdminProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReviewsRoute = AdminReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSeoRoute = AdminSeoRouteImport.update({
+  id: '/seo',
+  path: '/seo',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSessionsRoute = AdminSessionsRouteImport.update({
+  id: '/sessions',
+  path: '/sessions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminShippingRoute = AdminShippingRouteImport.update({
+  id: '/shipping',
+  path: '/shipping',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStorefrontRoute = AdminStorefrontRouteImport.update({
+  id: '/storefront',
+  path: '/storefront',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStoresRoute = AdminStoresRouteImport.update({
+  id: '/stores',
+  path: '/stores',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStudioRoute = AdminStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSystemHealthRoute = AdminSystemHealthRouteImport.update({
+  id: '/system-health',
+  path: '/system-health',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWhatsappAccountsRoute = AdminWhatsappAccountsRouteImport.update({
+  id: '/whatsapp-accounts',
+  path: '/whatsapp-accounts',
+  getParentRoute: () => AdminRoute,
+} as any)
+const ApiCatalogHealthRoute = ApiCatalogHealthRouteImport.update({
+  id: '/api/catalog-health',
+  path: '/api/catalog-health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOrdersRoute = ApiOrdersRouteImport.update({
+  id: '/api/orders',
+  path: '/api/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoryIdRoute = CategoryIdRouteImport.update({
+  id: '/category/$id',
+  path: '/category/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Demo3dViewerRoute = Demo3dViewerRouteImport.update({
+  id: '/demo/3d-viewer',
+  path: '/demo/3d-viewer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagesSlugRoute = PagesSlugRouteImport.update({
+  id: '/pages/$slug',
+  path: '/pages/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagesFaqRoute = PagesFaqRouteImport.update({
+  id: '/pages/faq',
+  path: '/pages/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagesReturnPolicyRoute = PagesReturnPolicyRouteImport.update({
+  id: '/pages/return-policy',
+  path: '/pages/return-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagesShippingPolicyRoute = PagesShippingPolicyRouteImport.update({
+  id: '/pages/shipping-policy',
+  path: '/pages/shipping-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProductSlugRoute = ProductSlugRouteImport.update({
+  id: '/product/$slug',
+  path: '/product/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoreIndexRoute = StoreIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreAnalyticsRoute = StoreAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreCustomersRoute = StoreCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreDashboardRoute = StoreDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreEarningsRoute = StoreEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreInventoryRoute = StoreInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreMarketingRoute = StoreMarketingRouteImport.update({
+  id: '/marketing',
+  path: '/marketing',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreOrdersRoute = StoreOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreProductsRoute = StoreProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => StoreRoute,
+} as any)
+const StoreSettingsRoute = StoreSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => StoreRoute,
+} as any)
+const VendorSlugRoute = VendorSlugRouteImport.update({
+  id: '/vendor/$slug',
+  path: '/vendor/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorDashboardRoute = VendorDashboardRouteImport.update({
+  id: '/vendor/dashboard',
+  path: '/vendor/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDiagnosticsWhatsappRoute =
+  AdminDiagnosticsWhatsappRouteImport.update({
+    id: '/diagnostics/whatsapp',
+    path: '/diagnostics/whatsapp',
     getParentRoute: () => AdminRoute,
   } as any)
 const AdminIntegrationsFacebookRoute =
@@ -554,11 +539,177 @@ const AdminIntegrationsFacebookRoute =
     path: '/integrations/facebook',
     getParentRoute: () => AdminRoute,
   } as any)
-const AdminDiagnosticsWhatsappRoute =
-  AdminDiagnosticsWhatsappRouteImport.update({
-    id: '/diagnostics/whatsapp',
-    path: '/diagnostics/whatsapp',
+const AdminIntegrationsTiktokRoute = AdminIntegrationsTiktokRouteImport.update({
+  id: '/integrations/tiktok',
+  path: '/integrations/tiktok',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminIntegrationsWhatsappRoute =
+  AdminIntegrationsWhatsappRouteImport.update({
+    id: '/integrations/whatsapp',
+    path: '/integrations/whatsapp',
     getParentRoute: () => AdminRoute,
+  } as any)
+const AdminProductIdRoute = AdminProductIdRouteImport.update({
+  id: '/product/$id',
+  path: '/product/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStoresTenantIdRoute = AdminStoresTenantIdRouteImport.update({
+  id: '/$tenantId',
+  path: '/$tenantId',
+  getParentRoute: () => AdminStoresRoute,
+} as any)
+const ApiAiAgentRoute = ApiAiAgentRouteImport.update({
+  id: '/api/ai/agent',
+  path: '/api/ai/agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiAnalyzeProductRoute = ApiAiAnalyzeProductRouteImport.update({
+  id: '/api/ai/analyze-product',
+  path: '/api/ai/analyze-product',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiDebugRoute = ApiAiDebugRouteImport.update({
+  id: '/api/ai/debug',
+  path: '/api/ai/debug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCatalogChar123idChar125DotcsvRoute =
+  ApiCatalogChar123idChar125DotcsvRouteImport.update({
+    id: '/api/catalog/{$id}.csv',
+    path: '/api/catalog/{$id}.csv',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiCustomerCallbackRoute = ApiCustomerCallbackRouteImport.update({
+  id: '/api/customer/callback',
+  path: '/api/customer/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCustomerLoginRoute = ApiCustomerLoginRouteImport.update({
+  id: '/api/customer/login',
+  path: '/api/customer/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCustomerLogoutRoute = ApiCustomerLogoutRouteImport.update({
+  id: '/api/customer/logout',
+  path: '/api/customer/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCustomerMeRoute = ApiCustomerMeRouteImport.update({
+  id: '/api/customer/me',
+  path: '/api/customer/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpStoreRoute = ApiMcpStoreRouteImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const ApiMcpWhatsappRoute = ApiMcpWhatsappRouteImport.update({
+  id: '/whatsapp',
+  path: '/whatsapp',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const ApiPublicImageProxyRoute = ApiPublicImageProxyRouteImport.update({
+  id: '/api/public/image-proxy',
+  path: '/api/public/image-proxy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTiktokCallbackRoute = ApiTiktokCallbackRouteImport.update({
+  id: '/api/tiktok/callback',
+  path: '/api/tiktok/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTiktokDeviceRoute = ApiTiktokDeviceRouteImport.update({
+  id: '/api/tiktok/device',
+  path: '/api/tiktok/device',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWebhooksShopifyRoute = ApiWebhooksShopifyRouteImport.update({
+  id: '/api/webhooks/shopify',
+  path: '/api/webhooks/shopify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWebhooksWhapiRoute = ApiWebhooksWhapiRouteImport.update({
+  id: '/api/webhooks/whapi',
+  path: '/api/webhooks/whapi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWebhooksWhatsappRoute = ApiWebhooksWhatsappRouteImport.update({
+  id: '/api/webhooks/whatsapp',
+  path: '/api/webhooks/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWhapiHealthRoute = ApiWhapiHealthRouteImport.update({
+  id: '/api/whapi/health',
+  path: '/api/whapi/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWhapiReadRoute = ApiWhapiReadRouteImport.update({
+  id: '/api/whapi/read',
+  path: '/api/whapi/read',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpOauthApproveRoute = ApiMcpOauthApproveRouteImport.update({
+  id: '/oauth/approve',
+  path: '/oauth/approve',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const ApiMcpOauthAuthorizeRoute = ApiMcpOauthAuthorizeRouteImport.update({
+  id: '/oauth/authorize',
+  path: '/oauth/authorize',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const ApiMcpOauthRegisterRoute = ApiMcpOauthRegisterRouteImport.update({
+  id: '/oauth/register',
+  path: '/oauth/register',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const ApiMcpOauthTokenRoute = ApiMcpOauthTokenRouteImport.update({
+  id: '/oauth/token',
+  path: '/oauth/token',
+  getParentRoute: () => ApiMcpRoute,
+} as any)
+const DotwellKnownOauthProtectedResourceApiMcpStoreRoute =
+  DotwellKnownOauthProtectedResourceApiMcpStoreRouteImport.update({
+    id: '/api/mcp/store',
+    path: '/api/mcp/store',
+    getParentRoute: () => DotwellKnownOauthProtectedResourceRoute,
+  } as any)
+const DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute =
+  DotwellKnownOauthProtectedResourceApiMcpWhatsappRouteImport.update({
+    id: '/api/mcp/whatsapp',
+    path: '/api/mcp/whatsapp',
+    getParentRoute: () => DotwellKnownOauthProtectedResourceRoute,
+  } as any)
+const ApiMcpStoreOauthApproveRoute = ApiMcpStoreOauthApproveRouteImport.update({
+  id: '/oauth/approve',
+  path: '/oauth/approve',
+  getParentRoute: () => ApiMcpStoreRoute,
+} as any)
+const ApiMcpStoreOauthAuthorizeRoute =
+  ApiMcpStoreOauthAuthorizeRouteImport.update({
+    id: '/oauth/authorize',
+    path: '/oauth/authorize',
+    getParentRoute: () => ApiMcpStoreRoute,
+  } as any)
+const ApiMcpStoreOauthRegisterRoute =
+  ApiMcpStoreOauthRegisterRouteImport.update({
+    id: '/oauth/register',
+    path: '/oauth/register',
+    getParentRoute: () => ApiMcpStoreRoute,
+  } as any)
+const ApiMcpStoreOauthTokenRoute = ApiMcpStoreOauthTokenRouteImport.update({
+  id: '/oauth/token',
+  path: '/oauth/token',
+  getParentRoute: () => ApiMcpStoreRoute,
+} as any)
+const DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute =
+  DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRouteImport.update({
+    id: '/api/mcp/store/oauth',
+    path: '/api/mcp/store/oauth',
+    getParentRoute: () => DotwellKnownOauthAuthorizationServerRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -571,6 +722,8 @@ export interface FileRoutesByFullPath {
   '/data-deletion': typeof DataDeletionRoute
   '/google-shopping.xml': typeof GoogleShoppingDotxmlRoute
   '/immersive-store': typeof ImmersiveStoreRoute
+  '/mcp-authorize': typeof McpAuthorizeRoute
+  '/mcp-store-authorize': typeof McpStoreAuthorizeRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/order-completion': typeof OrderCompletionRoute
@@ -581,6 +734,8 @@ export interface FileRoutesByFullPath {
   '/store': typeof StoreRouteWithChildren
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/admin/ai-agent': typeof AdminAiAgentRoute
   '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
@@ -614,8 +769,9 @@ export interface FileRoutesByFullPath {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/whatsapp-accounts': typeof AdminWhatsappAccountsRoute
   '/api/catalog-health': typeof ApiCatalogHealthRoute
-  '/api/mcp': typeof ApiMcpRoute
+  '/api/mcp': typeof ApiMcpRouteWithChildren
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -639,6 +795,7 @@ export interface FileRoutesByFullPath {
   '/store/': typeof StoreIndexRoute
   '/admin/diagnostics/whatsapp': typeof AdminDiagnosticsWhatsappRoute
   '/admin/integrations/facebook': typeof AdminIntegrationsFacebookRoute
+  '/admin/integrations/tiktok': typeof AdminIntegrationsTiktokRoute
   '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/admin/stores/$tenantId': typeof AdminStoresTenantIdRoute
@@ -650,9 +807,27 @@ export interface FileRoutesByFullPath {
   '/api/customer/login': typeof ApiCustomerLoginRoute
   '/api/customer/logout': typeof ApiCustomerLogoutRoute
   '/api/customer/me': typeof ApiCustomerMeRoute
+  '/api/mcp/store': typeof ApiMcpStoreRouteWithChildren
+  '/api/mcp/whatsapp': typeof ApiMcpWhatsappRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/tiktok/callback': typeof ApiTiktokCallbackRoute
+  '/api/tiktok/device': typeof ApiTiktokDeviceRoute
   '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
+  '/api/webhooks/whapi': typeof ApiWebhooksWhapiRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
+  '/api/whapi/health': typeof ApiWhapiHealthRoute
+  '/api/whapi/read': typeof ApiWhapiReadRoute
+  '/api/mcp/oauth/approve': typeof ApiMcpOauthApproveRoute
+  '/api/mcp/oauth/authorize': typeof ApiMcpOauthAuthorizeRoute
+  '/api/mcp/oauth/register': typeof ApiMcpOauthRegisterRoute
+  '/api/mcp/oauth/token': typeof ApiMcpOauthTokenRoute
+  '/.well-known/oauth-protected-resource/api/mcp/store': typeof DotwellKnownOauthProtectedResourceApiMcpStoreRoute
+  '/.well-known/oauth-protected-resource/api/mcp/whatsapp': typeof DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute
+  '/api/mcp/store/oauth/approve': typeof ApiMcpStoreOauthApproveRoute
+  '/api/mcp/store/oauth/authorize': typeof ApiMcpStoreOauthAuthorizeRoute
+  '/api/mcp/store/oauth/register': typeof ApiMcpStoreOauthRegisterRoute
+  '/api/mcp/store/oauth/token': typeof ApiMcpStoreOauthTokenRoute
+  '/.well-known/oauth-authorization-server/api/mcp/store/oauth': typeof DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -663,6 +838,8 @@ export interface FileRoutesByTo {
   '/data-deletion': typeof DataDeletionRoute
   '/google-shopping.xml': typeof GoogleShoppingDotxmlRoute
   '/immersive-store': typeof ImmersiveStoreRoute
+  '/mcp-authorize': typeof McpAuthorizeRoute
+  '/mcp-store-authorize': typeof McpStoreAuthorizeRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/order-completion': typeof OrderCompletionRoute
@@ -672,6 +849,8 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/admin/ai-agent': typeof AdminAiAgentRoute
   '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
@@ -705,8 +884,9 @@ export interface FileRoutesByTo {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/whatsapp-accounts': typeof AdminWhatsappAccountsRoute
   '/api/catalog-health': typeof ApiCatalogHealthRoute
-  '/api/mcp': typeof ApiMcpRoute
+  '/api/mcp': typeof ApiMcpRouteWithChildren
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -730,6 +910,7 @@ export interface FileRoutesByTo {
   '/store': typeof StoreIndexRoute
   '/admin/diagnostics/whatsapp': typeof AdminDiagnosticsWhatsappRoute
   '/admin/integrations/facebook': typeof AdminIntegrationsFacebookRoute
+  '/admin/integrations/tiktok': typeof AdminIntegrationsTiktokRoute
   '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/admin/stores/$tenantId': typeof AdminStoresTenantIdRoute
@@ -741,9 +922,27 @@ export interface FileRoutesByTo {
   '/api/customer/login': typeof ApiCustomerLoginRoute
   '/api/customer/logout': typeof ApiCustomerLogoutRoute
   '/api/customer/me': typeof ApiCustomerMeRoute
+  '/api/mcp/store': typeof ApiMcpStoreRouteWithChildren
+  '/api/mcp/whatsapp': typeof ApiMcpWhatsappRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/tiktok/callback': typeof ApiTiktokCallbackRoute
+  '/api/tiktok/device': typeof ApiTiktokDeviceRoute
   '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
+  '/api/webhooks/whapi': typeof ApiWebhooksWhapiRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
+  '/api/whapi/health': typeof ApiWhapiHealthRoute
+  '/api/whapi/read': typeof ApiWhapiReadRoute
+  '/api/mcp/oauth/approve': typeof ApiMcpOauthApproveRoute
+  '/api/mcp/oauth/authorize': typeof ApiMcpOauthAuthorizeRoute
+  '/api/mcp/oauth/register': typeof ApiMcpOauthRegisterRoute
+  '/api/mcp/oauth/token': typeof ApiMcpOauthTokenRoute
+  '/.well-known/oauth-protected-resource/api/mcp/store': typeof DotwellKnownOauthProtectedResourceApiMcpStoreRoute
+  '/.well-known/oauth-protected-resource/api/mcp/whatsapp': typeof DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute
+  '/api/mcp/store/oauth/approve': typeof ApiMcpStoreOauthApproveRoute
+  '/api/mcp/store/oauth/authorize': typeof ApiMcpStoreOauthAuthorizeRoute
+  '/api/mcp/store/oauth/register': typeof ApiMcpStoreOauthRegisterRoute
+  '/api/mcp/store/oauth/token': typeof ApiMcpStoreOauthTokenRoute
+  '/.well-known/oauth-authorization-server/api/mcp/store/oauth': typeof DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -756,6 +955,8 @@ export interface FileRoutesById {
   '/data-deletion': typeof DataDeletionRoute
   '/google-shopping.xml': typeof GoogleShoppingDotxmlRoute
   '/immersive-store': typeof ImmersiveStoreRoute
+  '/mcp-authorize': typeof McpAuthorizeRoute
+  '/mcp-store-authorize': typeof McpStoreAuthorizeRoute
   '/offers': typeof OffersRoute
   '/onboarding': typeof OnboardingRoute
   '/order-completion': typeof OrderCompletionRoute
@@ -766,6 +967,8 @@ export interface FileRoutesById {
   '/store': typeof StoreRouteWithChildren
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/admin/ai-agent': typeof AdminAiAgentRoute
   '/admin/ai-developer': typeof AdminAiDeveloperRoute
   '/admin/ai-memory': typeof AdminAiMemoryRoute
@@ -799,8 +1002,9 @@ export interface FileRoutesById {
   '/admin/studio': typeof AdminStudioRoute
   '/admin/system-health': typeof AdminSystemHealthRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/whatsapp-accounts': typeof AdminWhatsappAccountsRoute
   '/api/catalog-health': typeof ApiCatalogHealthRoute
-  '/api/mcp': typeof ApiMcpRoute
+  '/api/mcp': typeof ApiMcpRouteWithChildren
   '/api/orders': typeof ApiOrdersRoute
   '/category/$id': typeof CategoryIdRoute
   '/demo/3d-viewer': typeof Demo3dViewerRoute
@@ -824,6 +1028,7 @@ export interface FileRoutesById {
   '/store/': typeof StoreIndexRoute
   '/admin/diagnostics/whatsapp': typeof AdminDiagnosticsWhatsappRoute
   '/admin/integrations/facebook': typeof AdminIntegrationsFacebookRoute
+  '/admin/integrations/tiktok': typeof AdminIntegrationsTiktokRoute
   '/admin/integrations/whatsapp': typeof AdminIntegrationsWhatsappRoute
   '/admin/product/$id': typeof AdminProductIdRoute
   '/admin/stores/$tenantId': typeof AdminStoresTenantIdRoute
@@ -835,9 +1040,27 @@ export interface FileRoutesById {
   '/api/customer/login': typeof ApiCustomerLoginRoute
   '/api/customer/logout': typeof ApiCustomerLogoutRoute
   '/api/customer/me': typeof ApiCustomerMeRoute
+  '/api/mcp/store': typeof ApiMcpStoreRouteWithChildren
+  '/api/mcp/whatsapp': typeof ApiMcpWhatsappRoute
   '/api/public/image-proxy': typeof ApiPublicImageProxyRoute
+  '/api/tiktok/callback': typeof ApiTiktokCallbackRoute
+  '/api/tiktok/device': typeof ApiTiktokDeviceRoute
   '/api/webhooks/shopify': typeof ApiWebhooksShopifyRoute
+  '/api/webhooks/whapi': typeof ApiWebhooksWhapiRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
+  '/api/whapi/health': typeof ApiWhapiHealthRoute
+  '/api/whapi/read': typeof ApiWhapiReadRoute
+  '/api/mcp/oauth/approve': typeof ApiMcpOauthApproveRoute
+  '/api/mcp/oauth/authorize': typeof ApiMcpOauthAuthorizeRoute
+  '/api/mcp/oauth/register': typeof ApiMcpOauthRegisterRoute
+  '/api/mcp/oauth/token': typeof ApiMcpOauthTokenRoute
+  '/.well-known/oauth-protected-resource/api/mcp/store': typeof DotwellKnownOauthProtectedResourceApiMcpStoreRoute
+  '/.well-known/oauth-protected-resource/api/mcp/whatsapp': typeof DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute
+  '/api/mcp/store/oauth/approve': typeof ApiMcpStoreOauthApproveRoute
+  '/api/mcp/store/oauth/authorize': typeof ApiMcpStoreOauthAuthorizeRoute
+  '/api/mcp/store/oauth/register': typeof ApiMcpStoreOauthRegisterRoute
+  '/api/mcp/store/oauth/token': typeof ApiMcpStoreOauthTokenRoute
+  '/.well-known/oauth-authorization-server/api/mcp/store/oauth': typeof DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -851,6 +1074,8 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/google-shopping.xml'
     | '/immersive-store'
+    | '/mcp-authorize'
+    | '/mcp-store-authorize'
     | '/offers'
     | '/onboarding'
     | '/order-completion'
@@ -861,6 +1086,8 @@ export interface FileRouteTypes {
     | '/store'
     | '/terms'
     | '/track'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/ai-agent'
     | '/admin/ai-developer'
     | '/admin/ai-memory'
@@ -894,6 +1121,7 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/admin/whatsapp-accounts'
     | '/api/catalog-health'
     | '/api/mcp'
     | '/api/orders'
@@ -919,6 +1147,7 @@ export interface FileRouteTypes {
     | '/store/'
     | '/admin/diagnostics/whatsapp'
     | '/admin/integrations/facebook'
+    | '/admin/integrations/tiktok'
     | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
     | '/admin/stores/$tenantId'
@@ -930,9 +1159,27 @@ export interface FileRouteTypes {
     | '/api/customer/login'
     | '/api/customer/logout'
     | '/api/customer/me'
+    | '/api/mcp/store'
+    | '/api/mcp/whatsapp'
     | '/api/public/image-proxy'
+    | '/api/tiktok/callback'
+    | '/api/tiktok/device'
     | '/api/webhooks/shopify'
+    | '/api/webhooks/whapi'
     | '/api/webhooks/whatsapp'
+    | '/api/whapi/health'
+    | '/api/whapi/read'
+    | '/api/mcp/oauth/approve'
+    | '/api/mcp/oauth/authorize'
+    | '/api/mcp/oauth/register'
+    | '/api/mcp/oauth/token'
+    | '/.well-known/oauth-protected-resource/api/mcp/store'
+    | '/.well-known/oauth-protected-resource/api/mcp/whatsapp'
+    | '/api/mcp/store/oauth/approve'
+    | '/api/mcp/store/oauth/authorize'
+    | '/api/mcp/store/oauth/register'
+    | '/api/mcp/store/oauth/token'
+    | '/.well-known/oauth-authorization-server/api/mcp/store/oauth'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -943,6 +1190,8 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/google-shopping.xml'
     | '/immersive-store'
+    | '/mcp-authorize'
+    | '/mcp-store-authorize'
     | '/offers'
     | '/onboarding'
     | '/order-completion'
@@ -952,6 +1201,8 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/ai-agent'
     | '/admin/ai-developer'
     | '/admin/ai-memory'
@@ -985,6 +1236,7 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/admin/whatsapp-accounts'
     | '/api/catalog-health'
     | '/api/mcp'
     | '/api/orders'
@@ -1010,6 +1262,7 @@ export interface FileRouteTypes {
     | '/store'
     | '/admin/diagnostics/whatsapp'
     | '/admin/integrations/facebook'
+    | '/admin/integrations/tiktok'
     | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
     | '/admin/stores/$tenantId'
@@ -1021,9 +1274,27 @@ export interface FileRouteTypes {
     | '/api/customer/login'
     | '/api/customer/logout'
     | '/api/customer/me'
+    | '/api/mcp/store'
+    | '/api/mcp/whatsapp'
     | '/api/public/image-proxy'
+    | '/api/tiktok/callback'
+    | '/api/tiktok/device'
     | '/api/webhooks/shopify'
+    | '/api/webhooks/whapi'
     | '/api/webhooks/whatsapp'
+    | '/api/whapi/health'
+    | '/api/whapi/read'
+    | '/api/mcp/oauth/approve'
+    | '/api/mcp/oauth/authorize'
+    | '/api/mcp/oauth/register'
+    | '/api/mcp/oauth/token'
+    | '/.well-known/oauth-protected-resource/api/mcp/store'
+    | '/.well-known/oauth-protected-resource/api/mcp/whatsapp'
+    | '/api/mcp/store/oauth/approve'
+    | '/api/mcp/store/oauth/authorize'
+    | '/api/mcp/store/oauth/register'
+    | '/api/mcp/store/oauth/token'
+    | '/.well-known/oauth-authorization-server/api/mcp/store/oauth'
   id:
     | '__root__'
     | '/'
@@ -1035,6 +1306,8 @@ export interface FileRouteTypes {
     | '/data-deletion'
     | '/google-shopping.xml'
     | '/immersive-store'
+    | '/mcp-authorize'
+    | '/mcp-store-authorize'
     | '/offers'
     | '/onboarding'
     | '/order-completion'
@@ -1045,6 +1318,8 @@ export interface FileRouteTypes {
     | '/store'
     | '/terms'
     | '/track'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/ai-agent'
     | '/admin/ai-developer'
     | '/admin/ai-memory'
@@ -1078,6 +1353,7 @@ export interface FileRouteTypes {
     | '/admin/studio'
     | '/admin/system-health'
     | '/admin/users'
+    | '/admin/whatsapp-accounts'
     | '/api/catalog-health'
     | '/api/mcp'
     | '/api/orders'
@@ -1103,6 +1379,7 @@ export interface FileRouteTypes {
     | '/store/'
     | '/admin/diagnostics/whatsapp'
     | '/admin/integrations/facebook'
+    | '/admin/integrations/tiktok'
     | '/admin/integrations/whatsapp'
     | '/admin/product/$id'
     | '/admin/stores/$tenantId'
@@ -1114,9 +1391,27 @@ export interface FileRouteTypes {
     | '/api/customer/login'
     | '/api/customer/logout'
     | '/api/customer/me'
+    | '/api/mcp/store'
+    | '/api/mcp/whatsapp'
     | '/api/public/image-proxy'
+    | '/api/tiktok/callback'
+    | '/api/tiktok/device'
     | '/api/webhooks/shopify'
+    | '/api/webhooks/whapi'
     | '/api/webhooks/whatsapp'
+    | '/api/whapi/health'
+    | '/api/whapi/read'
+    | '/api/mcp/oauth/approve'
+    | '/api/mcp/oauth/authorize'
+    | '/api/mcp/oauth/register'
+    | '/api/mcp/oauth/token'
+    | '/.well-known/oauth-protected-resource/api/mcp/store'
+    | '/.well-known/oauth-protected-resource/api/mcp/whatsapp'
+    | '/api/mcp/store/oauth/approve'
+    | '/api/mcp/store/oauth/authorize'
+    | '/api/mcp/store/oauth/register'
+    | '/api/mcp/store/oauth/token'
+    | '/.well-known/oauth-authorization-server/api/mcp/store/oauth'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1129,6 +1424,8 @@ export interface RootRouteChildren {
   DataDeletionRoute: typeof DataDeletionRoute
   GoogleShoppingDotxmlRoute: typeof GoogleShoppingDotxmlRoute
   ImmersiveStoreRoute: typeof ImmersiveStoreRoute
+  McpAuthorizeRoute: typeof McpAuthorizeRoute
+  McpStoreAuthorizeRoute: typeof McpStoreAuthorizeRoute
   OffersRoute: typeof OffersRoute
   OnboardingRoute: typeof OnboardingRoute
   OrderCompletionRoute: typeof OrderCompletionRoute
@@ -1139,8 +1436,10 @@ export interface RootRouteChildren {
   StoreRoute: typeof StoreRouteWithChildren
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
+  DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRouteWithChildren
+  DotwellKnownOauthProtectedResourceRoute: typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   ApiCatalogHealthRoute: typeof ApiCatalogHealthRoute
-  ApiMcpRoute: typeof ApiMcpRoute
+  ApiMcpRoute: typeof ApiMcpRouteWithChildren
   ApiOrdersRoute: typeof ApiOrdersRoute
   CategoryIdRoute: typeof CategoryIdRoute
   Demo3dViewerRoute: typeof Demo3dViewerRoute
@@ -1160,129 +1459,22 @@ export interface RootRouteChildren {
   ApiCustomerLogoutRoute: typeof ApiCustomerLogoutRoute
   ApiCustomerMeRoute: typeof ApiCustomerMeRoute
   ApiPublicImageProxyRoute: typeof ApiPublicImageProxyRoute
+  ApiTiktokCallbackRoute: typeof ApiTiktokCallbackRoute
+  ApiTiktokDeviceRoute: typeof ApiTiktokDeviceRoute
   ApiWebhooksShopifyRoute: typeof ApiWebhooksShopifyRoute
+  ApiWebhooksWhapiRoute: typeof ApiWebhooksWhapiRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
+  ApiWhapiHealthRoute: typeof ApiWhapiHealthRoute
+  ApiWhapiReadRoute: typeof ApiWhapiReadRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/track': {
-      id: '/track'
-      path: '/track'
-      fullPath: '/track'
-      preLoaderRoute: typeof TrackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/store': {
-      id: '/store'
-      path: '/store'
-      fullPath: '/store'
-      preLoaderRoute: typeof StoreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/robots.txt': {
-      id: '/robots.txt'
-      path: '/robots.txt'
-      fullPath: '/robots.txt'
-      preLoaderRoute: typeof RobotsDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy-policy': {
-      id: '/privacy-policy'
-      path: '/privacy-policy'
-      fullPath: '/privacy-policy'
-      preLoaderRoute: typeof PrivacyPolicyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/order-completion': {
-      id: '/order-completion'
-      path: '/order-completion'
-      fullPath: '/order-completion'
-      preLoaderRoute: typeof OrderCompletionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/offers': {
-      id: '/offers'
-      path: '/offers'
-      fullPath: '/offers'
-      preLoaderRoute: typeof OffersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/immersive-store': {
-      id: '/immersive-store'
-      path: '/immersive-store'
-      fullPath: '/immersive-store'
-      preLoaderRoute: typeof ImmersiveStoreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/google-shopping.xml': {
-      id: '/google-shopping.xml'
-      path: '/google-shopping.xml'
-      fullPath: '/google-shopping.xml'
-      preLoaderRoute: typeof GoogleShoppingDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/data-deletion': {
-      id: '/data-deletion'
-      path: '/data-deletion'
-      fullPath: '/data-deletion'
-      preLoaderRoute: typeof DataDeletionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checkout': {
-      id: '/checkout'
-      path: '/checkout'
-      fullPath: '/checkout'
-      preLoaderRoute: typeof CheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cart': {
-      id: '/cart'
-      path: '/cart'
-      fullPath: '/cart'
-      preLoaderRoute: typeof CartRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account': {
@@ -1292,396 +1484,158 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/store/': {
-      id: '/store/'
-      path: '/'
-      fullPath: '/store/'
-      preLoaderRoute: typeof StoreIndexRouteImport
-      parentRoute: typeof StoreRoute
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-deletion': {
+      id: '/data-deletion'
+      path: '/data-deletion'
+      fullPath: '/data-deletion'
+      preLoaderRoute: typeof DataDeletionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/google-shopping.xml': {
+      id: '/google-shopping.xml'
+      path: '/google-shopping.xml'
+      fullPath: '/google-shopping.xml'
+      preLoaderRoute: typeof GoogleShoppingDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/immersive-store': {
+      id: '/immersive-store'
+      path: '/immersive-store'
+      fullPath: '/immersive-store'
+      preLoaderRoute: typeof ImmersiveStoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp-authorize': {
+      id: '/mcp-authorize'
+      path: '/mcp-authorize'
+      fullPath: '/mcp-authorize'
+      preLoaderRoute: typeof McpAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp-store-authorize': {
+      id: '/mcp-store-authorize'
+      path: '/mcp-store-authorize'
+      fullPath: '/mcp-store-authorize'
+      preLoaderRoute: typeof McpStoreAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offers': {
+      id: '/offers'
+      path: '/offers'
+      fullPath: '/offers'
+      preLoaderRoute: typeof OffersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order-completion': {
+      id: '/order-completion'
+      path: '/order-completion'
+      fullPath: '/order-completion'
+      preLoaderRoute: typeof OrderCompletionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/store': {
+      id: '/store'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof StoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/track': {
+      id: '/track'
+      path: '/track'
+      fullPath: '/track'
+      preLoaderRoute: typeof TrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-authorization-server': {
+      id: '/.well-known/oauth-authorization-server'
+      path: '/.well-known/oauth-authorization-server'
+      fullPath: '/.well-known/oauth-authorization-server'
+      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/': {
       id: '/admin/'
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/vendor/dashboard': {
-      id: '/vendor/dashboard'
-      path: '/vendor/dashboard'
-      fullPath: '/vendor/dashboard'
-      preLoaderRoute: typeof VendorDashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/vendor/$slug': {
-      id: '/vendor/$slug'
-      path: '/vendor/$slug'
-      fullPath: '/vendor/$slug'
-      preLoaderRoute: typeof VendorSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/store/settings': {
-      id: '/store/settings'
-      path: '/settings'
-      fullPath: '/store/settings'
-      preLoaderRoute: typeof StoreSettingsRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/store/products': {
-      id: '/store/products'
-      path: '/products'
-      fullPath: '/store/products'
-      preLoaderRoute: typeof StoreProductsRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/store/orders': {
-      id: '/store/orders'
-      path: '/orders'
-      fullPath: '/store/orders'
-      preLoaderRoute: typeof StoreOrdersRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/store/marketing': {
-      id: '/store/marketing'
-      path: '/marketing'
-      fullPath: '/store/marketing'
-      preLoaderRoute: typeof StoreMarketingRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/store/inventory': {
-      id: '/store/inventory'
-      path: '/inventory'
-      fullPath: '/store/inventory'
-      preLoaderRoute: typeof StoreInventoryRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/store/earnings': {
-      id: '/store/earnings'
-      path: '/earnings'
-      fullPath: '/store/earnings'
-      preLoaderRoute: typeof StoreEarningsRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/store/dashboard': {
-      id: '/store/dashboard'
-      path: '/dashboard'
-      fullPath: '/store/dashboard'
-      preLoaderRoute: typeof StoreDashboardRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/store/customers': {
-      id: '/store/customers'
-      path: '/customers'
-      fullPath: '/store/customers'
-      preLoaderRoute: typeof StoreCustomersRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/store/analytics': {
-      id: '/store/analytics'
-      path: '/analytics'
-      fullPath: '/store/analytics'
-      preLoaderRoute: typeof StoreAnalyticsRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/product/$slug': {
-      id: '/product/$slug'
-      path: '/product/$slug'
-      fullPath: '/product/$slug'
-      preLoaderRoute: typeof ProductSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pages/shipping-policy': {
-      id: '/pages/shipping-policy'
-      path: '/pages/shipping-policy'
-      fullPath: '/pages/shipping-policy'
-      preLoaderRoute: typeof PagesShippingPolicyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pages/return-policy': {
-      id: '/pages/return-policy'
-      path: '/pages/return-policy'
-      fullPath: '/pages/return-policy'
-      preLoaderRoute: typeof PagesReturnPolicyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pages/faq': {
-      id: '/pages/faq'
-      path: '/pages/faq'
-      fullPath: '/pages/faq'
-      preLoaderRoute: typeof PagesFaqRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pages/$slug': {
-      id: '/pages/$slug'
-      path: '/pages/$slug'
-      fullPath: '/pages/$slug'
-      preLoaderRoute: typeof PagesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/3d-viewer': {
-      id: '/demo/3d-viewer'
-      path: '/demo/3d-viewer'
-      fullPath: '/demo/3d-viewer'
-      preLoaderRoute: typeof Demo3dViewerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/category/$id': {
-      id: '/category/$id'
-      path: '/category/$id'
-      fullPath: '/category/$id'
-      preLoaderRoute: typeof CategoryIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/orders': {
-      id: '/api/orders'
-      path: '/api/orders'
-      fullPath: '/api/orders'
-      preLoaderRoute: typeof ApiOrdersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/mcp': {
-      id: '/api/mcp'
-      path: '/api/mcp'
-      fullPath: '/api/mcp'
-      preLoaderRoute: typeof ApiMcpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/catalog-health': {
-      id: '/api/catalog-health'
-      path: '/api/catalog-health'
-      fullPath: '/api/catalog-health'
-      preLoaderRoute: typeof ApiCatalogHealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/system-health': {
-      id: '/admin/system-health'
-      path: '/system-health'
-      fullPath: '/admin/system-health'
-      preLoaderRoute: typeof AdminSystemHealthRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/studio': {
-      id: '/admin/studio'
-      path: '/studio'
-      fullPath: '/admin/studio'
-      preLoaderRoute: typeof AdminStudioRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/stores': {
-      id: '/admin/stores'
-      path: '/stores'
-      fullPath: '/admin/stores'
-      preLoaderRoute: typeof AdminStoresRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/storefront': {
-      id: '/admin/storefront'
-      path: '/storefront'
-      fullPath: '/admin/storefront'
-      preLoaderRoute: typeof AdminStorefrontRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/shipping': {
-      id: '/admin/shipping'
-      path: '/shipping'
-      fullPath: '/admin/shipping'
-      preLoaderRoute: typeof AdminShippingRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/settings': {
-      id: '/admin/settings'
-      path: '/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminSettingsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/sessions': {
-      id: '/admin/sessions'
-      path: '/sessions'
-      fullPath: '/admin/sessions'
-      preLoaderRoute: typeof AdminSessionsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/seo': {
-      id: '/admin/seo'
-      path: '/seo'
-      fullPath: '/admin/seo'
-      preLoaderRoute: typeof AdminSeoRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/reviews': {
-      id: '/admin/reviews'
-      path: '/reviews'
-      fullPath: '/admin/reviews'
-      preLoaderRoute: typeof AdminReviewsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/products': {
-      id: '/admin/products'
-      path: '/products'
-      fullPath: '/admin/products'
-      preLoaderRoute: typeof AdminProductsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/platform': {
-      id: '/admin/platform'
-      path: '/platform'
-      fullPath: '/admin/platform'
-      preLoaderRoute: typeof AdminPlatformRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/payments': {
-      id: '/admin/payments'
-      path: '/payments'
-      fullPath: '/admin/payments'
-      preLoaderRoute: typeof AdminPaymentsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/pages': {
-      id: '/admin/pages'
-      path: '/pages'
-      fullPath: '/admin/pages'
-      preLoaderRoute: typeof AdminPagesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/orders': {
-      id: '/admin/orders'
-      path: '/orders'
-      fullPath: '/admin/orders'
-      preLoaderRoute: typeof AdminOrdersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/notifications': {
-      id: '/admin/notifications'
-      path: '/notifications'
-      fullPath: '/admin/notifications'
-      preLoaderRoute: typeof AdminNotificationsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/media': {
-      id: '/admin/media'
-      path: '/media'
-      fullPath: '/admin/media'
-      preLoaderRoute: typeof AdminMediaRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/live-logs': {
-      id: '/admin/live-logs'
-      path: '/live-logs'
-      fullPath: '/admin/live-logs'
-      preLoaderRoute: typeof AdminLiveLogsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/inventory': {
-      id: '/admin/inventory'
-      path: '/inventory'
-      fullPath: '/admin/inventory'
-      preLoaderRoute: typeof AdminInventoryRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/insights': {
-      id: '/admin/insights'
-      path: '/insights'
-      fullPath: '/admin/insights'
-      preLoaderRoute: typeof AdminInsightsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/deals': {
-      id: '/admin/deals'
-      path: '/deals'
-      fullPath: '/admin/deals'
-      preLoaderRoute: typeof AdminDealsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/customers': {
-      id: '/admin/customers'
-      path: '/customers'
-      fullPath: '/admin/customers'
-      preLoaderRoute: typeof AdminCustomersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/coupons': {
-      id: '/admin/coupons'
-      path: '/coupons'
-      fullPath: '/admin/coupons'
-      preLoaderRoute: typeof AdminCouponsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/categories': {
-      id: '/admin/categories'
-      path: '/categories'
-      fullPath: '/admin/categories'
-      preLoaderRoute: typeof AdminCategoriesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/campaigns': {
-      id: '/admin/campaigns'
-      path: '/campaigns'
-      fullPath: '/admin/campaigns'
-      preLoaderRoute: typeof AdminCampaignsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/branches': {
-      id: '/admin/branches'
-      path: '/branches'
-      fullPath: '/admin/branches'
-      preLoaderRoute: typeof AdminBranchesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/banners': {
-      id: '/admin/banners'
-      path: '/banners'
-      fullPath: '/admin/banners'
-      preLoaderRoute: typeof AdminBannersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/audit-logs': {
-      id: '/admin/audit-logs'
-      path: '/audit-logs'
-      fullPath: '/admin/audit-logs'
-      preLoaderRoute: typeof AdminAuditLogsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/appearance': {
-      id: '/admin/appearance'
-      path: '/appearance'
-      fullPath: '/admin/appearance'
-      preLoaderRoute: typeof AdminAppearanceRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/ai-settings': {
-      id: '/admin/ai-settings'
-      path: '/ai-settings'
-      fullPath: '/admin/ai-settings'
-      preLoaderRoute: typeof AdminAiSettingsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/ai-memory': {
-      id: '/admin/ai-memory'
-      path: '/ai-memory'
-      fullPath: '/admin/ai-memory'
-      preLoaderRoute: typeof AdminAiMemoryRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/ai-developer': {
-      id: '/admin/ai-developer'
-      path: '/ai-developer'
-      fullPath: '/admin/ai-developer'
-      preLoaderRoute: typeof AdminAiDeveloperRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/ai-agent': {
@@ -1691,102 +1645,396 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAiAgentRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/api/webhooks/whatsapp': {
-      id: '/api/webhooks/whatsapp'
-      path: '/api/webhooks/whatsapp'
-      fullPath: '/api/webhooks/whatsapp'
-      preLoaderRoute: typeof ApiWebhooksWhatsappRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/webhooks/shopify': {
-      id: '/api/webhooks/shopify'
-      path: '/api/webhooks/shopify'
-      fullPath: '/api/webhooks/shopify'
-      preLoaderRoute: typeof ApiWebhooksShopifyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/image-proxy': {
-      id: '/api/public/image-proxy'
-      path: '/api/public/image-proxy'
-      fullPath: '/api/public/image-proxy'
-      preLoaderRoute: typeof ApiPublicImageProxyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/customer/me': {
-      id: '/api/customer/me'
-      path: '/api/customer/me'
-      fullPath: '/api/customer/me'
-      preLoaderRoute: typeof ApiCustomerMeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/customer/logout': {
-      id: '/api/customer/logout'
-      path: '/api/customer/logout'
-      fullPath: '/api/customer/logout'
-      preLoaderRoute: typeof ApiCustomerLogoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/customer/login': {
-      id: '/api/customer/login'
-      path: '/api/customer/login'
-      fullPath: '/api/customer/login'
-      preLoaderRoute: typeof ApiCustomerLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/customer/callback': {
-      id: '/api/customer/callback'
-      path: '/api/customer/callback'
-      fullPath: '/api/customer/callback'
-      preLoaderRoute: typeof ApiCustomerCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/catalog/{$id}.csv': {
-      id: '/api/catalog/{$id}.csv'
-      path: '/api/catalog/{$id}.csv'
-      fullPath: '/api/catalog/{$id}.csv'
-      preLoaderRoute: typeof ApiCatalogChar123idChar125DotcsvRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/ai/debug': {
-      id: '/api/ai/debug'
-      path: '/api/ai/debug'
-      fullPath: '/api/ai/debug'
-      preLoaderRoute: typeof ApiAiDebugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/ai/analyze-product': {
-      id: '/api/ai/analyze-product'
-      path: '/api/ai/analyze-product'
-      fullPath: '/api/ai/analyze-product'
-      preLoaderRoute: typeof ApiAiAnalyzeProductRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/ai/agent': {
-      id: '/api/ai/agent'
-      path: '/api/ai/agent'
-      fullPath: '/api/ai/agent'
-      preLoaderRoute: typeof ApiAiAgentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/stores/$tenantId': {
-      id: '/admin/stores/$tenantId'
-      path: '/$tenantId'
-      fullPath: '/admin/stores/$tenantId'
-      preLoaderRoute: typeof AdminStoresTenantIdRouteImport
-      parentRoute: typeof AdminStoresRoute
-    }
-    '/admin/product/$id': {
-      id: '/admin/product/$id'
-      path: '/product/$id'
-      fullPath: '/admin/product/$id'
-      preLoaderRoute: typeof AdminProductIdRouteImport
+    '/admin/ai-developer': {
+      id: '/admin/ai-developer'
+      path: '/ai-developer'
+      fullPath: '/admin/ai-developer'
+      preLoaderRoute: typeof AdminAiDeveloperRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/integrations/whatsapp': {
-      id: '/admin/integrations/whatsapp'
-      path: '/integrations/whatsapp'
-      fullPath: '/admin/integrations/whatsapp'
-      preLoaderRoute: typeof AdminIntegrationsWhatsappRouteImport
+    '/admin/ai-memory': {
+      id: '/admin/ai-memory'
+      path: '/ai-memory'
+      fullPath: '/admin/ai-memory'
+      preLoaderRoute: typeof AdminAiMemoryRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ai-settings': {
+      id: '/admin/ai-settings'
+      path: '/ai-settings'
+      fullPath: '/admin/ai-settings'
+      preLoaderRoute: typeof AdminAiSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/appearance': {
+      id: '/admin/appearance'
+      path: '/appearance'
+      fullPath: '/admin/appearance'
+      preLoaderRoute: typeof AdminAppearanceRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/audit-logs': {
+      id: '/admin/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/admin/audit-logs'
+      preLoaderRoute: typeof AdminAuditLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/banners': {
+      id: '/admin/banners'
+      path: '/banners'
+      fullPath: '/admin/banners'
+      preLoaderRoute: typeof AdminBannersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/branches': {
+      id: '/admin/branches'
+      path: '/branches'
+      fullPath: '/admin/branches'
+      preLoaderRoute: typeof AdminBranchesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/campaigns': {
+      id: '/admin/campaigns'
+      path: '/campaigns'
+      fullPath: '/admin/campaigns'
+      preLoaderRoute: typeof AdminCampaignsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/coupons': {
+      id: '/admin/coupons'
+      path: '/coupons'
+      fullPath: '/admin/coupons'
+      preLoaderRoute: typeof AdminCouponsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/customers': {
+      id: '/admin/customers'
+      path: '/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AdminCustomersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/deals': {
+      id: '/admin/deals'
+      path: '/deals'
+      fullPath: '/admin/deals'
+      preLoaderRoute: typeof AdminDealsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/insights': {
+      id: '/admin/insights'
+      path: '/insights'
+      fullPath: '/admin/insights'
+      preLoaderRoute: typeof AdminInsightsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/inventory': {
+      id: '/admin/inventory'
+      path: '/inventory'
+      fullPath: '/admin/inventory'
+      preLoaderRoute: typeof AdminInventoryRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/live-logs': {
+      id: '/admin/live-logs'
+      path: '/live-logs'
+      fullPath: '/admin/live-logs'
+      preLoaderRoute: typeof AdminLiveLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/media': {
+      id: '/admin/media'
+      path: '/media'
+      fullPath: '/admin/media'
+      preLoaderRoute: typeof AdminMediaRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/orders': {
+      id: '/admin/orders'
+      path: '/orders'
+      fullPath: '/admin/orders'
+      preLoaderRoute: typeof AdminOrdersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pages': {
+      id: '/admin/pages'
+      path: '/pages'
+      fullPath: '/admin/pages'
+      preLoaderRoute: typeof AdminPagesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/payments': {
+      id: '/admin/payments'
+      path: '/payments'
+      fullPath: '/admin/payments'
+      preLoaderRoute: typeof AdminPaymentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/platform': {
+      id: '/admin/platform'
+      path: '/platform'
+      fullPath: '/admin/platform'
+      preLoaderRoute: typeof AdminPlatformRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/products': {
+      id: '/admin/products'
+      path: '/products'
+      fullPath: '/admin/products'
+      preLoaderRoute: typeof AdminProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reviews': {
+      id: '/admin/reviews'
+      path: '/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminReviewsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/seo': {
+      id: '/admin/seo'
+      path: '/seo'
+      fullPath: '/admin/seo'
+      preLoaderRoute: typeof AdminSeoRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/sessions': {
+      id: '/admin/sessions'
+      path: '/sessions'
+      fullPath: '/admin/sessions'
+      preLoaderRoute: typeof AdminSessionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/shipping': {
+      id: '/admin/shipping'
+      path: '/shipping'
+      fullPath: '/admin/shipping'
+      preLoaderRoute: typeof AdminShippingRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/storefront': {
+      id: '/admin/storefront'
+      path: '/storefront'
+      fullPath: '/admin/storefront'
+      preLoaderRoute: typeof AdminStorefrontRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/stores': {
+      id: '/admin/stores'
+      path: '/stores'
+      fullPath: '/admin/stores'
+      preLoaderRoute: typeof AdminStoresRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/studio': {
+      id: '/admin/studio'
+      path: '/studio'
+      fullPath: '/admin/studio'
+      preLoaderRoute: typeof AdminStudioRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/system-health': {
+      id: '/admin/system-health'
+      path: '/system-health'
+      fullPath: '/admin/system-health'
+      preLoaderRoute: typeof AdminSystemHealthRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/whatsapp-accounts': {
+      id: '/admin/whatsapp-accounts'
+      path: '/whatsapp-accounts'
+      fullPath: '/admin/whatsapp-accounts'
+      preLoaderRoute: typeof AdminWhatsappAccountsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/api/catalog-health': {
+      id: '/api/catalog-health'
+      path: '/api/catalog-health'
+      fullPath: '/api/catalog-health'
+      preLoaderRoute: typeof ApiCatalogHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/orders': {
+      id: '/api/orders'
+      path: '/api/orders'
+      fullPath: '/api/orders'
+      preLoaderRoute: typeof ApiOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/category/$id': {
+      id: '/category/$id'
+      path: '/category/$id'
+      fullPath: '/category/$id'
+      preLoaderRoute: typeof CategoryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/3d-viewer': {
+      id: '/demo/3d-viewer'
+      path: '/demo/3d-viewer'
+      fullPath: '/demo/3d-viewer'
+      preLoaderRoute: typeof Demo3dViewerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pages/$slug': {
+      id: '/pages/$slug'
+      path: '/pages/$slug'
+      fullPath: '/pages/$slug'
+      preLoaderRoute: typeof PagesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pages/faq': {
+      id: '/pages/faq'
+      path: '/pages/faq'
+      fullPath: '/pages/faq'
+      preLoaderRoute: typeof PagesFaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pages/return-policy': {
+      id: '/pages/return-policy'
+      path: '/pages/return-policy'
+      fullPath: '/pages/return-policy'
+      preLoaderRoute: typeof PagesReturnPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pages/shipping-policy': {
+      id: '/pages/shipping-policy'
+      path: '/pages/shipping-policy'
+      fullPath: '/pages/shipping-policy'
+      preLoaderRoute: typeof PagesShippingPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/product/$slug': {
+      id: '/product/$slug'
+      path: '/product/$slug'
+      fullPath: '/product/$slug'
+      preLoaderRoute: typeof ProductSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/store/': {
+      id: '/store/'
+      path: '/'
+      fullPath: '/store/'
+      preLoaderRoute: typeof StoreIndexRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/analytics': {
+      id: '/store/analytics'
+      path: '/analytics'
+      fullPath: '/store/analytics'
+      preLoaderRoute: typeof StoreAnalyticsRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/customers': {
+      id: '/store/customers'
+      path: '/customers'
+      fullPath: '/store/customers'
+      preLoaderRoute: typeof StoreCustomersRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/dashboard': {
+      id: '/store/dashboard'
+      path: '/dashboard'
+      fullPath: '/store/dashboard'
+      preLoaderRoute: typeof StoreDashboardRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/earnings': {
+      id: '/store/earnings'
+      path: '/earnings'
+      fullPath: '/store/earnings'
+      preLoaderRoute: typeof StoreEarningsRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/inventory': {
+      id: '/store/inventory'
+      path: '/inventory'
+      fullPath: '/store/inventory'
+      preLoaderRoute: typeof StoreInventoryRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/marketing': {
+      id: '/store/marketing'
+      path: '/marketing'
+      fullPath: '/store/marketing'
+      preLoaderRoute: typeof StoreMarketingRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/orders': {
+      id: '/store/orders'
+      path: '/orders'
+      fullPath: '/store/orders'
+      preLoaderRoute: typeof StoreOrdersRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/products': {
+      id: '/store/products'
+      path: '/products'
+      fullPath: '/store/products'
+      preLoaderRoute: typeof StoreProductsRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/settings': {
+      id: '/store/settings'
+      path: '/settings'
+      fullPath: '/store/settings'
+      preLoaderRoute: typeof StoreSettingsRouteImport
+      parentRoute: typeof StoreRoute
+    }
+    '/vendor/$slug': {
+      id: '/vendor/$slug'
+      path: '/vendor/$slug'
+      fullPath: '/vendor/$slug'
+      preLoaderRoute: typeof VendorSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/dashboard': {
+      id: '/vendor/dashboard'
+      path: '/vendor/dashboard'
+      fullPath: '/vendor/dashboard'
+      preLoaderRoute: typeof VendorDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/diagnostics/whatsapp': {
+      id: '/admin/diagnostics/whatsapp'
+      path: '/diagnostics/whatsapp'
+      fullPath: '/admin/diagnostics/whatsapp'
+      preLoaderRoute: typeof AdminDiagnosticsWhatsappRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/integrations/facebook': {
@@ -1796,12 +2044,236 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIntegrationsFacebookRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/diagnostics/whatsapp': {
-      id: '/admin/diagnostics/whatsapp'
-      path: '/diagnostics/whatsapp'
-      fullPath: '/admin/diagnostics/whatsapp'
-      preLoaderRoute: typeof AdminDiagnosticsWhatsappRouteImport
+    '/admin/integrations/tiktok': {
+      id: '/admin/integrations/tiktok'
+      path: '/integrations/tiktok'
+      fullPath: '/admin/integrations/tiktok'
+      preLoaderRoute: typeof AdminIntegrationsTiktokRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/admin/integrations/whatsapp': {
+      id: '/admin/integrations/whatsapp'
+      path: '/integrations/whatsapp'
+      fullPath: '/admin/integrations/whatsapp'
+      preLoaderRoute: typeof AdminIntegrationsWhatsappRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/product/$id': {
+      id: '/admin/product/$id'
+      path: '/product/$id'
+      fullPath: '/admin/product/$id'
+      preLoaderRoute: typeof AdminProductIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/stores/$tenantId': {
+      id: '/admin/stores/$tenantId'
+      path: '/$tenantId'
+      fullPath: '/admin/stores/$tenantId'
+      preLoaderRoute: typeof AdminStoresTenantIdRouteImport
+      parentRoute: typeof AdminStoresRoute
+    }
+    '/api/ai/agent': {
+      id: '/api/ai/agent'
+      path: '/api/ai/agent'
+      fullPath: '/api/ai/agent'
+      preLoaderRoute: typeof ApiAiAgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/analyze-product': {
+      id: '/api/ai/analyze-product'
+      path: '/api/ai/analyze-product'
+      fullPath: '/api/ai/analyze-product'
+      preLoaderRoute: typeof ApiAiAnalyzeProductRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/debug': {
+      id: '/api/ai/debug'
+      path: '/api/ai/debug'
+      fullPath: '/api/ai/debug'
+      preLoaderRoute: typeof ApiAiDebugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/catalog/{$id}.csv': {
+      id: '/api/catalog/{$id}.csv'
+      path: '/api/catalog/{$id}.csv'
+      fullPath: '/api/catalog/{$id}.csv'
+      preLoaderRoute: typeof ApiCatalogChar123idChar125DotcsvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/customer/callback': {
+      id: '/api/customer/callback'
+      path: '/api/customer/callback'
+      fullPath: '/api/customer/callback'
+      preLoaderRoute: typeof ApiCustomerCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/customer/login': {
+      id: '/api/customer/login'
+      path: '/api/customer/login'
+      fullPath: '/api/customer/login'
+      preLoaderRoute: typeof ApiCustomerLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/customer/logout': {
+      id: '/api/customer/logout'
+      path: '/api/customer/logout'
+      fullPath: '/api/customer/logout'
+      preLoaderRoute: typeof ApiCustomerLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/customer/me': {
+      id: '/api/customer/me'
+      path: '/api/customer/me'
+      fullPath: '/api/customer/me'
+      preLoaderRoute: typeof ApiCustomerMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp/store': {
+      id: '/api/mcp/store'
+      path: '/store'
+      fullPath: '/api/mcp/store'
+      preLoaderRoute: typeof ApiMcpStoreRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/api/mcp/whatsapp': {
+      id: '/api/mcp/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/api/mcp/whatsapp'
+      preLoaderRoute: typeof ApiMcpWhatsappRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/api/public/image-proxy': {
+      id: '/api/public/image-proxy'
+      path: '/api/public/image-proxy'
+      fullPath: '/api/public/image-proxy'
+      preLoaderRoute: typeof ApiPublicImageProxyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tiktok/callback': {
+      id: '/api/tiktok/callback'
+      path: '/api/tiktok/callback'
+      fullPath: '/api/tiktok/callback'
+      preLoaderRoute: typeof ApiTiktokCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tiktok/device': {
+      id: '/api/tiktok/device'
+      path: '/api/tiktok/device'
+      fullPath: '/api/tiktok/device'
+      preLoaderRoute: typeof ApiTiktokDeviceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/webhooks/shopify': {
+      id: '/api/webhooks/shopify'
+      path: '/api/webhooks/shopify'
+      fullPath: '/api/webhooks/shopify'
+      preLoaderRoute: typeof ApiWebhooksShopifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/webhooks/whapi': {
+      id: '/api/webhooks/whapi'
+      path: '/api/webhooks/whapi'
+      fullPath: '/api/webhooks/whapi'
+      preLoaderRoute: typeof ApiWebhooksWhapiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/webhooks/whatsapp': {
+      id: '/api/webhooks/whatsapp'
+      path: '/api/webhooks/whatsapp'
+      fullPath: '/api/webhooks/whatsapp'
+      preLoaderRoute: typeof ApiWebhooksWhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/whapi/health': {
+      id: '/api/whapi/health'
+      path: '/api/whapi/health'
+      fullPath: '/api/whapi/health'
+      preLoaderRoute: typeof ApiWhapiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/whapi/read': {
+      id: '/api/whapi/read'
+      path: '/api/whapi/read'
+      fullPath: '/api/whapi/read'
+      preLoaderRoute: typeof ApiWhapiReadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp/oauth/approve': {
+      id: '/api/mcp/oauth/approve'
+      path: '/oauth/approve'
+      fullPath: '/api/mcp/oauth/approve'
+      preLoaderRoute: typeof ApiMcpOauthApproveRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/api/mcp/oauth/authorize': {
+      id: '/api/mcp/oauth/authorize'
+      path: '/oauth/authorize'
+      fullPath: '/api/mcp/oauth/authorize'
+      preLoaderRoute: typeof ApiMcpOauthAuthorizeRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/api/mcp/oauth/register': {
+      id: '/api/mcp/oauth/register'
+      path: '/oauth/register'
+      fullPath: '/api/mcp/oauth/register'
+      preLoaderRoute: typeof ApiMcpOauthRegisterRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/api/mcp/oauth/token': {
+      id: '/api/mcp/oauth/token'
+      path: '/oauth/token'
+      fullPath: '/api/mcp/oauth/token'
+      preLoaderRoute: typeof ApiMcpOauthTokenRouteImport
+      parentRoute: typeof ApiMcpRoute
+    }
+    '/.well-known/oauth-protected-resource/api/mcp/store': {
+      id: '/.well-known/oauth-protected-resource/api/mcp/store'
+      path: '/api/mcp/store'
+      fullPath: '/.well-known/oauth-protected-resource/api/mcp/store'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceApiMcpStoreRouteImport
+      parentRoute: typeof DotwellKnownOauthProtectedResourceRoute
+    }
+    '/.well-known/oauth-protected-resource/api/mcp/whatsapp': {
+      id: '/.well-known/oauth-protected-resource/api/mcp/whatsapp'
+      path: '/api/mcp/whatsapp'
+      fullPath: '/.well-known/oauth-protected-resource/api/mcp/whatsapp'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceApiMcpWhatsappRouteImport
+      parentRoute: typeof DotwellKnownOauthProtectedResourceRoute
+    }
+    '/api/mcp/store/oauth/approve': {
+      id: '/api/mcp/store/oauth/approve'
+      path: '/oauth/approve'
+      fullPath: '/api/mcp/store/oauth/approve'
+      preLoaderRoute: typeof ApiMcpStoreOauthApproveRouteImport
+      parentRoute: typeof ApiMcpStoreRoute
+    }
+    '/api/mcp/store/oauth/authorize': {
+      id: '/api/mcp/store/oauth/authorize'
+      path: '/oauth/authorize'
+      fullPath: '/api/mcp/store/oauth/authorize'
+      preLoaderRoute: typeof ApiMcpStoreOauthAuthorizeRouteImport
+      parentRoute: typeof ApiMcpStoreRoute
+    }
+    '/api/mcp/store/oauth/register': {
+      id: '/api/mcp/store/oauth/register'
+      path: '/oauth/register'
+      fullPath: '/api/mcp/store/oauth/register'
+      preLoaderRoute: typeof ApiMcpStoreOauthRegisterRouteImport
+      parentRoute: typeof ApiMcpStoreRoute
+    }
+    '/api/mcp/store/oauth/token': {
+      id: '/api/mcp/store/oauth/token'
+      path: '/oauth/token'
+      fullPath: '/api/mcp/store/oauth/token'
+      preLoaderRoute: typeof ApiMcpStoreOauthTokenRouteImport
+      parentRoute: typeof ApiMcpStoreRoute
+    }
+    '/.well-known/oauth-authorization-server/api/mcp/store/oauth': {
+      id: '/.well-known/oauth-authorization-server/api/mcp/store/oauth'
+      path: '/api/mcp/store/oauth'
+      fullPath: '/.well-known/oauth-authorization-server/api/mcp/store/oauth'
+      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRouteImport
+      parentRoute: typeof DotwellKnownOauthAuthorizationServerRoute
     }
   }
 }
@@ -1852,9 +2324,11 @@ interface AdminRouteChildren {
   AdminStudioRoute: typeof AdminStudioRoute
   AdminSystemHealthRoute: typeof AdminSystemHealthRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  AdminWhatsappAccountsRoute: typeof AdminWhatsappAccountsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminDiagnosticsWhatsappRoute: typeof AdminDiagnosticsWhatsappRoute
   AdminIntegrationsFacebookRoute: typeof AdminIntegrationsFacebookRoute
+  AdminIntegrationsTiktokRoute: typeof AdminIntegrationsTiktokRoute
   AdminIntegrationsWhatsappRoute: typeof AdminIntegrationsWhatsappRoute
   AdminProductIdRoute: typeof AdminProductIdRoute
 }
@@ -1893,9 +2367,11 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminStudioRoute: AdminStudioRoute,
   AdminSystemHealthRoute: AdminSystemHealthRoute,
   AdminUsersRoute: AdminUsersRoute,
+  AdminWhatsappAccountsRoute: AdminWhatsappAccountsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminDiagnosticsWhatsappRoute: AdminDiagnosticsWhatsappRoute,
   AdminIntegrationsFacebookRoute: AdminIntegrationsFacebookRoute,
+  AdminIntegrationsTiktokRoute: AdminIntegrationsTiktokRoute,
   AdminIntegrationsWhatsappRoute: AdminIntegrationsWhatsappRoute,
   AdminProductIdRoute: AdminProductIdRoute,
 }
@@ -1930,6 +2406,78 @@ const StoreRouteChildren: StoreRouteChildren = {
 
 const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)
 
+interface DotwellKnownOauthAuthorizationServerRouteChildren {
+  DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute: typeof DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute
+}
+
+const DotwellKnownOauthAuthorizationServerRouteChildren: DotwellKnownOauthAuthorizationServerRouteChildren =
+  {
+    DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute:
+      DotwellKnownOauthAuthorizationServerApiMcpStoreOauthRoute,
+  }
+
+const DotwellKnownOauthAuthorizationServerRouteWithChildren =
+  DotwellKnownOauthAuthorizationServerRoute._addFileChildren(
+    DotwellKnownOauthAuthorizationServerRouteChildren,
+  )
+
+interface DotwellKnownOauthProtectedResourceRouteChildren {
+  DotwellKnownOauthProtectedResourceApiMcpStoreRoute: typeof DotwellKnownOauthProtectedResourceApiMcpStoreRoute
+  DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute: typeof DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute
+}
+
+const DotwellKnownOauthProtectedResourceRouteChildren: DotwellKnownOauthProtectedResourceRouteChildren =
+  {
+    DotwellKnownOauthProtectedResourceApiMcpStoreRoute:
+      DotwellKnownOauthProtectedResourceApiMcpStoreRoute,
+    DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute:
+      DotwellKnownOauthProtectedResourceApiMcpWhatsappRoute,
+  }
+
+const DotwellKnownOauthProtectedResourceRouteWithChildren =
+  DotwellKnownOauthProtectedResourceRoute._addFileChildren(
+    DotwellKnownOauthProtectedResourceRouteChildren,
+  )
+
+interface ApiMcpStoreRouteChildren {
+  ApiMcpStoreOauthApproveRoute: typeof ApiMcpStoreOauthApproveRoute
+  ApiMcpStoreOauthAuthorizeRoute: typeof ApiMcpStoreOauthAuthorizeRoute
+  ApiMcpStoreOauthRegisterRoute: typeof ApiMcpStoreOauthRegisterRoute
+  ApiMcpStoreOauthTokenRoute: typeof ApiMcpStoreOauthTokenRoute
+}
+
+const ApiMcpStoreRouteChildren: ApiMcpStoreRouteChildren = {
+  ApiMcpStoreOauthApproveRoute: ApiMcpStoreOauthApproveRoute,
+  ApiMcpStoreOauthAuthorizeRoute: ApiMcpStoreOauthAuthorizeRoute,
+  ApiMcpStoreOauthRegisterRoute: ApiMcpStoreOauthRegisterRoute,
+  ApiMcpStoreOauthTokenRoute: ApiMcpStoreOauthTokenRoute,
+}
+
+const ApiMcpStoreRouteWithChildren = ApiMcpStoreRoute._addFileChildren(
+  ApiMcpStoreRouteChildren,
+)
+
+interface ApiMcpRouteChildren {
+  ApiMcpStoreRoute: typeof ApiMcpStoreRouteWithChildren
+  ApiMcpWhatsappRoute: typeof ApiMcpWhatsappRoute
+  ApiMcpOauthApproveRoute: typeof ApiMcpOauthApproveRoute
+  ApiMcpOauthAuthorizeRoute: typeof ApiMcpOauthAuthorizeRoute
+  ApiMcpOauthRegisterRoute: typeof ApiMcpOauthRegisterRoute
+  ApiMcpOauthTokenRoute: typeof ApiMcpOauthTokenRoute
+}
+
+const ApiMcpRouteChildren: ApiMcpRouteChildren = {
+  ApiMcpStoreRoute: ApiMcpStoreRouteWithChildren,
+  ApiMcpWhatsappRoute: ApiMcpWhatsappRoute,
+  ApiMcpOauthApproveRoute: ApiMcpOauthApproveRoute,
+  ApiMcpOauthAuthorizeRoute: ApiMcpOauthAuthorizeRoute,
+  ApiMcpOauthRegisterRoute: ApiMcpOauthRegisterRoute,
+  ApiMcpOauthTokenRoute: ApiMcpOauthTokenRoute,
+}
+
+const ApiMcpRouteWithChildren =
+  ApiMcpRoute._addFileChildren(ApiMcpRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
@@ -1940,6 +2488,8 @@ const rootRouteChildren: RootRouteChildren = {
   DataDeletionRoute: DataDeletionRoute,
   GoogleShoppingDotxmlRoute: GoogleShoppingDotxmlRoute,
   ImmersiveStoreRoute: ImmersiveStoreRoute,
+  McpAuthorizeRoute: McpAuthorizeRoute,
+  McpStoreAuthorizeRoute: McpStoreAuthorizeRoute,
   OffersRoute: OffersRoute,
   OnboardingRoute: OnboardingRoute,
   OrderCompletionRoute: OrderCompletionRoute,
@@ -1950,8 +2500,12 @@ const rootRouteChildren: RootRouteChildren = {
   StoreRoute: StoreRouteWithChildren,
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
+  DotwellKnownOauthAuthorizationServerRoute:
+    DotwellKnownOauthAuthorizationServerRouteWithChildren,
+  DotwellKnownOauthProtectedResourceRoute:
+    DotwellKnownOauthProtectedResourceRouteWithChildren,
   ApiCatalogHealthRoute: ApiCatalogHealthRoute,
-  ApiMcpRoute: ApiMcpRoute,
+  ApiMcpRoute: ApiMcpRouteWithChildren,
   ApiOrdersRoute: ApiOrdersRoute,
   CategoryIdRoute: CategoryIdRoute,
   Demo3dViewerRoute: Demo3dViewerRoute,
@@ -1971,8 +2525,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCustomerLogoutRoute: ApiCustomerLogoutRoute,
   ApiCustomerMeRoute: ApiCustomerMeRoute,
   ApiPublicImageProxyRoute: ApiPublicImageProxyRoute,
+  ApiTiktokCallbackRoute: ApiTiktokCallbackRoute,
+  ApiTiktokDeviceRoute: ApiTiktokDeviceRoute,
   ApiWebhooksShopifyRoute: ApiWebhooksShopifyRoute,
+  ApiWebhooksWhapiRoute: ApiWebhooksWhapiRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
+  ApiWhapiHealthRoute: ApiWhapiHealthRoute,
+  ApiWhapiReadRoute: ApiWhapiReadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

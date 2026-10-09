@@ -1,4 +1,6 @@
-﻿import React, { useEffect, useState } from "react";
+import { useDialogFocus } from "@/lib/use-dialog-focus";
+import type { CheckoutQuote } from "@/lib/checkout-quote";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CartItem, Currency, Product } from "./types";
 import { formatPrice } from "./currency";
@@ -20,6 +22,11 @@ import {
 } from "lucide-react";
 
 interface CartDrawerProps {
+  quote?: CheckoutQuote;
+  couponCode?: string;
+  quoteError?: string;
+  onApplyCoupon?: (code: string) => void;
+  onRetryQuote?: () => void;
   isOpen: boolean;
   onClose: () => void;
   cartItems: CartItem[];
@@ -35,6 +42,11 @@ interface CartDrawerProps {
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
+  quote,
+  couponCode = "",
+  quoteError,
+  onApplyCoupon,
+  onRetryQuote,
   isOpen,
   onClose,
   cartItems,
@@ -48,21 +60,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   catalogProducts = [],
   onAddRecommended,
 }) => {
-  const [coupon, setCoupon] = useState("");
+  useDialogFocus(isOpen, "#cart-dialog");
+  const [coupon, setCoupon] = useState(couponCode);
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
-  const [couponDiscount, setCouponDiscount] = useState(0);
-  const [couponError, setCouponError] = useState("");
-  const [couponAppliedText, setCouponAppliedText] = useState("");
-
-  const subtotalYER = cartItems.reduce(
-    (sum, item) => sum + item.product.priceYER * item.quantity,
-    0,
-  );
-
-  const isFreeShipping = subtotalYER >= STORE_INFO.freeShippingThresholdYER;
-  const shippingFeeYER = isFreeShipping || cartItems.length === 0 ? 0 : 3000;
-  const discountAmountYER = (subtotalYER * couponDiscount) / 100;
-  const totalYER = subtotalYER - discountAmountYER + shippingFeeYER;
+  const subtotalYER = quote?.subtotal ?? 0;
+  const shippingFeeYER = quote?.shipping ?? 0;
+  const discountAmountYER = quote?.discount ?? 0;
+  const totalYER = quote?.total ?? 0;
+  const couponDiscount = subtotalYER ? Math.round((discountAmountYER / subtotalYER) * 100) : 0;
+  const isFreeShipping = Boolean(quote && quote.shipping === 0);
+  const couponAppliedText = quote?.couponCode ? "تم اعتماد الكوبون من المتجر" : "";
+  const couponError = quoteError;
+  useEffect(() => setCoupon(couponCode), [couponCode]);
   const selectedCount = selectedItemIds.length;
   const recommendedProducts = catalogProducts
     .filter((product) => !cartItems.some((item) => item.product.id === product.id))
@@ -92,26 +101,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
   const progressPercent = Math.min(
     100,
-    Math.round((subtotalYER / STORE_INFO.freeShippingThresholdYER) * 100),
+    Math.round(
+      ((subtotalYER - discountAmountYER) /
+        (quote?.freeShippingThreshold ?? STORE_INFO.freeShippingThresholdYER)) *
+        100,
+    ),
   );
 
-  const applyCoupon = (codeToApply?: string) => {
-    const code = (codeToApply || coupon).trim().toUpperCase();
-    if (code === "INDEXES10") {
-      setCouponDiscount(10);
-      setCouponAppliedText("تم تطبيق كود الخصم (10% خصم)! 🎉");
-      setCouponError("");
-      setCoupon("INDEXES10");
-    } else if (code === "INDEXES20") {
-      setCouponDiscount(20);
-      setCouponAppliedText("تم تطبيق كود الخصم (20% خصم VIP)! 🔥");
-      setCouponError("");
-      setCoupon("INDEXES20");
-    } else {
-      setCouponError("كود الخصم غير صحيح أو منتهي الصلاحية");
-      setCouponAppliedText("");
-    }
-  };
+  const applyCoupon = (codeToApply?: string) =>
+    onApplyCoupon?.((codeToApply ?? coupon).trim().toUpperCase());
 
   return (
     <AnimatePresence>
@@ -129,6 +127,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           {/* Drawer Content */}
           <motion.div
             key="cart-drawer-content"
+            id="cart-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="سلة التسوق"
+            tabIndex={-1}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") onClose();
+            }}
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -143,9 +149,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <ShoppingCart className="w-5 h-5 text-[#2F6BFF]" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-[var(--color-text-primary)]">
+                    <h1 className="text-lg font-black text-[var(--color-text-primary)]">
                       سلة التسوق
-                    </h3>
+                    </h1>
                     <p className="text-[11px] text-[var(--color-text-secondary)] font-medium">
                       {cartItems.reduce((acc, i) => acc + i.quantity, 0)} منتجات مضافة
                     </p>
@@ -210,7 +216,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <span>
                         تبقي{" "}
                         <strong className="text-[#2F6BFF] font-black">
-                          {formatPrice(STORE_INFO.freeShippingThresholdYER - subtotalYER, currency)}
+                          {formatPrice(
+                            (quote?.freeShippingThreshold ?? STORE_INFO.freeShippingThresholdYER) -
+                              (subtotalYER - discountAmountYER),
+                            currency,
+                          )}
                         </strong>{" "}
                         للحصول على شحن مجاني
                       </span>
@@ -288,7 +298,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                             </div>
                           )}
                           <span className="text-[#2F6BFF] font-black text-xs sm:text-sm block mt-1">
-                            {formatPrice(item.product.priceYER, currency)}
+                            {quote
+                              ? formatPrice(
+                                  quote.items.find(
+                                    (line) =>
+                                      line.id ===
+                                      (item.product.checkoutProductRef?.id ?? item.product.id),
+                                  )?.unitPrice ?? 0,
+                                  currency,
+                                )
+                              : "جارٍ التحقق من السعر"}
                           </span>
                         </div>
 
@@ -318,6 +337,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
                           <div className="flex items-center gap-1.5 bg-[var(--color-surface-3)] border border-[var(--color-border-default)] px-2 py-1 rounded-xl">
                             <button
+                              aria-label={`تقليل كمية ${item.product.name}`}
+                              disabled={item.quantity <= 1}
                               onClick={() =>
                                 onUpdateQuantity(item.product.id, Math.max(1, item.quantity - 1))
                               }
@@ -329,6 +350,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                               {item.quantity}
                             </span>
                             <button
+                              aria-label={`زيادة كمية ${item.product.name}`}
+                              disabled={
+                                !quote ||
+                                item.quantity >=
+                                  (quote.items.find(
+                                    (line) =>
+                                      line.id ===
+                                      (item.product.checkoutProductRef?.id ?? item.product.id),
+                                  )?.stock ?? 0)
+                              }
                               onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)}
                               className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-bold text-xs p-0.5 cursor-pointer"
                             >
@@ -393,7 +424,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         type="text"
                         value={coupon}
                         onChange={(e) => setCoupon(e.target.value)}
-                        placeholder="كود الخصم (INDEXES10)"
+                        placeholder="كود الخصم"
+                        aria-label="كود الخصم"
                         className="w-full bg-[var(--color-surface-2)] border border-[var(--color-border-default)] rounded-xl pl-8 pr-3 py-2 text-xs text-[var(--color-text-primary)] uppercase placeholder-[var(--color-text-muted)] focus:border-[#2F6BFF] outline-none font-mono"
                       />
                       <Tag className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
@@ -406,25 +438,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     </button>
                   </div>
 
-                  {/* Coupon Quick Preset Chips */}
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <span className="text-[10px] text-[var(--color-text-muted)] font-medium">
-                      جرّب:
-                    </span>
-                    <button
-                      onClick={() => applyCoupon("INDEXES10")}
-                      className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md hover:bg-blue-500/20 transition-colors font-mono font-bold"
-                    >
-                      INDEXES10 (-10%)
+                  <button type="button" onClick={() => applyCoupon("")}>
+                    إزالة الكوبون
+                  </button>
+                  {!quote && (
+                    <p role="status">{quoteError || "جارٍ التحقق من السعر والمخزون والشحن…"}</p>
+                  )}
+                  {quoteError && (
+                    <button type="button" onClick={onRetryQuote}>
+                      إعادة المحاولة
                     </button>
-                    <button
-                      onClick={() => applyCoupon("INDEXES20")}
-                      className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-md hover:bg-amber-500/20 transition-colors font-mono font-bold"
-                    >
-                      INDEXES20 (-20% VIP)
-                    </button>
-                  </div>
-
+                  )}
                   {couponAppliedText && (
                     <p className="text-emerald-400 text-xs mt-1.5 flex items-center gap-1 font-bold">
                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -441,7 +465,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   <div className="flex justify-between font-medium">
                     <span>المجموع الفرعي:</span>
                     <span className="font-bold text-[var(--color-text-primary)]">
-                      {formatPrice(subtotalYER, currency)}
+                      {quote ? formatPrice(subtotalYER, currency) : "—"}
                     </span>
                   </div>
 
@@ -457,8 +481,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <span className="font-bold text-[var(--color-text-primary)]">
                       {isFreeShipping ? (
                         <strong className="text-emerald-400 font-black">مجاني 🚚</strong>
-                      ) : (
+                      ) : quote ? (
                         formatPrice(shippingFeeYER, currency)
+                      ) : (
+                        "—"
                       )}
                     </span>
                   </div>
@@ -466,13 +492,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   <div className="flex justify-between items-center text-sm font-black text-[var(--color-text-primary)] pt-2.5 border-t border-[var(--color-border-default)]">
                     <span>الإجمالي النهائي:</span>
                     <span className="text-[#2F6BFF] text-lg font-black">
-                      {formatPrice(totalYER, currency)}
+                      {quote ? formatPrice(totalYER, currency) : "—"}
                     </span>
                   </div>
                 </div>
 
                 {/* Checkout Button */}
                 <button
+                  disabled={!quote}
                   onClick={() => onCheckout(couponDiscount)}
                   className="w-full bg-gradient-to-r from-[#2F6BFF] to-[#3B75FF] hover:from-[#2458D8] hover:to-[#2F6BFF] text-white font-black py-3.5 rounded-2xl shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 transition-all active:scale-98 text-sm cursor-pointer"
                 >

@@ -41,8 +41,8 @@ export const TrustBar: React.FC<TrustBarProps> = ({ trustBadges }) => {
               key={`${item.title}-${idx}`}
               className="flex flex-col items-center justify-center p-1 text-center group cursor-default"
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#2F6BFF]/10 border border-[#2F6BFF]/20 flex items-center justify-center text-[#2F6BFF] mb-1.5 shrink-0 transition-all">
-                <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-[#2F6BFF] group-hover:scale-110 transition-transform" />
+              <div className="mb-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[var(--color-primary-border)] bg-[var(--color-primary-ui-soft)] text-[var(--ix-primary)] transition-all sm:h-10 sm:w-10">
+                <Icon className="h-4 w-4 text-[var(--ix-primary)] transition-transform group-hover:scale-110 sm:h-5 sm:w-5" />
               </div>
               <p className="text-xs font-bold text-[var(--color-text-primary)] leading-tight transition-colors">
                 {item.title}

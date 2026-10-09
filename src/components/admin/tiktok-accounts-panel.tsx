@@ -21,6 +21,10 @@ import {
   refreshTikTokAccount,
 } from "@/lib/tiktok.functions";
 import { summarizeTikTokScopes, TIKTOK_SCOPE_DETAILS } from "@/lib/tiktok-scopes";
+import { createAdaptivePollingInterval } from "@/lib/query-polling";
+
+const TIKTOK_QR_POLLING_INTERVAL = createAdaptivePollingInterval(5_000, 30_000);
+const TIKTOK_QR_POLLING_WINDOW_MS = 5 * 60_000;
 
 function formatDate(value: string | null) {
   if (!value) return "—";
@@ -65,7 +69,15 @@ export function TikTokAccountsPanel() {
     queryKey: ["tiktok-accounts"],
     queryFn: () => listAccountsFn(),
     retry: 1,
-    refetchInterval: qrLink ? 3000 : false,
+    staleTime: 60_000,
+    refetchInterval: qrLink
+      ? (currentQuery) =>
+          Date.now() - qrLink.startedAt < TIKTOK_QR_POLLING_WINDOW_MS
+            ? TIKTOK_QR_POLLING_INTERVAL(currentQuery)
+            : false
+      : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {

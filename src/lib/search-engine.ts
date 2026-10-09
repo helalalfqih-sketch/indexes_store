@@ -4,8 +4,6 @@ import type { LegacyProductShape } from "@/lib/data-adapter";
 export const MIN_RELEVANCE_SCORE = 8;
 export const SEARCH_PAGE_SIZE = 40;
 
-const searchCache = new Map<string, LegacyProductShape[]>();
-
 /** Arabic Text Normalizer & Typo Tolerator */
 export function normalizeArabic(text: string): string {
   if (!text) return "";
@@ -63,9 +61,35 @@ export interface SearchFilterOptions {
 }
 
 const STOP_WORDS = new Set([
-  "no", "product", "products", "item", "items", "the", "a", "an", "in", "on", "of", "to",
-  "for", "with", "and", "or", "is", "من", "في", "على", "عن", "مع", "لا", "او", "ام", "ال",
-  "ما", "هذا", "هذه",
+  "no",
+  "product",
+  "products",
+  "item",
+  "items",
+  "the",
+  "a",
+  "an",
+  "in",
+  "on",
+  "of",
+  "to",
+  "for",
+  "with",
+  "and",
+  "or",
+  "is",
+  "من",
+  "في",
+  "على",
+  "عن",
+  "مع",
+  "لا",
+  "او",
+  "ام",
+  "ال",
+  "ما",
+  "هذا",
+  "هذه",
 ]);
 
 function rankCandidates(products: LegacyProductShape[], query: string): LegacyProductShape[] {
@@ -110,11 +134,16 @@ export async function searchProductsAdvanced(
   options: SearchFilterOptions = {},
   signal?: AbortSignal,
 ): Promise<LegacyProductShape[]> {
-  const cacheKey = JSON.stringify({ ...options, limit: SEARCH_PAGE_SIZE });
-  const cached = searchCache.get(cacheKey);
-  if (cached) return [...cached];
-
-  const { search = "", categoryId, minPrice, maxPrice, dealsOnly, inStockOnly, brand, sortBy } = options;
+  const {
+    search = "",
+    categoryId,
+    minPrice,
+    maxPrice,
+    dealsOnly,
+    inStockOnly,
+    brand,
+    sortBy,
+  } = options;
 
   const candidates = await fetchProducts({
     search: search.trim() || undefined,
@@ -126,7 +155,8 @@ export async function searchProductsAdvanced(
 
   let filtered = candidates.filter((p) => {
     const rec = p as Record<string, unknown>;
-    if (brand && brand !== "all" && String(rec.brand || "").toLowerCase() !== brand.toLowerCase()) return false;
+    if (brand && brand !== "all" && String(rec.brand || "").toLowerCase() !== brand.toLowerCase())
+      return false;
     if (minPrice !== undefined && p.price < minPrice) return false;
     if (maxPrice !== undefined && p.price > maxPrice) return false;
     if (dealsOnly) {
@@ -138,7 +168,7 @@ export async function searchProductsAdvanced(
     }
     if (inStockOnly) {
       const stock = rec.stock;
-      if (stock !== undefined && Number(stock) <= 0) return false;
+      if (stock === undefined || Number(stock) <= 0) return false;
     }
     return true;
   });
@@ -156,7 +186,10 @@ export async function searchProductsAdvanced(
       filtered.sort((a, b) => {
         const ar = a as Record<string, unknown>;
         const br = b as Record<string, unknown>;
-        return new Date(String(br.created_at || 0)).getTime() - new Date(String(ar.created_at || 0)).getTime();
+        return (
+          new Date(String(br.created_at || 0)).getTime() -
+          new Date(String(ar.created_at || 0)).getTime()
+        );
       });
       break;
     case "rating":
@@ -164,13 +197,13 @@ export async function searchProductsAdvanced(
       break;
     case "bestselling":
     default:
-      filtered.sort((a, b) => b.rating * b.reviews - a.rating * a.reviews);
+      // `rankCandidates` already produced relevance order. Shopify does not
+      // expose sales counts on these DTOs, so do not relabel ratings as sales.
       break;
   }
 
   if (signal?.aborted) throw new DOMException("Search aborted", "AbortError");
-  searchCache.set(cacheKey, [...filtered]);
-  return filtered;
+  return [...new Map(filtered.map((product) => [product.id, product])).values()];
 }
 
 export async function getRecommendations(limit = 8): Promise<LegacyProductShape[]> {

@@ -8,14 +8,7 @@
  *   3. window.location.host           — subdomain resolution on server
  *   4. Default tenant (backend fallback)
  */
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCurrentTenant } from "@/lib/tenant.functions";
 
@@ -60,6 +53,7 @@ function readInitialOverride(): string | null {
 
 export function TenantProvider({ children }: { children: ReactNode }) {
   const [slugOverride, setSlugOverrideState] = useState<string | null>(() => readInitialOverride());
+  const isBrowser = typeof window !== "undefined";
 
   const setSlugOverride = (slug: string | null) => {
     setSlugOverrideState(slug);
@@ -85,16 +79,20 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         },
       }),
     staleTime: 5 * 60 * 1000,
+    // The root loader already resolves the storefront appearance for SSR.
+    // Starting this second ServerFn while rendering caused the SSR query
+    // integration to retain the response stream when Supabase was restricted.
+    enabled: isBrowser,
   });
 
   const value = useMemo<Ctx>(
     () => ({
       tenant: (query.data as CurrentTenant | undefined) ?? null,
-      loading: query.isLoading,
+      loading: !isBrowser || query.isLoading,
       slugOverride,
       setSlugOverride,
     }),
-    [query.data, query.isLoading, slugOverride],
+    [isBrowser, query.data, query.isLoading, slugOverride],
   );
 
   // Keep <html data-tenant="..."> in sync so CSS can theme per-store later.

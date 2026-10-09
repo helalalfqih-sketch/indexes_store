@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
   DollarSign,
@@ -17,14 +17,21 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAdmin } from "@/lib/admin-store";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listAdminProducts } from "@/lib/actions/admin.actions";
-import {
-  getAdminDashboardStats,
-  type AdminDashboardStats,
-} from "@/lib/admin-dashboard.functions";
+import { getAdminDashboardStats, type AdminDashboardStats } from "@/lib/admin-dashboard.functions";
 import { formatPrice } from "@/lib/store-data";
+import { createAdaptivePollingInterval } from "@/lib/query-polling";
+import { StorefrontRealtimeService } from "@/lib/services/storefront-realtime.service";
+
+const DASHBOARD_STALE_TIME = 5 * 60_000;
+const CATALOG_HEALTH_STALE_TIME = 10 * 60_000;
+const DASHBOARD_POLLING_INTERVAL = createAdaptivePollingInterval(DASHBOARD_STALE_TIME, 30 * 60_000);
+const CATALOG_HEALTH_POLLING_INTERVAL = createAdaptivePollingInterval(
+  CATALOG_HEALTH_STALE_TIME,
+  60 * 60_000,
+);
 
 /** Format a 7-day-over-7-day change as a signed percentage badge. */
 function deltaPct(current: number, previous: number): { text: string; up: boolean } {
@@ -54,7 +61,16 @@ type CatalogHealth = {
 function DashboardPage() {
   const { t, lang } = useI18n();
   const sessions = useAdmin((s) => s.sessions);
+  const queryClient = useQueryClient();
   const [timeRange, setTimeRange] = useState<"today" | "7d" | "30d" | "all">("7d");
+
+  useEffect(
+    () =>
+      StorefrontRealtimeService.subscribeFinancial(() => {
+        void queryClient.invalidateQueries({ queryKey: ["admin-dashboard-stats"] });
+      }),
+    [queryClient],
+  );
 
   const productsQ = useQuery({
     queryKey: ["admin-products"],
@@ -67,7 +83,10 @@ function DashboardPage() {
   const statsQ = useQuery({
     queryKey: ["admin-dashboard-stats", timeRange],
     queryFn: () => fetchStats({ data: { range: timeRange } }),
-    refetchInterval: 60_000,
+    staleTime: DASHBOARD_STALE_TIME,
+    refetchInterval: DASHBOARD_POLLING_INTERVAL,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
   const s = statsQ.data as (AdminDashboardStats & { selectedRange: string }) | undefined;
 
@@ -78,7 +97,10 @@ function DashboardPage() {
       if (!response.ok) throw new Error(`Catalog health failed: ${response.status}`);
       return response.json() as Promise<CatalogHealth>;
     },
-    refetchInterval: 60_000,
+    staleTime: CATALOG_HEALTH_STALE_TIME,
+    refetchInterval: CATALOG_HEALTH_POLLING_INTERVAL,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
   const catalogHealth = catalogHealthQ.data;
 
@@ -133,16 +155,28 @@ function DashboardPage() {
   const insights: Array<{ text: string; to: string }> = [];
   if (s) {
     if (s.pendingOrders > 0)
-      insights.push({ text: `📦 ${s.pendingOrders} طلب بانتظار التأكيد — راجع الطلبات الآن.`, to: "/admin/orders" });
+      insights.push({
+        text: `📦 ${s.pendingOrders} طلب بانتظار التأكيد — راجع الطلبات الآن.`,
+        to: "/admin/orders",
+      });
     if (s.lowStock.length > 0)
       insights.push({
-        text: `⚠️ ${s.lowStock.length} منتجات منشورة مخزونها ≤ 5: ${s.lowStock.slice(0, 3).map((p) => p.name).join("، ")}${s.lowStock.length > 3 ? "…" : ""}`,
+        text: `⚠️ ${s.lowStock.length} منتجات منشورة مخزونها ≤ 5: ${s.lowStock
+          .slice(0, 3)
+          .map((p) => p.name)
+          .join("، ")}${s.lowStock.length > 3 ? "…" : ""}`,
         to: "/admin/inventory",
       });
     if (s.metaUnsyncedCount > 0)
-      insights.push({ text: `🔄 ${s.metaUnsyncedCount} منتجاً منشوراً غير متزامن مع كتالوج Meta.`, to: "/admin/products" });
+      insights.push({
+        text: `🔄 ${s.metaUnsyncedCount} منتجاً منشوراً غير متزامن مع كتالوج Meta.`,
+        to: "/admin/products",
+      });
     if (s.cmsDraftCount > 0)
-      insights.push({ text: `📝 لديك ${s.cmsDraftCount} مسودة CMS غير منشورة.`, to: "/admin/storefront" });
+      insights.push({
+        text: `📝 لديك ${s.cmsDraftCount} مسودة CMS غير منشورة.`,
+        to: "/admin/storefront",
+      });
     if (insights.length === 0)
       insights.push({ text: "✨ كل شيء على ما يرام — لا تنبيهات حالياً.", to: "/admin" });
   }
@@ -212,7 +246,9 @@ function DashboardPage() {
                   <div className="text-xs text-muted-foreground">
                     {t("dash.performance")} · إيرادات 7 أيام
                   </div>
-                  <div className={`text-lg font-black ${revenueDelta.up ? "text-success" : "text-destructive"}`}>
+                  <div
+                    className={`text-lg font-black ${revenueDelta.up ? "text-success" : "text-destructive"}`}
+                  >
                     {revenueDelta.text}
                   </div>
                 </div>
@@ -246,7 +282,9 @@ function DashboardPage() {
                       <div className="mt-2 text-2xl font-black">{card.value}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                         {card.delta && (
-                          <span className={`font-bold ${card.up ? "text-success" : "text-destructive"}`}>
+                          <span
+                            className={`font-bold ${card.up ? "text-success" : "text-destructive"}`}
+                          >
                             {card.delta}
                           </span>
                         )}
@@ -301,7 +339,8 @@ function DashboardPage() {
                     ? lang === "ar"
                       ? `متصل ويعمل · Storefront API ${catalogHealth.apiVersion}`
                       : `Connected · Storefront API ${catalogHealth.apiVersion}`
-                    : catalogHealth?.error || (lang === "ar" ? "تعذر فحص الاتصال" : "Connection check failed")}
+                    : catalogHealth?.error ||
+                      (lang === "ar" ? "تعذر فحص الاتصال" : "Connection check failed")}
               </p>
             </div>
           </div>
@@ -332,9 +371,14 @@ function DashboardPage() {
                 value: catalogHealth.productsWithImages ?? 0,
               },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl border border-border/60 bg-surface/80 p-3">
+              <div
+                key={item.label}
+                className="rounded-xl border border-border/60 bg-surface/80 p-3"
+              >
                 <div className="text-xs text-muted-foreground">{item.label}</div>
-                <div className="mt-1 text-xl font-black">{item.value.toLocaleString(lang === "ar" ? "ar-YE" : "en-US")}</div>
+                <div className="mt-1 text-xl font-black">
+                  {item.value.toLocaleString(lang === "ar" ? "ar-YE" : "en-US")}
+                </div>
               </div>
             ))}
           </div>
@@ -373,23 +417,21 @@ function DashboardPage() {
         <div className="rounded-2xl border border-border bg-surface p-5">
           <h2 className="text-lg font-black">{t("dash.aiInsights")}</h2>
           <ul className="mt-4 space-y-3 text-sm">
-            {statsQ.isLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <li key={i} className="h-12 animate-pulse rounded-xl bg-accent/50" />
-              ))
-            ) : (
-              insights.map((tip, i) => (
-                <li key={i}>
-                  <Link
-                    to={tip.to}
-                    className="flex items-start gap-3 rounded-xl bg-accent/50 p-3 transition hover:bg-accent"
-                  >
-                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span>{tip.text}</span>
-                  </Link>
-                </li>
-              ))
-            )}
+            {statsQ.isLoading
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <li key={i} className="h-12 animate-pulse rounded-xl bg-accent/50" />
+                ))
+              : insights.map((tip, i) => (
+                  <li key={i}>
+                    <Link
+                      to={tip.to}
+                      className="flex items-start gap-3 rounded-xl bg-accent/50 p-3 transition hover:bg-accent"
+                    >
+                      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>{tip.text}</span>
+                    </Link>
+                  </li>
+                ))}
           </ul>
         </div>
       </section>
@@ -400,14 +442,18 @@ function DashboardPage() {
           {
             to: "/admin/appearance",
             label: lang === "ar" ? "مظهر المتجر" : "Store Appearance",
-            desc: lang === "ar" ? "تخصيص الألوان، الخطوط، والهيكل البصري" : "Colors, fonts & visual identity",
+            desc:
+              lang === "ar"
+                ? "تخصيص الألوان، الخطوط، والهيكل البصري"
+                : "Colors, fonts & visual identity",
             icon: Palette,
             accent: "text-violet-500 bg-violet-500/10",
           },
           {
             to: "/admin/settings",
             label: lang === "ar" ? "إعدادات المدير" : "Admin Settings",
-            desc: lang === "ar" ? "المظهر الشخصي للوحة التحكم واللغة" : "Dashboard theme & language",
+            desc:
+              lang === "ar" ? "المظهر الشخصي للوحة التحكم واللغة" : "Dashboard theme & language",
             icon: Settings2,
             accent: "text-sky-500 bg-sky-500/10",
           },
@@ -433,7 +479,9 @@ function DashboardPage() {
               to={item.to}
               className="group flex items-start gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card hover:border-primary/40 hover:shadow-brand transition-all"
             >
-              <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${item.accent}`}>
+              <div
+                className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${item.accent}`}
+              >
                 <Icon className="h-5 w-5" />
               </div>
               <div className="min-w-0">

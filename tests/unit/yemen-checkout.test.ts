@@ -33,13 +33,11 @@ describe("Yemen Shopify catalog checkout", () => {
     const source = readFileSync("src/components/storefront/UnifiedCartFlow2.tsx", "utf8");
     expect(source).not.toContain("createShopifyCart");
     expect(source).toContain("submitOrder");
-    expect(source.indexOf("await submitOrder")).toBeLessThan(
-      source.indexOf("window.location.assign(url)"),
-    );
+    expect(source.indexOf("await submitOrder")).toBeLessThan(source.indexOf("setWhatsappUrl(url)"));
     expect(source).toContain("buildCheckoutWhatsAppMessage");
   });
 
-  it("requests sale availability without inventory-protected fields", async () => {
+  it("requests authoritative inventory without touching the database on failure", async () => {
     const captured = new Error("query captured before any database access");
     storefrontMock.mockRejectedValueOnce(captured);
     const from = vi.fn();
@@ -54,19 +52,19 @@ describe("Yemen Shopify catalog checkout", () => {
     const [query, variables] = storefrontMock.mock.calls[0];
     expect(query).toContain("query CheckoutVariants");
     expect(query).toMatch(/\bavailableForSale\b/);
-    expect(query).not.toMatch(/\b(quantityAvailable|storeAvailability)\b/);
+    expect(query).toMatch(/\bquantityAvailable\b/);
     expect(variables).toEqual({ ids: [variant.id] });
     expect(from).not.toHaveBeenCalled();
   });
 
   it.each([undefined, null])(
-    "supports available variants without inventory quantity (%s)",
+    "does not invent inventory when quantity is missing (%s)",
     (quantityAvailable) => {
       const withoutInventory = { ...variant, quantityAvailable };
       expect(validateYemenCheckoutVariant(withoutInventory, variant.id)).toMatchObject({
         price: 12500,
         currency: "YER",
-        stock: 999,
+        stock: 0,
       });
       expect(() =>
         validateYemenCheckoutVariant({ ...withoutInventory, availableForSale: false }, variant.id),

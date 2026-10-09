@@ -17,7 +17,7 @@ export interface CreateOrderInput {
   expectedTotal?: number;
   paymentProvider?: string;
   /** Client-generated UUID to prevent duplicate order creation. */
-  idempotencyKey?: string;
+  idempotencyKey: string;
 }
 
 export interface UserAddress {
@@ -30,7 +30,9 @@ export interface UserAddress {
   is_default: boolean;
 }
 
-export async function submitOrder(input: CreateOrderInput): Promise<{ orderId: string }> {
+export async function submitOrder(
+  input: CreateOrderInput,
+): Promise<import("@/lib/order.functions").CreateOrderResult> {
   // Delegates to the secure `createOrder` server function. user_id is derived
   // server-side from the verified session (guests → null); prices and totals are
   // recomputed from the database. The client never sets user_id, prices, or discountAmount.
@@ -50,7 +52,7 @@ export async function submitOrder(input: CreateOrderInput): Promise<{ orderId: s
     idempotencyKey: input.idempotencyKey,
   };
   const res = await createOrder({ data: payload });
-  return { orderId: res.orderId };
+  return res;
 }
 
 export async function getUserAddresses(): Promise<UserAddress[]> {
