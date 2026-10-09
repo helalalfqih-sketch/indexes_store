@@ -199,8 +199,8 @@ function SettingsPage() {
       toast.success("تم حفظ جميع إعدادات الهوية والعلامة التجارية بنجاح ✨");
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err: any) {
-      toast.error(err.message || "حدث خطأ أثناء حفظ الإعدادات");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "حدث خطأ أثناء حفظ الإعدادات");
     } finally {
       setIsSaving(false);
     }
