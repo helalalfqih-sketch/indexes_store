@@ -282,6 +282,21 @@ export function createTikTokMcpAdapter(tenantId: string, userId: string): TikTok
           direct_publish_video: scopes.includes("video.publish"),
         },
         provider_scopes: scopes,
+        capability_basis: "granted_scopes_only_not_live_verification",
+        missing_provider_scopes: [
+          "user.info.basic",
+          "user.info.profile",
+          "user.info.stats",
+          "video.list",
+          "video.upload",
+          "video.publish",
+        ].filter((scope) => !scopes.includes(scope)),
+        unsupported_operations: [
+          "global_video_search",
+          "edit_published_video",
+          "delete_published_video",
+        ],
+        required_connector_scopes: ["tiktok.read", "tiktok.manage", "tiktok.publish"],
         notes: [
           "Search is limited to videos owned by the linked account; this integration does not expose arbitrary global TikTok search.",
           "PULL_FROM_URL publishing requires TikTok to accept the supplied HTTPS media URL under its Content Posting API rules.",
@@ -389,7 +404,8 @@ export function createTikTokMcpAdapter(tenantId: string, userId: string): TikTok
         required: { all: ["video.upload"] },
       });
       return {
-        accepted: true,
+        accepted: Boolean(typeof data.publish_id === "string" && data.publish_id.trim()),
+        published: false,
         mode: "draft_upload",
         publish_id: typeof data.publish_id === "string" ? data.publish_id : null,
         provider_data: data,
@@ -398,6 +414,29 @@ export function createTikTokMcpAdapter(tenantId: string, userId: string): TikTok
 
     async publishVideo(accountId: string, input) {
       const normalizedUrl = normalizePullUrl(input.videoUrl);
+      const creator = await providerData(accountId, {
+        path: "/v2/post/publish/creator_info/query/",
+        method: "POST",
+        required: { all: ["video.publish"] },
+      });
+      if (
+        !Array.isArray(creator.privacy_level_options) ||
+        !creator.privacy_level_options.includes(input.privacyLevel)
+      ) {
+        throw new Error("TIKTOK_PRIVACY_LEVEL_NOT_ALLOWED");
+      }
+      for (const [field, disabled] of [
+        ["comment_disabled", input.disableComment],
+        ["duet_disabled", input.disableDuet],
+        ["stitch_disabled", input.disableStitch],
+      ] as const) {
+        if (typeof creator[field] !== "boolean") {
+          throw new Error("TIKTOK_CREATOR_SETTINGS_INVALID");
+        }
+        if (creator[field] && !disabled) {
+          throw new Error("TIKTOK_INTERACTION_NOT_ALLOWED");
+        }
+      }
       const postInfo: Record<string, unknown> = {
         title: input.title,
         privacy_level: input.privacyLevel,
@@ -422,7 +461,8 @@ export function createTikTokMcpAdapter(tenantId: string, userId: string): TikTok
         required: { all: ["video.publish"] },
       });
       return {
-        accepted: true,
+        accepted: Boolean(typeof data.publish_id === "string" && data.publish_id.trim()),
+        published: false,
         mode: "direct_post",
         publish_id: typeof data.publish_id === "string" ? data.publish_id : null,
         provider_data: data,
