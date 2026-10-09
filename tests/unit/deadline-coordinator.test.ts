@@ -57,6 +57,7 @@ describe("deadline coordinator", () => {
     expect(vi.getTimerCount()).toBe(0);
 
     finishWork?.("late");
+    await vi.advanceTimersByTimeAsync(0);
     await Promise.resolve();
 
     await expect(coordinator.run("default", blockedWork, "fallback")).resolves.toEqual({
