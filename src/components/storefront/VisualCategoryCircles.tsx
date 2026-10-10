@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { categoriesQuery } from "@/lib/queries/catalog";
+import { useClientHydrated } from "@/hooks/use-client-hydrated";
 import type { Product } from "./types";
 
 interface VisualCategoryCirclesProps {
@@ -68,7 +69,7 @@ export function VisualCategoryCircles({
   onSelectCategory,
   products = [],
 }: VisualCategoryCirclesProps) {
-  const isBrowser = typeof window !== "undefined";
+  const isBrowser = useClientHydrated();
   const query = useQuery({
     ...categoriesQuery(),
     enabled: isBrowser,
