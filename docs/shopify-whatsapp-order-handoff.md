@@ -15,6 +15,7 @@
 
 - The browser must retain the *same* `idempotencyKey` for one logical checkout; request a **new** Turnstile token on each HTTP retry.
 - Supabase's `create_checkout_order_v2` is the price, availability and tenant authority. The Shopify Admin API independently validates each variant's current price and stock.
+- Shopify `draftOrderCalculate` runs with the intended line-item prices, discount and delivery fee **before** acquiring the draft creation claim. An unmatched YER total blocks the creation attempt. This is only a calculation, not a persisted draft. The created draft is independently checked again after `draftOrderCreate`.
 - `shopify_whatsapp_draft_links.order_id` uniquely claims the local order before the first non-idempotent Shopify mutation.
 - A retry with an existing ready claim reads Shopify; verify draft **OPEN** state, local-order marker, exact variant IDs, line quantities, original unit prices, YER currency and final total. No second draft is created.
 - Any failed/unknown Shopify mutation or incomplete link update leaves the claim blocked; **never** blindly retry `draftOrderCreate`.
