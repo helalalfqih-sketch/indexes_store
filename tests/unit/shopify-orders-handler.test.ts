@@ -4,8 +4,12 @@ const mocks = vi.hoisted(() => ({
   createOrder: vi.fn(),
   preflight: vi.fn(),
   persist: vi.fn(),
+  challenge: vi.fn(),
 }));
 vi.mock("@/lib/order.functions", () => ({ createOrder: mocks.createOrder }));
+vi.mock("@/lib/shopify/order-challenge.server", () => ({
+  verifyShopifyOrderChallenge: mocks.challenge,
+}));
 vi.mock("@/lib/shopify/whatsapp-draft.server", () => ({
   assertShopifyHandoffReady: mocks.preflight,
   persistShopifyDraftOrder: mocks.persist,
@@ -53,6 +57,7 @@ describe("Shopify WhatsApp bridge server boundary", () => {
     vi.stubEnv("SHOPIFY_DRAFT_ORDER_WRITES_ENABLED", "true");
     mocks.createOrder.mockReset().mockResolvedValue(local);
     mocks.preflight.mockReset().mockResolvedValue(undefined);
+    mocks.challenge.mockReset().mockResolvedValue(undefined);
     mocks.persist.mockReset().mockResolvedValue({
       ...local,
       orderNumber: "ORD-7C06FEB0",
@@ -145,9 +150,36 @@ describe("Shopify WhatsApp bridge server boundary", () => {
       draftOrderId: "gid://shopify/DraftOrder/100",
       whatsappReady: true,
     });
+    expect(mocks.challenge).toHaveBeenCalledOnce();
     expect(mocks.preflight).toHaveBeenCalledOnce();
     expect(mocks.createOrder).toHaveBeenCalledOnce();
     expect(mocks.persist).toHaveBeenCalledOnce();
+  });
+
+  it("never commits an order when the bot challenge is rejected", async () => {
+    mocks.challenge.mockRejectedValue(
+      Object.assign(new Error("Invalid verification"), {
+        code: "CHECKOUT_CHALLENGE_INVALID",
+        status: 403,
+      }),
+    );
+    const response = await handleShopifyOrder(post(JSON.stringify(input)));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({
+      error: "CHECKOUT_CHALLENGE_INVALID",
+      whatsappReady: false,
+    });
+    expect(mocks.createOrder).not.toHaveBeenCalled();
+    expect(mocks.preflight).not.toHaveBeenCalled();
+  });
+
+  it("does not pass the one-time challenge token into the order database", async () => {
+    const body = { ...input, turnstileToken: "valid-fake-token-used-only-in-mock" };
+    const response = await handleShopifyOrder(post(JSON.stringify(body)));
+    expect(response.status).toBe(200);
+    expect(mocks.challenge).toHaveBeenCalledWith(body.turnstileToken, expect.any(Request));
+    expect(mocks.createOrder).toHaveBeenCalledWith({ data: input });
+    expect(mocks.persist).toHaveBeenCalledWith(input, local);
   });
 
   it("blocks WhatsApp when Shopify creation fails after the local commit", async () => {
