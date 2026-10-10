@@ -107,9 +107,7 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
   } catch (error) {
     // Provider and database failures are not malformed client JSON.
     const code =
-      error instanceof Error && "code" in error
-        ? String(error.code)
-        : "ORDER_HANDOFF_FAILED";
+      error instanceof Error && "code" in error ? String(error.code) : "ORDER_HANDOFF_FAILED";
     const status =
       error instanceof Error && "status" in error && typeof error.status === "number"
         ? error.status
