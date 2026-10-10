@@ -62,6 +62,12 @@ type ExpectedDraftLine = { variantId: string; quantity: number; unitPrice: numbe
 type DraftResult = {
   draftOrderCreate: { draftOrder: VerifiedDraft | null; userErrors: Array<{ message: string }> };
 };
+type DraftCalculationResult = {
+  draftOrderCalculate: {
+    calculatedDraftOrder: Pick<Draft, "totalPriceSet"> | null;
+    userErrors: Array<{ message: string }>;
+  };
+};
 type Variant = {
   id: string;
   availableForSale: boolean;
@@ -86,7 +92,7 @@ function money(value: number): string {
   return value.toFixed(2);
 }
 
-export function validateDraftTotals(local: CreateOrderResult, draft: Draft): void {
+export function validateDraftTotals(local: CreateOrderResult, draft: Pick<Draft, "totalPriceSet">): void {
   const amount = Number(draft.totalPriceSet.presentmentMoney.amount);
   if (
     draft.totalPriceSet.presentmentMoney.currencyCode !== "YER" ||
@@ -314,6 +320,64 @@ export async function persistShopifyDraftOrder(
     unitPrice: Number(line.unit_price),
   }));
 
+  const draftInput = {
+    lineItems: lines.map((line, i) => ({
+      variantId: variantIds[i],
+      quantity: line.quantity,
+      priceOverride: { amount: money(Number(line.unit_price)), currencyCode: "YER" },
+    })),
+    presentmentCurrencyCode: "YER",
+    acceptAutomaticDiscounts: false,
+    allowDiscountCodesInCheckout: false,
+    ...(local.quote.discount > 0
+      ? {
+          appliedDiscount: {
+            title: "Indexes checkout discount",
+            value: local.quote.discount,
+            valueType: "FIXED_AMOUNT",
+          },
+        }
+      : {}),
+    shippingLine: {
+      title: "التوصيل",
+      priceWithCurrency: { amount: money(local.quote.shipping), currencyCode: "YER" },
+    },
+    shippingAddress: {
+      address1: order.customer_address,
+      countryCode: "YE",
+      firstName: order.customer_name,
+      phone: order.customer_phone,
+    },
+    phone: order.customer_phone,
+    ...(order.customer_email ? { email: order.customer_email } : {}),
+    note: `Indexes COD WhatsApp | Local order: ${local.orderId} | Pending confirmation`,
+    tags: ["indexes-whatsapp-cod", `indexes-local-${local.orderId}`],
+    customAttributes: [
+      { key: "indexes_local_order_id", value: local.orderId },
+      { key: "payment_method", value: "cash_on_delivery" },
+    ],
+  };
+  // Shopify computes taxes, shipping and discounts without saving a draft.
+  // Reject a mismatching amount before claiming or creating anything in Shopify.
+  const calculated = await shopifyAdminGraphql<DraftCalculationResult>(
+    `mutation CalculateIndexesDraft($input: DraftOrderInput!) {
+      draftOrderCalculate(input: $input) {
+        calculatedDraftOrder {
+          totalPriceSet { presentmentMoney { amount currencyCode } }
+        }
+        userErrors { message }
+      }
+    }`,
+    { input: draftInput },
+  );
+  if (
+    calculated.draftOrderCalculate.userErrors.length > 0 ||
+    !calculated.draftOrderCalculate.calculatedDraftOrder
+  ) {
+    throw new HandoffError(409, "SHOPIFY_DRAFT_CALCULATION_FAILED");
+  }
+  validateDraftTotals(local, calculated.draftOrderCalculate.calculatedDraftOrder);
+
   // INSERT conflicts on order_id; only the first caller may create a Shopify draft.
   const { error: claimError } = await db.from("shopify_whatsapp_draft_links").insert({
     order_id: local.orderId,
@@ -366,43 +430,6 @@ export async function persistShopifyDraftOrder(
 
   // This mutation has no end-to-end cross-system transaction; any failure
   // after claim remains blocked for manual reconciliation (no blind retry).
-  const draftInput = {
-    lineItems: lines.map((line, i) => ({
-      variantId: variantIds[i],
-      quantity: line.quantity,
-      priceOverride: { amount: money(Number(line.unit_price)), currencyCode: "YER" },
-    })),
-    presentmentCurrencyCode: "YER",
-    acceptAutomaticDiscounts: false,
-    allowDiscountCodesInCheckout: false,
-    ...(local.quote.discount > 0
-      ? {
-          appliedDiscount: {
-            title: "Indexes checkout discount",
-            value: local.quote.discount,
-            valueType: "FIXED_AMOUNT",
-          },
-        }
-      : {}),
-    shippingLine: {
-      title: "التوصيل",
-      priceWithCurrency: { amount: money(local.quote.shipping), currencyCode: "YER" },
-    },
-    shippingAddress: {
-      address1: order.customer_address,
-      countryCode: "YE",
-      firstName: order.customer_name,
-      phone: order.customer_phone,
-    },
-    phone: order.customer_phone,
-    ...(order.customer_email ? { email: order.customer_email } : {}),
-    note: `Indexes COD WhatsApp | Local order: ${local.orderId} | Pending confirmation`,
-    tags: ["indexes-whatsapp-cod", `indexes-local-${local.orderId}`],
-    customAttributes: [
-      { key: "indexes_local_order_id", value: local.orderId },
-      { key: "payment_method", value: "cash_on_delivery" },
-    ],
-  };
   const response = await shopifyAdminGraphql<DraftResult>(
     `mutation CreateIndexesDraft($input: DraftOrderInput!) {
       draftOrderCreate(input: $input) {
