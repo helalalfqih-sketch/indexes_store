@@ -92,7 +92,10 @@ function money(value: number): string {
   return value.toFixed(2);
 }
 
-export function validateDraftTotals(local: CreateOrderResult, draft: Pick<Draft, "totalPriceSet">): void {
+export function validateDraftTotals(
+  local: CreateOrderResult,
+  draft: Pick<Draft, "totalPriceSet">,
+): void {
   const amount = Number(draft.totalPriceSet.presentmentMoney.amount);
   if (
     draft.totalPriceSet.presentmentMoney.currencyCode !== "YER" ||
