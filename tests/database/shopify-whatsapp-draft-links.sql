@@ -42,8 +42,9 @@ INSERT INTO public.shopify_whatsapp_draft_links(order_id,tenant_id,status) VALUE
   '33333333-3333-4333-8333-333333333333','11111111-1111-4111-8111-111111111111','creating'
 );
 DO $$
-DECLARE saw_duplicate boolean := false;
-DECLARE saw_tenant_error boolean := false;
+DECLARE
+  saw_duplicate boolean := false;
+  saw_tenant_error boolean := false;
 BEGIN
   BEGIN
     INSERT INTO public.shopify_whatsapp_draft_links(order_id,tenant_id,status)
