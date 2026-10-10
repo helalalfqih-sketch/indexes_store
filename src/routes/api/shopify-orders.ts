@@ -32,6 +32,34 @@ export function cors(request: Request): { allowed: boolean; headers: Headers } {
   return { allowed, headers };
 }
 
+/**
+ * Reject oversized requests while streaming: Content-Length cannot be trusted,
+ * and reading the whole body before checking its size permits memory abuse.
+ */
+async function readBoundedBody(request: Request): Promise<string | null> {
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_BYTES) return null;
+  if (!request.body) return "";
+  const bytes = new Uint8Array(MAX_BYTES);
+  const reader = request.body.getReader();
+  let used = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (used + value.byteLength > MAX_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+      bytes.set(value, used);
+      used += value.byteLength;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, used));
+}
+
 export async function handleShopifyOrder(request: Request): Promise<Response> {
   const { allowed, headers } = cors(request);
   if (!allowed) return Response.json({ error: "ORIGIN_NOT_ALLOWED" }, { status: 403, headers });
@@ -42,8 +70,8 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
   if (process.env.SHOPIFY_DRAFT_ORDER_WRITES_ENABLED !== "true") {
     return Response.json({ error: "SHOPIFY_DRAFT_ORDERS_DISABLED" }, { status: 503, headers });
   }
-  const raw = await request.text();
-  if (new TextEncoder().encode(raw).length > MAX_BYTES) {
+  const raw = await readBoundedBody(request);
+  if (raw === null) {
     return Response.json({ error: "BODY_TOO_LARGE" }, { status: 413, headers });
   }
   try {
@@ -51,8 +79,10 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
     if (!payload || typeof payload !== "object" || !("idempotencyKey" in payload)) {
       return Response.json({ error: "INVALID_ORDER" }, { status: 422, headers });
     }
-    const { persistShopifyDraftOrder, HandoffError } =
+    const { persistShopifyDraftOrder, assertShopifyHandoffReady } =
       await import("@/lib/shopify/whatsapp-draft.server");
+    // Verify the target shop before committing anything locally.
+    await assertShopifyHandoffReady();
     // This is the existing atomic Supabase checkout authority.
     const local = await createOrder({ data: payload });
     const result = await persistShopifyDraftOrder(
