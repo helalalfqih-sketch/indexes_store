@@ -28,8 +28,14 @@ const local = {
   currency: "YER",
   itemsCount: 1,
   quote: {
-    items: [], subtotal: 6500, discount: 0, shipping: 3000,
-    total: 9500, currency: "YER", couponCode: "", freeShippingThreshold: 30000,
+    items: [],
+    subtotal: 6500,
+    discount: 0,
+    shipping: 3000,
+    total: 9500,
+    currency: "YER",
+    couponCode: "",
+    freeShippingThreshold: 30000,
   },
 };
 
@@ -58,9 +64,12 @@ describe("Shopify WhatsApp bridge server boundary", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("never writes on preflight (OPTIONS)", async () => {
-    const response = await handleShopifyOrder(new Request(endpoint, {
-      method: "OPTIONS", headers: { Origin: shopOrigin },
-    }));
+    const response = await handleShopifyOrder(
+      new Request(endpoint, {
+        method: "OPTIONS",
+        headers: { Origin: shopOrigin },
+      }),
+    );
     expect(response.status).toBe(204);
     expect(response.headers.get("access-control-allow-origin")).toBe(shopOrigin);
     expect(mocks.preflight).not.toHaveBeenCalled();
@@ -68,16 +77,21 @@ describe("Shopify WhatsApp bridge server boundary", () => {
   });
 
   it("rejects unauthorised origins before reading customer data", async () => {
-    const response = await handleShopifyOrder(post(JSON.stringify(input), "https://attacker.example"));
+    const response = await handleShopifyOrder(
+      post(JSON.stringify(input), "https://attacker.example"),
+    );
     expect(response.status).toBe(403);
     expect(response.headers.get("access-control-allow-origin")).toBeNull();
     expect(mocks.createOrder).not.toHaveBeenCalled();
   });
 
   it("refuses a request without an Origin header", async () => {
-    const response = await handleShopifyOrder(new Request(endpoint, {
-      method: "POST", body: JSON.stringify(input),
-    }));
+    const response = await handleShopifyOrder(
+      new Request(endpoint, {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    );
     expect(response.status).toBe(403);
   });
 
@@ -85,7 +99,8 @@ describe("Shopify WhatsApp bridge server boundary", () => {
     const response = await handleShopifyOrder(post("{broken"));
     expect(response.status).toBe(400);
     expect(await response.json()).toMatchObject({
-      error: "INVALID_JSON", whatsappReady: false,
+      error: "INVALID_JSON",
+      whatsappReady: false,
     });
     expect(mocks.createOrder).not.toHaveBeenCalled();
   });
@@ -105,13 +120,17 @@ describe("Shopify WhatsApp bridge server boundary", () => {
   });
 
   it("does not commit an order when Shopify configuration preflight fails", async () => {
-    mocks.preflight.mockRejectedValue(Object.assign(new Error("Wrong shop"), {
-      code: "SHOPIFY_STORE_IDENTITY_UNVERIFIED", status: 503,
-    }));
+    mocks.preflight.mockRejectedValue(
+      Object.assign(new Error("Wrong shop"), {
+        code: "SHOPIFY_STORE_IDENTITY_UNVERIFIED",
+        status: 503,
+      }),
+    );
     const response = await handleShopifyOrder(post(JSON.stringify(input)));
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({
-      error: "SHOPIFY_STORE_IDENTITY_UNVERIFIED", whatsappReady: false,
+      error: "SHOPIFY_STORE_IDENTITY_UNVERIFIED",
+      whatsappReady: false,
     });
     expect(mocks.createOrder).not.toHaveBeenCalled();
     expect(mocks.persist).not.toHaveBeenCalled();
@@ -121,8 +140,10 @@ describe("Shopify WhatsApp bridge server boundary", () => {
     const response = await handleShopifyOrder(post(JSON.stringify(input)));
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
-      orderId: local.orderId, orderNumber: "ORD-7C06FEB0",
-      draftOrderId: "gid://shopify/DraftOrder/100", whatsappReady: true,
+      orderId: local.orderId,
+      orderNumber: "ORD-7C06FEB0",
+      draftOrderId: "gid://shopify/DraftOrder/100",
+      whatsappReady: true,
     });
     expect(mocks.preflight).toHaveBeenCalledOnce();
     expect(mocks.createOrder).toHaveBeenCalledOnce();
@@ -130,13 +151,17 @@ describe("Shopify WhatsApp bridge server boundary", () => {
   });
 
   it("blocks WhatsApp when Shopify creation fails after the local commit", async () => {
-    mocks.persist.mockRejectedValue(Object.assign(new Error("uncertain Shopify outcome"), {
-      status: 409, code: "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED",
-    }));
+    mocks.persist.mockRejectedValue(
+      Object.assign(new Error("uncertain Shopify outcome"), {
+        status: 409,
+        code: "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED",
+      }),
+    );
     const response = await handleShopifyOrder(post(JSON.stringify(input)));
     expect(response.status).toBe(409);
     expect(await response.json()).toMatchObject({
-      error: "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED", whatsappReady: false,
+      error: "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED",
+      whatsappReady: false,
     });
     expect(mocks.createOrder).toHaveBeenCalledOnce();
   });
