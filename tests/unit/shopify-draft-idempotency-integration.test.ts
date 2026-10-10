@@ -71,13 +71,15 @@ function draftSnapshot() {
     customAttributes: [{ key: "indexes_local_order_id", value: orderId }],
     totalPriceSet: { presentmentMoney: { amount: "9500.00", currencyCode: "YER" } },
     lineItems: {
-      nodes: [{
-        quantity: 1,
-        variant: { id: variantId },
-        originalUnitPriceSet: {
-          presentmentMoney: { amount: "6500.00", currencyCode: "YER" },
+      nodes: [
+        {
+          quantity: 1,
+          variant: { id: variantId },
+          originalUnitPriceSet: {
+            presentmentMoney: { amount: "6500.00", currencyCode: "YER" },
+          },
         },
-      }],
+      ],
       pageInfo: { hasNextPage: false },
     },
   };
@@ -139,9 +141,10 @@ describe("Shopify Draft Order durable claim across retries", () => {
           maybeSingle: async () => ({ data: link, error: null }),
           then: (resolve: (result: unknown) => void, reject: (reason?: unknown) => void) => {
             applyPatch();
-            const result = table === "order_items"
-              ? { data: [orderLine], error: null }
-              : { data: [{ id: productId, external_id: variantId }], error: null };
+            const result =
+              table === "order_items"
+                ? { data: [orderLine], error: null }
+                : { data: [{ id: productId, external_id: variantId }], error: null };
             return Promise.resolve(result).then(resolve, reject);
           },
         };
@@ -154,14 +157,16 @@ describe("Shopify Draft Order durable claim across retries", () => {
       }
       if (query.includes("DraftVariants")) {
         return {
-          nodes: [{
-            id: variantId,
-            availableForSale: true,
-            inventoryQuantity: 50,
-            inventoryPolicy: "DENY",
-            price: "6500",
-            product: { status: "ACTIVE" },
-          }],
+          nodes: [
+            {
+              id: variantId,
+              availableForSale: true,
+              inventoryQuantity: 50,
+              inventoryPolicy: "DENY",
+              price: "6500",
+              product: { status: "ACTIVE" },
+            },
+          ],
         };
       }
       if (query.includes("mutation CreateIndexesDraft")) {
@@ -186,8 +191,9 @@ describe("Shopify Draft Order durable claim across retries", () => {
     expect(retry.draftOrderId).toBe(first.draftOrderId);
     expect(retry.whatsappReady).toBe(true);
     expect(created).toBe(1);
-    expect(mocks.graphql.mock.calls.some(([query]) => String(query).includes("VerifyIndexesDraft")))
-      .toBe(true);
+    expect(
+      mocks.graphql.mock.calls.some(([query]) => String(query).includes("VerifyIndexesDraft")),
+    ).toBe(true);
   });
 
   it("blocks retries of a draft changed in Shopify instead of recreating it", async () => {
