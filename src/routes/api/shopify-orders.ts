@@ -91,14 +91,15 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
     );
     return Response.json(result, { status: 200, headers });
   } catch (error) {
-    const code =
-      error instanceof Error && error.name === "SyntaxError"
-        ? "INVALID_JSON"
-        : error instanceof Error && "code" in error
-          ? String(error.code)
-          : "ORDER_HANDOFF_FAILED";
-    const status =
-      error instanceof Error && "status" in error && typeof error.status === "number"
+    const invalidJson = error instanceof SyntaxError || error instanceof TypeError;
+    const code = invalidJson
+      ? "INVALID_JSON"
+      : error instanceof Error && "code" in error
+        ? String(error.code)
+        : "ORDER_HANDOFF_FAILED";
+    const status = invalidJson
+      ? 400
+      : error instanceof Error && "status" in error && typeof error.status === "number"
         ? error.status
         : 503;
     console.error("[SHOPIFY_DRAFT_HANDOFF]", code);
