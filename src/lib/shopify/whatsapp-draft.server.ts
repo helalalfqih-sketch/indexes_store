@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 // Branch-local schema extension. Regenerate the complete Supabase types from
 // the verified staging database after the migration is applied.
@@ -13,7 +13,13 @@ type DraftLink = {
   updated_at: string;
 };
 type DraftDatabase = Omit<Database, "public"> & {
-  public: Omit<Database["public"], "Tables"> & {
+  public: Omit<Database["public"], "Tables" | "Functions"> & {
+    Functions: Database["public"]["Functions"] & {
+      checkout_totals_v1: {
+        Args: { _subtotal: number; _coupon_code: string | null; _cart_config: Json };
+        Returns: Json;
+      };
+    };
     Tables: Database["public"]["Tables"] & {
       shopify_whatsapp_draft_links: {
         Row: DraftLink;
@@ -176,6 +182,31 @@ export async function assertShopifyHandoffReady(): Promise<void> {
     shopData.shop.currencyCode !== "YER"
   ) {
     throw new HandoffError(503, "SHOPIFY_STORE_IDENTITY_UNVERIFIED");
+  }
+  // This gate is a read-only probe: a missing live migration must NOT
+  // produce a local order that the current code cannot confirm as committed.
+  const schema = getSupabaseAdmin() as unknown as SupabaseClient<DraftDatabase>;
+  const [ordersSchema, linksSchema, quoteProbe] = await Promise.all([
+    schema.from("orders").select("id,checkout_fingerprint,checkout_quote").limit(0),
+    schema.from("shopify_whatsapp_draft_links").select("order_id,status").limit(0),
+    schema.rpc("checkout_totals_v1", {
+      _subtotal: 0,
+      _coupon_code: "",
+      _cart_config: {},
+    }),
+  ]);
+  const quote = quoteProbe.data;
+  if (
+    ordersSchema.error ||
+    linksSchema.error ||
+    quoteProbe.error ||
+    !quote ||
+    typeof quote !== "object" ||
+    Array.isArray(quote) ||
+    quote.currency !== "YER" ||
+    Number(quote.total) !== 0
+  ) {
+    throw new HandoffError(503, "SHOPIFY_DB_SCHEMA_UNAVAILABLE");
   }
 }
 
