@@ -75,9 +75,7 @@ describe("fail-closed checkout database preflight", () => {
     mocks.graphql.mockResolvedValueOnce({
       shop: { ...shop, myshopifyDomain: "unrelated.myshopify.com" },
     });
-    await expect(assertShopifyHandoffReady()).rejects.toThrow(
-      "SHOPIFY_STORE_IDENTITY_UNVERIFIED",
-    );
+    await expect(assertShopifyHandoffReady()).rejects.toThrow("SHOPIFY_STORE_IDENTITY_UNVERIFIED");
     expect(mocks.getAdmin).not.toHaveBeenCalled();
   });
 
