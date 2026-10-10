@@ -79,14 +79,19 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
     if (!payload || typeof payload !== "object" || !("idempotencyKey" in payload)) {
       return Response.json({ error: "INVALID_ORDER" }, { status: 422, headers });
     }
+    const { verifyShopifyOrderChallenge } =
+      await import("@/lib/shopify/order-challenge.server");
     const { persistShopifyDraftOrder, assertShopifyHandoffReady } =
       await import("@/lib/shopify/whatsapp-draft.server");
+    const { turnstileToken, ...orderData } = payload as Record<string, unknown>;
+    // Challenge is single-use; clients need a fresh token on every retry.
+    await verifyShopifyOrderChallenge(turnstileToken, request);
     // Verify the target shop before committing anything locally.
     await assertShopifyHandoffReady();
     // This is the existing atomic Supabase checkout authority.
-    const local = await createOrder({ data: payload });
+    const local = await createOrder({ data: orderData });
     const result = await persistShopifyDraftOrder(
-      payload as Parameters<typeof persistShopifyDraftOrder>[0],
+      orderData as Parameters<typeof persistShopifyDraftOrder>[0],
       local,
     );
     return Response.json(result, { status: 200, headers });
