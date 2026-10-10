@@ -74,10 +74,7 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
   try {
     raw = await readBoundedBody(request);
   } catch {
-    return Response.json(
-      { error: "INVALID_JSON", whatsappReady: false },
-      { status: 400, headers },
-    );
+    return Response.json({ error: "INVALID_JSON", whatsappReady: false }, { status: 400, headers });
   }
   if (raw === null) {
     return Response.json({ error: "BODY_TOO_LARGE" }, { status: 413, headers });
@@ -86,10 +83,7 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
   try {
     payload = JSON.parse(raw);
   } catch {
-    return Response.json(
-      { error: "INVALID_JSON", whatsappReady: false },
-      { status: 400, headers },
-    );
+    return Response.json({ error: "INVALID_JSON", whatsappReady: false }, { status: 400, headers });
   }
   if (!payload || typeof payload !== "object" || !("idempotencyKey" in payload)) {
     return Response.json({ error: "INVALID_ORDER" }, { status: 422, headers });
