@@ -94,6 +94,7 @@ describe("Shopify Draft Order durable claim across retries", () => {
   let actualDraft: ReturnType<typeof draftSnapshot>;
   let created: number;
   let uncertainMutation: boolean;
+  let calculatedTotal: string;
 
   beforeEach(() => {
     vi.stubEnv("SHOPIFY_DRAFT_ORDER_WRITES_ENABLED", "true");
@@ -105,6 +106,7 @@ describe("Shopify Draft Order durable claim across retries", () => {
     link = null;
     created = 0;
     uncertainMutation = false;
+    calculatedTotal = "9500.00";
     actualDraft = draftSnapshot();
 
     mocks.getAdmin.mockReset().mockImplementation(() => ({
@@ -169,6 +171,18 @@ describe("Shopify Draft Order durable claim across retries", () => {
           ],
         };
       }
+      if (query.includes("mutation CalculateIndexesDraft")) {
+        return {
+          draftOrderCalculate: {
+            calculatedDraftOrder: {
+              totalPriceSet: {
+                presentmentMoney: { amount: calculatedTotal, currencyCode: "YER" },
+              },
+            },
+            userErrors: [],
+          },
+        };
+      }
       if (query.includes("mutation CreateIndexesDraft")) {
         created += 1;
         if (uncertainMutation) throw new Error("network timeout with unknown outcome");
@@ -182,6 +196,15 @@ describe("Shopify Draft Order durable claim across retries", () => {
   });
 
   afterEach(() => vi.unstubAllEnvs());
+
+  it("rejects a Shopify calculated total mismatch before any claim or draft create", async () => {
+    calculatedTotal = "9800.00";
+    await expect(persistShopifyDraftOrder(payload, local)).rejects.toThrow(
+      "SHOPIFY_TOTAL_MISMATCH",
+    );
+    expect(link).toBeNull();
+    expect(created).toBe(0);
+  });
 
   it("creates one Shopify draft, re-reads it on retry, and never creates a second", async () => {
     const first = await persistShopifyDraftOrder(payload, local);
