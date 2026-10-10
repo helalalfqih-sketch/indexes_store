@@ -30,11 +30,7 @@ export async function verifyShopifyOrderChallenge(
   if (!secret) {
     throw new CheckoutChallengeError(503, "CHECKOUT_CHALLENGE_NOT_CONFIGURED");
   }
-  if (
-    typeof rawToken !== "string" ||
-    rawToken.length < 20 ||
-    rawToken.length > 2048
-  ) {
+  if (typeof rawToken !== "string" || rawToken.length < 20 || rawToken.length > 2048) {
     throw new CheckoutChallengeError(403, "CHECKOUT_CHALLENGE_REQUIRED");
   }
   const hostname = trustedHostname(request.headers.get("origin") ?? undefined);
