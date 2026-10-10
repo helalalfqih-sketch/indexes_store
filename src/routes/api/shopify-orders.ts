@@ -70,15 +70,25 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
   if (process.env.SHOPIFY_DRAFT_ORDER_WRITES_ENABLED !== "true") {
     return Response.json({ error: "SHOPIFY_DRAFT_ORDERS_DISABLED" }, { status: 503, headers });
   }
-  const raw = await readBoundedBody(request);
+  let raw: string | null;
+  try {
+    raw = await readBoundedBody(request);
+  } catch {
+    return Response.json({ error: "INVALID_JSON" }, { status: 400, headers });
+  }
   if (raw === null) {
     return Response.json({ error: "BODY_TOO_LARGE" }, { status: 413, headers });
   }
+  let payload: unknown;
   try {
-    const payload: unknown = JSON.parse(raw);
-    if (!payload || typeof payload !== "object" || !("idempotencyKey" in payload)) {
-      return Response.json({ error: "INVALID_ORDER" }, { status: 422, headers });
-    }
+    payload = JSON.parse(raw);
+  } catch {
+    return Response.json({ error: "INVALID_JSON" }, { status: 400, headers });
+  }
+  if (!payload || typeof payload !== "object" || !("idempotencyKey" in payload)) {
+    return Response.json({ error: "INVALID_ORDER" }, { status: 422, headers });
+  }
+  try {
     const { verifyShopifyOrderChallenge } =
       await import("@/lib/shopify/order-challenge.server");
     const { persistShopifyDraftOrder, assertShopifyHandoffReady } =
@@ -96,15 +106,13 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
     );
     return Response.json(result, { status: 200, headers });
   } catch (error) {
-    const invalidJson = error instanceof SyntaxError || error instanceof TypeError;
-    const code = invalidJson
-      ? "INVALID_JSON"
-      : error instanceof Error && "code" in error
+    // Provider and database failures are not malformed client JSON.
+    const code =
+      error instanceof Error && "code" in error
         ? String(error.code)
         : "ORDER_HANDOFF_FAILED";
-    const status = invalidJson
-      ? 400
-      : error instanceof Error && "status" in error && typeof error.status === "number"
+    const status =
+      error instanceof Error && "status" in error && typeof error.status === "number"
         ? error.status
         : 503;
     console.error("[SHOPIFY_DRAFT_HANDOFF]", code);
