@@ -89,8 +89,7 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
     return Response.json({ error: "INVALID_ORDER" }, { status: 422, headers });
   }
   try {
-    const { verifyShopifyOrderChallenge } =
-      await import("@/lib/shopify/order-challenge.server");
+    const { verifyShopifyOrderChallenge } = await import("@/lib/shopify/order-challenge.server");
     const { persistShopifyDraftOrder, assertShopifyHandoffReady } =
       await import("@/lib/shopify/whatsapp-draft.server");
     const { turnstileToken, ...orderData } = payload as Record<string, unknown>;
