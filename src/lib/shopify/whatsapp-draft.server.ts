@@ -1,3 +1,30 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+// Branch-local schema extension. Regenerate the complete Supabase types from
+// the verified staging database after the migration is applied.
+type DraftLink = {
+  order_id: string;
+  tenant_id: string;
+  shopify_draft_id: string | null;
+  shopify_draft_name: string | null;
+  status: "creating" | "verifying" | "ready" | "needs_reconciliation";
+  created_at: string;
+  updated_at: string;
+};
+type DraftDatabase = Omit<Database, "public"> & {
+  public: Omit<Database["public"], "Tables"> & {
+    Tables: Database["public"]["Tables"] & {
+      shopify_whatsapp_draft_links: {
+        Row: DraftLink;
+        Insert: Pick<DraftLink, "order_id" | "tenant_id" | "status"> &
+          Partial<Omit<DraftLink, "order_id" | "tenant_id" | "status">>;
+        Update: Partial<DraftLink>;
+        Relationships: [];
+      };
+    };
+  };
+};
 import { shopifyAdminGraphql } from "@/lib/shopify/admin.functions";
 import { getSupabaseAdmin } from "@/integrations/supabase/client.server";
 import { formatOrderNumber } from "@/lib/order-status";
@@ -48,7 +75,7 @@ export async function persistShopifyDraftOrder(input: CreateOrderPayload, local:
     throw new HandoffError(422, "SHOPIFY_VARIANTS_REQUIRED");
   }
 
-  const db = getSupabaseAdmin();
+  const db = getSupabaseAdmin() as unknown as SupabaseClient<DraftDatabase>;
   // Match the exact variant IDs attached to the committed local line items.
   // Shopify IDs and local prices MUST never be taken from untrusted client totals.
   const { data: order, error: orderError } = await db.from("orders")
