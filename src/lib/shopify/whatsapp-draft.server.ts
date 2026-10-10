@@ -74,14 +74,11 @@ export function validateDraftTotals(local: CreateOrderResult, draft: Draft): voi
 }
 
 /**
- * Safe state machine: a durable claim is acquired before any non-idempotent
- * draftOrderCreate call. On timeout/unknown response NEVER auto-retry creation:
- * reconcile the Shopify reference first to avoid duplicate drafts.
+ * Verify the target store and required server-side configuration before
+ * creating the local order. A CORS Origin is NOT proof of authentication.
+ * This is intentionally fail-closed until the Preview environment is wired.
  */
-export async function persistShopifyDraftOrder(
-  input: CreateOrderPayload,
-  local: CreateOrderResult,
-) {
+export async function assertShopifyHandoffReady(): Promise<void> {
   if (process.env.SHOPIFY_DRAFT_ORDER_WRITES_ENABLED !== "true") {
     throw new HandoffError(503, "SHOPIFY_DRAFT_ORDERS_DISABLED");
   }
@@ -92,10 +89,35 @@ export async function persistShopifyDraftOrder(
   if (
     !domain ||
     !/^[a-z0-9-]+\.myshopify\.com$/.test(domain) ||
-    process.env.SHOPIFY_DRAFT_ORDER_EXPECTED_DOMAIN?.toLowerCase() !== domain
+    process.env.SHOPIFY_DRAFT_ORDER_EXPECTED_DOMAIN?.trim().toLowerCase() !== domain ||
+    !process.env.SHOPIFY_ADMIN_ACCESS_TOKEN ||
+    !process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN ||
+    process.env.CATALOG_SOURCE !== "shopify"
   ) {
     throw new HandoffError(503, "SHOPIFY_STORE_IDENTITY_UNVERIFIED");
   }
+
+  const shopData = await shopifyAdminGraphql<{
+    shop: { myshopifyDomain: string; currencyCode: string };
+  }>("query DraftShopIdentity { shop { myshopifyDomain currencyCode } }");
+  if (
+    shopData.shop.myshopifyDomain.toLowerCase() !== domain ||
+    shopData.shop.currencyCode !== "YER"
+  ) {
+    throw new HandoffError(503, "SHOPIFY_STORE_IDENTITY_UNVERIFIED");
+  }
+}
+
+/**
+ * Safe state machine: a durable claim is acquired before any non-idempotent
+ * draftOrderCreate call. On timeout/unknown response NEVER auto-retry creation:
+ * reconcile the Shopify reference first to avoid duplicate drafts.
+ */
+export async function persistShopifyDraftOrder(
+  input: CreateOrderPayload,
+  local: CreateOrderResult,
+) {
+  await assertShopifyHandoffReady();
   if (
     !UUID.test(local.orderId) ||
     local.currency !== "YER" ||
@@ -158,15 +180,6 @@ export async function persistShopifyDraftOrder(
     throw new HandoffError(409, "ORDER_PRODUCT_MISMATCH");
   }
 
-  const shopData = await shopifyAdminGraphql<{
-    shop: { myshopifyDomain: string; currencyCode: string };
-  }>("query DraftShopIdentity { shop { myshopifyDomain currencyCode } }");
-  if (
-    shopData.shop.myshopifyDomain.toLowerCase() !== domain ||
-    shopData.shop.currencyCode !== "YER"
-  ) {
-    throw new HandoffError(503, "SHOPIFY_STORE_IDENTITY_UNVERIFIED");
-  }
   const variantData = await shopifyAdminGraphql<{ nodes: Array<Variant | null> }>(
     `query DraftVariants($ids: [ID!]!) {
       nodes(ids: $ids) { ... on ProductVariant {
