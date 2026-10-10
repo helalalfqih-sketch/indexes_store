@@ -35,8 +35,26 @@ type Draft = {
   name: string;
   totalPriceSet: { presentmentMoney: { amount: string; currencyCode: string } };
 };
+type DraftLine = {
+  quantity: number;
+  variant: { id: string } | null;
+  originalUnitPriceSet: { presentmentMoney: { amount: string; currencyCode: string } };
+};
+
+type VerifiedDraft = Draft & {
+  status: string;
+  tags: string[];
+  customAttributes: Array<{ key: string; value: string }>;
+  lineItems: {
+    nodes: DraftLine[];
+    pageInfo: { hasNextPage: boolean };
+  };
+};
+
+type ExpectedDraftLine = { variantId: string; quantity: number; unitPrice: number };
+
 type DraftResult = {
-  draftOrderCreate: { draftOrder: Draft | null; userErrors: Array<{ message: string }> };
+  draftOrderCreate: { draftOrder: VerifiedDraft | null; userErrors: Array<{ message: string }> };
 };
 type Variant = {
   id: string;
@@ -71,6 +89,59 @@ export function validateDraftTotals(local: CreateOrderResult, draft: Draft): voi
   ) {
     throw new HandoffError(409, "SHOPIFY_TOTAL_MISMATCH");
   }
+}
+
+/**
+ * Shopify Draft Orders can be edited or completed after creation. A previously
+ * linked draft must still match the committed local order before reuse.
+ * This is a read-only check and never creates a second Shopify draft.
+ */
+export function assertShopifyDraftMatches(
+  local: CreateOrderResult,
+  draft: VerifiedDraft | null,
+  expectedLines: ExpectedDraftLine[],
+): asserts draft is VerifiedDraft {
+  if (
+    !draft ||
+    !/^gid:\/\/shopify\/DraftOrder\/\d+$/.test(draft.id) ||
+    draft.status !== "OPEN" ||
+    !Array.isArray(draft.tags) ||
+    !draft.tags.includes(`indexes-local-${local.orderId}`) ||
+    !Array.isArray(draft.customAttributes) ||
+    !draft.customAttributes.some(
+      (entry) => entry.key === "indexes_local_order_id" && entry.value === local.orderId,
+    ) ||
+    !draft.lineItems ||
+    draft.lineItems.pageInfo.hasNextPage ||
+    draft.lineItems.nodes.length !== expectedLines.length
+  ) {
+    throw new HandoffError(409, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+  }
+
+  const expectedByVariant = new Map(expectedLines.map((line) => [line.variantId, line]));
+  if (expectedByVariant.size !== expectedLines.length) {
+    throw new HandoffError(409, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+  }
+  const seen = new Set<string>();
+  for (const line of draft.lineItems.nodes) {
+    const id = line.variant?.id;
+    const expected = id ? expectedByVariant.get(id) : undefined;
+    const moneyValue = line.originalUnitPriceSet?.presentmentMoney;
+    if (
+      !id ||
+      !expected ||
+      seen.has(id) ||
+      line.quantity !== expected.quantity ||
+      !moneyValue ||
+      moneyValue.currencyCode !== "YER" ||
+      !Number.isFinite(Number(moneyValue.amount)) ||
+      Math.abs(Number(moneyValue.amount) - expected.unitPrice) > 0.01
+    ) {
+      throw new HandoffError(409, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+    }
+    seen.add(id);
+  }
+  validateDraftTotals(local, draft);
 }
 
 /**
@@ -206,6 +277,12 @@ export async function persistShopifyDraftOrder(
     }
   });
 
+  const expectedDraftLines: ExpectedDraftLine[] = lines.map((line, index) => ({
+    variantId: variantIds[index]!,
+    quantity: line.quantity,
+    unitPrice: Number(line.unit_price),
+  }));
+
   // INSERT conflicts on order_id; only the first caller may create a Shopify draft.
   const { error: claimError } = await db.from("shopify_whatsapp_draft_links").insert({
     order_id: local.orderId,
@@ -221,11 +298,33 @@ export async function persistShopifyDraftOrder(
         .eq("tenant_id", order.tenant_id)
         .maybeSingle();
       if (existing?.status === "ready" && existing.shopify_draft_id) {
+        // A stale or edited draft must not be approved just because the local
+        // linkage says "ready". Re-read Shopify, never re-create on retry.
+        const lookup = await shopifyAdminGraphql<{ draftOrder: VerifiedDraft | null }>(
+          `query VerifyIndexesDraft($id: ID!) {
+            draftOrder(id: $id) {
+              id name status tags customAttributes { key value }
+              totalPriceSet { presentmentMoney { amount currencyCode } }
+              lineItems(first: 100) {
+                nodes {
+                  quantity variant { id }
+                  originalUnitPriceSet { presentmentMoney { amount currencyCode } }
+                }
+                pageInfo { hasNextPage }
+              }
+            }
+          }`,
+          { id: existing.shopify_draft_id },
+        );
+        assertShopifyDraftMatches(local, lookup.draftOrder, expectedDraftLines);
+        if (lookup.draftOrder.id !== existing.shopify_draft_id) {
+          throw new HandoffError(409, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+        }
         return {
           ...local,
           orderNumber: formatOrderNumber(local.orderId),
-          draftOrderId: existing.shopify_draft_id,
-          draftOrderName: existing.shopify_draft_name,
+          draftOrderId: lookup.draftOrder.id,
+          draftOrderName: lookup.draftOrder.name,
           whatsappReady: true,
         };
       }
@@ -276,7 +375,17 @@ export async function persistShopifyDraftOrder(
   const response = await shopifyAdminGraphql<DraftResult>(
     `mutation CreateIndexesDraft($input: DraftOrderInput!) {
       draftOrderCreate(input: $input) {
-        draftOrder { id name totalPriceSet { presentmentMoney { amount currencyCode } } }
+        draftOrder {
+          id name status tags customAttributes { key value }
+          totalPriceSet { presentmentMoney { amount currencyCode } }
+          lineItems(first: 100) {
+            nodes {
+              quantity variant { id }
+              originalUnitPriceSet { presentmentMoney { amount currencyCode } }
+            }
+            pageInfo { hasNextPage }
+          }
+        }
         userErrors { message }
       }
     }`,
@@ -298,7 +407,7 @@ export async function persistShopifyDraftOrder(
     .eq("tenant_id", order.tenant_id)
     .eq("status", "creating");
   if (linkError) throw new HandoffError(503, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
-  validateDraftTotals(local, draft);
+  assertShopifyDraftMatches(local, draft, expectedDraftLines);
   const { data: ready, error: readyError } = await db
     .from("shopify_whatsapp_draft_links")
     .update({ status: "ready" })
