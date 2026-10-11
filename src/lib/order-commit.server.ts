@@ -36,7 +36,10 @@ async function getOptionalUserId(admin: {
   }
 }
 
-export async function commitCheckoutOrder(data: CreateOrderPayload): Promise<CreateOrderResult> {
+export async function commitCheckoutOrder(
+  data: CreateOrderPayload,
+  options: { readOnlyShopifyCatalog?: boolean } = {},
+): Promise<CreateOrderResult> {
   const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
   const supabaseAdmin = getSupabaseAdmin();
 
@@ -58,11 +61,21 @@ export async function commitCheckoutOrder(data: CreateOrderPayload): Promise<Cre
   const shopifyVariantIds = data.items.flatMap((item) =>
     item.productRef.source === "shopify" ? [item.productRef.id] : [],
   );
-  const shopifyProductIds = shopifyVariantIds.length
-    ? await (
-        await import("@/lib/shopify/yemen-checkout.server")
-      ).resolveShopifyVariantsForYemenCheckout(supabaseAdmin, tenantId, shopifyVariantIds)
-    : new Map<string, string>();
+  let shopifyProductIds = new Map<string, string>();
+  if (shopifyVariantIds.length > 0) {
+    const resolver = await import("@/lib/shopify/yemen-checkout.server");
+    shopifyProductIds = options.readOnlyShopifyCatalog
+      ? await resolver.resolveExistingShopifyVariantsForYemenCheckout(
+          supabaseAdmin,
+          tenantId,
+          shopifyVariantIds,
+        )
+      : await resolver.resolveShopifyVariantsForYemenCheckout(
+          supabaseAdmin,
+          tenantId,
+          shopifyVariantIds,
+        );
+  }
   const resolvedItems = data.items.map((item) => ({
     ...item,
     productRef:
