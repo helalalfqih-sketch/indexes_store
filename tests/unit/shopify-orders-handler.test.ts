@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   persist: vi.fn(),
   challenge: vi.fn(),
 }));
-vi.mock("@/lib/order.functions", () => ({ createOrder: mocks.createOrder }));
+vi.mock("@/lib/order-commit.server", () => ({ commitCheckoutOrder: mocks.createOrder }));
 vi.mock("@/lib/shopify/order-challenge.server", () => ({
   verifyShopifyOrderChallenge: mocks.challenge,
 }));
@@ -178,7 +178,7 @@ describe("Shopify WhatsApp bridge server boundary", () => {
     const response = await handleShopifyOrder(post(JSON.stringify(body)));
     expect(response.status).toBe(200);
     expect(mocks.challenge).toHaveBeenCalledWith(body.turnstileToken, expect.any(Request));
-    expect(mocks.createOrder).toHaveBeenCalledWith({ data: input });
+    expect(mocks.createOrder).toHaveBeenCalledWith(input);
     expect(mocks.persist).toHaveBeenCalledWith(input, local);
   });
 
