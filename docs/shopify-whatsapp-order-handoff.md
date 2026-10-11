@@ -11,6 +11,30 @@
 7. After review, set the Preview-only write flag to `true`, redeploy the *specific* approved commit and test with an explicitly approved non-customer test purchase. Never submit a real test request against a production Shopify store while merely verifying code.
 8. Only when the API returns HTTP 200 with `whatsappReady: true` and both `orderId` and `draftOrderId` should the storefront open WhatsApp. Use the server-confirmed order number, price and shipping, not untrusted cart totals. If the response fails, show a recoverable error and stay on checkout.
 
+## Vercel Preview storefront UI (not the live Shopify theme)
+
+PR #174 also includes an **opt-in** Vercel storefront checkout adapter. The already
+published storefront and Shopify theme remain unchanged while the flag is absent.
+
+- Configure `VITE_SHOPIFY_DRAFT_ORDER_PREVIEW_ENABLED=true` on the **specific
+  Vercel Preview branch only**, never on Production before launch acceptance.
+- Configure the public `VITE_SHOPIFY_ORDER_TURNSTILE_SITE_KEY` in that Preview.
+  The secret `SHOPIFY_ORDER_TURNSTILE_SECRET` stays server-only; never put it
+  in a `VITE_` variable or a theme asset.
+- The Preview delivery dialog renders the Turnstile widget with the action
+  `indexes_whatsapp_order`. Every failed attempt resets its one-use token.
+- The new `submitShopifyPreviewDraft` client calls `/api/shopify-orders`.
+  It requires HTTP 200, `whatsappReady: true`, verified `orderId` and
+  `draftOrderId`, a YER quote and matching order total before showing a
+  WhatsApp link or clearing the cart.
+- If no public site key or server write flag is configured, Preview fails
+  closed. There must be no silent fallback to the legacy Supabase-only
+  endpoint while the Preview feature is enabled.
+- **Important:** This Vercel UI adapter does NOT install JavaScript or a
+  purchase button inside the Shopify-hosted theme. Test and wire the
+  unpublished Shopify theme separately before claiming Shopify's published
+  storefront is integrated.
+
 ## Safe retry and reconciliation
 
 - The browser must retain the *same* `idempotencyKey` for one logical checkout; request a **new** Turnstile token on each HTTP retry.
