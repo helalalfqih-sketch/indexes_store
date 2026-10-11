@@ -213,7 +213,8 @@ export async function assertShopifyHandoffReady(): Promise<void> {
     typeof quote !== "object" ||
     Array.isArray(quote) ||
     quote.currency !== "YER" ||
-    Number(quote.total) !== 0
+    !Number.isFinite(Number(quote.total)) ||
+    Number(quote.total) < 0
   ) {
     throw new HandoffError(503, "SHOPIFY_DB_SCHEMA_UNAVAILABLE");
   }
