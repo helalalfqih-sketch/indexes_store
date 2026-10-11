@@ -1,0 +1,32 @@
+name: WhatsApp MCP Cloud CI
+
+on:
+  pull_request:
+    paths:
+      - "services/whatsapp-mcp-cloud/**"
+      - ".github/workflows/whatsapp-mcp-cloud-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: services/whatsapp-mcp-cloud
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install
+        run: npm install
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Docker build
+        run: docker build -t indexes-whatsapp-mcp-cloud .
