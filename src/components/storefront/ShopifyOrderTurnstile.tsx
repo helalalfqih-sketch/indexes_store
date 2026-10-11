@@ -59,9 +59,7 @@ export function ShopifyOrderTurnstile({
       });
     };
 
-    let script = document.querySelector<HTMLScriptElement>(
-      'script[data-indexes-turnstile="true"]',
-    );
+    let script = document.querySelector<HTMLScriptElement>('script[data-indexes-turnstile="true"]');
     if (!script) {
       script = document.createElement("script");
       script.src = TURNSTILE_SCRIPT;
