@@ -26,7 +26,7 @@ const input = {
   customerPhone: "771234567",
   customerAddress: "Sana'a",
 };
-const confirmedPayload = { ...input, paymentProvider: "cod" };
+const confirmedPayload = { ...input, customerPhone: "967771234567", paymentProvider: "cod" };
 const local = {
   orderId: "7c06feb0-aabe-4ef4-bc84-519e1e9116a0",
   total: 9500,
