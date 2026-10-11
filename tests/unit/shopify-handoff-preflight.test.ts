@@ -21,6 +21,7 @@ describe("fail-closed checkout database preflight", () => {
     linksError: false,
     quoteError: false,
     quoteCurrency: "YER",
+    quoteTotal: 0,
   };
 
   beforeEach(() => {
@@ -34,6 +35,7 @@ describe("fail-closed checkout database preflight", () => {
     state.linksError = false;
     state.quoteError = false;
     state.quoteCurrency = "YER";
+    state.quoteTotal = 0;
     mocks.graphql.mockReset().mockResolvedValue({ shop });
     mocks.getAdmin.mockReset().mockReturnValue({
       from: (name: string) => ({
@@ -51,7 +53,7 @@ describe("fail-closed checkout database preflight", () => {
         }),
       }),
       rpc: async () => ({
-        data: { total: 0, currency: state.quoteCurrency },
+        data: { total: state.quoteTotal, currency: state.quoteCurrency },
         error: state.quoteError ? { message: "missing checkout_totals_v1" } : null,
       }),
     });
@@ -92,6 +94,11 @@ describe("fail-closed checkout database preflight", () => {
   it("rejects a missing checkout_totals_v1 function", async () => {
     state.quoteError = true;
     await expect(assertShopifyHandoffReady()).rejects.toThrow("SHOPIFY_DB_SCHEMA_UNAVAILABLE");
+  });
+
+  it("accepts valid quote RPCs that apply a default shipping amount", async () => {
+    state.quoteTotal = 500;
+    await expect(assertShopifyHandoffReady()).resolves.toBeUndefined();
   });
 
   it("rejects a quote function returning an unexpected currency", async () => {
