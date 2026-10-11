@@ -125,7 +125,7 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
     // Server-only commit path; the public createOrder server function is
     // deliberately disabled whenever Shopify draft creation is enabled.
     const { commitCheckoutOrder } = await import("@/lib/order-commit.server");
-    const local = await commitCheckoutOrder(orderData);
+    const local = await commitCheckoutOrder(orderData, { readOnlyShopifyCatalog: true });
     const result = await persistShopifyDraftOrder(orderData, local);
     return Response.json(result, { status: 200, headers });
   } catch (error) {
