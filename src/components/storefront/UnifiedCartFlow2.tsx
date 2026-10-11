@@ -53,6 +53,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [challengeAttempt, setChallengeAttempt] = useState(0);
@@ -66,6 +67,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
       setSubmitError(null);
       setErrors({});
       setOrderId(null);
+      setOrderNumber(null);
       setWhatsappUrl(null);
     }
   }, [props.isOpen]);
@@ -150,9 +152,13 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
       const result = SHOPIFY_DRAFT_PREVIEW_ENABLED
         ? await submitShopifyPreviewDraft(payload, turnstileToken ?? "")
         : await submitOrder(payload);
+      const customerOrderNumber =
+        "orderNumber" in result && typeof result.orderNumber === "string"
+          ? result.orderNumber
+          : result.orderId;
       const url = whatsappLink(
         buildCheckoutWhatsAppMessage({
-          orderId: result.orderId,
+          orderId: customerOrderNumber,
           items: result.quote.items,
           subtotal: result.quote.subtotal,
           discount: result.quote.discount,
@@ -177,6 +183,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
       clearCart();
       idempotencyKeyRef.current = null;
       setOrderId(result.orderId);
+      setOrderNumber(customerOrderNumber);
       setWhatsappUrl(url);
       setStep("success");
     } catch {
@@ -247,11 +254,11 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                 <p className="text-sm text-[var(--color-text-secondary)]">
                   تم حفظ الطلب. أكمل التأكيد عبر واتساب.
                 </p>
-                {orderId && (
+                {(orderNumber || orderId) && (
                   <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-4 py-3">
                     <span className="text-[11px] text-[var(--color-text-muted)]">رقم الطلب</span>
                     <p className="mt-1 break-all font-mono text-sm font-black text-[#2F6BFF]">
-                      {orderId}
+                      {orderNumber ?? orderId}
                     </p>
                   </div>
                 )}
