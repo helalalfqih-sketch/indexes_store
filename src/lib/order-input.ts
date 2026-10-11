@@ -38,4 +38,3 @@ export interface CreateOrderResult {
   itemsCount: number;
   quote: CheckoutQuote;
 }
-
