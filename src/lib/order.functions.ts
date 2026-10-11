@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createOrderInput, type CreateOrderResult } from "@/lib/order-input";
+import { assertLegacyCheckoutAllowed } from "@/lib/order-gateway-policy";
 export type { CreateOrderPayload, CreateOrderResult } from "@/lib/order-input";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
@@ -44,9 +45,7 @@ export const createOrder = createServerFn({ method: "POST" })
     // This public server function remains callable by legacy clients. Once
     // Shopify Draft Order handoff is enabled, only the trusted API endpoint
     // may commit an order; never accept an alternate Supabase-only path.
-    if (process.env.SHOPIFY_DRAFT_ORDER_WRITES_ENABLED === "true") {
-      throw new Error("SHOPIFY_DRAFT_ORDER_GATEWAY_REQUIRED");
-    }
+    assertLegacyCheckoutAllowed(process.env.SHOPIFY_DRAFT_ORDER_WRITES_ENABLED);
     const { commitCheckoutOrder } = await import("@/lib/order-commit.server");
     return commitCheckoutOrder(data);
   });
