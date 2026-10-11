@@ -53,4 +53,5 @@ published storefront and Shopify theme remain unchanged while the flag is absent
 - Add traceability/alerting for stuck `creating`/`verifying` claims without logging customer personal information or credentials.
 - Validate a complete preview-only end-to-end flow with a merchant-approved test shop, including success, quantity/price change, double-click, network timeout, and unknown mutation outcomes.
 - Confirm existing Shopify theme content, images, products and prices are untouched.
+- The existing public `createOrder` server function and legacy Supabase-only checkout are separate entry points. Before enabling the bridge for all customers, explicitly close or reroute those paths in a tested, production-approved change; protecting only `/api/shopify-orders` does not guarantee that every WhatsApp order creates a Shopify draft.
 - Do not merge PRs or enable the Production flag until those checks are demonstrated; passing unit/E2E CI alone is insufficient.
