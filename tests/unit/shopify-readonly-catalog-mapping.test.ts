@@ -66,11 +66,9 @@ describe("read-only Shopify catalog mapping for WhatsApp Draft Orders", () => {
 
   it("maps a matching published variant without inserting or updating catalog data", async () => {
     const db = databaseMock([mirroredRow()]);
-    const result = await resolveExistingShopifyVariantsForYemenCheckout(
-      db.admin,
-      tenantId,
-      [variantId],
-    );
+    const result = await resolveExistingShopifyVariantsForYemenCheckout(db.admin, tenantId, [
+      variantId,
+    ]);
     expect(result.get(variantId)).toBe(productId);
     expect(db.from).toHaveBeenCalledWith("products");
     expect(db.insert).not.toHaveBeenCalled();
@@ -96,9 +94,7 @@ describe("read-only Shopify catalog mapping for WhatsApp Draft Orders", () => {
   });
 
   it("rejects cross-tenant mapping even when the remote Shopify variant matches", async () => {
-    const db = databaseMock([
-      mirroredRow({ tenant_id: "33333333-3333-4333-8333-333333333333" }),
-    ]);
+    const db = databaseMock([mirroredRow({ tenant_id: "33333333-3333-4333-8333-333333333333" })]);
     await expect(
       resolveExistingShopifyVariantsForYemenCheckout(db.admin, tenantId, [variantId]),
     ).rejects.toThrow("Shopify catalog price or tenant mapping changed");
@@ -109,10 +105,7 @@ describe("read-only Shopify catalog mapping for WhatsApp Draft Orders", () => {
   it("rejects duplicate variants before Shopify or Supabase reads", async () => {
     const db = databaseMock([mirroredRow()]);
     await expect(
-      resolveExistingShopifyVariantsForYemenCheckout(db.admin, tenantId, [
-        variantId,
-        variantId,
-      ]),
+      resolveExistingShopifyVariantsForYemenCheckout(db.admin, tenantId, [variantId, variantId]),
     ).rejects.toThrow("Duplicate Shopify variants");
     expect(mocks.storefront).not.toHaveBeenCalled();
     expect(db.from).not.toHaveBeenCalled();
