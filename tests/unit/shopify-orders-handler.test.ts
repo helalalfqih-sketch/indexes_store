@@ -251,7 +251,9 @@ describe("Shopify WhatsApp bridge server boundary", () => {
     const response = await handleShopifyOrder(post(JSON.stringify(body)));
     expect(response.status).toBe(200);
     expect(mocks.challenge).toHaveBeenCalledWith(body.turnstileToken, expect.any(Request));
-    expect(mocks.createOrder).toHaveBeenCalledWith(confirmedPayload);
+    expect(mocks.createOrder).toHaveBeenCalledWith(confirmedPayload, {
+      readOnlyShopifyCatalog: true,
+    });
     expect(mocks.persist).toHaveBeenCalledWith(confirmedPayload, local);
   });
 
