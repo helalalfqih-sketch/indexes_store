@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ZodError } from "zod";
-import { createOrderInput } from "@/lib/order-input";
+import { createOrderInput, type CreateOrderPayload } from "@/lib/order-input";
 
 const MAX_BYTES = 32 * 1024;
 export function storefrontOrigins(): Set<string> {
@@ -61,6 +61,22 @@ async function readBoundedBody(request: Request): Promise<string | null> {
   return new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, used));
 }
 
+/**
+ * The Shopify draft gateway must reject Supabase-only, mixed and duplicate
+ * variants BEFORE creating a local record, and must be cash-on-delivery only.
+ */
+export function isShopifyDraftEligible(data: CreateOrderPayload): boolean {
+  if (data.paymentProvider !== undefined && data.paymentProvider !== "cod") return false;
+  const variants = data.items.map((item) => item.productRef.id);
+  return (
+    data.items.every(
+      (item) =>
+        item.productRef.source === "shopify" &&
+        /^gid:\/\/shopify\/ProductVariant\/\d+$/.test(item.productRef.id),
+    ) && new Set(variants).size === variants.length
+  );
+}
+
 export async function handleShopifyOrder(request: Request): Promise<Response> {
   const { allowed, headers } = cors(request);
   if (!allowed) return Response.json({ error: "ORIGIN_NOT_ALLOWED" }, { status: 403, headers });
@@ -95,6 +111,13 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
       await import("@/lib/shopify/whatsapp-draft.server");
     const { turnstileToken, ...candidate } = payload as Record<string, unknown>;
     const orderData = createOrderInput.parse(candidate);
+    if (!isShopifyDraftEligible(orderData)) {
+      return Response.json(
+        { error: "SHOPIFY_DRAFT_ONLY_VARIANTS_AND_COD", whatsappReady: false },
+        { status: 422, headers },
+      );
+    }
+    orderData.paymentProvider = "cod";
     // Challenge is single-use; clients need a fresh token on every retry.
     await verifyShopifyOrderChallenge(turnstileToken, request);
     // Verify shop identity and deployed schema before any local write.
