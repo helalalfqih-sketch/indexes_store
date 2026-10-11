@@ -26,6 +26,7 @@ const input = {
   customerPhone: "771234567",
   customerAddress: "Sana'a",
 };
+const confirmedPayload = { ...input, paymentProvider: "cod" };
 const local = {
   orderId: "7c06feb0-aabe-4ef4-bc84-519e1e9116a0",
   total: 9500,
@@ -124,6 +125,76 @@ describe("Shopify WhatsApp bridge server boundary", () => {
     expect(mocks.createOrder).not.toHaveBeenCalled();
   });
 
+  it("rejects invalid checkout fields before any order write", async () => {
+    const response = await handleShopifyOrder(
+      post(JSON.stringify({ ...input, customerName: "A" })),
+    );
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({
+      error: "INVALID_ORDER",
+      whatsappReady: false,
+    });
+    expect(mocks.challenge).not.toHaveBeenCalled();
+    expect(mocks.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("rejects Supabase-only cart lines before creating an order", async () => {
+    const response = await handleShopifyOrder(
+      post(
+        JSON.stringify({
+          ...input,
+          items: [
+            {
+              productRef: {
+                source: "supabase",
+                id: "11111111-1111-4111-8111-111111111111",
+              },
+              quantity: 1,
+            },
+          ],
+        }),
+      ),
+    );
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({
+      error: "SHOPIFY_DRAFT_ONLY_VARIANTS_AND_COD",
+      whatsappReady: false,
+    });
+    expect(mocks.createOrder).not.toHaveBeenCalled();
+    expect(mocks.challenge).not.toHaveBeenCalled();
+  });
+
+  it("rejects duplicate Shopify variants before committing any local order", async () => {
+    const response = await handleShopifyOrder(
+      post(JSON.stringify({ ...input, items: [input.items[0], input.items[0]] })),
+    );
+    expect(response.status).toBe(422);
+    expect(mocks.challenge).not.toHaveBeenCalled();
+    expect(mocks.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("rejects Shopify Product GIDs (Variant GIDs are required)", async () => {
+    const response = await handleShopifyOrder(
+      post(
+        JSON.stringify({
+          ...input,
+          items: [{ productRef: { source: "shopify", id: "gid://shopify/Product/123" }, quantity: 1 }],
+        }),
+      ),
+    );
+    expect(response.status).toBe(422);
+    expect(mocks.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-COD payment providers before committing any order", async () => {
+    const response = await handleShopifyOrder(
+      post(JSON.stringify({ ...input, paymentProvider: "card" })),
+    );
+    expect(response.status).toBe(422);
+    expect(mocks.challenge).not.toHaveBeenCalled();
+    expect(mocks.createOrder).not.toHaveBeenCalled();
+  });
+
   it("does not commit an order when Shopify configuration preflight fails", async () => {
     mocks.preflight.mockRejectedValue(
       Object.assign(new Error("Wrong shop"), {
@@ -178,8 +249,8 @@ describe("Shopify WhatsApp bridge server boundary", () => {
     const response = await handleShopifyOrder(post(JSON.stringify(body)));
     expect(response.status).toBe(200);
     expect(mocks.challenge).toHaveBeenCalledWith(body.turnstileToken, expect.any(Request));
-    expect(mocks.createOrder).toHaveBeenCalledWith(input);
-    expect(mocks.persist).toHaveBeenCalledWith(input, local);
+    expect(mocks.createOrder).toHaveBeenCalledWith(confirmedPayload);
+    expect(mocks.persist).toHaveBeenCalledWith(confirmedPayload, local);
   });
 
   it("blocks WhatsApp when Shopify creation fails after the local commit", async () => {
