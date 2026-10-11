@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createOrder } from "@/lib/order.functions";
+import { ZodError } from "zod";
+import { createOrderInput } from "@/lib/order-input";
 
 const MAX_BYTES = 32 * 1024;
 export function storefrontOrigins(): Set<string> {
@@ -92,19 +93,25 @@ export async function handleShopifyOrder(request: Request): Promise<Response> {
     const { verifyShopifyOrderChallenge } = await import("@/lib/shopify/order-challenge.server");
     const { persistShopifyDraftOrder, assertShopifyHandoffReady } =
       await import("@/lib/shopify/whatsapp-draft.server");
-    const { turnstileToken, ...orderData } = payload as Record<string, unknown>;
+    const { turnstileToken, ...candidate } = payload as Record<string, unknown>;
+    const orderData = createOrderInput.parse(candidate);
     // Challenge is single-use; clients need a fresh token on every retry.
     await verifyShopifyOrderChallenge(turnstileToken, request);
-    // Verify the target shop before committing anything locally.
+    // Verify shop identity and deployed schema before any local write.
     await assertShopifyHandoffReady();
-    // This is the existing atomic Supabase checkout authority.
-    const local = await createOrder({ data: orderData });
-    const result = await persistShopifyDraftOrder(
-      orderData as Parameters<typeof persistShopifyDraftOrder>[0],
-      local,
-    );
+    // Server-only commit path; the public createOrder server function is
+    // deliberately disabled whenever Shopify draft creation is enabled.
+    const { commitCheckoutOrder } = await import("@/lib/order-commit.server");
+    const local = await commitCheckoutOrder(orderData);
+    const result = await persistShopifyDraftOrder(orderData, local);
     return Response.json(result, { status: 200, headers });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return Response.json(
+        { error: "INVALID_ORDER", whatsappReady: false },
+        { status: 422, headers },
+      );
+    }
     // Provider and database failures are not malformed client JSON.
     const code =
       error instanceof Error && "code" in error ? String(error.code) : "ORDER_HANDOFF_FAILED";
