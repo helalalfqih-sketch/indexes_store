@@ -36,7 +36,6 @@ async function getOptionalUserId(admin: {
   }
 }
 
-
 export async function commitCheckoutOrder(data: CreateOrderPayload): Promise<CreateOrderResult> {
   const { getSupabaseAdmin } = await import("@/integrations/supabase/client.server");
   const supabaseAdmin = getSupabaseAdmin();
