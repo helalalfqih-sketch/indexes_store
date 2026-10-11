@@ -178,7 +178,9 @@ describe("Shopify WhatsApp bridge server boundary", () => {
       post(
         JSON.stringify({
           ...input,
-          items: [{ productRef: { source: "shopify", id: "gid://shopify/Product/123" }, quantity: 1 }],
+          items: [
+            { productRef: { source: "shopify", id: "gid://shopify/Product/123" }, quantity: 1 },
+          ],
         }),
       ),
     );
