@@ -18,6 +18,7 @@ const payload = {
 const token = "preview-turnstile-challenge-token-for-test";
 const confirmed = {
   orderId: "22222222-2222-4222-8222-222222222222",
+  orderNumber: "ORD-22222222",
   draftOrderId: "gid://shopify/DraftOrder/555",
   draftOrderName: "#D555",
   whatsappReady: true,
@@ -105,6 +106,16 @@ describe("gated Shopify Draft Order frontend bridge", () => {
     const client = await loadPreviewClient(true);
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({ ...confirmed, whatsappReady: false })),
+    );
+    await expect(client.submitShopifyPreviewDraft(payload, token)).rejects.toThrow(
+      "SHOPIFY_DRAFT_HANDOFF_NOT_CONFIRMED",
+    );
+  });
+
+  it("rejects a mismatched human-readable order number", async () => {
+    const client = await loadPreviewClient(true);
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ ...confirmed, orderNumber: "ORD-DEADBEEF" })),
     );
     await expect(client.submitShopifyPreviewDraft(payload, token)).rejects.toThrow(
       "SHOPIFY_DRAFT_HANDOFF_NOT_CONFIRMED",
