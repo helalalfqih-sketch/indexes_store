@@ -9,7 +9,10 @@ const payload = {
   couponCode: "",
   expectedTotal: 9500,
   items: [
-    { productRef: { source: "shopify" as const, id: "gid://shopify/ProductVariant/123" }, quantity: 1 },
+    {
+      productRef: { source: "shopify" as const, id: "gid://shopify/ProductVariant/123" },
+      quantity: 1,
+    },
   ],
 };
 const token = "preview-turnstile-challenge-token-for-test";
@@ -49,10 +52,15 @@ async function loadPreviewClient(enabled: boolean) {
 
 describe("gated Shopify Draft Order frontend bridge", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(confirmed), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify(confirmed), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
   });
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -126,9 +134,12 @@ describe("gated Shopify Draft Order frontend bridge", () => {
   it("rejects failed server requests rather than opening WhatsApp", async () => {
     const client = await loadPreviewClient(true);
     vi.mocked(fetch).mockResolvedValueOnce(
-      new Response(JSON.stringify({ whatsappReady: false, error: "SHOPIFY_DB_SCHEMA_UNAVAILABLE" }), {
-        status: 503,
-      }),
+      new Response(
+        JSON.stringify({ whatsappReady: false, error: "SHOPIFY_DB_SCHEMA_UNAVAILABLE" }),
+        {
+          status: 503,
+        },
+      ),
     );
     await expect(client.submitShopifyPreviewDraft(payload, token)).rejects.toThrow(
       "SHOPIFY_DRAFT_HANDOFF_NOT_CONFIRMED",
