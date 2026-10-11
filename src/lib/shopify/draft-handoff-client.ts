@@ -9,6 +9,7 @@ export const SHOPIFY_DRAFT_PREVIEW_ENABLED =
 const committedDraftSchema = z
   .object({
     orderId: z.string().uuid(),
+    orderNumber: z.string().regex(/^ORD-[0-9A-F]{8}$/),
     total: z.number().finite().nonnegative(),
     currency: z.literal("YER"),
     itemsCount: z.number().int().positive(),
@@ -19,7 +20,12 @@ const committedDraftSchema = z
   })
   .refine((value) => Math.abs(value.total - value.quote.total) <= 0.01, {
     message: "SHOPIFY_DRAFT_TOTAL_UNVERIFIED",
-  });
+  })
+  .refine(
+    (value) =>
+      value.orderNumber === `ORD-${value.orderId.replace(/-/g, "").slice(0, 8).toUpperCase()}`,
+    { message: "SHOPIFY_DRAFT_ORDER_NUMBER_UNVERIFIED" },
+  );
 
 export type ConfirmedShopifyDraft = z.infer<typeof committedDraftSchema>;
 
