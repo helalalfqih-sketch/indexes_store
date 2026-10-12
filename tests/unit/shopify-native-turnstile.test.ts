@@ -36,12 +36,12 @@ describe("native Shopify checkout Turnstile verification", () => {
 
   it("blocks a missing server secret or malformed challenge", async () => {
     const transport = vi.fn<typeof fetch>();
-    await expect(
-      verifyOneUseCheckoutChallenge(token, undefined, shop, transport),
-    ).rejects.toThrow("TURNSTILE_NOT_CONFIGURED");
-    await expect(
-      verifyOneUseCheckoutChallenge("short", secret, shop, transport),
-    ).rejects.toThrow("TURNSTILE_TOKEN_REQUIRED");
+    await expect(verifyOneUseCheckoutChallenge(token, undefined, shop, transport)).rejects.toThrow(
+      "TURNSTILE_NOT_CONFIGURED",
+    );
+    await expect(verifyOneUseCheckoutChallenge("short", secret, shop, transport)).rejects.toThrow(
+      "TURNSTILE_TOKEN_REQUIRED",
+    );
     expect(transport).not.toHaveBeenCalled();
   });
 
@@ -49,39 +49,37 @@ describe("native Shopify checkout Turnstile verification", () => {
     const transport = vi
       .fn<typeof fetch>()
       .mockResolvedValue(providerResponse({ hostname: "attacker.example" }));
-    await expect(
-      verifyOneUseCheckoutChallenge(token, secret, shop, transport),
-    ).rejects.toThrow("TURNSTILE_VERIFICATION_FAILED");
+    await expect(verifyOneUseCheckoutChallenge(token, secret, shop, transport)).rejects.toThrow(
+      "TURNSTILE_VERIFICATION_FAILED",
+    );
   });
 
   it("rejects a challenge issued for a different action", async () => {
     const transport = vi
       .fn<typeof fetch>()
       .mockResolvedValue(providerResponse({ action: "newsletter" }));
-    await expect(
-      verifyOneUseCheckoutChallenge(token, secret, shop, transport),
-    ).rejects.toThrow("TURNSTILE_VERIFICATION_FAILED");
+    await expect(verifyOneUseCheckoutChallenge(token, secret, shop, transport)).rejects.toThrow(
+      "TURNSTILE_VERIFICATION_FAILED",
+    );
   });
 
   it("rejects an invalid or already consumed token", async () => {
-    const transport = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(providerResponse({ success: false }));
-    await expect(
-      verifyOneUseCheckoutChallenge(token, secret, shop, transport),
-    ).rejects.toThrow("TURNSTILE_VERIFICATION_FAILED");
+    const transport = vi.fn<typeof fetch>().mockResolvedValue(providerResponse({ success: false }));
+    await expect(verifyOneUseCheckoutChallenge(token, secret, shop, transport)).rejects.toThrow(
+      "TURNSTILE_VERIFICATION_FAILED",
+    );
   });
 
   it("fails closed on verification network or provider errors", async () => {
     const failedRequest = vi.fn<typeof fetch>().mockRejectedValue(new Error("offline"));
-    await expect(
-      verifyOneUseCheckoutChallenge(token, secret, shop, failedRequest),
-    ).rejects.toThrow("TURNSTILE_VERIFICATION_UNAVAILABLE");
+    await expect(verifyOneUseCheckoutChallenge(token, secret, shop, failedRequest)).rejects.toThrow(
+      "TURNSTILE_VERIFICATION_UNAVAILABLE",
+    );
     const badResponse = vi
       .fn<typeof fetch>()
       .mockResolvedValue(new Response("Unavailable", { status: 503 }));
-    await expect(
-      verifyOneUseCheckoutChallenge(token, secret, shop, badResponse),
-    ).rejects.toThrow("TURNSTILE_VERIFICATION_UNAVAILABLE");
+    await expect(verifyOneUseCheckoutChallenge(token, secret, shop, badResponse)).rejects.toThrow(
+      "TURNSTILE_VERIFICATION_UNAVAILABLE",
+    );
   });
 });
