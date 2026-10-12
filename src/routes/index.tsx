@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { LegacyProductShape } from "@/lib/data-adapter";
 import type { Product as ProductionProduct } from "@/lib/store-data";
 import { useCart } from "@/lib/cart-store";
+import { useClientHydrated } from "@/hooks/use-client-hydrated";
 import { useFavorites } from "@/lib/use-favorites";
 import { bestSellersQuery, offersQuery } from "@/lib/queries/catalog";
 import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
@@ -138,7 +139,7 @@ function HomePage() {
   // These are client queries, not route-loader data. Starting them during SSR
   // leaves pending external Shopify/Supabase promises in the dehydrated query
   // cache and can keep the response stream open during provider outages.
-  const clientCatalogEnabled = typeof window !== "undefined";
+  const clientCatalogEnabled = useClientHydrated();
   const { data: bestSellers = [], isLoading: bestSellersLoading } = useQuery({
     ...bestSellersQuery(12),
     enabled: clientCatalogEnabled,
