@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "supabase/migrations/**"
+      - "supabase/functions/shopify-whatsapp-proxy/**"
+      - "supabase/functions/_shared/shopify-draft.ts"
       - "tests/database/**"
       - ".github/workflows/checkout-database-ci.yml"
   workflow_dispatch: {}
@@ -48,3 +50,8 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261010194000_shopify_whatsapp_draft_links.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261010194000_shopify_whatsapp_draft_links.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/database/shopify-whatsapp-draft-links.sql
+      - name: Verify native checkout rate limits
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261012153000_native_checkout_rate_limit.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261012153000_native_checkout_rate_limit.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/database/native-checkout-rate-limit.sql
