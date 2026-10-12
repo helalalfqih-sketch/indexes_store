@@ -50,8 +50,9 @@ describe("Shopify Native App Proxy signed request boundary", () => {
     url.searchParams.set("logged_in_customer_id", "1234");
     expect(await verifyProxySignature(url, secret, shop, timestamp * 1000)).toBe(false);
     const valid = await signedUrl();
-    expect(await verifyProxySignature(valid, secret, "other.myshopify.com", timestamp * 1000))
-      .toBe(false);
+    expect(
+      await verifyProxySignature(valid, secret, "other.myshopify.com", timestamp * 1000),
+    ).toBe(false);
   });
 
   it("rejects expired and future-dated signed requests", async () => {
@@ -72,8 +73,7 @@ describe("Shopify Native App Proxy signed request boundary", () => {
   it("rejects unsafe proxy paths and an unavailable shared secret", async () => {
     const url = await signedUrl({ path_prefix: "/apps/other-app" });
     expect(await verifyProxySignature(url, secret, shop, timestamp * 1000)).toBe(false);
-    expect(await verifyProxySignature(await signedUrl(), "", shop, timestamp * 1000))
-      .toBe(false);
+    expect(await verifyProxySignature(await signedUrl(), "", shop, timestamp * 1000)).toBe(false);
   });
 
   it("canonicalizes repeated query values as specified by Shopify", () => {
