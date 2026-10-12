@@ -50,9 +50,9 @@ describe("Shopify Native App Proxy signed request boundary", () => {
     url.searchParams.set("logged_in_customer_id", "1234");
     expect(await verifyProxySignature(url, secret, shop, timestamp * 1000)).toBe(false);
     const valid = await signedUrl();
-    expect(
-      await verifyProxySignature(valid, secret, "other.myshopify.com", timestamp * 1000),
-    ).toBe(false);
+    expect(await verifyProxySignature(valid, secret, "other.myshopify.com", timestamp * 1000)).toBe(
+      false,
+    );
   });
 
   it("rejects expired and future-dated signed requests", async () => {
