@@ -17,8 +17,15 @@ export type NativeOrderInput = {
 const VARIANT = /^gid:\/\/shopify\/ProductVariant\/\d+$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ALLOWED = new Set([
-  "idempotencyKey", "items", "customerName", "customerPhone",
-  "customerAddress", "notes", "couponCode", "paymentProvider", "turnstileToken",
+  "idempotencyKey",
+  "items",
+  "customerName",
+  "customerPhone",
+  "customerAddress",
+  "notes",
+  "couponCode",
+  "paymentProvider",
+  "turnstileToken",
 ]);
 
 function record(value: unknown): Record<string, unknown> {
