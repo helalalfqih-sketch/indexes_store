@@ -1,5 +1,6 @@
 import { verifyProxySignature } from "./proxy-signature.ts";
 import { parseNativeOrder } from "./checkout-payload.ts";
+import { TurnstileValidationError, verifyOneUseCheckoutChallenge } from "./turnstile.ts";
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void;
@@ -75,7 +76,20 @@ Deno.serve(async (request: Request): Promise<Response> => {
     } catch {
       return deny(400, "INVALID_JSON");
     }
-    parseNativeOrder(candidate);
+    const order = parseNativeOrder(candidate);
+    // This token is verified only on the server and must be single-use.
+    try {
+      await verifyOneUseCheckoutChallenge(
+        order.turnstileToken,
+        Deno.env.get("SHOPIFY_ORDER_TURNSTILE_SECRET"),
+        shop,
+      );
+    } catch (error) {
+      if (error instanceof TurnstileValidationError) {
+        return deny(error.status, error.code);
+      }
+      return deny(503, "TURNSTILE_VERIFICATION_UNAVAILABLE");
+    }
   } catch {
     return deny(422, "INVALID_CHECKOUT");
   }
