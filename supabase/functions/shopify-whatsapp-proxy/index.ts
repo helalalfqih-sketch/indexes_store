@@ -1,4 +1,5 @@
 import { verifyProxySignature } from "./proxy-signature.ts";
+import { parseNativeOrder } from "./checkout-payload.ts";
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void;
@@ -67,9 +68,16 @@ Deno.serve(async (request: Request): Promise<Response> => {
   try {
     const raw = await boundedBody(request);
     if (raw === null) return deny(413, "REQUEST_TOO_LARGE");
-    if (!raw || typeof JSON.parse(raw) !== "object") return deny(422, "INVALID_CHECKOUT");
+    if (!raw) return deny(422, "INVALID_CHECKOUT");
+    let candidate: unknown;
+    try {
+      candidate = JSON.parse(raw);
+    } catch {
+      return deny(400, "INVALID_JSON");
+    }
+    parseNativeOrder(candidate);
   } catch {
-    return deny(400, "INVALID_JSON");
+    return deny(422, "INVALID_CHECKOUT");
   }
 
   // Never create a Shopify Draft Order before the authenticated staging
