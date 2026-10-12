@@ -11,7 +11,10 @@ export function canonicalProxyParams(params: URLSearchParams): string {
     values.push(value);
     groups.set(key, values);
   }
-  return [...groups].map(([key, values]) => `${key}=${values.join(",")}`).sort().join("");
+  return [...groups]
+    .map(([key, values]) => `${key}=${values.join(",")}`)
+    .sort()
+    .join("");
 }
 
 export async function verifyProxySignature(
