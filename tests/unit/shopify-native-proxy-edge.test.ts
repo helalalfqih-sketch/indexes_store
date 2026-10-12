@@ -47,7 +47,9 @@ async function signedUrl() {
 async function edgeHandler(configured = true): Promise<Handler> {
   let handler: Handler | undefined;
   vi.stubGlobal("Deno", {
-    serve: (value: Handler) => { handler = value; },
+    serve: (value: Handler) => {
+      handler = value;
+    },
     env: {
       get: (name: string) => {
         if (!configured) return undefined;
@@ -63,6 +65,13 @@ async function edgeHandler(configured = true): Promise<Handler> {
   return handler;
 }
 
+function post(url: URL, value: unknown): Request {
+  return new Request(url.href, {
+    method: "POST",
+    body: JSON.stringify(value),
+  });
+}
+
 describe("native Shopify proxy Edge entrypoint is safe by default", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -71,9 +80,7 @@ describe("native Shopify proxy Edge entrypoint is safe by default", () => {
 
   it("requires server configuration and an authenticated signed proxy", async () => {
     const handler = await edgeHandler(false);
-    const response = await handler(new Request((await signedUrl()).href, {
-      method: "POST", body: JSON.stringify(checkout),
-    }));
+    const response = await handler(post(await signedUrl(), checkout));
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({
       whatsappReady: false, error: "APP_PROXY_NOT_CONFIGURED",
@@ -84,17 +91,13 @@ describe("native Shopify proxy Edge entrypoint is safe by default", () => {
     const handler = await edgeHandler();
     const url = await signedUrl();
     url.searchParams.set("shop", "attacker.myshopify.com");
-    const response = await handler(new Request(url.href, {
-      method: "POST", body: JSON.stringify(checkout),
-    }));
+    const response = await handler(post(url, checkout));
     expect(response.status).toBe(403);
   });
 
   it("validates the checkout but remains closed until staging backend is linked", async () => {
     const handler = await edgeHandler();
-    const response = await handler(new Request((await signedUrl()).href, {
-      method: "POST", body: JSON.stringify(checkout),
-    }));
+    const response = await handler(post(await signedUrl(), checkout));
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({
       whatsappReady: false, error: "STAGING_ORDER_BACKEND_NOT_CONFIGURED",
@@ -103,9 +106,7 @@ describe("native Shopify proxy Edge entrypoint is safe by default", () => {
 
   it("rejects tampered checkout amounts before returning its disabled state", async () => {
     const handler = await edgeHandler();
-    const response = await handler(new Request((await signedUrl()).href, {
-      method: "POST", body: JSON.stringify({ ...checkout, price: 1 }),
-    }));
+    const response = await handler(post(await signedUrl(), { ...checkout, price: 1 }));
     expect(response.status).toBe(422);
     expect(await response.json()).toMatchObject({ whatsappReady: false });
   });
