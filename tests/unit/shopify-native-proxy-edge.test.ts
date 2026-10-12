@@ -83,7 +83,8 @@ describe("native Shopify proxy Edge entrypoint is safe by default", () => {
     const response = await handler(post(await signedUrl(), checkout));
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({
-      whatsappReady: false, error: "APP_PROXY_NOT_CONFIGURED",
+      whatsappReady: false,
+      error: "APP_PROXY_NOT_CONFIGURED",
     });
   });
 
@@ -100,7 +101,8 @@ describe("native Shopify proxy Edge entrypoint is safe by default", () => {
     const response = await handler(post(await signedUrl(), checkout));
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({
-      whatsappReady: false, error: "STAGING_ORDER_BACKEND_NOT_CONFIGURED",
+      whatsappReady: false,
+      error: "STAGING_ORDER_BACKEND_NOT_CONFIGURED",
     });
   });
 
