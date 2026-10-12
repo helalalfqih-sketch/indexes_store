@@ -41,7 +41,9 @@ describe("Shopify native checkout must not trust browser prices", () => {
     expect(() =>
       parseNativeOrder({
         ...base,
-        items: [{ productRef: { source: "shopify", id: "gid://shopify/Product/111" }, quantity: 1 }],
+        items: [
+          { productRef: { source: "shopify", id: "gid://shopify/Product/111" }, quantity: 1 },
+        ],
       }),
     ).toThrow("INVALID_CHECKOUT");
   });
@@ -69,9 +71,7 @@ describe("Shopify native checkout must not trust browser prices", () => {
   });
 
   it("does not grant arbitrary or client-calculated coupons", () => {
-    expect(() => parseNativeOrder({ ...base, couponCode: "FAKE50" })).toThrow(
-      "INVALID_CHECKOUT",
-    );
+    expect(() => parseNativeOrder({ ...base, couponCode: "FAKE50" })).toThrow("INVALID_CHECKOUT");
     expect(parseNativeOrder({ ...base, couponCode: "indexes10" }).couponCode).toBe("INDEXES10");
   });
 });
