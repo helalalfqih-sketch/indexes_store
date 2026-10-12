@@ -11,6 +11,11 @@ import type { CartItem, Currency, Product } from "./types";
 import { formatPrice } from "./currency";
 import { STORE_INFO } from "./constants";
 import { submitOrder } from "@/lib/actions/order.actions";
+import {
+  SHOPIFY_DRAFT_PREVIEW_ENABLED,
+  submitShopifyPreviewDraft,
+} from "@/lib/shopify/draft-handoff-client";
+import { ShopifyOrderTurnstile } from "./ShopifyOrderTurnstile";
 import { useCart } from "@/lib/cart-store";
 import { yemeniPhoneSchema } from "@/lib/validation/phone";
 import { checkoutProductRefFromCatalogProduct } from "@/lib/checkout-product-contract";
@@ -48,7 +53,11 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [challengeAttempt, setChallengeAttempt] = useState(0);
+  const turnstileSiteKey = import.meta.env.VITE_SHOPIFY_ORDER_TURNSTILE_SITE_KEY ?? "";
   const idempotencyKeyRef = useRef<string | null>(null);
   const clearCart = useCart((state) => state.clear);
 
@@ -58,6 +67,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
       setSubmitError(null);
       setErrors({});
       setOrderId(null);
+      setOrderNumber(null);
       setWhatsappUrl(null);
     }
   }, [props.isOpen]);
@@ -107,6 +117,10 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
 
   const handleSubmit = async () => {
     if (submittingRef.current || !quoteReady || !validate()) return;
+    if (SHOPIFY_DRAFT_PREVIEW_ENABLED && !turnstileToken) {
+      setSubmitError("يرجى إكمال التحقق قبل تأكيد الطلب في المعاينة.");
+      return;
+    }
     submittingRef.current = true;
     setSubmitError(null);
     const signature = JSON.stringify([
@@ -124,7 +138,7 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
     setSubmitting(true);
     try {
       idempotencyKeyRef.current ??= await checkoutAttemptKey(signature);
-      const result = await submitOrder({
+      const payload = {
         items: checkoutItems,
         customerName: name.trim(),
         customerPhone: phone.trim(),
@@ -134,10 +148,17 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
         expectedTotal: total,
         paymentProvider: "cod",
         idempotencyKey: idempotencyKeyRef.current,
-      });
+      };
+      const result = SHOPIFY_DRAFT_PREVIEW_ENABLED
+        ? await submitShopifyPreviewDraft(payload, turnstileToken ?? "")
+        : await submitOrder(payload);
+      const customerOrderNumber =
+        "orderNumber" in result && typeof result.orderNumber === "string"
+          ? result.orderNumber
+          : result.orderId;
       const url = whatsappLink(
         buildCheckoutWhatsAppMessage({
-          orderId: result.orderId,
+          orderId: customerOrderNumber,
           items: result.quote.items,
           subtotal: result.quote.subtotal,
           discount: result.quote.discount,
@@ -162,10 +183,15 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
       clearCart();
       idempotencyKeyRef.current = null;
       setOrderId(result.orderId);
+      setOrderNumber(customerOrderNumber);
       setWhatsappUrl(url);
       setStep("success");
     } catch {
       setSubmitError("تعذر تأكيد الطلب. تحقق من السعر والتوفر ثم أعد المحاولة.");
+      if (SHOPIFY_DRAFT_PREVIEW_ENABLED) {
+        setTurnstileToken(null);
+        setChallengeAttempt((current) => current + 1);
+      }
       void quoteQuery.refetch();
     } finally {
       setSubmitting(false);
@@ -228,11 +254,11 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                 <p className="text-sm text-[var(--color-text-secondary)]">
                   تم حفظ الطلب. أكمل التأكيد عبر واتساب.
                 </p>
-                {orderId && (
+                {(orderNumber || orderId) && (
                   <div className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-4 py-3">
                     <span className="text-[11px] text-[var(--color-text-muted)]">رقم الطلب</span>
                     <p className="mt-1 break-all font-mono text-sm font-black text-[#2F6BFF]">
-                      {orderId}
+                      {orderNumber ?? orderId}
                     </p>
                   </div>
                 )}
@@ -352,10 +378,23 @@ export function UnifiedCartFlow(props: UnifiedCartFlowProps) {
                 </div>
 
                 <div className="border-t border-[var(--color-border-default)] p-4">
+                  {SHOPIFY_DRAFT_PREVIEW_ENABLED && (
+                    <div className="mb-3" aria-live="polite">
+                      <ShopifyOrderTurnstile
+                        key={challengeAttempt}
+                        siteKey={turnstileSiteKey}
+                        onTokenChange={setTurnstileToken}
+                      />
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={submitting || !quoteReady}
+                    disabled={
+                      submitting ||
+                      !quoteReady ||
+                      (SHOPIFY_DRAFT_PREVIEW_ENABLED && !turnstileToken)
+                    }
                     className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#2F6BFF] to-[#3B75FF] py-3.5 text-sm font-black text-white shadow-lg shadow-blue-600/25 disabled:opacity-60"
                   >
                     {submitting ? (

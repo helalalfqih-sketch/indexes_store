@@ -79,6 +79,54 @@ export function validateYemenCheckoutVariant(
 }
 
 /**
+ * Read-only mapping for the new Shopify → Supabase → WhatsApp gateway.
+ * Products must already exist in the correct tenant catalog; this never
+ * inserts, updates, retouches images or replaces saved product prices.
+ */
+export async function resolveExistingShopifyVariantsForYemenCheckout(
+  admin: SupabaseAdminClient,
+  tenantId: string,
+  variantIds: string[],
+): Promise<Map<string, string>> {
+  const ids = [...new Set(variantIds)];
+  if (ids.length === 0) return new Map();
+  if (ids.length !== variantIds.length) {
+    throw new Error("Duplicate Shopify variants are not valid checkout lines.");
+  }
+
+  const variants = await readYemenCheckoutVariants(ids);
+  const { data: rows, error } = await admin
+    .from("products")
+    .select("id, external_id, tenant_id, price, currency, is_published")
+    .eq("tenant_id", tenantId)
+    .in("external_id", ids);
+  if (error || !rows || rows.length !== ids.length) {
+    throw new Error("Shopify checkout products must be mapped in the local tenant catalog.");
+  }
+
+  const byVariant = new Map(rows.map((row) => [row.external_id, row]));
+  const resolved = new Map<string, string>();
+  for (let index = 0; index < ids.length; index += 1) {
+    const id = ids[index];
+    const variant = variants[index];
+    const local = byVariant.get(id);
+    if (
+      !local ||
+      local.external_id !== variant.externalId ||
+      local.tenant_id !== tenantId ||
+      local.is_published !== true ||
+      local.currency !== "YER" ||
+      !Number.isFinite(Number(local.price)) ||
+      Math.abs(Number(local.price) - variant.price) > 0.01
+    ) {
+      throw new Error("Shopify catalog price or tenant mapping changed; refresh checkout.");
+    }
+    resolved.set(id, local.id);
+  }
+  return resolved;
+}
+
+/**
  * Resolve Shopify variant references against Shopify on the server, then mirror
  * their authoritative price and availability into the tenant catalog. The
  * atomic Supabase checkout continues to accept only tenant-scoped UUIDs.
