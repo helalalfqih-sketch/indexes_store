@@ -1,0 +1,470 @@
+import type { NativeOrderInput } from "../shopify-whatsapp-proxy/checkout-payload.ts";
+export type CreateOrderPayload = Omit<
+  NativeOrderInput,
+  "turnstileToken" | "couponCode" | "paymentProvider" | "items"
+> & {
+  items: Array<{ productRef: { source: string; id: string }; quantity: number }>;
+  couponCode?: string;
+  paymentProvider?: string;
+};
+export type CreateOrderResult = {
+  orderId: string;
+  total: number;
+  currency: string;
+  itemsCount: number;
+  quote: {
+    subtotal: number;
+    discount: number;
+    shipping: number;
+    total: number;
+    currency: "YER";
+    couponCode: string;
+    freeShippingThreshold: number;
+    items: Array<{ id: string; name: string; quantity: number; unitPrice: number; stock: number }>;
+  };
+};
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database, Json } from "../../../src/integrations/supabase/types.ts";
+
+// Branch-local schema extension. Regenerate the complete Supabase types from
+// the verified staging database after the migration is applied.
+type DraftLink = {
+  order_id: string;
+  tenant_id: string;
+  shopify_draft_id: string | null;
+  shopify_draft_name: string | null;
+  status: "creating" | "verifying" | "ready" | "needs_reconciliation";
+  created_at: string;
+  updated_at: string;
+};
+export type DraftDatabase = Omit<Database, "public"> & {
+  public: Omit<Database["public"], "Tables" | "Functions"> & {
+    Functions: Database["public"]["Functions"] & {
+      consume_native_checkout_slot: {
+        Args: { _tenant_id: string; _key: string };
+        Returns: boolean;
+      };
+      checkout_totals_v1: {
+        Args: { _subtotal: number; _coupon_code: string | null; _cart_config: Json };
+        Returns: Json;
+      };
+    };
+    Tables: Database["public"]["Tables"] & {
+      shopify_whatsapp_draft_links: {
+        Row: DraftLink;
+        Insert: Pick<DraftLink, "order_id" | "tenant_id" | "status"> &
+          Partial<Omit<DraftLink, "order_id" | "tenant_id" | "status">>;
+        Update: Partial<DraftLink>;
+        Relationships: [];
+      };
+    };
+  };
+};
+
+type Draft = {
+  id: string;
+  name: string;
+  totalPriceSet: { presentmentMoney: { amount: string; currencyCode: string } };
+};
+type DraftLine = {
+  quantity: number;
+  variant: { id: string } | null;
+  originalUnitPriceSet: { presentmentMoney: { amount: string; currencyCode: string } };
+};
+
+type VerifiedDraft = Draft & {
+  status: string;
+  tags: string[];
+  customAttributes: Array<{ key: string; value: string }>;
+  lineItems: {
+    nodes: DraftLine[];
+    pageInfo: { hasNextPage: boolean };
+  };
+};
+
+type ExpectedDraftLine = { variantId: string; quantity: number; unitPrice: number };
+
+type DraftResult = {
+  draftOrderCreate: { draftOrder: VerifiedDraft | null; userErrors: Array<{ message: string }> };
+};
+type DraftCalculationResult = {
+  draftOrderCalculate: {
+    calculatedDraftOrder: Pick<Draft, "totalPriceSet"> | null;
+    userErrors: Array<{ message: string }>;
+  };
+};
+type Variant = {
+  id: string;
+  availableForSale: boolean;
+  inventoryQuantity: number | null;
+  inventoryPolicy: string;
+  price: string;
+  product: { status: string };
+};
+const UUID = /^[0-9a-f-]{36}$/i;
+
+export class HandoffError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly code: string,
+  ) {
+    super(code);
+  }
+}
+
+function money(value: number): string {
+  if (!Number.isFinite(value) || value < 0) throw new HandoffError(422, "INVALID_AMOUNT");
+  return value.toFixed(2);
+}
+
+export function validateDraftTotals(
+  local: CreateOrderResult,
+  draft: Pick<Draft, "totalPriceSet">,
+): void {
+  const amount = Number(draft.totalPriceSet.presentmentMoney.amount);
+  if (
+    draft.totalPriceSet.presentmentMoney.currencyCode !== "YER" ||
+    !Number.isFinite(amount) ||
+    Math.abs(amount - local.total) > 0.01
+  ) {
+    throw new HandoffError(409, "SHOPIFY_TOTAL_MISMATCH");
+  }
+}
+
+/**
+ * Shopify Draft Orders can be edited or completed after creation. A previously
+ * linked draft must still match the committed local order before reuse.
+ * This is a read-only check and never creates a second Shopify draft.
+ */
+export function assertShopifyDraftMatches(
+  local: CreateOrderResult,
+  draft: VerifiedDraft | null,
+  expectedLines: ExpectedDraftLine[],
+): asserts draft is VerifiedDraft {
+  if (
+    !draft ||
+    !/^gid:\/\/shopify\/DraftOrder\/\d+$/.test(draft.id) ||
+    draft.status !== "OPEN" ||
+    !Array.isArray(draft.tags) ||
+    !draft.tags.includes(`indexes-local-${local.orderId}`) ||
+    !Array.isArray(draft.customAttributes) ||
+    !draft.customAttributes.some(
+      (entry) => entry.key === "indexes_local_order_id" && entry.value === local.orderId,
+    ) ||
+    !draft.lineItems ||
+    draft.lineItems.pageInfo.hasNextPage ||
+    draft.lineItems.nodes.length !== expectedLines.length
+  ) {
+    throw new HandoffError(409, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+  }
+
+  const expectedByVariant = new Map(expectedLines.map((line) => [line.variantId, line]));
+  if (expectedByVariant.size !== expectedLines.length) {
+    throw new HandoffError(409, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+  }
+  const seen = new Set<string>();
+  for (const line of draft.lineItems.nodes) {
+    const id = line.variant?.id;
+    const expected = id ? expectedByVariant.get(id) : undefined;
+    const moneyValue = line.originalUnitPriceSet?.presentmentMoney;
+    if (
+      !id ||
+      !expected ||
+      seen.has(id) ||
+      line.quantity !== expected.quantity ||
+      !moneyValue ||
+      moneyValue.currencyCode !== "YER" ||
+      !Number.isFinite(Number(moneyValue.amount)) ||
+      Math.abs(Number(moneyValue.amount) - expected.unitPrice) > 0.01
+    ) {
+      throw new HandoffError(409, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+    }
+    seen.add(id);
+  }
+  validateDraftTotals(local, draft);
+}
+
+/**
+ * Safe state machine: a durable claim is acquired before any non-idempotent
+ * draftOrderCreate call. On timeout/unknown response NEVER auto-retry creation:
+ * reconcile the Shopify reference first to avoid duplicate drafts.
+ */
+export type DraftDependencies = {
+  db: SupabaseClient<DraftDatabase>;
+  graphql: <T>(query: string, variables?: Record<string, unknown>) => Promise<T>;
+  assertReady: () => Promise<void>;
+  expectedTenantId?: string;
+};
+
+export async function persistShopifyDraftOrderCore(
+  input: CreateOrderPayload,
+  local: CreateOrderResult,
+  dependencies: DraftDependencies,
+) {
+  const { db, graphql: shopifyAdminGraphql, assertReady: assertShopifyHandoffReady } = dependencies;
+  await assertShopifyHandoffReady();
+  if (
+    !UUID.test(local.orderId) ||
+    local.currency !== "YER" ||
+    local.itemsCount !== input.items.length ||
+    local.quote.total !== local.total
+  ) {
+    throw new HandoffError(409, "LOCAL_ORDER_INTEGRITY_ERROR");
+  }
+  if (
+    input.items.some(
+      (item) =>
+        item.productRef.source !== "shopify" ||
+        !/^gid:\/\/shopify\/ProductVariant\/\d+$/.test(item.productRef.id),
+    )
+  ) {
+    throw new HandoffError(422, "SHOPIFY_VARIANTS_REQUIRED");
+  }
+
+  // Match the exact variant IDs attached to the committed local line items.
+  // Shopify IDs and local prices MUST never be taken from untrusted client totals.
+  const orderQuery = db
+    .from("orders")
+    .select(
+      "id,tenant_id,total,currency,customer_name,customer_phone,customer_address,customer_email",
+    )
+    .eq("id", local.orderId);
+  if (dependencies.expectedTenantId) orderQuery.eq("tenant_id", dependencies.expectedTenantId);
+  const { data: order, error: orderError } = await orderQuery.single();
+  if (
+    orderError ||
+    !order ||
+    order.id !== local.orderId ||
+    (dependencies.expectedTenantId && order.tenant_id !== dependencies.expectedTenantId) ||
+    Number(order.total) !== local.total ||
+    order.currency !== "YER"
+  ) {
+    throw new HandoffError(409, "LOCAL_ORDER_NOT_VERIFIED");
+  }
+  const { data: lines, error: linesError } = await db
+    .from("order_items")
+    .select("product_id,quantity,unit_price,product_name_snapshot")
+    .eq("order_id", local.orderId)
+    .eq("tenant_id", order.tenant_id);
+  if (linesError || !lines || lines.length !== input.items.length) {
+    throw new HandoffError(409, "LOCAL_ORDER_LINES_MISMATCH");
+  }
+  const ids = lines.map((line) => line.product_id);
+  const { data: products, error: productsError } = await db
+    .from("products")
+    .select("id,external_id")
+    .eq("tenant_id", order.tenant_id)
+    .in("id", ids);
+  if (productsError || !products || products.length !== ids.length) {
+    throw new HandoffError(409, "LOCAL_SHOPIFY_MAPPING_MISSING");
+  }
+  const externalByLocal = new Map(products.map((product) => [product.id, product.external_id]));
+  const variantIds = lines.map((line) => externalByLocal.get(line.product_id));
+  if (variantIds.some((id) => !id || !/^gid:\/\/shopify\/ProductVariant\/\d+$/.test(id))) {
+    throw new HandoffError(409, "LOCAL_SHOPIFY_MAPPING_INVALID");
+  }
+  // Do not allow a retry with changed product references or quantities.
+  const requested = new Map(input.items.map((item) => [item.productRef.id, item.quantity]));
+  if (
+    requested.size !== input.items.length ||
+    lines.some((line, i) => requested.get(variantIds[i]!) !== line.quantity)
+  ) {
+    throw new HandoffError(409, "ORDER_PRODUCT_MISMATCH");
+  }
+
+  const variantData = await shopifyAdminGraphql<{ nodes: Array<Variant | null> }>(
+    `query DraftVariants($ids: [ID!]!) {
+      nodes(ids: $ids) { ... on ProductVariant {
+        id availableForSale inventoryQuantity inventoryPolicy price product { status }
+      } }
+    }`,
+    { ids: variantIds },
+  );
+  if (variantData.nodes.length !== lines.length)
+    throw new HandoffError(409, "SHOPIFY_VARIANTS_MISSING");
+  lines.forEach((line, i) => {
+    const node = variantData.nodes[i];
+    if (
+      !node ||
+      node.id !== variantIds[i] ||
+      !node.availableForSale ||
+      node.product.status !== "ACTIVE" ||
+      !Number.isFinite(Number(node.price)) ||
+      Math.abs(Number(node.price) - Number(line.unit_price)) > 0.01 ||
+      (node.inventoryPolicy !== "CONTINUE" &&
+        (node.inventoryQuantity === null || node.inventoryQuantity < line.quantity))
+    ) {
+      throw new HandoffError(409, "SHOPIFY_PRICE_OR_STOCK_CHANGED");
+    }
+  });
+
+  const expectedDraftLines: ExpectedDraftLine[] = lines.map((line, index) => ({
+    variantId: variantIds[index]!,
+    quantity: line.quantity,
+    unitPrice: Number(line.unit_price),
+  }));
+
+  const draftInput = {
+    lineItems: lines.map((line, i) => ({
+      variantId: variantIds[i],
+      quantity: line.quantity,
+      priceOverride: { amount: money(Number(line.unit_price)), currencyCode: "YER" },
+    })),
+    presentmentCurrencyCode: "YER",
+    acceptAutomaticDiscounts: false,
+    allowDiscountCodesInCheckout: false,
+    ...(local.quote.discount > 0
+      ? {
+          appliedDiscount: {
+            title: "Indexes checkout discount",
+            value: local.quote.discount,
+            valueType: "FIXED_AMOUNT",
+          },
+        }
+      : {}),
+    shippingLine: {
+      title: "التوصيل",
+      priceWithCurrency: { amount: money(local.quote.shipping), currencyCode: "YER" },
+    },
+    shippingAddress: {
+      address1: order.customer_address,
+      countryCode: "YE",
+      firstName: order.customer_name,
+      phone: order.customer_phone,
+    },
+    phone: order.customer_phone,
+    ...(order.customer_email ? { email: order.customer_email } : {}),
+    note: `Indexes COD WhatsApp | Local order: ${local.orderId} | Pending confirmation`,
+    tags: ["indexes-whatsapp-cod", `indexes-local-${local.orderId}`],
+    customAttributes: [
+      { key: "indexes_local_order_id", value: local.orderId },
+      { key: "payment_method", value: "cash_on_delivery" },
+    ],
+  };
+  // Shopify computes taxes, shipping and discounts without saving a draft.
+  // Reject a mismatching amount before claiming or creating anything in Shopify.
+  const calculated = await shopifyAdminGraphql<DraftCalculationResult>(
+    `mutation CalculateIndexesDraft($input: DraftOrderInput!) {
+      draftOrderCalculate(input: $input) {
+        calculatedDraftOrder {
+          totalPriceSet { presentmentMoney { amount currencyCode } }
+        }
+        userErrors { message }
+      }
+    }`,
+    { input: draftInput },
+  );
+  if (
+    calculated.draftOrderCalculate.userErrors.length > 0 ||
+    !calculated.draftOrderCalculate.calculatedDraftOrder
+  ) {
+    throw new HandoffError(409, "SHOPIFY_DRAFT_CALCULATION_FAILED");
+  }
+  validateDraftTotals(local, calculated.draftOrderCalculate.calculatedDraftOrder);
+
+  // INSERT conflicts on order_id; only the first caller may create a Shopify draft.
+  const { error: claimError } = await db.from("shopify_whatsapp_draft_links").insert({
+    order_id: local.orderId,
+    tenant_id: order.tenant_id,
+    status: "creating",
+  });
+  if (claimError) {
+    if (claimError.code === "23505") {
+      const { data: existing } = await db
+        .from("shopify_whatsapp_draft_links")
+        .select("status,shopify_draft_id,shopify_draft_name")
+        .eq("order_id", local.orderId)
+        .eq("tenant_id", order.tenant_id)
+        .maybeSingle();
+      if (existing?.status === "ready" && existing.shopify_draft_id) {
+        // A stale or edited draft must not be approved just because the local
+        // linkage says "ready". Re-read Shopify, never re-create on retry.
+        const lookup = await shopifyAdminGraphql<{ draftOrder: VerifiedDraft | null }>(
+          `query VerifyIndexesDraft($id: ID!) {
+            draftOrder(id: $id) {
+              id name status tags customAttributes { key value }
+              totalPriceSet { presentmentMoney { amount currencyCode } }
+              lineItems(first: 100) {
+                nodes {
+                  quantity variant { id }
+                  originalUnitPriceSet { presentmentMoney { amount currencyCode } }
+                }
+                pageInfo { hasNextPage }
+              }
+            }
+          }`,
+          { id: existing.shopify_draft_id },
+        );
+        assertShopifyDraftMatches(local, lookup.draftOrder, expectedDraftLines);
+        if (lookup.draftOrder.id !== existing.shopify_draft_id) {
+          throw new HandoffError(409, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+        }
+        return {
+          ...local,
+          orderNumber: `ORD-${local.orderId.replace(/-/g, "").slice(0, 8).toUpperCase()}`,
+          draftOrderId: lookup.draftOrder.id,
+          draftOrderName: lookup.draftOrder.name,
+          whatsappReady: true,
+        };
+      }
+      throw new HandoffError(409, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+    }
+    throw new HandoffError(503, "SHOPIFY_DRAFT_CLAIM_UNAVAILABLE");
+  }
+
+  // This mutation has no end-to-end cross-system transaction; any failure
+  // after claim remains blocked for manual reconciliation (no blind retry).
+  const response = await shopifyAdminGraphql<DraftResult>(
+    `mutation CreateIndexesDraft($input: DraftOrderInput!) {
+      draftOrderCreate(input: $input) {
+        draftOrder {
+          id name status tags customAttributes { key value }
+          totalPriceSet { presentmentMoney { amount currencyCode } }
+          lineItems(first: 100) {
+            nodes {
+              quantity variant { id }
+              originalUnitPriceSet { presentmentMoney { amount currencyCode } }
+            }
+            pageInfo { hasNextPage }
+          }
+        }
+        userErrors { message }
+      }
+    }`,
+    { input: draftInput },
+  );
+  const draft = response.draftOrderCreate.draftOrder;
+  if (response.draftOrderCreate.userErrors.length || !draft) {
+    throw new HandoffError(409, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+  }
+  // Preserve ID even if a pricing check fails, for a manual reconciliation.
+  const { error: linkError } = await db
+    .from("shopify_whatsapp_draft_links")
+    .update({
+      shopify_draft_id: draft.id,
+      shopify_draft_name: draft.name,
+      status: "verifying",
+    })
+    .eq("order_id", local.orderId)
+    .eq("tenant_id", order.tenant_id)
+    .eq("status", "creating");
+  if (linkError) throw new HandoffError(503, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+  assertShopifyDraftMatches(local, draft, expectedDraftLines);
+  const { data: ready, error: readyError } = await db
+    .from("shopify_whatsapp_draft_links")
+    .update({ status: "ready" })
+    .eq("order_id", local.orderId)
+    .eq("tenant_id", order.tenant_id)
+    .eq("status", "verifying")
+    .select("shopify_draft_id")
+    .single();
+  if (readyError || ready?.shopify_draft_id !== draft.id)
+    throw new HandoffError(503, "SHOPIFY_DRAFT_RECONCILIATION_REQUIRED");
+  return {
+    ...local,
+    orderNumber: `ORD-${local.orderId.replace(/-/g, "").slice(0, 8).toUpperCase()}`,
+    draftOrderId: draft.id,
+    draftOrderName: draft.name,
+    whatsappReady: true,
+  };
+}
