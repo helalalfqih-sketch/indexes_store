@@ -21,15 +21,16 @@ type ProductSourceConnector = {
   auth_model: string;
   implementation_state:
     | "ready_for_user_oauth"
-    | "ready_for_secure_server_configuration"
     | "blocked_pending_developer_approval"
-    | "blocked_pending_api_entitlement";
+    | "blocked_pending_api_entitlement"
+    | "blocked_pending_secure_backend";
   observed_connection: "not_verified";
   uploaded_image_search: string;
   media_access: string;
   next_proof: string;
   constraints: string[];
-  writes_enabled: false;
+  indexes_write_policy: "disabled_without_explicit_confirmation";
+  technical_write_filter: "connector_not_active" | "not_enforced";
 };
 
 const PRODUCT_SOURCE_CONNECTORS: Record<ProductSourceId, ProductSourceConnector> = {
@@ -52,7 +53,8 @@ const PRODUCT_SOURCE_CONNECTORS: Record<ProductSourceId, ProductSourceConnector>
       "Do not request buyer passwords, cookies, or access tokens in chat.",
       "Do not claim seller OAuth grants DS image-search entitlement.",
     ],
-    writes_enabled: false,
+    indexes_write_policy: "disabled_without_explicit_confirmation",
+    technical_write_filter: "connector_not_active",
   },
   alibaba_com: {
     id: "alibaba_com",
@@ -68,7 +70,8 @@ const PRODUCT_SOURCE_CONNECTORS: Record<ProductSourceId, ProductSourceConnector>
     media_access: "Authorized search and product detail responses may include images, SKU images, and optional video metadata.",
     next_proof: "Complete GGS approval, authorize a test seller/supplier, then run read-only search and detail calls.",
     constraints: ["Use Indexes Store Vision/Lens for an external image before an Alibaba item ID is known."],
-    writes_enabled: false,
+    indexes_write_policy: "disabled_without_explicit_confirmation",
+    technical_write_filter: "connector_not_active",
   },
   "1688": {
     id: "1688",
@@ -83,7 +86,8 @@ const PRODUCT_SOURCE_CONNECTORS: Record<ProductSourceId, ProductSourceConnector>
     media_access: "Authorized owned-product data documents images and main/detail video fields.",
     next_proof: "Prefer the official DSers 1688 flow first; evaluate direct 1688 access after application approval.",
     constraints: ["Owned seller media is not proof of access to the public marketplace catalog."],
-    writes_enabled: false,
+    indexes_write_policy: "disabled_without_explicit_confirmation",
+    technical_write_filter: "connector_not_active",
   },
   cjdropshipping: {
     id: "cjdropshipping",
@@ -91,8 +95,9 @@ const PRODUCT_SOURCE_CONNECTORS: Record<ProductSourceId, ProductSourceConnector>
     official_entrypoint: "https://developers.cjdropshipping.com/en/api/api2/mcp.html",
     integration_target: "official_remote_mcp",
     account_model: "CJ account; image search requires the account level documented by CJ.",
-    auth_model: "CJ-issued token or API key stored only in a server-side secret vault.",
-    implementation_state: "ready_for_secure_server_configuration",
+    auth_model:
+      "CJ MCP token embedded in the official remote-MCP URL, or CJ access/refresh tokens for the official API; credentials must remain server-side.",
+    implementation_state: "blocked_pending_secure_backend",
     observed_connection: "not_verified",
     uploaded_image_search: "Official queryProductsByImage is documented for eligible CJ accounts.",
     media_access: "Official product and video APIs expose media plus video status/rights metadata where available.",
@@ -101,7 +106,8 @@ const PRODUCT_SOURCE_CONNECTORS: Record<ProductSourceId, ProductSourceConnector>
       "Never embed a CJ token in a distributable plugin package.",
       "A media URL does not grant commercial reuse rights.",
     ],
-    writes_enabled: false,
+    indexes_write_policy: "disabled_without_explicit_confirmation",
+    technical_write_filter: "connector_not_active",
   },
   temu: {
     id: "temu",
@@ -116,7 +122,8 @@ const PRODUCT_SOURCE_CONNECTORS: Record<ProductSourceId, ProductSourceConnector>
     media_access: "Authorized seller-catalog images may be available; public marketplace video access is not proven.",
     next_proof: "Approve the partner application, authorize a test seller, then list seller goods read-only.",
     constraints: ["Do not represent a consumer Temu login as seller API authorization."],
-    writes_enabled: false,
+    indexes_write_policy: "disabled_without_explicit_confirmation",
+    technical_write_filter: "connector_not_active",
   },
   shein: {
     id: "shein",
@@ -131,7 +138,8 @@ const PRODUCT_SOURCE_CONNECTORS: Record<ProductSourceId, ProductSourceConnector>
     media_access: "Authorized SPU data may include images and productVideoList.",
     next_proof: "Approve the seller/ISV application, then read store info, product list, and one SPU detail.",
     constraints: ["Media access does not imply permission for commercial reuse."],
-    writes_enabled: false,
+    indexes_write_policy: "disabled_without_explicit_confirmation",
+    technical_write_filter: "connector_not_active",
   },
   tiktok_shop: {
     id: "tiktok_shop",
@@ -146,7 +154,8 @@ const PRODUCT_SOURCE_CONNECTORS: Record<ProductSourceId, ProductSourceConnector>
     media_access: "Authorized seller product details may include the seller's product images and video metadata.",
     next_proof: "Approve the application, authorize a test shop, then read authorized shops and one product.",
     constraints: ["This connector is separate from the existing TikTok social-account integration."],
-    writes_enabled: false,
+    indexes_write_policy: "disabled_without_explicit_confirmation",
+    technical_write_filter: "connector_not_active",
   },
   dsers: {
     id: "dsers",
@@ -158,10 +167,15 @@ const PRODUCT_SOURCE_CONNECTORS: Record<ProductSourceId, ProductSourceConnector>
     implementation_state: "ready_for_user_oauth",
     observed_connection: "not_verified",
     uploaded_image_search: "The official MCP documents supplier-product search by keyword or image.",
-    media_access: "Supplier-product details expose media subject to the supplier and the user's plan.",
+    media_access:
+      "The exact image and video fields require proof from the live tool schema and one authorized product-detail response.",
     next_proof: "User completes OAuth on screen, then run profile, filters, image search, and one product detail read-only.",
-    constraints: ["Do not enable order, publishing, or catalog-write tools in the first release."],
-    writes_enabled: false,
+    constraints: [
+      "The official remote MCP exposes write tools after OAuth.",
+      "The direct connection has no technical read-only allowlist; the client must require exact confirmation before every write.",
+    ],
+    indexes_write_policy: "disabled_without_explicit_confirmation",
+    technical_write_filter: "not_enforced",
   },
 };
 
