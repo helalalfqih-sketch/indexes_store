@@ -79,7 +79,6 @@ function bearer(request: Request, authorize: Authorize): Authorization | null {
     return null;
   }
 }
-
 function result(data: Record<string, unknown>) {
   return {
     structuredContent: data,
@@ -890,5 +889,4 @@ export async function handleStoreMcp(
     await server.close();
   }
 }
-
 
