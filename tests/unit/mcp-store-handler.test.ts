@@ -236,6 +236,8 @@ describe("private store MCP", () => {
           "trial_navigation",
           "compare_preview",
           "reverse_image_search",
+          "list_product_source_connectors",
+          "inspect_product_source_connector",
           "tiktok_list_accounts",
           "tiktok_get_account",
           "tiktok_inspect_capabilities",
@@ -262,6 +264,53 @@ describe("private store MCP", () => {
         readOnlyHint: true,
         openWorldHint: true,
       });
+      expect(byName.get("list_product_source_connectors")?.annotations).toMatchObject({
+        readOnlyHint: true,
+        openWorldHint: false,
+      });
+      expect(byName.get("inspect_product_source_connector")?._meta?.securitySchemes).toEqual([
+        { type: "oauth2", scopes: ["store.read"] },
+      ]);
+      const sourceList = await client.callTool({
+        name: "list_product_source_connectors",
+        arguments: {},
+      });
+      expect(sourceList.isError).not.toBe(true);
+      expect(sourceList.structuredContent).toMatchObject({
+        policy: { default_access: "read_only", chat_secrets_allowed: false, writes_enabled: false },
+      });
+      const sourceConnectors = (sourceList.structuredContent as {
+        connectors: Array<{
+          id: string;
+          observed_connection: string;
+          indexes_write_policy: string;
+          technical_write_filter: string;
+        }>;
+      }).connectors;
+      expect(sourceConnectors).toHaveLength(8);
+      expect(new Set(sourceConnectors.map((connector) => connector.id)).size).toBe(8);
+      for (const connector of sourceConnectors) {
+        expect(connector.observed_connection).toBe("not_verified");
+        expect(connector.indexes_write_policy).toBe("disabled_without_explicit_confirmation");
+      }
+      const dsers = await client.callTool({
+        name: "inspect_product_source_connector",
+        arguments: { platform: "dsers" },
+      });
+      expect(dsers.structuredContent).toMatchObject({
+        connector: {
+          id: "dsers",
+          implementation_state: "ready_for_user_oauth",
+          observed_connection: "not_verified",
+          indexes_write_policy: "disabled_without_explicit_confirmation",
+          technical_write_filter: "not_enforced",
+        },
+      });
+      const invalidSource = await client.callTool({
+        name: "inspect_product_source_connector",
+        arguments: { platform: "not-a-provider" },
+      });
+      expect(invalidSource.isError).toBe(true);
       expect(byName.get("tiktok_list_accounts")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("tiktok_search_videos")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("tiktok_publish_video")?.annotations?.readOnlyHint).toBe(false);
