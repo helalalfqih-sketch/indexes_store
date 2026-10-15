@@ -277,4 +277,3 @@ export function verifyStoreAccessToken(token: string) {
     typeof payload.scope === "string" ? payload.scope.split(/\s+/).filter(Boolean) : [];
   return { sub: payload.sub, tenantId: payload.tenant_id, scopes };
 }
-
