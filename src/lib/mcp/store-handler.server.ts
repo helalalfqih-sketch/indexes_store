@@ -19,6 +19,11 @@ import {
   type ReverseImageSearchAdapter,
 } from "./reverse-image-adapter.server";
 import {
+  inspectProductSourceConnector,
+  listProductSourceConnectors,
+  PRODUCT_SOURCE_IDS,
+} from "./product-source-connectors.server";
+import {
   STORE_MCP_AUDIENCE,
   STORE_MCP_DISCOVERY_VERSION,
   STORE_MCP_SCOPE,
@@ -152,7 +157,7 @@ function createServer(
     { name: "indexes-store-control-plane", version: STORE_MCP_DISCOVERY_VERSION },
     {
       instructions:
-        "Private, tenant-bound Store administration plus TikTok account management and guarded source development. Commerce data remains read-only. TikTok reads include linked-account profile/video inspection and own-video search. TikTok writes include OAuth linking, token refresh/profile sync, confirmed draft upload/direct post, and confirmed local disconnect; provider tokens are never exposed. Reverse-image search prefers server-side SerpApi Google Lens and falls back to Apify when configured; provider tokens are never returned. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
+        "Private, tenant-bound Store administration plus TikTok account management, product-source readiness, and guarded source development. Commerce data and product-source integrations remain read-only. Connector readiness never claims an account is linked until a provider authorization or signed API proof succeeds. TikTok reads include linked-account profile/video inspection and own-video search. TikTok writes include OAuth linking, token refresh/profile sync, confirmed draft upload/direct post, and confirmed local disconnect; provider tokens are never exposed. Reverse-image search prefers server-side SerpApi Google Lens and falls back to Apify when configured; provider tokens are never returned. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
     },
   );
   const tool = <T extends z.ZodRawShape>(
@@ -210,6 +215,20 @@ function createServer(
     "Read tenant, database, catalog integration, and record-count health without exposing credentials.",
     z.object({}).strict(),
     () => adapter.health(),
+  );
+  tool(
+    "list_product_source_connectors",
+    "List product-source connector readiness",
+    "List the eight approved product-source targets, their official authentication model, verified implementation state, and read-only safety policy. A listed connector is not necessarily linked.",
+    z.object({}).strict(),
+    async () => listProductSourceConnectors(),
+  );
+  tool(
+    "inspect_product_source_connector",
+    "Inspect one product-source connector",
+    "Inspect the official entrypoint, account model, image-search/media evidence, current blocker, and next proof for one product-source target. Never returns credentials or claims an unverified connection.",
+    z.object({ platform: z.enum(PRODUCT_SOURCE_IDS) }).strict(),
+    async ({ platform }) => inspectProductSourceConnector(platform),
   );
   server.registerTool(
     "reverse_image_search",
@@ -871,3 +890,5 @@ export async function handleStoreMcp(
     await server.close();
   }
 }
+
+
