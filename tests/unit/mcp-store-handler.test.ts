@@ -504,5 +504,3 @@ describe("private store MCP", () => {
     expect(adapterFactory).not.toHaveBeenCalled();
   });
 });
-
-
