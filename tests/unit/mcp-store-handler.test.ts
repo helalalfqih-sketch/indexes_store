@@ -236,6 +236,8 @@ describe("private store MCP", () => {
           "trial_navigation",
           "compare_preview",
           "reverse_image_search",
+          "list_product_source_connectors",
+          "inspect_product_source_connector",
           "tiktok_list_accounts",
           "tiktok_get_account",
           "tiktok_inspect_capabilities",
@@ -261,6 +263,34 @@ describe("private store MCP", () => {
       expect(byName.get("reverse_image_search")?.annotations).toMatchObject({
         readOnlyHint: true,
         openWorldHint: true,
+      });
+      expect(byName.get("list_product_source_connectors")?.annotations).toMatchObject({
+        readOnlyHint: true,
+        openWorldHint: false,
+      });
+      expect(byName.get("inspect_product_source_connector")?._meta?.securitySchemes).toEqual([
+        { type: "oauth2", scopes: ["store.read"] },
+      ]);
+      const sourceList = await client.callTool({
+        name: "list_product_source_connectors",
+        arguments: {},
+      });
+      expect(sourceList.isError).not.toBe(true);
+      expect(sourceList.structuredContent).toMatchObject({
+        policy: { default_access: "read_only", chat_secrets_allowed: false, writes_enabled: false },
+      });
+      expect((sourceList.structuredContent as { connectors: unknown[] }).connectors).toHaveLength(8);
+      const dsers = await client.callTool({
+        name: "inspect_product_source_connector",
+        arguments: { platform: "dsers" },
+      });
+      expect(dsers.structuredContent).toMatchObject({
+        connector: {
+          id: "dsers",
+          implementation_state: "ready_for_user_oauth",
+          observed_connection: "not_verified",
+          writes_enabled: false,
+        },
       });
       expect(byName.get("tiktok_list_accounts")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("tiktok_search_videos")?.annotations?.readOnlyHint).toBe(true);
@@ -455,3 +485,5 @@ describe("private store MCP", () => {
     expect(adapterFactory).not.toHaveBeenCalled();
   });
 });
+
+
