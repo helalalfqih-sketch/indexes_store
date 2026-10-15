@@ -157,7 +157,7 @@ function createServer(
     { name: "indexes-store-control-plane", version: STORE_MCP_DISCOVERY_VERSION },
     {
       instructions:
-        "Private, tenant-bound Store administration plus TikTok account management, product-source readiness, and guarded source development. Commerce data and product-source integrations remain read-only. Connector readiness never claims an account is linked until a provider authorization or signed API proof succeeds. TikTok reads include linked-account profile/video inspection and own-video search. TikTok writes include OAuth linking, token refresh/profile sync, confirmed draft upload/direct post, and confirmed local disconnect; provider tokens are never exposed. Reverse-image search prefers server-side SerpApi Google Lens and falls back to Apify when configured; provider tokens are never returned. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
+        "Private, tenant-bound Store administration plus TikTok account management, product-source readiness, and guarded source development. Product-source readiness tools are read-only and never claim an account is linked until a provider authorization or signed API proof succeeds. TikTok reads include linked-account profile/video inspection and own-video search. TikTok writes include OAuth linking, token refresh/profile sync, confirmed draft upload/direct post, and confirmed local disconnect; provider tokens are never exposed. Reverse-image search prefers server-side SerpApi Google Lens and falls back to Apify when configured; provider tokens are never returned. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
     },
   );
   const tool = <T extends z.ZodRawShape>(
@@ -219,7 +219,7 @@ function createServer(
   tool(
     "list_product_source_connectors",
     "List product-source connector readiness",
-    "List the eight approved product-source targets, their official authentication model, verified implementation state, and read-only safety policy. A listed connector is not necessarily linked.",
+    "List the eight requested product-source targets, their documented authentication model, documentation-derived readiness, and safety policy. A listed target is not necessarily approved or linked.",
     z.object({}).strict(),
     async () => listProductSourceConnectors(),
   );
