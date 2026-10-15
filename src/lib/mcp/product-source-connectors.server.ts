@@ -200,4 +200,3 @@ export function inspectProductSourceConnector(id: ProductSourceId) {
     connector: PRODUCT_SOURCE_CONNECTORS[id],
   };
 }
-
