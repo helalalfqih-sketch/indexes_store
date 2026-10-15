@@ -6,7 +6,7 @@ export const STORE_OAUTH_ISSUER = `${STORE_ORIGIN}/api/mcp/store/oauth`;
 export const STORE_MCP_AUDIENCE = `${STORE_ORIGIN}/api/mcp/store`;
 export const STORE_MCP_SCOPE =
   "store.read store.test store.develop tiktok.read tiktok.manage tiktok.publish offline_access";
-export const STORE_MCP_DISCOVERY_VERSION = "3.4.0";
+export const STORE_MCP_DISCOVERY_VERSION = "3.5.0";
 const STORE_CLIENT_KIND = "store_client_v3";
 // Discovery/schema revisions must not revoke existing public OAuth clients.
 const STORE_CLIENT_KINDS = new Set(["store_client", "store_client_v2", STORE_CLIENT_KIND]);
@@ -277,3 +277,5 @@ export function verifyStoreAccessToken(token: string) {
     typeof payload.scope === "string" ? payload.scope.split(/\s+/).filter(Boolean) : [];
   return { sub: payload.sub, tenantId: payload.tenant_id, scopes };
 }
+
+
