@@ -279,7 +279,20 @@ describe("private store MCP", () => {
       expect(sourceList.structuredContent).toMatchObject({
         policy: { default_access: "read_only", chat_secrets_allowed: false, writes_enabled: false },
       });
-      expect((sourceList.structuredContent as { connectors: unknown[] }).connectors).toHaveLength(8);
+      const sourceConnectors = (sourceList.structuredContent as {
+        connectors: Array<{
+          id: string;
+          observed_connection: string;
+          indexes_write_policy: string;
+          technical_write_filter: string;
+        }>;
+      }).connectors;
+      expect(sourceConnectors).toHaveLength(8);
+      expect(new Set(sourceConnectors.map((connector) => connector.id)).size).toBe(8);
+      for (const connector of sourceConnectors) {
+        expect(connector.observed_connection).toBe("not_verified");
+        expect(connector.indexes_write_policy).toBe("disabled_without_explicit_confirmation");
+      }
       const dsers = await client.callTool({
         name: "inspect_product_source_connector",
         arguments: { platform: "dsers" },
@@ -289,9 +302,15 @@ describe("private store MCP", () => {
           id: "dsers",
           implementation_state: "ready_for_user_oauth",
           observed_connection: "not_verified",
-          writes_enabled: false,
+          indexes_write_policy: "disabled_without_explicit_confirmation",
+          technical_write_filter: "not_enforced",
         },
       });
+      const invalidSource = await client.callTool({
+        name: "inspect_product_source_connector",
+        arguments: { platform: "not-a-provider" },
+      });
+      expect(invalidSource.isError).toBe(true);
       expect(byName.get("tiktok_list_accounts")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("tiktok_search_videos")?.annotations?.readOnlyHint).toBe(true);
       expect(byName.get("tiktok_publish_video")?.annotations?.readOnlyHint).toBe(false);
