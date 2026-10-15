@@ -278,4 +278,3 @@ export function verifyStoreAccessToken(token: string) {
   return { sub: payload.sub, tenantId: payload.tenant_id, scopes };
 }
 
-
