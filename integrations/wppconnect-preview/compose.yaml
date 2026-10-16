@@ -1,0 +1,32 @@
+name: indexes-wpp-preview-20261016
+services:
+  wppconnect:
+    image: wppconnect/wppconnect-server:2.10.55
+    restart: "no"
+    init: true
+    ports:
+      - "127.0.0.1:22465:21465"
+    environment:
+      PORT: "21465"
+      SECRET_KEY: "${WPP_ADMIN_SECRET:?Run node prepare.mjs first}"
+      MANAGER_ENABLED: "true"
+      TOKEN_STORE_TYPE: "file"
+      CUSTOM_USER_DATA_DIR: "./userDataDir/"
+    shm_size: "512mb"
+    mem_limit: "2g"
+    cpus: 2
+    volumes:
+      - preview_tokens:/usr/src/wpp-server/tokens
+      - preview_browser:/usr/src/wpp-server/userDataDir
+      - preview_uploads:/usr/src/wpp-server/uploads
+      - preview_images:/usr/src/wpp-server/media
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+volumes:
+  preview_tokens:
+  preview_browser:
+  preview_uploads:
+  preview_images:
