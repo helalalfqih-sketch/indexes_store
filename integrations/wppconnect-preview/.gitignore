@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+.secrets/
+reports/*.json
+reports/*.log
+node_modules/
+
+.client.env
