@@ -13,6 +13,8 @@ import { verifyAccessToken, AUDIENCE } from "./whatsapp-oauth.server";
 import { registerFullWhapiTools } from "./whapi-full-tools.server";
 import { isCloudPreviewEnabled } from "./whatsapp-cloud-preview.server";
 import { registerCloudPreviewTools } from "./whatsapp-cloud-preview-tools.server";
+import { isWaapiPreviewEnabled } from "./waapi-preview.server";
+import { registerWaapiPreviewTools } from "./waapi-preview-tools.server";
 
 const META = `${AUDIENCE.replace(
   "/api/mcp/whatsapp",
@@ -56,6 +58,18 @@ async function server() {
         "Private WhatsApp access for the Indexes Store administrator. Verify the exact destination before each approved write.",
     },
   );
+  const waapiOptIn = process.env.INDEXES_WA_WAAPI_PREVIEW_ENABLED === "true";
+  const metaOptIn = process.env.INDEXES_WA_META_PREVIEW_ENABLED === "true";
+  if ((waapiOptIn || metaOptIn) && process.env.VERCEL_ENV !== "preview") {
+    throw new Error("WHATSAPP_PREVIEW_NOT_ISOLATED");
+  }
+  if (waapiOptIn && metaOptIn) {
+    throw new Error("WHATSAPP_PREVIEW_PROVIDER_CONFLICT");
+  }
+  if (isWaapiPreviewEnabled()) {
+    registerWaapiPreviewTools(instance, securitySchemes);
+    return instance;
+  }
   if (isCloudPreviewEnabled()) {
     registerCloudPreviewTools(instance, securitySchemes, writeSecuritySchemes);
     return instance;
