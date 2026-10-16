@@ -72,9 +72,14 @@ async function metaJson(
   transport: typeof fetch = fetch,
 ): Promise<Record<string, unknown>> {
   const config = cloudPreviewConfig(env);
-  if (!/^\/[0-9][0-9/]*$/.test(pathname)) {
-    throw new Error("META_PREVIEW_UNSAFE_RESOURCE");
-  }
+  // Pin the API surface to the exact owned WABA/phone operations plus
+  // numeric media metadata reads; reject arbitrary Graph API resources.
+  const mediaMetadataPath = /^\/[1-9][0-9]{5,29}$/.test(pathname);
+  const allowedPath =
+    pathname === `/${config.wabaId}/phone_numbers` ||
+    pathname === `/${config.phoneId}/messages` ||
+    mediaMetadataPath;
+  if (!allowedPath) throw new Error("META_PREVIEW_UNSAFE_RESOURCE");
   const url = "https://graph.facebook.com/" + config.version + pathname;
   const headers: Record<string, string> = {
     Authorization: "Bearer " + config.accessToken,
