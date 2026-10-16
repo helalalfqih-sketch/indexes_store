@@ -14,20 +14,46 @@ const BASE = "https://waapi.app/api/v1";
 const ENABLED_FLAG = "INDEXES_WA_WAAPI_PREVIEW_ENABLED";
 
 export const WAAPI_WEBHOOK_EVENT_NAMES = [
-  "message", "loading_screen", "qr", "authenticated", "auth_failure",
-  "ready", "disconnected", "message_create", "message_edit",
-  "message_revoke_everyone", "message_revoke_me", "message_ack",
-  "message_reaction", "media_uploaded", "group_join", "group_leave",
-  "group_update", "community_created", "community_updated",
-  "community_subgroup_linked", "community_subgroup_unlinked",
-  "community_deactivated", "change_state", "call", "call_ended",
-  "vote_update", "presence_update",
+  "message",
+  "loading_screen",
+  "qr",
+  "authenticated",
+  "auth_failure",
+  "ready",
+  "disconnected",
+  "message_create",
+  "message_edit",
+  "message_revoke_everyone",
+  "message_revoke_me",
+  "message_ack",
+  "message_reaction",
+  "media_uploaded",
+  "group_join",
+  "group_leave",
+  "group_update",
+  "community_created",
+  "community_updated",
+  "community_subgroup_linked",
+  "community_subgroup_unlinked",
+  "community_deactivated",
+  "change_state",
+  "call",
+  "call_ended",
+  "vote_update",
+  "presence_update",
 ] as const;
 
 const SELECTED_EVENTS = [
-  "message", "message_create", "message_edit", "message_ack",
-  "media_uploaded", "group_join", "group_leave", "group_update",
-  "ready", "disconnected",
+  "message",
+  "message_create",
+  "message_edit",
+  "message_ack",
+  "media_uploaded",
+  "group_join",
+  "group_leave",
+  "group_update",
+  "ready",
+  "disconnected",
 ] as const;
 
 export function isWaapiPreviewEnabled(env: WaapiPreviewEnv = process.env): boolean {
@@ -53,7 +79,7 @@ export function getWaapiPreviewConfig(env: WaapiPreviewEnv = process.env) {
 
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
+    ? (value as Record<string, unknown>)
     : {};
 }
 
@@ -70,9 +96,10 @@ async function readWaapi(
   // GET route shape is inferred from the documented "retrieve instance GET"
   // and "list webhook subscriptions GET" operations. Verify their exact URLs
   // against the respective WaAPI endpoint pages before live preview setup.
-  const path = resource === "instance"
-    ? "/instances/" + config.instanceId
-    : "/instances/" + config.instanceId + "/webhooks";
+  const path =
+    resource === "instance"
+      ? "/instances/" + config.instanceId
+      : "/instances/" + config.instanceId + "/webhooks";
   let response: Response;
   try {
     response = await transport(BASE + path, {
@@ -116,7 +143,10 @@ async function readWaapi(
   }
   const merged = new Uint8Array(bytes);
   let at = 0;
-  for (const part of parts) { merged.set(part, at); at += part.byteLength; }
+  for (const part of parts) {
+    merged.set(part, at);
+    at += part.byteLength;
+  }
   let body: unknown;
   try {
     body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(merged));
@@ -138,7 +168,9 @@ export async function readWaapiPreviewInstance(
   const root = object(raw.data);
   const instance = Object.keys(object(root.instance)).length
     ? object(root.instance)
-    : Object.keys(root).length ? root : raw;
+    : Object.keys(root).length
+      ? root
+      : raw;
   if (String(instance.id) !== config.instanceId) {
     throw new Error("WAAPI_PREVIEW_INSTANCE_RESPONSE_MISMATCH");
   }
@@ -163,10 +195,13 @@ export async function readWaapiPreviewSubscriptions(
   const raw = await readWaapi("subscriptions", env, transport);
   const base = raw.data;
   const nested = object(base);
-  const subscriptions = Array.isArray(base) ? base
-    : Array.isArray(nested.subscriptions) ? nested.subscriptions
-    : Array.isArray(nested.webhooks) ? nested.webhooks
-    : null;
+  const subscriptions = Array.isArray(base)
+    ? base
+    : Array.isArray(nested.subscriptions)
+      ? nested.subscriptions
+      : Array.isArray(nested.webhooks)
+        ? nested.webhooks
+        : null;
   if (!subscriptions) throw new Error("WAAPI_PREVIEW_UNRECOGNIZED_SUBSCRIPTION_SCHEMA");
   if (subscriptions.length > 25) throw new Error("WAAPI_PREVIEW_SUBSCRIPTION_LIMIT_INCONSISTENT");
   return {
@@ -177,7 +212,11 @@ export async function readWaapiPreviewSubscriptions(
       const s = object(value);
       const events = Array.isArray(s.events) ? s.events : [];
       const host = (() => {
-        try { return new URL(String(s.url)).hostname; } catch { return null; }
+        try {
+          return new URL(String(s.url)).hostname;
+        } catch {
+          return null;
+        }
       })();
       return {
         id: typeof s.id === "number" ? s.id : null,
@@ -187,7 +226,8 @@ export async function readWaapiPreviewSubscriptions(
           const event = typeof item === "string" ? item : object(item).type;
           return typeof event === "string" &&
             (WAAPI_WEBHOOK_EVENT_NAMES as readonly string[]).includes(event)
-            ? [event] : [];
+            ? [event]
+            : [];
         }),
         targetHost: host, // Do not disclose secret URLs or private webhook paths.
       };
@@ -222,9 +262,7 @@ export function waapiPreviewCapabilities(env: WaapiPreviewEnv = process.env) {
   };
 }
 
-export function waapiPreviewWebhookRegistrationPlan(
-  env: WaapiPreviewEnv = process.env,
-) {
+export function waapiPreviewWebhookRegistrationPlan(env: WaapiPreviewEnv = process.env) {
   assertWaapiPreview(env);
   const configId = env.INDEXES_WA_WAAPI_PREVIEW_INSTANCE_ID?.trim();
   if (configId !== EXACT_INSTANCE) throw new Error("WAAPI_PREVIEW_INSTANCE_NOT_APPROVED");
@@ -247,9 +285,7 @@ export function waapiPreviewWebhookRegistrationPlan(
   };
 }
 
-export function disabledWaapiPreviewCallback(
-  env: WaapiPreviewEnv = process.env,
-): Response {
+export function disabledWaapiPreviewCallback(env: WaapiPreviewEnv = process.env): Response {
   if (!isWaapiPreviewEnabled(env)) {
     return Response.json({ error: "NOT_FOUND" }, { status: 404 });
   }

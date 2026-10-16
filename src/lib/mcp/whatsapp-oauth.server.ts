@@ -2,19 +2,16 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { WhapiError } from "../whapi.server";
 
 // The legacy issuer and secret are preserved exactly for Production.
- // In PREVIEW only, Meta Cloud MCP uses an independent OAuth secret and issuer.
+// In PREVIEW only, Meta Cloud MCP uses an independent OAuth secret and issuer.
 const META_OPT_IN = process.env.INDEXES_WA_META_PREVIEW_ENABLED === "true";
 const WAAPI_OPT_IN = process.env.INDEXES_WA_WAAPI_PREVIEW_ENABLED === "true";
 if (META_OPT_IN && WAAPI_OPT_IN) throw new Error("WHATSAPP_PREVIEW_PROVIDER_CONFLICT");
-const CLOUD_PREVIEW = process.env.VERCEL_ENV === "preview" &&
-  (META_OPT_IN || WAAPI_OPT_IN);
+const CLOUD_PREVIEW = process.env.VERCEL_ENV === "preview" && (META_OPT_IN || WAAPI_OPT_IN);
 const PREVIEW_HOST = process.env.VERCEL_URL || "";
 if (CLOUD_PREVIEW && !/^[a-z0-9][a-z0-9.-]*\.vercel\.app$/.test(PREVIEW_HOST)) {
   throw new Error("META_PREVIEW_OAUTH_ORIGIN_NOT_CONFIGURED");
 }
-const ISSUER = CLOUD_PREVIEW
-  ? "https://" + PREVIEW_HOST
-  : "https://indexes-store.vercel.app";
+const ISSUER = CLOUD_PREVIEW ? "https://" + PREVIEW_HOST : "https://indexes-store.vercel.app";
 const AUDIENCE = `${ISSUER}/api/mcp/whatsapp`;
 const SCOPE = "whatsapp.read whatsapp.write offline_access";
 const CHATGPT_CLIENT_ID = "indexes_whatsapp_chatgpt";

@@ -126,7 +126,8 @@ export async function readCloudBusinessPhone(
   return {
     provider: "meta_whatsapp_business_platform",
     phoneId: config.phoneId,
-    displayPhone: typeof phone.display_phone_number === "string" ? phone.display_phone_number : null,
+    displayPhone:
+      typeof phone.display_phone_number === "string" ? phone.display_phone_number : null,
     verifiedName: typeof phone.verified_name === "string" ? phone.verified_name : null,
     codeVerificationStatus:
       typeof phone.code_verification_status === "string" ? phone.code_verification_status : null,
@@ -357,10 +358,7 @@ function assertIsolatedPreviewDatabase(env: PreviewEnvironment) {
   }
 }
 
-export async function readCloudPreviewEvents(
-  limit = 20,
-  env: PreviewEnvironment = process.env,
-) {
+export async function readCloudPreviewEvents(limit = 20, env: PreviewEnvironment = process.env) {
   const config = cloudPreviewConfig(env);
   assertIsolatedPreviewDatabase(env);
   const bounded = Math.min(Math.max(1, Math.trunc(limit)), 30);
@@ -427,7 +425,8 @@ export async function handleCloudPreviewWebhook(
       expected.length < 24 ||
       actual.length !== secret.length ||
       !timingSafeEqual(actual, secret)
-    ) return json(403, "FORBIDDEN");
+    )
+      return json(403, "FORBIDDEN");
     const challenge = params.get("hub.challenge") || "";
     if (!/^[0-9]{1,100}$/.test(challenge)) return json(400, "INVALID_CHALLENGE");
     return new Response(challenge, {
@@ -442,11 +441,14 @@ export async function handleCloudPreviewWebhook(
   } catch {
     return json(413, "INVALID_OR_OVERSIZED_BODY");
   }
-  if (!verifyCloudWebhookSignature(
-    raw,
-    request.headers.get("x-hub-signature-256"),
-    env.INDEXES_WA_META_PREVIEW_APP_SECRET,
-  )) return json(403, "INVALID_SIGNATURE");
+  if (
+    !verifyCloudWebhookSignature(
+      raw,
+      request.headers.get("x-hub-signature-256"),
+      env.INDEXES_WA_META_PREVIEW_APP_SECRET,
+    )
+  )
+    return json(403, "INVALID_SIGNATURE");
 
   let events: StagedEvent[];
   try {
@@ -458,17 +460,18 @@ export async function handleCloudPreviewWebhook(
   if (!events.length) return json(200, "IGNORED");
   try {
     assertIsolatedPreviewDatabase(env);
-    const { error } = await stagingDb()
-      .from("wa_meta_preview_events")
-      .upsert(events, {
-        onConflict: "waba_id,phone_number_id,external_event_id,event_type",
-        ignoreDuplicates: true,
-      });
-    if (error) return json(503, "PERSISTENCE_UNAVAILABLE");
-    return Response.json({ status: "stored", count: events.length }, {
-      status: 200,
-      headers: responseHeaders,
+    const { error } = await stagingDb().from("wa_meta_preview_events").upsert(events, {
+      onConflict: "waba_id,phone_number_id,external_event_id,event_type",
+      ignoreDuplicates: true,
     });
+    if (error) return json(503, "PERSISTENCE_UNAVAILABLE");
+    return Response.json(
+      { status: "stored", count: events.length },
+      {
+        status: 200,
+        headers: responseHeaders,
+      },
+    );
   } catch {
     // Never ACK received customer data if it could not be persisted.
     return json(503, "STAGING_NOT_CONFIGURED");

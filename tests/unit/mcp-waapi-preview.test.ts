@@ -29,15 +29,23 @@ describe("WaAPI authorized preview is fail-closed and isolated", () => {
   it("requires preview AND exact feature flag", () => {
     expect(isWaapiPreviewEnabled(PREVIEW)).toBe(true);
     expect(isWaapiPreviewEnabled({ ...PREVIEW, VERCEL_ENV: "production" })).toBe(false);
-    expect(isWaapiPreviewEnabled({ ...PREVIEW, INDEXES_WA_WAAPI_PREVIEW_ENABLED: "false" })).toBe(false);
+    expect(isWaapiPreviewEnabled({ ...PREVIEW, INDEXES_WA_WAAPI_PREVIEW_ENABLED: "false" })).toBe(
+      false,
+    );
     expect(() => getWaapiPreviewConfig({ ...PREVIEW, VERCEL_ENV: "production" })).toThrow();
-    expect(() => getWaapiPreviewConfig({ ...PREVIEW, INDEXES_WA_META_PREVIEW_ENABLED: "true" })).toThrow();
+    expect(() =>
+      getWaapiPreviewConfig({ ...PREVIEW, INDEXES_WA_META_PREVIEW_ENABLED: "true" }),
+    ).toThrow();
   });
 
   it("rejects wrong instance ID or absent API Token", () => {
     expect(getWaapiPreviewConfig(PREVIEW).instanceId).toBe("106235");
-    expect(() => getWaapiPreviewConfig({ ...PREVIEW, INDEXES_WA_WAAPI_PREVIEW_INSTANCE_ID: "106236" })).toThrow("WAAPI_PREVIEW_INSTANCE_NOT_APPROVED");
-    expect(() => getWaapiPreviewConfig({ ...PREVIEW, INDEXES_WA_WAAPI_PREVIEW_API_TOKEN: "" })).toThrow("WAAPI_PREVIEW_READ_CREDENTIAL_NOT_CONFIGURED");
+    expect(() =>
+      getWaapiPreviewConfig({ ...PREVIEW, INDEXES_WA_WAAPI_PREVIEW_INSTANCE_ID: "106236" }),
+    ).toThrow("WAAPI_PREVIEW_INSTANCE_NOT_APPROVED");
+    expect(() =>
+      getWaapiPreviewConfig({ ...PREVIEW, INDEXES_WA_WAAPI_PREVIEW_API_TOKEN: "" }),
+    ).toThrow("WAAPI_PREVIEW_READ_CREDENTIAL_NOT_CONFIGURED");
   });
 
   it("marks vendor-documented groups/channels as untested, never as Meta API parity", () => {
@@ -48,9 +56,17 @@ describe("WaAPI authorized preview is fail-closed and isolated", () => {
   });
 
   it("uses read-only bearer GET, exact instance 106235 and redacts unknown metadata", async () => {
-    const transport = vi.fn().mockResolvedValue(Response.json({
-      data: { id: 106235, name: "Instance #106235", status: "Ready", connectedAccount: { name: "اندكس للتجارة" }, secret: "never returned" },
-    }));
+    const transport = vi.fn().mockResolvedValue(
+      Response.json({
+        data: {
+          id: 106235,
+          name: "Instance #106235",
+          status: "Ready",
+          connectedAccount: { name: "اندكس للتجارة" },
+          secret: "never returned",
+        },
+      }),
+    );
     const result = await readWaapiPreviewInstance(PREVIEW, transport);
     expect(result.instanceId).toBe("106235");
     expect(result.connectedAccount).toBe("اندكس للتجارة");
@@ -62,20 +78,28 @@ describe("WaAPI authorized preview is fail-closed and isolated", () => {
   });
 
   it("rejects a mismatching provider instance without displaying it", async () => {
-    const transport = vi.fn().mockResolvedValue(Response.json({ data: { id: 106236, status: "Ready" } }));
-    await expect(readWaapiPreviewInstance(PREVIEW, transport)).rejects.toThrow("WAAPI_PREVIEW_INSTANCE_RESPONSE_MISMATCH");
+    const transport = vi
+      .fn()
+      .mockResolvedValue(Response.json({ data: { id: 106236, status: "Ready" } }));
+    await expect(readWaapiPreviewInstance(PREVIEW, transport)).rejects.toThrow(
+      "WAAPI_PREVIEW_INSTANCE_RESPONSE_MISMATCH",
+    );
   });
 
   it("summarizes subscription events without exposing a secret webhook path", async () => {
-    const transport = vi.fn().mockResolvedValue(Response.json({
-      data: [{
-        id: 42,
-        url: "https://hooks.zapier.com/hooks/standard/123456/private-secret/",
-        events: ["message", "group_update"],
-        isActive: true,
-        source: "zapier",
-      }],
-    }));
+    const transport = vi.fn().mockResolvedValue(
+      Response.json({
+        data: [
+          {
+            id: 42,
+            url: "https://hooks.zapier.com/hooks/standard/123456/private-secret/",
+            events: ["message", "group_update"],
+            isActive: true,
+            source: "zapier",
+          },
+        ],
+      }),
+    );
     const subscriptions = await readWaapiPreviewSubscriptions(PREVIEW, transport);
     expect(subscriptions.totalReturned).toBe(1);
     expect(subscriptions.subscriptions[0].targetHost).toBe("hooks.zapier.com");
@@ -115,10 +139,17 @@ describe("WaAPI authorized preview is fail-closed and isolated", () => {
     const verifier = "v".repeat(43);
     const challenge = createHash("sha256").update(verifier).digest("base64url");
     const code = oauth.issueCode({
-      sub: "verified-admin", clientId: "test-client",
-      redirectUri: "https://chatgpt.com/connector/oauth/test", challenge,
+      sub: "verified-admin",
+      clientId: "test-client",
+      redirectUri: "https://chatgpt.com/connector/oauth/test",
+      challenge,
     });
-    const access = oauth.exchangeCode(code, "test-client", "https://chatgpt.com/connector/oauth/test", verifier);
+    const access = oauth.exchangeCode(
+      code,
+      "test-client",
+      "https://chatgpt.com/connector/oauth/test",
+      verifier,
+    );
     const request = new Request("https://indexes-waapi-qa.vercel.app/api/mcp/whatsapp", {
       method: "POST",
       headers: {
@@ -131,8 +162,8 @@ describe("WaAPI authorized preview is fail-closed and isolated", () => {
     });
     const result = await handleWhatsappMcp(request);
     expect(result.status).toBe(200);
-    const json = await result.json() as { result?: { tools?: Array<{ name: string }> } };
-    const names = (json.result?.tools || []).map(t => t.name);
+    const json = (await result.json()) as { result?: { tools?: Array<{ name: string }> } };
+    const names = (json.result?.tools || []).map((t) => t.name);
     expect(names).toContain("waapi_preview_instance");
     expect(names).toContain("waapi_preview_webhooks");
     expect(names).toContain("waapi_preview_webhook_plan");

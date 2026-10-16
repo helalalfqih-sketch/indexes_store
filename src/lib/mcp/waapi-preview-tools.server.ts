@@ -32,7 +32,8 @@ export function registerWaapiPreviewTools(mcp: McpServer, readSecurity: Security
     "waapi_preview_capabilities",
     {
       title: "Inspect WaAPI documented capabilities and implementation state",
-      description: "Describe vendor-documented capabilities separately from verified account access.",
+      description:
+        "Describe vendor-documented capabilities separately from verified account access.",
       inputSchema: z.object({}).strict(),
       annotations,
       _meta: { securitySchemes: readSecurity },
@@ -44,7 +45,8 @@ export function registerWaapiPreviewTools(mcp: McpServer, readSecurity: Security
     "waapi_preview_instance",
     {
       title: "Read the approved WaAPI instance",
-      description: "Read instance 106235 metadata using a preview-only API Token (read permission).",
+      description:
+        "Read instance 106235 metadata using a preview-only API Token (read permission).",
       inputSchema: z.object({}).strict(),
       annotations,
       _meta: { securitySchemes: readSecurity },
@@ -56,7 +58,8 @@ export function registerWaapiPreviewTools(mcp: McpServer, readSecurity: Security
     "waapi_preview_webhooks",
     {
       title: "Inspect WaAPI webhook subscriptions",
-      description: "List only sanitized webhook metadata for instance 106235; never return a webhook secret or URL path.",
+      description:
+        "List only sanitized webhook metadata for instance 106235; never return a webhook secret or URL path.",
       inputSchema: z.object({}).strict(),
       annotations,
       _meta: { securitySchemes: readSecurity },
