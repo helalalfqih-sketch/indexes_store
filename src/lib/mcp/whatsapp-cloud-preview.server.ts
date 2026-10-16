@@ -1,5 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { getSupabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Database, Json } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Isolated Meta Cloud API adapter for Indexes WhatsApp MCP.
@@ -212,8 +214,49 @@ type StagedEvent = {
   phone_number_id: string;
   external_event_id: string;
   event_type: "message" | "status";
-  payload: Record<string, unknown>;
+  payload: Record<string, string | null>;
 };
+
+/**
+ * Staging-only table is introduced by a reviewed migration and intentionally
+ * absent from the generated production database types. Keep a narrow, strongly
+ * typed local augmentation; never edit the generated client or cast all reads
+ * to any, and never use this adapter for the production database.
+ */
+type WaMetaPreviewTable = {
+  Row: {
+    id: string;
+    waba_id: string;
+    phone_number_id: string;
+    external_event_id: string;
+    event_type: "message" | "status";
+    payload: Json;
+    received_at: string;
+  };
+  Insert: {
+    id?: string;
+    waba_id: string;
+    phone_number_id: string;
+    external_event_id: string;
+    event_type: "message" | "status";
+    payload: Json;
+    received_at?: string;
+  };
+  Update: Partial<WaMetaPreviewTable["Insert"]>;
+  Relationships: [];
+};
+type PreviewDatabase = Omit<Database, "public"> & {
+  public: Omit<Database["public"], "Tables"> & {
+    Tables: Database["public"]["Tables"] & {
+      wa_meta_preview_events: WaMetaPreviewTable;
+    };
+  };
+};
+
+function stagingDb(): SupabaseClient<PreviewDatabase> {
+  // Call sites first validate the exact isolated staging project URL/ref.
+  return getSupabaseAdmin() as unknown as SupabaseClient<PreviewDatabase>;
+}
 
 function obj(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -321,7 +364,7 @@ export async function readCloudPreviewEvents(
   const config = cloudPreviewConfig(env);
   assertIsolatedPreviewDatabase(env);
   const bounded = Math.min(Math.max(1, Math.trunc(limit)), 30);
-  const { data, error } = await getSupabaseAdmin()
+  const { data, error } = await stagingDb()
     .from("wa_meta_preview_events")
     .select("event_type,external_event_id,payload,received_at")
     .eq("waba_id", config.wabaId)
