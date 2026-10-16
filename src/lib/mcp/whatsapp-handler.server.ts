@@ -11,6 +11,8 @@ import {
 } from "@/lib/whapi.server";
 import { verifyAccessToken, AUDIENCE } from "./whatsapp-oauth.server";
 import { registerFullWhapiTools } from "./whapi-full-tools.server";
+import { isCloudPreviewEnabled } from "./whatsapp-cloud-preview.server";
+import { registerCloudPreviewTools } from "./whatsapp-cloud-preview-tools.server";
 
 const META = `${AUDIENCE.replace(
   "/api/mcp/whatsapp",
@@ -54,6 +56,11 @@ async function server() {
         "Private WhatsApp access for the Indexes Store administrator. Verify the exact destination before each approved write.",
     },
   );
+  if (isCloudPreviewEnabled()) {
+    registerCloudPreviewTools(instance, securitySchemes, writeSecuritySchemes);
+    return instance;
+  }
+
   const add = (name: string, resource: "chats" | "groups" | "channels" | "products") =>
     instance.registerTool(
       name,
