@@ -458,7 +458,7 @@ export async function handleCloudPreviewWebhook(
   if (!events.length) return json(200, "IGNORED");
   try {
     assertIsolatedPreviewDatabase(env);
-    const { error } = await getSupabaseAdmin()
+    const { error } = await stagingDb()
       .from("wa_meta_preview_events")
       .upsert(events, {
         onConflict: "waba_id,phone_number_id,external_event_id,event_type",
