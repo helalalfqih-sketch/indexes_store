@@ -32,6 +32,7 @@ describe("public image proxy egress controls", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
     if (originalTransformFlag === undefined) {
       delete process.env.SUPABASE_IMAGE_TRANSFORMATIONS_ENABLED;
@@ -141,6 +142,31 @@ describe("public image proxy egress controls", () => {
 
     const response = await handler({
       request: proxyRequest("https://images.unsplash.com/photo.png"),
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("image/png");
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(imageBytes);
+  });
+
+  it("preserves raster bytes and their real content type on Workers when a variant is requested", async () => {
+    vi.stubEnv("INDEXES_CLOUDFLARE", "1");
+    const imageBytes = new Uint8Array([1, 2, 3, 4]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(imageBytes, {
+          headers: { "content-type": "image/png", "content-length": "4" },
+        }),
+      ),
+    );
+
+    const response = await handler({
+      request: proxyRequest("https://images.unsplash.com/photo.png", {
+        w: "384",
+        q: "80",
+        format: "webp",
+      }),
     });
 
     expect(response.status).toBe(200);

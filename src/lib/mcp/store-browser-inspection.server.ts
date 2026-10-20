@@ -1,7 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { readQaState, diffQaState } from "./store-qa-state";
-import serverlessChromium from "@sparticuz/chromium";
-import { chromium as playwright, type Browser, type BrowserContext, type Page } from "playwright-core";
+import type { Browser, BrowserContext, Page } from "playwright-core";
 import { createHash } from "node:crypto";
 
 const STORE_ORIGIN = "https://indexes-store.vercel.app";
@@ -29,6 +28,13 @@ function allowedUrl(value: string) {
 }
 
 async function launchBrowser() {
+  // Workers cannot launch a local Chromium process. Keep the Node-only browser
+  // dependencies out of the Worker module graph so storefront routes can load.
+  if (import.meta.env.INDEXES_CLOUDFLARE) {
+    throw new Error("BROWSER_RUNTIME_UNAVAILABLE");
+  }
+
+  const { chromium: playwright } = await import("playwright-core");
   if (!process.env.VERCEL) {
     try {
       return await playwright.launch({ headless: true });
@@ -37,6 +43,7 @@ async function launchBrowser() {
     }
   }
 
+  const { default: serverlessChromium } = await import("@sparticuz/chromium");
   let executablePath: string;
   try {
     executablePath = await serverlessChromium.executablePath();
