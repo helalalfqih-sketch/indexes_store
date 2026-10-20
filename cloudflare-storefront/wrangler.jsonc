@@ -1,0 +1,16 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "indexes-store-d1-preview",
+  "main": "../.tmp/storefront/worker.mjs",
+  "compatibility_date": "2026-10-20",
+  "no_bundle": true,
+  "workers_dev": true,
+  "vars": { "TENANT_ID": "9bfcf1a9-1ea7-4c1c-8d30-d48aeb56065a" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "indexes-store-staging",
+      "database_id": "5eeefa09-02e9-4aa7-b302-4924a252a5ff",
+    },
+  ],
+}

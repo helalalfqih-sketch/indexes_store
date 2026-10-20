@@ -1,0 +1,52 @@
+
+{% render 'indexes-predictive-assets' %}
+<footer class="ix-footer ix-footer--complete">
+  <div class="ix-footer__card">
+    <span class="ix-footer__accent" aria-hidden="true"></span>
+
+    <div class="ix-footer__identity">
+      <span class="ix-footer__country">اليمن</span>
+      <a class="ix-footer__logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }} - الرئيسية">{% render 'indexes-brand-logo' %}</a>
+      <p>{{ 'indexes_ux.footer_description' | t }}</p>
+    </div>
+
+    <section class="ix-footer__contact-card" aria-labelledby="ix-footer-contact-title">
+      <div>
+        <h2 id="ix-footer-contact-title">خدمة العملاء عبر واتساب</h2>
+      </div>
+      <a class="ix-footer__whatsapp" href="https://wa.me/967771370740" target="_blank" rel="noopener noreferrer">
+        {% render 'indexes-whatsapp-icon' %}
+        <span>{{ 'indexes_ux.ask_whatsapp' | t }}</span>
+        <b dir="ltr">+967 771 370 740</b>
+      </a>
+    </section>
+
+    <div class="ix-footer__notice">
+      <strong>قبل تأكيد الطلب</strong>
+      <p>{{ 'indexes_audit.confirmation' | t }}</p>
+    </div>
+
+    <div class="ix-footer__columns">
+      <nav aria-label="{{ 'indexes_ux.shop' | t }}">
+        <h2>{{ 'indexes_ux.shop' | t }}</h2>
+        <a href="{{ routes.all_products_collection_url }}">{{ 'indexes_ux.shop_all' | t }}</a>
+        <a href="{{ routes.collections_url }}">{{ 'indexes_ux.all_categories' | t }}</a>
+        <a href="{{ routes.search_url }}">{{ 'indexes_ux.search' | t }}</a>
+        <a href="{{ routes.cart_url }}">{{ 'indexes_ux.view_cart' | t }}</a>
+      </nav>
+      <div>
+        <h2>{{ 'indexes_audit.policies' | t }}</h2>
+        <a href="/pages/about">التواصل ومعلومات الطلب</a>
+      </div>
+      <div>
+        <h2>{{ 'indexes_ux.contact' | t }}</h2>
+        {% if settings.ix_contact_address != blank %}<address>{{ settings.ix_contact_address | escape }}</address>{% endif %}
+        <a dir="ltr" href="tel:+967771370740">+967 771 370 740</a>
+      </div>
+    </div>
+
+    <div class="ix-install-footer"></div>
+    <div class="ix-footer__bottom">© {{ 'now' | date: '%Y' }} {{ shop.name | escape }}</div>
+  </div>
+</footer>
+

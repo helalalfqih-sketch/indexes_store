@@ -1,0 +1,140 @@
+{% liquid
+  assign current_sort = collection.sort_by | default: collection.default_sort_by
+%}
+
+<section class="ix-page ix-collection-page">
+  <nav class="ix-breadcrumb" aria-label="مسار التنقل">
+    <a href="{{ routes.root_url }}">الرئيسية</a><span>‹</span><span>{{ collection.title | escape }}</span>
+  </nav>
+
+  {% render 'indexes-category-banner', category_handle: collection.artwork_handle, category_title: collection.title, fallback_category_image: collection.image %}
+
+  
+    <header class="ix-page-title-row ix-catalog-heading ix-collection-heading">
+      <div>
+        <h1 class="ix-page__title">{{ collection.title | escape }}</h1>
+        {% if collection.description != blank %}<p class="ix-page-subtitle">{{ collection.description | strip_html | truncate: 110 }}</p>{% endif %}
+      </div>
+      <span class="ix-result-count">{{ paginate.items }} منتج</span>
+    </header>
+
+    <form class="ix-collection-tools" method="get">
+      {% if search.terms != blank %}<input type="hidden" name="q" value="{{ search.terms | escape }}">{% endif %}
+      <details class="ix-filter-dropdown">
+        <summary>
+          <img src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-original-filter-icon-1000491502.png?v=1792361609&width=64" alt="" width="32" height="32">
+          تصفية
+        </summary>
+        <div class="ix-filter-dropdown__panel">
+          {% assign has_filter_values = false %}
+          {% for filter in collection.filters %}
+            {% liquid
+              assign filter_label = filter.label
+              case filter.label
+                when 'Availability'
+                  assign filter_label = 'التوفر'
+                when 'Price'
+                  assign filter_label = 'السعر'
+              endcase
+            %}
+            {% if filter.type == 'list' or filter.type == 'boolean' %}
+              {% assign has_filter_values = true %}
+              <fieldset>
+                <legend>{{ filter_label }}</legend>
+                {% for value in filter.values %}
+                  {% liquid
+                    assign value_label = value.label
+                    case value.label
+                      when 'In stock'
+                        assign value_label = 'متوفر'
+                      when 'Out of stock'
+                        assign value_label = 'غير متوفر'
+                    endcase
+                  %}
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="{{ value.param_name }}"
+                      value="{{ value.value }}"
+                      {% if value.active %}checked{% endif %}
+                      {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                    >
+                    <span>{{ value_label }}</span>
+                    <small>{{ value.count }}</small>
+                  </label>
+                {% endfor %}
+              </fieldset>
+            {% elsif filter.type == 'price_range' %}
+              {% assign has_filter_values = true %}
+              <fieldset>
+                <legend>{{ filter_label }}</legend>
+                <div class="ix-filter-price-range">
+                  <label><span>من</span><input type="number" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" step="0.01" name="{{ filter.min_value.param_name }}" {% if filter.min_value.value != blank %}value="{{ filter.min_value.value | divided_by: 100.0 }}"{% endif %} placeholder="0" inputmode="decimal"></label>
+                  <label><span>إلى</span><input type="number" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" step="0.01" name="{{ filter.max_value.param_name }}" {% if filter.max_value.value != blank %}value="{{ filter.max_value.value | divided_by: 100.0 }}"{% endif %} placeholder="{{ filter.range_max | divided_by: 100.0 }}" inputmode="decimal"></label>
+                </div>
+              </fieldset>
+            {% endif %}
+          {% endfor %}
+          {% unless has_filter_values %}
+            <p>لا توجد فلاتر إضافية لهذا القسم.</p>
+          {% endunless %}
+          <button class="ix-filter-apply" type="submit">تطبيق</button>
+          <a class="ix-filter-clear" href="{{ collection.url }}">مسح الفلاتر</a>
+        </div>
+      </details>
+
+      <label class="ix-tool-select">
+        <span>الترتيب</span>
+        <select name="sort_by" onchange="this.form.submit()" aria-label="ترتيب المنتجات">
+          {% for option in collection.sort_options %}
+            {% liquid
+              assign option_label = option.name
+              if option.name == 'Most relevant'
+                assign option_label = 'الأكثر صلة'
+              endif
+              case option.value
+                when 'manual'
+                  assign option_label = 'المميزة'
+                when 'best-selling'
+                  assign option_label = 'الأكثر مبيعًا'
+                when 'title-ascending'
+                  assign option_label = 'الاسم: أ–ي'
+                when 'title-descending'
+                  assign option_label = 'الاسم: ي–أ'
+                when 'price-ascending'
+                  assign option_label = 'السعر: من الأقل إلى الأعلى'
+                when 'price-descending'
+                  assign option_label = 'السعر: من الأعلى إلى الأقل'
+                when 'created-ascending'
+                  assign option_label = 'التاريخ: الأقدم أولًا'
+                when 'created-descending'
+                  assign option_label = 'التاريخ: الأحدث أولًا'
+                when 'relevance'
+                  assign option_label = 'الأكثر صلة'
+              endcase
+            %}
+            <option value="{{ option.value }}" {% if option.value == current_sort %}selected{% endif %}>{{ option_label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </form>
+
+    <div class="ix-product-grid ix-product-grid--collection">
+      {% for product in collection.products %}
+        {% render 'indexes-product-card', product: product, show_favorite: true %}
+      {% else %}
+        <p class="ix-empty-state">لا توجد منتجات ضمن هذا القسم حاليًا.</p>
+      {% endfor %}
+    </div>
+
+    {% if paginate.pages > 1 %}
+      <nav class="ix-pagination" aria-label="صفحات المنتجات">
+        {% if paginate.previous %}<a href="{{ paginate.previous.url }}">السابق</a>{% endif %}
+        <span>صفحة {{ paginate.current_page }} من {{ paginate.pages }}</span>
+        {% if paginate.next %}<a href="{{ paginate.next.url }}">التالي</a>{% endif %}
+      </nav>
+    {% endif %}
+  
+</section>
+
+

@@ -1,0 +1,535 @@
+{% liquid
+  assign category_rows = 'الصحة-والجمال|الصحة والجمال,المنزل-والمطبخ|المنزل والمطبخ,السيارات-وملحقاتها|مستلزمات السيارات,الأدوات-والمعدات|الأدوات والمعدات,الإلكترونيات-والهواتف|الإلكترونيات,الألعاب-والأطفال|الأطفال والألعاب,الرياضة-واللياقة|الرياضة واللياقة,الكاميرات-والأمن|الكاميرات والأمن,المكتب-والقرطاسية|المكتب والقرطاسية,الهدايا-والهوايات|الهدايا والهوايات,الأزياء-والحقائب|الأزياء والحقائب' | split: ','
+  assign car_collection = collections['السيارات-وملحقاتها']
+  assign home_collection = collections['المنزل-والمطبخ']
+  assign gifts_collection = collections['الهدايا-والهوايات']
+  assign electronics_collection = collections['الإلكترونيات-والهواتف']
+  assign home_collection_url = home_collection.url | default: '/collections/المنزل-والمطبخ'
+  assign car_collection_url = car_collection.url | default: '/collections/السيارات-وملحقاتها'
+  assign gifts_collection_url = gifts_collection.url | default: '/collections/الهدايا-والهوايات'
+  assign electronics_collection_url = electronics_collection.url | default: '/collections/الإلكترونيات-والهواتف'
+%}
+
+<div class="ix-home" dir="rtl">
+
+  <div class="ix-main">
+    <section id="ix-home-carousel-{{ section.id }}" class="ix-home-carousel" data-ix-home-carousel role="region" aria-roledescription="عارض شرائح" aria-labelledby="ix-home-carousel-title-{{ section.id }}" aria-describedby="ix-home-carousel-help-{{ section.id }}">
+      <h1 id="ix-home-carousel-title-{{ section.id }}" class="ix-visually-hidden">اندكس ستور</h1>
+      <div class="ix-home-carousel__viewport">
+        <div class="ix-home-carousel__slides" data-carousel-slides aria-live="off">
+          <article id="ix-home-slide-{{ section.id }}-1" class="ix-home-carousel__slide is-active" data-carousel-slide role="group" aria-roledescription="شريحة" aria-label="1 من 3" aria-hidden="false">
+            <a href="{{ routes.collections_url }}" aria-label="تصفح جميع الأقسام">
+              <img
+                src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-general-1000491815.png?v=1792368194&amp;width=1711"
+                srcset="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-general-1000491815.png?v=1792368194&amp;width=480 480w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-general-1000491815.png?v=1792368194&amp;width=720 720w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-general-1000491815.png?v=1792368194&amp;width=960 960w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-general-1000491815.png?v=1792368194&amp;width=1280 1280w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-general-1000491815.png?v=1792368194&amp;width=1711 1711w"
+                sizes="(max-width: 749px) calc(100vw - 24px), (max-width: 1180px) calc(100vw - 32px), 1148px"
+                width="1711"
+                height="919"
+                alt="تصفح أقسام اندكس ستور"
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+              >
+            </a>
+          </article>
+          <article id="ix-home-slide-{{ section.id }}-2" class="ix-home-carousel__slide" data-carousel-slide role="group" aria-roledescription="شريحة" aria-label="2 من 3" aria-hidden="true">
+            <a href="{{ home_collection_url }}" aria-label="تصفح قسم المنزل والمطبخ" tabindex="-1">
+              <img
+                src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-home-1000491824.png?v=1792368222&amp;width=1711"
+                srcset="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-home-1000491824.png?v=1792368222&amp;width=480 480w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-home-1000491824.png?v=1792368222&amp;width=720 720w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-home-1000491824.png?v=1792368222&amp;width=960 960w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-home-1000491824.png?v=1792368222&amp;width=1280 1280w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-home-1000491824.png?v=1792368222&amp;width=1711 1711w"
+                sizes="(max-width: 749px) calc(100vw - 24px), (max-width: 1180px) calc(100vw - 32px), 1148px"
+                width="1711"
+                height="919"
+                alt="قسم المنزل والمطبخ"
+                loading="lazy"
+                fetchpriority="low"
+                decoding="async"
+              >
+            </a>
+          </article>
+          <article id="ix-home-slide-{{ section.id }}-3" class="ix-home-carousel__slide" data-carousel-slide role="group" aria-roledescription="شريحة" aria-label="3 من 3" aria-hidden="true">
+            <a href="{{ car_collection_url }}" aria-label="تصفح قسم السيارات وملحقاتها" tabindex="-1">
+              <img
+                src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-car-1000491825.png?v=1792368232&amp;width=1711"
+                srcset="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-car-1000491825.png?v=1792368232&amp;width=480 480w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-car-1000491825.png?v=1792368232&amp;width=720 720w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-car-1000491825.png?v=1792368232&amp;width=960 960w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-car-1000491825.png?v=1792368232&amp;width=1280 1280w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-car-1000491825.png?v=1792368232&amp;width=1711 1711w"
+                sizes="(max-width: 749px) calc(100vw - 24px), (max-width: 1180px) calc(100vw - 32px), 1148px"
+                width="1711"
+                height="919"
+                alt="قسم السيارات وملحقاتها"
+                loading="lazy"
+                fetchpriority="low"
+                decoding="async"
+              >
+            </a>
+          </article>
+        </div>
+      </div>
+      <p id="ix-home-carousel-help-{{ section.id }}" class="ix-visually-hidden">اسحب يمينًا أو يسارًا، أو استخدم مفاتيح الأسهم، للانتقال بين الشرائح.</p>
+      <p class="ix-visually-hidden" data-carousel-status aria-live="polite" aria-atomic="true">الشريحة 1 من 3</p>
+    </section>
+
+    <section class="ix-home-support-grid" aria-label="أقسام مختارة">
+      <a class="ix-home-support-banner" href="{{ gifts_collection_url }}" aria-label="تصفح قسم الهدايا والهوايات">
+        <img
+          src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-gifts-1000491813.png?v=1792368238&amp;width=1635"
+          srcset="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-gifts-1000491813.png?v=1792368238&amp;width=480 480w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-gifts-1000491813.png?v=1792368238&amp;width=720 720w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-gifts-1000491813.png?v=1792368238&amp;width=960 960w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-gifts-1000491813.png?v=1792368238&amp;width=1200 1200w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-gifts-1000491813.png?v=1792368238&amp;width=1635 1635w"
+          sizes="(max-width: 749px) calc((100vw - 28px) / 2), (max-width: 1180px) calc((100vw - 46px) / 2), 567px"
+          width="1635"
+          height="962"
+          alt="قسم الهدايا والهوايات"
+          loading="lazy"
+          decoding="async"
+        >
+      </a>
+      <a class="ix-home-support-banner" href="{{ electronics_collection_url }}" aria-label="تصفح قسم الإلكترونيات والهواتف">
+        <img
+          src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-electronics-1000491814.png?v=1792368247&amp;width=1635"
+          srcset="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-electronics-1000491814.png?v=1792368247&amp;width=480 480w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-electronics-1000491814.png?v=1792368247&amp;width=720 720w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-electronics-1000491814.png?v=1792368247&amp;width=960 960w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-electronics-1000491814.png?v=1792368247&amp;width=1200 1200w, https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-home-promo-electronics-1000491814.png?v=1792368247&amp;width=1635 1635w"
+          sizes="(max-width: 749px) calc((100vw - 28px) / 2), (max-width: 1180px) calc((100vw - 46px) / 2), 567px"
+          width="1635"
+          height="962"
+          alt="قسم الإلكترونيات والهواتف"
+          loading="lazy"
+          decoding="async"
+        >
+      </a>
+    </section>
+
+    <section id="ix-home-category-rail-{{ section.id }}" class="ix-section ix-categories-section ix-home-category-region" data-ix-category-rail role="region" aria-roledescription="عارض فئات" aria-labelledby="ix-categories-title-{{ section.id }}" aria-describedby="ix-home-category-help-{{ section.id }}">
+      <div class="ix-section__heading ix-categories-heading">
+        <h2 id="ix-categories-title-{{ section.id }}">الأقسام الرئيسية</h2>
+        <div class="ix-categories-heading__actions">
+          <button class="ix-home-category-pause" type="button" data-category-pause aria-controls="ix-home-category-track-{{ section.id }}" aria-label="إيقاف التمرير التلقائي للفئات" aria-pressed="false" hidden>
+            <svg data-category-pause-icon viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6v12M16 6v12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            <svg data-category-play-icon viewBox="0 0 24 24" aria-hidden="true" hidden><path d="m9 6 9 6-9 6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          </button>
+          <a href="{{ routes.collections_url }}">عرض الكل</a>
+        </div>
+      </div>
+      <ul id="ix-home-category-track-{{ section.id }}" class="ix-home-category-track" data-category-track aria-live="off">
+        {% for category in category_list %}
+          <li class="ix-home-category-item" data-category-item data-category-title="{{ category.title | escape }}">
+            <a class="ix-home-category-link" href="{{ category.url }}" aria-label="{{ category.title | escape }}" draggable="false">
+              {% render 'indexes-category-banner', category_handle: category.artwork_handle, category_title: category.title, banner_variant: 'card' %}
+              <span class="ix-d1-category-label">{{ category.title | escape }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+      <p id="ix-home-category-help-{{ section.id }}" class="ix-visually-hidden">اسحب أو استخدم مفاتيح الأسهم للتنقل بين الفئات.</p>
+      <p class="ix-visually-hidden" data-category-status aria-live="polite" aria-atomic="true"></p>
+    </section>
+
+    <section class="ix-section ix-featured" aria-labelledby="ix-featured-title">
+      <div class="ix-section__heading">
+        <div>
+          <h2 id="ix-featured-title">{{ 'indexes_ux.products' | t }}</h2>
+          <p>{{ 'indexes_ux.browse_products' | t }}</p>
+        </div>
+        <a href="{{ routes.all_products_collection_url }}">عرض الكل</a>
+      </div>
+
+      
+        <div class="ix-product-grid">
+          {% for product in collections.all.products %}
+            {% render 'indexes-product-card', product: product, show_favorite: true %}
+          {% else %}
+            <p class="ix-empty-state">لا توجد منتجات منشورة حاليًا.</p>
+          {% endfor %}
+        </div>
+        <nav class="ix-home-pagination" aria-label="{{ 'indexes_ux.more_products' | t }}">{% assign next_label = 'indexes_ux.next' | t %}{% assign previous_label = 'indexes_ux.previous' | t %}{{ paginate | default_pagination: next: next_label, previous: previous_label }}</nav>
+      
+    </section>
+
+
+
+    <aside class="ix-brand-feature" aria-label="{{ section.settings.brand_identity_title | escape }}">
+      <img src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-store-symbol-20261017.jpg?v=1792238651&width=128" alt="" width="64" height="64" loading="lazy">
+      <div><h2>{{ section.settings.brand_identity_title | escape }}</h2><p>{{ section.settings.brand_identity_text | escape }}</p></div>
+      <a href="/pages/brand-identity">{{ section.settings.brand_identity_link | escape }}</a>
+    </aside>
+
+    <section class="ix-service-panel" aria-label="{{ 'indexes_ux.order_help' | t }}">{% render 'indexes-service-details' %}</section>
+  </div>
+
+
+</div>
+
+<script>
+  (() => {
+    const carousel = document.getElementById('ix-home-carousel-{{ section.id }}');
+    if (!carousel || carousel.dataset.carouselReady === 'true' || carousel.dataset.carouselInitializing === 'true') return;
+    carousel.dataset.carouselInitializing = 'true';
+
+    const slides = Array.from(carousel.querySelectorAll('[data-carousel-slide]'));
+    const status = carousel.querySelector('[data-carousel-status]');
+    const sectionId = {{ section.id | json }};
+    const listenerController = new AbortController();
+    const listenerOptions = { signal: listenerController.signal };
+    let activeIndex = 0;
+    let touchStartX = null;
+    let touchStartY = null;
+
+    const showSlide = (requestedIndex, announce = false) => {
+      activeIndex = (requestedIndex + slides.length) % slides.length;
+      slides.forEach((slide, index) => {
+        const isActive = index === activeIndex;
+        slide.classList.toggle('is-active', isActive);
+        slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+        const link = slide.querySelector('a');
+        if (link) link.tabIndex = isActive ? 0 : -1;
+      });
+      if (announce) status.textContent = `الشريحة ${activeIndex + 1} من ${slides.length}`;
+    };
+
+    const showKeyboardSlide = (requestedIndex) => {
+      showSlide(requestedIndex, true);
+      const activeLink = slides[activeIndex].querySelector('a');
+      if (activeLink) activeLink.focus({ preventScroll: true });
+    };
+
+    carousel.addEventListener('keydown', (event) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        showKeyboardSlide(activeIndex + 1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        showKeyboardSlide(activeIndex - 1);
+      }
+    }, listenerOptions);
+
+    carousel.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 1) {
+        touchStartX = null;
+        touchStartY = null;
+        return;
+      }
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+    }, { signal: listenerController.signal, passive: true });
+
+    carousel.addEventListener('touchend', (event) => {
+      if (touchStartX === null || touchStartY === null || event.changedTouches.length === 0) return;
+      const deltaX = event.changedTouches[0].clientX - touchStartX;
+      const deltaY = event.changedTouches[0].clientY - touchStartY;
+      touchStartX = null;
+      touchStartY = null;
+      if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.2) return;
+      if (event.cancelable) event.preventDefault();
+      showSlide(activeIndex + (deltaX < 0 ? 1 : -1), true);
+    }, { signal: listenerController.signal, passive: false });
+
+    carousel.addEventListener('touchcancel', () => {
+      touchStartX = null;
+      touchStartY = null;
+    }, { signal: listenerController.signal, passive: true });
+
+    const unloadSection = (event) => {
+      if (!event.detail || event.detail.sectionId !== sectionId) return;
+      listenerController.abort();
+      document.removeEventListener('shopify:section:unload', unloadSection);
+    };
+    document.addEventListener('shopify:section:unload', unloadSection);
+
+    showSlide(0, false);
+    carousel.dataset.carouselReady = 'true';
+    delete carousel.dataset.carouselInitializing;
+  })();
+</script>
+
+<script>
+  (() => {
+    const rail = document.getElementById('ix-home-category-rail-{{ section.id }}');
+    if (!rail || rail.dataset.categoryRailReady === 'true' || rail.dataset.categoryRailInitializing === 'true') return;
+    rail.dataset.categoryRailInitializing = 'true';
+
+    const track = rail.querySelector('[data-category-track]');
+    const items = Array.from(rail.querySelectorAll('[data-category-item]'));
+    const pauseButton = rail.querySelector('[data-category-pause]');
+    const pauseIcon = rail.querySelector('[data-category-pause-icon]');
+    const playIcon = rail.querySelector('[data-category-play-icon]');
+    const status = rail.querySelector('[data-category-status]');
+    if (!track || items.length < 2 || !pauseButton || !pauseIcon || !playIcon || !status) {
+      delete rail.dataset.categoryRailInitializing;
+      return;
+    }
+
+    const sectionId = {{ section.id | json }};
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const fineHover = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const listeners = new AbortController();
+    const listenerOptions = { signal: listeners.signal };
+    const pauseReasons = new Set(['offscreen']);
+    let activeIndex = 0;
+    let autoDirection = 1;
+    let autoTimer = 0;
+    let cooldownTimer = 0;
+    let scrollTimer = 0;
+    let resizeTimer = 0;
+    let userPaused = false;
+    let manualScrollPending = false;
+    let suppressClickUntil = 0;
+    let drag = null;
+    let observer = null;
+
+    const hasOverflow = () => track.scrollWidth > track.clientWidth + 2;
+
+    const visibleCount = () => {
+      const first = items[0];
+      if (!first) return 1;
+      const styles = window.getComputedStyle(track);
+      const gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
+      return Math.max(1, Math.floor((track.clientWidth + gap + 1) / (first.getBoundingClientRect().width + gap)));
+    };
+
+    const lastAutoIndex = () => Math.max(0, items.length - visibleCount());
+
+    const clearAutoTimer = () => {
+      window.clearTimeout(autoTimer);
+      autoTimer = 0;
+    };
+
+    const nearestIndex = () => {
+      const trackRect = track.getBoundingClientRect();
+      const edge = document.dir === 'rtl' || window.getComputedStyle(track).direction === 'rtl' ? trackRect.right : trackRect.left;
+      let closest = 0;
+      let closestDistance = Infinity;
+      items.forEach((item, index) => {
+        const rect = item.getBoundingClientRect();
+        const itemEdge = window.getComputedStyle(track).direction === 'rtl' ? rect.right : rect.left;
+        const distance = Math.abs(itemEdge - edge);
+        if (distance < closestDistance) {
+          closest = index;
+          closestDistance = distance;
+        }
+      });
+      return closest;
+    };
+
+    const announceIndex = (index) => {
+      const title = items[index]?.dataset.categoryTitle || '';
+      status.textContent = title ? `الفئة ${index + 1} من ${items.length}: ${title}` : `الفئة ${index + 1} من ${items.length}`;
+    };
+
+    const scrollToIndex = (requestedIndex, options = {}) => {
+      const index = Math.max(0, Math.min(items.length - 1, requestedIndex));
+      activeIndex = index;
+      items[index].scrollIntoView({
+        behavior: reducedMotion.matches ? 'auto' : (options.behavior || 'smooth'),
+        block: 'nearest',
+        inline: 'start'
+      });
+      if (options.announce) announceIndex(index);
+      if (options.focus) {
+        const link = items[index].querySelector('a');
+        if (link) link.focus({ preventScroll: true });
+      }
+    };
+
+    const scheduleAuto = () => {
+      clearAutoTimer();
+      if (reducedMotion.matches || pauseReasons.size || !hasOverflow()) return;
+      autoTimer = window.setTimeout(() => {
+        const lastIndex = lastAutoIndex();
+        activeIndex = Math.min(nearestIndex(), lastIndex);
+        if (activeIndex >= lastIndex) autoDirection = -1;
+        if (activeIndex <= 0) autoDirection = 1;
+        scrollToIndex(activeIndex + autoDirection, { behavior: 'smooth' });
+        scheduleAuto();
+      }, 6500);
+    };
+
+    const setPauseReason = (reason, paused) => {
+      if (paused) pauseReasons.add(reason);
+      else pauseReasons.delete(reason);
+      scheduleAuto();
+    };
+
+    const startCooldown = (duration = 4200) => {
+      window.clearTimeout(cooldownTimer);
+      setPauseReason('cooldown', true);
+      cooldownTimer = window.setTimeout(() => setPauseReason('cooldown', false), duration);
+    };
+
+    const syncPauseControl = () => {
+      pauseButton.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
+      pauseButton.setAttribute('aria-label', userPaused ? 'تشغيل التمرير التلقائي للفئات' : 'إيقاف التمرير التلقائي للفئات');
+      pauseIcon.hidden = userPaused;
+      playIcon.hidden = !userPaused;
+    };
+
+    const syncMotionPreference = () => {
+      if (reducedMotion.matches) {
+        pauseReasons.add('reduced-motion');
+        pauseButton.hidden = true;
+        pauseButton.disabled = true;
+      } else {
+        pauseReasons.delete('reduced-motion');
+        pauseButton.disabled = false;
+        pauseButton.hidden = !hasOverflow();
+      }
+      scheduleAuto();
+    };
+
+    pauseButton.addEventListener('click', () => {
+      userPaused = !userPaused;
+      setPauseReason('user', userPaused);
+      syncPauseControl();
+      status.textContent = userPaused ? 'تم إيقاف التمرير التلقائي للفئات.' : 'تم تشغيل التمرير التلقائي للفئات.';
+    }, listenerOptions);
+
+    track.addEventListener('keydown', (event) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      let requestedIndex = null;
+      if (event.key === 'ArrowLeft') requestedIndex = Math.min(items.length - 1, activeIndex + 1);
+      else if (event.key === 'ArrowRight') requestedIndex = Math.max(0, activeIndex - 1);
+      else if (event.key === 'Home') requestedIndex = 0;
+      else if (event.key === 'End') requestedIndex = items.length - 1;
+      if (requestedIndex === null) return;
+      event.preventDefault();
+      startCooldown();
+      scrollToIndex(requestedIndex, { announce: true, focus: true });
+    }, listenerOptions);
+
+    rail.addEventListener('focusin', (event) => {
+      const item = event.target.closest('[data-category-item]');
+      if (item) activeIndex = items.indexOf(item);
+      setPauseReason('focus', true);
+    }, listenerOptions);
+
+    rail.addEventListener('focusout', () => {
+      window.requestAnimationFrame(() => setPauseReason('focus', rail.contains(document.activeElement)));
+    }, listenerOptions);
+
+    rail.addEventListener('pointerenter', () => {
+      if (fineHover.matches) setPauseReason('hover', true);
+    }, listenerOptions);
+
+    rail.addEventListener('pointerleave', () => {
+      if (fineHover.matches) setPauseReason('hover', false);
+    }, listenerOptions);
+
+    track.addEventListener('pointerdown', (event) => {
+      if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      setPauseReason('pointer', true);
+      manualScrollPending = true;
+      if (event.pointerType === 'mouse' || event.pointerType === 'pen') {
+        drag = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          startScrollLeft: track.scrollLeft,
+          dragging: false
+        };
+      }
+    }, listenerOptions);
+
+    track.addEventListener('pointermove', (event) => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const deltaX = event.clientX - drag.startX;
+      const deltaY = event.clientY - drag.startY;
+      if (!drag.dragging) {
+        if (Math.abs(deltaX) < 8 && Math.abs(deltaY) < 8) return;
+        if (Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
+        drag.dragging = true;
+        track.classList.add('is-dragging');
+        try { track.setPointerCapture(event.pointerId); } catch (error) {}
+      }
+      if (event.cancelable) event.preventDefault();
+      const isRtl = window.getComputedStyle(track).direction === 'rtl';
+      track.scrollLeft = drag.startScrollLeft + (isRtl ? deltaX : -deltaX);
+    }, listenerOptions);
+
+    const finishPointer = (event) => {
+      if (drag && event.pointerId === drag.pointerId) {
+        if (drag.dragging) {
+          suppressClickUntil = Date.now() + 350;
+          track.classList.remove('is-dragging');
+          activeIndex = nearestIndex();
+          scrollToIndex(activeIndex, { announce: true, behavior: 'smooth' });
+        }
+        if (track.hasPointerCapture?.(event.pointerId)) track.releasePointerCapture(event.pointerId);
+        drag = null;
+      }
+      setPauseReason('pointer', false);
+      startCooldown();
+    };
+
+    track.addEventListener('pointerup', finishPointer, listenerOptions);
+    track.addEventListener('pointercancel', finishPointer, listenerOptions);
+
+    track.addEventListener('click', (event) => {
+      if (Date.now() >= suppressClickUntil) return;
+      event.preventDefault();
+      event.stopPropagation();
+    }, { signal: listeners.signal, capture: true });
+
+    track.addEventListener('wheel', (event) => {
+      if (Math.abs(event.deltaX) > 0 || event.shiftKey) {
+        manualScrollPending = true;
+        startCooldown();
+      }
+    }, { signal: listeners.signal, passive: true });
+
+    track.addEventListener('scroll', () => {
+      window.clearTimeout(scrollTimer);
+      scrollTimer = window.setTimeout(() => {
+        activeIndex = nearestIndex();
+        if (manualScrollPending) {
+          announceIndex(activeIndex);
+          manualScrollPending = false;
+        }
+      }, 140);
+    }, { signal: listeners.signal, passive: true });
+
+    const onVisibilityChange = () => setPauseReason('hidden', document.hidden);
+    document.addEventListener('visibilitychange', onVisibilityChange, listenerOptions);
+    onVisibilityChange();
+
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver((entries) => {
+        const entry = entries[0];
+        setPauseReason('offscreen', !entry || !entry.isIntersecting || entry.intersectionRatio < 0.45);
+      }, { threshold: [0, 0.45] });
+      observer.observe(rail);
+    } else {
+      pauseReasons.delete('offscreen');
+    }
+
+    const onResize = () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        activeIndex = Math.min(nearestIndex(), items.length - 1);
+        pauseButton.hidden = reducedMotion.matches || !hasOverflow();
+        scheduleAuto();
+      }, 160);
+    };
+    window.addEventListener('resize', onResize, listenerOptions);
+
+    const onMotionChange = () => syncMotionPreference();
+    if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', onMotionChange);
+    else reducedMotion.addListener(onMotionChange);
+
+    const unloadSection = (event) => {
+      if (!event.detail || event.detail.sectionId !== sectionId) return;
+      clearAutoTimer();
+      window.clearTimeout(cooldownTimer);
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(resizeTimer);
+      observer?.disconnect();
+      listeners.abort();
+      if (reducedMotion.removeEventListener) reducedMotion.removeEventListener('change', onMotionChange);
+      else reducedMotion.removeListener(onMotionChange);
+      document.removeEventListener('shopify:section:unload', unloadSection);
+    };
+    document.addEventListener('shopify:section:unload', unloadSection);
+
+    syncPauseControl();
+    syncMotionPreference();
+    rail.dataset.categoryRailReady = 'true';
+    delete rail.dataset.categoryRailInitializing;
+  })();
+</script>
+
+

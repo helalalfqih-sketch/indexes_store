@@ -1,0 +1,14 @@
+<section class="ix-page ix-cart-page">
+  <div class="ix-page-title-row"><div><h1 class="ix-page__title">سلة التسوق</h1><p class="ix-page-subtitle">راجع المنتجات والكميات قبل المتابعة.</p></div></div>
+  <div data-d1-cart><p class="ix-empty-state">جارٍ تحميل السلة...</p></div>
+  <noscript><p class="ix-empty-state">فعّل JavaScript لعرض السلة المحفوظة على هذا الجهاز، أو <a href="https://wa.me/967771370740">تواصل عبر واتساب</a>.</p></noscript>
+  <aside class="ix-cart-summary" data-d1-summary hidden>
+    <h2>ملخص السلة</h2><dl data-d1-totals></dl>
+    <p>تكلفة التوصيل تُحدد عند التأكيد. تُعرض كل عملة على حدة دون تحويل.</p>
+    <button class="ix-cart-update" type="button" data-d1-review>مراجعة الأسعار والتوفر</button>
+    <a class="ix-cart-whatsapp" data-d1-whatsapp hidden target="_blank" rel="noopener noreferrer">{% render 'indexes-whatsapp-icon' %}<span>فتح الطلب في واتساب</span></a>
+    <p data-d1-cart-status role="status"></p>
+    <p>{{ 'indexes_audit.confirmation' | t }}</p>
+    <p>لا يُنشأ طلب مؤكد بمجرد فتح واتساب. يتم الاتفاق على التوفر والتوصيل والتفاصيل النهائية مع المتجر.</p>
+  </aside>
+</section>

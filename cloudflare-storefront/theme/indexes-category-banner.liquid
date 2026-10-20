@@ -1,0 +1,62 @@
+{%- liquid
+  assign ix_category_banner_url = blank
+
+  case category_handle
+    when 'الأدوات-والمعدات'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-tools-1000491794.png?v=1792365735'
+    when 'الإلكترونيات-والهواتف'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-electronics-1000491795.png?v=1792365751'
+    when 'الكاميرات-والأمن'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-security-1000491796.png?v=1792365759'
+    when 'السيارات-وملحقاتها'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-car-1000491797.png?v=1792365769'
+    when 'الهدايا-والهوايات'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-gifts-1000491798.png?v=1792365777'
+    when 'المنزل-والمطبخ'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-home-1000491799.png?v=1792365795'
+    when 'الرياضة-واللياقة'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-sports-1000491800.png?v=1792365803'
+    when 'المكتب-والقرطاسية'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-office-1000491801.png?v=1792365811'
+    when 'الألعاب-والأطفال'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-toys-1000491802.png?v=1792365819'
+    when 'الأزياء-والحقائب'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-fashion-1000491803.png?v=1792365828'
+    when 'الصحة-والجمال'
+      assign ix_category_banner_url = 'https://cdn.shopify.com/s/files/1/0664/0110/8053/files/indexes-category-banner-care-1000491793.png?v=1792365845'
+  endcase
+
+  assign ix_category_banner_variant = banner_variant | default: 'detail'
+  assign ix_category_banner_loading = 'eager'
+  assign ix_category_banner_sizes = '(max-width: 749px) calc(100vw - 24px), (max-width: 1279px) calc(100vw - 32px), 1148px'
+
+  if ix_category_banner_variant == 'card'
+    assign ix_category_banner_loading = 'lazy'
+    assign ix_category_banner_sizes = '(max-width: 749px) calc(50vw - 18px), (max-width: 989px) calc(33.333vw - 21.333px), 275px'
+  endif
+-%}
+{%- if ix_category_banner_url == blank -%}{% assign ix_category_banner_url = fallback_category_image %}{%- endif -%}
+{%- if ix_category_banner_url != blank -%}
+  {%- if ix_category_banner_variant == 'card' -%}
+    <span class="ix-collection-card__media ix-category-banner ix-category-banner--card">
+  {%- else -%}
+    <div class="ix-category-banner ix-category-banner--detail">
+  {%- endif -%}
+      <img
+        class="ix-category-banner__image"
+        src="{{ ix_category_banner_url }}&amp;width=960"
+        srcset="{{ ix_category_banner_url }}&amp;width=360 360w, {{ ix_category_banner_url }}&amp;width=540 540w, {{ ix_category_banner_url }}&amp;width=720 720w, {{ ix_category_banner_url }}&amp;width=960 960w, {{ ix_category_banner_url }}&amp;width=1280 1280w, {{ ix_category_banner_url }}&amp;width=1774 1774w"
+        sizes="{{ ix_category_banner_sizes }}"
+        alt="{% unless ix_category_banner_variant == 'card' %}بانر قسم {{ category_title | escape }}{% endunless %}"
+        width="1774"
+        height="887"
+        loading="{{ ix_category_banner_loading }}"
+        decoding="async"
+        {% if ix_category_banner_variant != 'card' %}fetchpriority="high"{% endif %}
+      >
+  {%- if ix_category_banner_variant == 'card' -%}
+    </span>
+  {%- else -%}
+    </div>
+  {%- endif -%}
+{%- endif -%}

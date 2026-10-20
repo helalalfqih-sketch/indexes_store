@@ -1,0 +1,96 @@
+
+
+<header class="ix-shell" role="banner">
+  <div class="ix-shell__bar">
+    <div class="ix-shell__leading">
+    <button class="ix-shell__menu" type="button" data-ix-menu aria-controls="ix-shell-categories" aria-label="فتح قائمة الأقسام" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+      <a class="ix-shell__cart" href="{{ routes.cart_url }}" aria-label="سلة التسوق">
+        <img src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/ix-original-07-cart-icon.png?v=1792358825&width=64" alt="" width="32" height="32">
+        <b data-ix-cart-count>{{ cart.item_count }}</b>
+      </a>
+    </div>
+
+    <a class="ix-shell__brand" href="{{ routes.root_url }}" aria-label="اندكس ستور - الرئيسية">
+      {% render 'indexes-brand-logo' %}
+    </a>
+
+    <div class="ix-shell__actions">
+      <a class="ix-shell__search-link" href="{{ routes.search_url }}" aria-label="البحث">
+        <img src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/ix-original-10-search-icon.png?v=1792358847&width=64" alt="" width="32" height="32">
+      </a>
+{% if shop.customer_accounts_enabled %}
+        <shopify-account class="ix-shopify-account" menu="customer-account-main-menu">
+          <span slot="signed-out-avatar" class="ix-shopify-account__signed-out" aria-label="تسجيل الدخول">
+            <img src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/ix-original-09-account-icon.png?v=1792358840&width=64" alt="" width="32" height="32">
+          </span>
+        </shopify-account>
+      {% else %}
+        <a href="{{ routes.account_url }}" aria-label="حسابي">
+          <img src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/ix-original-09-account-icon.png?v=1792358840&width=64" alt="" width="32" height="32">
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="ix-shell__search-row">
+    <div class="ix-search-wrap" data-ix-predictive-wrap>
+      <form class="ix-shell__search" action="{{ routes.search_url }}" method="get" role="search" data-ix-predictive-form>
+        <img class="ix-shell__search-icon" src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/ix-original-10-search-icon.png?v=1792358847&width=64" alt="" width="22" height="22">
+        <input type="hidden" name="type" value="product">
+        <input
+          type="search"
+          name="q"
+          {% if search.terms != blank %}value="{{ search.terms | escape }}"{% endif %}
+          placeholder="ابحث عن منتج أو قسم أو علامة تجارية..."
+          aria-label="بحث"
+          autocomplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="ix-predictive-shell"
+          data-ix-predictive-input
+        >
+      </form>
+      <div id="ix-predictive-shell" class="ix-predictive" data-ix-predictive-results role="listbox" hidden></div>
+    </div>
+  </div>
+
+  <p class="ix-shell__tagline">كل ما تحتاجه لمنزلك وسيارتك والعناية الشخصية</p>
+
+  <nav id="ix-shell-categories" class="ix-shell__quick" data-ix-quicknav aria-label="الأقسام السريعة">
+    
+    {% for ix_quick_collection in category_list %}
+      
+      {% if ix_quick_collection != blank %}<a href="{{ ix_quick_collection.url }}">{{ ix_quick_collection.title }}</a>{% endif %}
+    {% endfor %}
+    
+  </nav>
+</header>
+
+<nav class="ix-mobile-nav" aria-label="التنقل الرئيسي">
+  <a href="{{ routes.root_url }}" {% if template.name == 'index' %}class="is-active" aria-current="page"{% endif %}>
+    <img src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/ix-original-13-category-home-icon.png?v=1792358854&width=64" alt="" width="30" height="30">
+    <span>الرئيسية</span>
+  </a>
+  <a href="{{ routes.collections_url }}" {% if template.name == 'list-collections' or template.name == 'collection' %}class="is-active" aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="4" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="14" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+    <span>الأقسام</span>
+  </a>
+  <a href="/pages/wishlist" {% if page.handle == 'wishlist' %}class="is-active" aria-current="page"{% endif %}>
+    <img src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/ix-original-08-wishlist-icon.png?v=1792358834&width=64" alt="" width="30" height="30">
+    <span>المفضلة</span>
+  </a>
+  <a href="{{ routes.cart_url }}" {% if template.name == 'cart' %}class="is-active" aria-current="page"{% endif %}>
+    <span class="ix-mobile-nav__icon-wrap">
+      <img src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/ix-original-07-cart-icon.png?v=1792358825&width=64" alt="" width="30" height="30">
+      {% if cart.item_count > 0 %}<b data-ix-cart-count>{{ cart.item_count }}</b>{% endif %}
+    </span>
+    <span>السلة</span>
+  </a>
+  <a href="{{ routes.account_url }}" {% if template.name contains 'customers' or page.handle == 'my-account' %}class="is-active" aria-current="page"{% endif %}>
+    <img src="https://cdn.shopify.com/s/files/1/0664/0110/8053/files/ix-original-09-account-icon.png?v=1792358840&width=64" alt="" width="30" height="30">
+    <span>حسابي</span>
+  </a>
+</nav>
