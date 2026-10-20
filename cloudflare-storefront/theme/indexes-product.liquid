@@ -1,0 +1,286 @@
+{% liquid
+  assign variant = product.selected_or_first_available_variant
+  assign compare_price = variant.compare_at_price
+  assign sale_percent = 0
+  if variant.price > 0 and compare_price != blank and compare_price > variant.price
+    assign saving = compare_price | minus: variant.price
+    assign sale_percent = saving | times: 100.0 | divided_by: compare_price | round
+  endif
+
+  assign rating_value = product.metafields.reviews.rating.value.rating
+  assign rating_count = product.metafields.reviews.rating_count.value
+  assign ix_back_url = routes.all_products_collection_url
+  if product.collections.first != blank
+    assign ix_back_url = product.collections.first.url
+  endif
+  assign ix_product_link = canonical_url | url_decode
+
+  assign ix_product_link = shop.url | append: product.url | append: '?variant=' | append: variant.id
+  capture wa_message
+    echo 'indexes_audit.greeting' | t
+    echo ' '
+    echo product.title
+    echo ' | '
+    echo 'indexes_audit.variant' | t
+    echo ': '
+    echo variant.title
+    echo ' | '
+    echo 'indexes_audit.quantity' | t
+    echo ': 1 | '
+    echo 'indexes_audit.unit_price' | t
+    echo ': '
+    if variant.price > 0
+      echo variant.price | money_with_currency | strip_html
+    else
+      echo 'استفسر عن السعر'
+    endif
+    echo ' | '
+    echo 'indexes_audit.currency' | t
+    echo ': '
+    echo product.currency
+    echo ' | '
+    echo 'indexes_audit.link' | t
+    echo ': '
+    echo ix_product_link
+    echo ' | '
+    echo 'indexes_audit.confirmation' | t
+  endcapture
+%}
+
+<section
+  class="ix-page ix-product-page"
+  data-ix-product
+  data-ix-title="{{ product.title | escape }}"
+  data-ix-url="{{ shop.url | append: product.url | escape }}"
+  data-ix-price="{% if variant.price > 0 %}{{ variant.price | money_with_currency | strip_html | escape }}{% else %}استفسر عن السعر{% endif %}"
+  data-ix-raw-price="{{ variant.price }}"
+  data-ix-variant="{{ variant.title | escape }}"
+  data-ix-greeting="{{ 'indexes_audit.greeting' | t | escape }}"
+  data-ix-variant-label="{{ 'indexes_audit.variant' | t | escape }}"
+  data-ix-quantity-label="{{ 'indexes_audit.quantity' | t | escape }}"
+  data-ix-price-label="{{ 'indexes_audit.unit_price' | t | escape }}"
+  data-ix-currency-label="{{ 'indexes_audit.currency' | t | escape }}"
+  data-ix-link-label="{{ 'indexes_audit.link' | t | escape }}"
+  data-ix-confirmation="{{ 'indexes_audit.confirmation' | t | escape }}"
+  data-ix-sale-template="{{ 'indexes_audit.sale' | t: count: '__PERCENT__' | escape }}"
+  data-product-id="{{ product.id }}"
+  data-product-handle="{{ product.handle | escape }}"
+  data-product-value="{{ variant.price | divided_by: 100.0 }}"
+  data-product-currency="{{ product.currency | escape }}"
+>
+  <div class="ix-product-toolbar">
+    <a href="{{ ix_back_url }}" aria-label="العودة إلى المنتجات">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <div>
+      <button type="button" data-ix-favorite="{{ product.handle | escape }}" class="ix-product-toolbar__button ix-favorite-inline" aria-label="إضافة للمفضلة" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.3 4.7 13A5 5 0 0 1 12 6.2 5 5 0 0 1 19.3 13Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" data-ix-share="{{ ix_product_link | escape }}" class="ix-product-toolbar__button" aria-label="مشاركة المنتج">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0 4 4m-4-4L8 8M5 11v8h14v-8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="ix-product-layout">
+    <div class="ix-gallery" data-ix-gallery>
+      {% liquid
+        assign ix_featured_media = variant.featured_media | default: product.featured_media | default: product.media.first
+      %}
+
+      <div class="ix-gallery__stage">
+        {% if product.media.size > 0 %}
+          {% for media in product.media %}
+            {% assign ix_media_active = false %}
+            {% assign ix_media_loading = 'lazy' %}
+            {% if media.id == ix_featured_media.id %}
+              {% assign ix_media_active = true %}
+              {% assign ix_media_loading = 'eager' %}
+            {% elsif ix_featured_media == blank and forloop.first %}
+              {% assign ix_media_active = true %}
+              {% assign ix_media_loading = 'eager' %}
+            {% endif %}
+
+            <div
+              class="ix-gallery__slide{% if ix_media_active %} is-active{% endif %}"
+              data-ix-gallery-slide
+              data-index="{{ forloop.index0 }}"
+              data-media-type="{{ media.media_type }}"
+              {% unless ix_media_active %}hidden{% endunless %}
+            >
+              {% render 'product-media',
+                media: media,
+                preview_image_only: false,
+                selected_product: product,
+                is_main_product_media: ix_media_active,
+                loading: ix_media_loading,
+                widths: '360, 540, 720, 960, 1200, 1600',
+                sizes: '(max-width: 749px) 100vw, 56vw'
+              %}
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="ix-gallery__slide is-active" data-ix-gallery-slide data-index="0">
+            {{ 'product-1' | placeholder_svg_tag }}
+          </div>
+        {% endif %}
+
+        {% if product.tags contains 'جديد' %}
+          <span class="ix-product-badge ix-product-badge--new">جديد</span>
+        {% endif %}
+        <span class="ix-product-badge ix-product-badge--sale" data-ix-sale-badge {% if sale_percent == 0 or product.tags contains 'جديد' %}hidden{% endif %} data-has-new="{% if product.tags contains 'جديد' %}true{% else %}false{% endif %}">{{ 'indexes_audit.sale' | t: count: sale_percent }}</span>
+      </div>
+
+      {% if product.media.size > 1 %}
+        <div class="ix-gallery__thumbs" aria-label="صور وفيديوهات المنتج">
+          {% for media in product.media %}
+            {% assign ix_media_active = false %}
+            {% if media.id == ix_featured_media.id %}
+              {% assign ix_media_active = true %}
+            {% elsif ix_featured_media == blank and forloop.first %}
+              {% assign ix_media_active = true %}
+            {% endif %}
+            <button
+              type="button"
+              class="ix-gallery__thumb{% if ix_media_active %} is-active{% endif %}"
+              data-ix-gallery-thumb
+              data-media-id="{{ media.id }}"
+              data-index="{{ forloop.index0 }}"
+              data-media-type="{{ media.media_type }}"
+              aria-label="{% if media.media_type == 'video' or media.media_type == 'external_video' %}عرض فيديو{% elsif media.media_type == 'model' %}عرض نموذج ثلاثي الأبعاد{% else %}عرض الصورة{% endif %} {{ forloop.index }}"
+            >
+              {% if media.preview_image %}
+                {{ media.preview_image | image_url: width: 220 | image_tag: loading: 'lazy', widths: '100,160,220', sizes: '72px', alt: media.alt | default: product.title }}
+              {% else %}
+                {{ 'product-1' | placeholder_svg_tag }}
+              {% endif %}
+
+              {% if media.media_type == 'video' or media.media_type == 'external_video' %}
+                <span class="ix-gallery__thumb-type" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".92"/><path d="m10 8 6 4-6 4Z" fill="#fff"/></svg>
+                </span>
+              {% elsif media.media_type == 'model' %}
+                <span class="ix-gallery__thumb-type" aria-hidden="true">3D</span>
+              {% endif %}
+            </button>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="ix-product-info">
+      <h1>{{ product.title | escape }}</h1>
+
+      {% if rating_count > 0 and rating_value > 0 %}
+        <div class="ix-rating" aria-label="تقييم {{ rating_value }} من 5">
+          <span>★★★★★</span>
+          <b>{{ rating_value }}</b>
+          {% if rating_count != blank %}<small>({{ rating_count }})</small>{% endif %}
+        </div>
+      {% endif %}
+
+      <div class="ix-product-price-row">
+        <strong data-ix-product-price>{% if variant.price > 0 %}{{ variant.price | money_with_currency }}{% else %}استفسر عن السعر{% endif %}</strong>
+        <del data-ix-compare-price {% unless variant.price > 0 and compare_price > variant.price %}hidden{% endunless %}>{{ compare_price | money_with_currency }}</del>
+        <span data-ix-sale-label {% if sale_percent == 0 %}hidden{% endif %}>{{ 'indexes_audit.sale' | t: count: sale_percent }}</span>
+      </div>
+
+      {% unless product.has_only_default_variant %}
+        <label class="ix-variant-select">
+          <span>الخيار</span>
+          <select data-ix-variant-select>
+            {% for item in product.variants %}
+              <option
+                value="{{ item.id }}"
+                data-price="{% if item.price > 0 %}{{ item.price | money_with_currency | strip_html | escape }}{% else %}استفسر عن السعر{% endif %}"
+                data-raw-price="{{ item.price }}"
+                data-compare="{{ item.compare_at_price | default: 0 }}"
+                data-compare-formatted="{{ item.compare_at_price | money_with_currency | strip_html | escape }}"
+                data-title="{{ item.title | escape }}"
+                data-available="{{ item.available }}"
+                data-quantity-min="{{ item.quantity_rule.min | default: 1 }}"
+                data-quantity-max="{{ item.quantity_rule.max | default: 99 }}"
+                data-quantity-step="{{ item.quantity_rule.step | default: 1 }}"
+                data-media-id="{{ item.featured_media.id }}"
+                {% if item.id == variant.id %}selected{% endif %}
+              >
+                {{ item.title }} — {% if item.price > 0 %}{{ item.price | money_with_currency }}{% else %}استفسر عن السعر{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+      {% endunless %}
+
+      <form method="post" action="{{ routes.cart_add_url }}" class="ix-product-actions">
+        <input data-ix-variant-id type="hidden" name="id" value="{{ variant.id }}">
+
+        <label class="ix-quantity">
+          <span>الكمية</span>
+          <span class="ix-quantity__control">
+            <button type="button" data-ix-qty-minus aria-label="تقليل الكمية">−</button>
+            <input data-ix-qty-input max="{{ variant.quantity_rule.max | default: product.stock | default: 99 }}" type="number" name="quantity" value="{{ variant.quantity_rule.min | default: 1 }}" min="{{ variant.quantity_rule.min | default: 1 }}" step="{{ variant.quantity_rule.step | default: 1 }}" inputmode="numeric" aria-label="الكمية">
+            <button type="button" data-ix-qty-plus aria-label="زيادة الكمية">+</button>
+          </span>
+        </label>
+
+        <div class="ix-product-action-buttons">
+          <a aria-label="{{ 'indexes_audit.whatsapp' | t | escape }}" class="ix-product-whatsapp" href="https://wa.me/967771370740?text={{ wa_message | strip | url_encode }}" target="_blank" rel="noopener noreferrer">
+            {% render 'indexes-whatsapp-icon' %}<span>استفسار عبر واتساب</span>
+          </a>
+
+          <button class="ix-product-cart" data-ix-add-product type="submit" name="add" {% unless variant.available and variant.price > 0 %}disabled{% endunless %}>
+            {% if variant.price <= 0 %}استفسر عن السعر عبر واتساب{% elsif variant.available %}أضف إلى السلة{% else %}غير متوفر{% endif %}
+          </button>
+        </div>
+      </form>
+
+      <p class="ix-order-note">{{ 'indexes_audit.confirmation' | t }}</p>
+
+      <div class="ix-product-benefits">
+        <span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7zM7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+          <b>توصيل للمحافظات</b>
+        </span>
+        <span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13v-2a8 8 0 0 1 16 0v2M5 13h3v6H5a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2ZM19 13h-3v6h3a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+          <b>دعم عبر واتساب</b>
+        </span>
+        <span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+          <b>دفع عند الاستلام</b>
+        </span>
+      </div>
+
+      <div class="ix-product-tabs">
+        {% if product.description != blank %}
+          <details open>
+            <summary>الوصف</summary>
+            <div class="rte">{{ product.description }}</div>
+          </details>
+        {% endif %}
+
+        {% if product.metafields.custom.specifications != blank %}
+          <details>
+            <summary>المواصفات</summary>
+            <div class="rte">{{ product.metafields.custom.specifications | metafield_tag }}</div>
+          </details>
+        {% endif %}
+
+        {% if rating_count > 0 and rating_value > 0 %}
+          <details>
+            <summary>التقييمات</summary>
+            <p>التقييم الحالي {{ rating_value }} من 5{% if rating_count != blank %} بناءً على {{ rating_count }} تقييم{% endif %}.</p>
+          </details>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if product.price_min > 0 %}
+  <script type="application/ld+json">
+  {{ product | structured_data }}
+</script>
+  {% endif %}
+</section>
+
+

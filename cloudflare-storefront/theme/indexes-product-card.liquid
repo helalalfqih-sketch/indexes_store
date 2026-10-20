@@ -1,0 +1,142 @@
+
+
+{% liquid
+  assign variant = product.selected_or_first_available_variant
+  assign compare_price = variant.compare_at_price
+  assign sale_percent = 0
+  if variant.price > 0 and compare_price != blank and compare_price > variant.price
+    assign saving = compare_price | minus: variant.price
+    assign sale_percent = saving | times: 100.0 | divided_by: compare_price | round
+  endif
+  assign is_new = false
+  assign is_best = false
+  if product.tags contains 'جديد'
+    assign is_new = true
+  endif
+  if product.tags contains 'الأكثر مبيعاً' or product.tags contains 'الأكثر مبيعًا'
+    assign is_best = true
+  endif
+  assign ix_product_path = product.url | split: '?' | first
+  assign ix_product_link = shop.url | append: ix_product_path | append: '?variant=' | append: variant.id
+  capture wa_message
+    echo 'indexes_audit.greeting' | t
+    echo ' '
+    echo product.title
+    echo ' | '
+    echo 'indexes_audit.variant' | t
+    echo ': '
+    echo variant.title
+    echo ' | '
+    echo 'indexes_audit.quantity' | t
+    echo ': 1 | '
+    echo 'indexes_audit.unit_price' | t
+    echo ': '
+    if variant.price > 0
+      echo variant.price | money_with_currency | strip_html
+    else
+      echo 'استفسر عن السعر'
+    endif
+    echo ' | '
+    echo 'indexes_audit.currency' | t
+    echo ': '
+    echo product.currency
+    echo ' | '
+    echo 'indexes_audit.link' | t
+    echo ': '
+    echo ix_product_link
+    echo ' | '
+    echo 'indexes_audit.confirmation' | t
+  endcapture
+%}
+
+<article
+  class="ix-product-card"
+  data-product-id="{{ product.id }}"
+  data-product-handle="{{ product.handle | escape }}"
+  data-product-value="{{ variant.price | divided_by: 100.0 }}"
+  data-product-currency="{{ product.currency | escape }}"
+>
+  <div class="ix-product-card__media">
+    <ix-card-gallery data-paused-label="{{ 'indexes_ux.play_images' | t }}" data-playing-label="{{ 'indexes_ux.pause_images' | t }}">
+      <a href="{{ product.url }}" class="ix-product-card__image-link" aria-label="{{ product.title | escape }}">
+        {% for image in product.images limit: 4 %}
+          {% if forloop.first %}
+            {{ image | image_url: width: 720 | image_tag: loading: 'lazy', widths: '220,320,480,720', sizes: '(max-width: 749px) 46vw, 280px', alt: image.alt | default: product.title }}
+          {% else %}
+            <template>{{ image | image_url: width: 720 | image_tag: loading: 'lazy', widths: '220,320,480,720', sizes: '(max-width: 749px) 46vw, 280px', alt: image.alt | default: product.title }}</template>
+          {% endif %}
+        {% else %}
+          {{ 'product-1' | placeholder_svg_tag: 'ix-product-card__placeholder' }}
+        {% endfor %}
+      </a>
+      {% if product.images.size > 1 %}
+        <div class="ix-card-gallery__controls">
+          <button type="button" data-gallery-next aria-label="{{ 'indexes_ux.next_image' | t }}">‹</button>
+          <span data-gallery-count>1 / {{ product.images.size | at_most: 4 }}</span>
+          <button type="button" data-gallery-pause aria-label="{{ 'indexes_ux.pause_images' | t }}" aria-pressed="false">Ⅱ</button>
+        </div>
+      {% endif %}
+    </ix-card-gallery>
+
+    {% if show_favorite != false %}
+      <button
+        class="ix-favorite"
+        type="button"
+        data-ix-favorite="{{ product.handle | escape }}"
+        aria-label="إضافة {{ product.title | escape }} إلى المفضلة"
+        aria-pressed="false"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.3 4.7 13A5 5 0 0 1 12 6.2 5 5 0 0 1 19.3 13Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
+      </button>
+    {% endif %}
+
+    {% if sale_percent > 0 %}
+      <span class="ix-product-badge ix-product-badge--sale">خصم {{ sale_percent }}%</span>
+    {% elsif is_best %}
+      <span class="ix-product-badge ix-product-badge--best">الأكثر مبيعًا</span>
+    {% elsif is_new %}
+      <span class="ix-product-badge ix-product-badge--new">جديد</span>
+    {% endif %}
+  </div>
+
+  <div class="ix-product-card__body">
+    <a class="ix-product-card__title" href="{{ product.url }}">{{ product.title | escape }}</a>
+
+    <div class="ix-product-card__price">
+      <strong>{% if variant.price > 0 %}{{ variant.price | money_with_currency }}{% else %}استفسر عن السعر{% endif %}</strong>
+      {% if variant.price > 0 and compare_price != blank and compare_price > variant.price %}
+        <del>{{ compare_price | money_with_currency }}</del>
+      {% endif %}
+    </div>
+
+    <div class="ix-product-card__actions">
+      <a
+        class="ix-button ix-button--whatsapp"
+        href="https://wa.me/967771370740?text={{ wa_message | strip | url_encode }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="اطلب {{ product.title | escape }} عبر واتساب"
+      >
+        {% render 'indexes-whatsapp-icon' %}
+      </a>
+
+      {% if variant.available and variant.price > 0 and product.has_only_default_variant %}
+        <form method="post" action="{{ routes.cart_add_url }}" class="ix-mini-cart-form">
+          <input type="hidden" name="id" value="{{ variant.id }}">
+          <input type="hidden" name="quantity" value="1">
+          <button class="ix-icon-button ix-icon-button--add" type="submit" name="add" aria-label="أضف {{ product.title | escape }} إلى السلة">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L21 7H6M10 20h.01M18 20h.01" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="ix-add-to-cart-label">إضافة للسلة</span>
+          </button>
+        </form>
+      {% elsif variant.available and variant.price > 0 %}
+        <a class="ix-icon-button ix-icon-button--choose" href="{{ product.url }}" aria-label="اختر خيار {{ product.title | escape }}"><span class="ix-add-to-cart-label">اختر الخيارات</span></a>
+      {% else %}
+        <span class="ix-icon-button ix-icon-button--disabled" aria-label="{% if variant.price <= 0 %}استفسر عن السعر عبر واتساب{% else %}غير متوفر{% endif %}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M9 9h10l-1 6H8L6 4H3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+        </span>
+      {% endif %}
+    </div>
+  </div>
+</article>
+

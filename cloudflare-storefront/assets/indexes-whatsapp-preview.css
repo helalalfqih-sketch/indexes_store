@@ -1,0 +1,58 @@
+.ix-order-form .ix-turnstile-wrap{display:grid;justify-content:center;min-width:0;max-width:100%;margin:14px auto;overflow:auto}
+.ix-order-form .ix-order-submit:disabled{opacity:.52;cursor:not-allowed;filter:saturate(.6)}
+.ix-order-form [data-ix-order-status]{margin:12px 0;padding:12px 14px;border-radius:10px;background:#f2f7fa;font-size:12px;line-height:1.8;word-wrap:break-word;direction:rtl}
+.ix-order-form [data-ix-order-status] a{display:inline-block;margin-inline-start:6px;font-weight:800;text-decoration:underline;color:#067647}
+button.ix-product-whatsapp,button.ix-button--whatsapp{font:inherit;cursor:pointer}
+button.ix-product-whatsapp:disabled,button.ix-button--whatsapp:disabled{cursor:not-allowed;opacity:.55}
+.ix-order-form button:focus-visible,button.ix-product-whatsapp:focus-visible,button.ix-button--whatsapp:focus-visible{outline:3px solid #2f6bff;outline-offset:3px}
+/* Policy access remains visible alongside the mobile navigation. */
+.ix-policy-footer{padding:20px 16px 96px;text-align:center;overflow-wrap:anywhere;color:var(--ix-text)}
+.ix-policy-footer address{font-style:normal;margin-block:12px}
+.ix-policy-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;font-size:13px;line-height:1.8}
+.ix-policy-links a{text-decoration:underline;text-underline-offset:3px}
+.ix-product-page [data-ix-compare-price][hidden],.ix-product-page [data-ix-sale-label][hidden],.ix-product-page [data-ix-sale-badge][hidden]{display:none!important}
+.ix-product-price-row strong,.ix-product-price-row del,.ix-cart-item__content strong,.ix-cart-summary dd,.ix-order-item strong{unicode-bidi:isolate}
+.ix-product-info,.ix-cart-item__content,.ix-order-item span{min-width:0;overflow-wrap:anywhere}
+
+/* Desktop: use document scrolling; the custom wrapper already has visible overflow. */
+@media (min-width:990px){
+ html:not([scroll-lock]):has(.page-wrapper),html:not([scroll-lock]):has(.page-wrapper) body{height:auto;overflow:visible}
+ .page-wrapper{height:auto}
+ .content-for-layout{flex:1 0 auto}
+}
+
+/* The installed CartHike control resolves to an empty phone. Suppress only
+   that invalid button and expose the verified theme-owned contact link. */
+#carthike-chat-wrapper > #carthike-chat-button-container.right > button#chwhatsapp-btn.whatsappbutton.buttonWithTextIcon{
+ display:none!important;
+}
+.floating-whatsapp{
+ position:fixed!important;
+ z-index:65!important;
+ display:grid!important;
+ place-items:center!important;
+ width:52px!important;
+ height:52px!important;
+ padding:0!important;
+ border:0!important;
+ border-radius:50%!important;
+ background:#12b94d!important;
+ color:#fff!important;
+ box-shadow:0 8px 24px rgba(17,24,39,.22)!important;
+ overflow:hidden!important;
+}
+.floating-whatsapp:focus-visible{outline:3px solid #2f6bff!important;outline-offset:3px!important}
+@media(max-width:749px){
+ .floating-whatsapp{
+  right:auto!important;
+  left:calc(12px + env(safe-area-inset-left))!important;
+  bottom:calc(var(--ix-bottom-nav-height,64px) + 16px + env(safe-area-inset-bottom))!important;
+ }
+}
+@media(min-width:750px){
+ .floating-whatsapp{
+  right:calc(20px + env(safe-area-inset-right))!important;
+  left:auto!important;
+  bottom:calc(20px + env(safe-area-inset-bottom))!important;
+ }
+}
