@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import crypto from "crypto";
-import sharp from "sharp";
 import {
   isProxyableRasterContentType,
   normalizedMediaType,
@@ -359,7 +358,13 @@ export const Route = createFileRoute("/api/public/image-proxy")({
 
           // Preserve original bytes when no variant was requested. This avoids
           // CPU-heavy re-encoding and produces one stable cache object per URL.
-          if (!variant.requested || contentType === "image/gif") {
+          // Native sharp binaries cannot run in Workers. Serve the validated
+          // original there; Node/Vercel keeps the existing variant transforms.
+          if (
+            !variant.requested ||
+            contentType === "image/gif" ||
+            import.meta.env.INDEXES_CLOUDFLARE
+          ) {
             const responseBody = input.buffer.slice(
               input.byteOffset,
               input.byteOffset + input.byteLength,
@@ -370,6 +375,7 @@ export const Route = createFileRoute("/api/public/image-proxy")({
             });
           }
 
+          const { default: sharp } = await import("sharp");
           let pipeline = sharp(input, {
             failOn: "warning",
             limitInputPixels: MAX_IMAGE_PIXELS,
