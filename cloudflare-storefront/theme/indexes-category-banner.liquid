@@ -1,5 +1,5 @@
 {%- liquid
-  assign ix_category_banner_url = blank
+  assign ix_category_banner_url = ''
 
   case category_handle
     when 'الأدوات-والمعدات'
@@ -35,8 +35,8 @@
     assign ix_category_banner_sizes = '(max-width: 749px) calc(50vw - 18px), (max-width: 989px) calc(33.333vw - 21.333px), 275px'
   endif
 -%}
-{%- if ix_category_banner_url == blank -%}{% assign ix_category_banner_url = fallback_category_image %}{%- endif -%}
-{%- if ix_category_banner_url != blank -%}
+{%- if ix_category_banner_url == '' -%}{% assign ix_category_banner_url = fallback_category_image | default: '' %}{%- endif -%}
+{%- if ix_category_banner_url != '' -%}
   {%- if ix_category_banner_variant == 'card' -%}
     <span class="ix-collection-card__media ix-category-banner ix-category-banner--card">
   {%- else -%}

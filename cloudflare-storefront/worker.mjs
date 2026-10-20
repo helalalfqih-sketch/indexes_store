@@ -1,3 +1,5 @@
+import { escape, safeURL, money } from "./catalog-format.mjs";
+import { createShopifyCatalog } from "./shopify-catalog.mjs";
 import { Liquid } from "liquidjs/dist/liquid.browser.mjs";
 import { templates, assets, translations, settings, brand, revision } from "storefront:resources";
 
@@ -5,36 +7,12 @@ const PUBLIC_PRODUCT_COLUMNS =
   "p.id,p.slug,p.name,p.description,p.price,p.old_price,p.currency,p.category_id,p.images,p.stock,p.reserved_stock,p.rating,p.reviews_count,p.tags,p.featured,p.is_deal";
 const ACTIVE_PRODUCT =
   "p.tenant_id = ? AND p.is_published = 1 AND EXISTS (SELECT 1 FROM tenants t WHERE t.id = p.tenant_id AND t.status = 'active')";
-const escape = (value) =>
-  String(value ?? "").replace(
-    /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
-  );
-const safeURL = (value) => {
-  try {
-    const u = new URL(typeof value === "string" ? value : value?.src);
-    return u.protocol === "https:" ? u.href : "";
-  } catch {
-    return "";
-  }
-};
 const array = (value) => {
   try {
     const x = typeof value === "string" ? JSON.parse(value) : value;
     return Array.isArray(x) ? x : [];
   } catch {
     return [];
-  }
-};
-const money = (amount, currency = "YER") => {
-  try {
-    return new Intl.NumberFormat("ar-YE", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${Number(amount).toLocaleString("ar-YE")} ${currency}`;
   }
 };
 const artwork = {
@@ -153,6 +131,7 @@ async function categories(env) {
   return results.map((c) => ({
     ...c,
     title: c.name,
+    products_count_known: true,
     handle: c.slug,
     artwork_handle: artwork[c.slug] || c.slug,
     image: safeURL(c.image_url),
@@ -208,6 +187,7 @@ async function products(env, url, cats, category, deals = false) {
     sort: query.sort,
     paginate: {
       items: count.n,
+      total_known: true,
       pages,
       current_page: page,
       previous: page > 1 ? { url: pageURL(page - 1) } : null,
@@ -224,7 +204,7 @@ async function product(env, slug, cats) {
     .first();
   return row ? productModel(row, cats) : null;
 }
-async function quote(request, env, origin) {
+async function quote(request, env, origin, source) {
   if (request.headers.get("origin") && request.headers.get("origin") !== origin)
     return json({ error: "طلب غير مسموح" }, 403);
   const text = await request.text();
@@ -253,43 +233,49 @@ async function quote(request, env, origin) {
     return json({ error: "تحقق من الكميات" }, 400);
   const ids = [...new Set(input.items.map((i) => i.id))];
   if (ids.length !== input.items.length) return json({ error: "منتج مكرر" }, 400);
-  const result = ids.length
-    ? await env.DB.prepare(
-        `SELECT ${PUBLIC_PRODUCT_COLUMNS} FROM products p WHERE ${ACTIVE_PRODUCT} AND p.id IN (${ids.map(() => "?").join(",")})`,
-      )
-        .bind(env.TENANT_ID, ...ids)
-        .all()
-    : { results: [] };
-  const items = input.items.map((line) => {
-    const row = result.results.find((p) => p.id === line.id);
-    if (!row)
+  let items;
+  if (source) items = await source.quote(input.items);
+  else {
+    const result = ids.length
+      ? await env.DB.prepare(
+          `SELECT ${PUBLIC_PRODUCT_COLUMNS} FROM products p WHERE ${ACTIVE_PRODUCT} AND p.id IN (${ids.map(() => "?").join(",")})`,
+        )
+          .bind(env.TENANT_ID, ...ids)
+          .all()
+      : { results: [] };
+    items = input.items.map((line) => {
+      const row = result.results.find((p) => p.id === line.id);
+      if (!row)
+        return {
+          id: line.id,
+          quantity: line.quantity,
+          available: false,
+          reason: "هذا المنتج غير متاح حاليًا",
+        };
+      const p = productModel(row);
+      const available = p.stock >= line.quantity && row.price > 0;
       return {
-        id: line.id,
+        id: p.id,
+        title: p.title,
+        url: p.url,
+        image: p.featured_image,
         quantity: line.quantity,
-        available: false,
-        reason: "هذا المنتج غير متاح حاليًا",
+        stock: p.stock,
+        price: row.price,
+        currency: p.currency,
+        price_label: money(row.price, p.currency),
+        line_total: row.price * line.quantity,
+        line_label: money(row.price * line.quantity, p.currency),
+        available,
+        reason: available ? "" : "الكمية المطلوبة غير متاحة أو السعر يحتاج تأكيدًا",
       };
-    const p = productModel(row);
-    const available = p.stock >= line.quantity && row.price > 0;
-    return {
-      id: p.id,
-      title: p.title,
-      url: p.url,
-      image: p.featured_image,
-      quantity: line.quantity,
-      stock: p.stock,
-      price: row.price,
-      currency: p.currency,
-      price_label: money(row.price, p.currency),
-      line_total: row.price * line.quantity,
-      line_label: money(row.price * line.quantity, p.currency),
-      available,
-      reason: available ? "" : "الكمية المطلوبة غير متاحة أو السعر يحتاج تأكيدًا",
-    };
-  });
+    });
+  }
   const totals = {};
   for (const line of items)
-    if (line.available) totals[line.currency] = (totals[line.currency] || 0) + line.line_total;
+    if (line.available)
+      totals[line.currency] =
+        Math.round(((totals[line.currency] || 0) + line.line_total) * 100) / 100;
   const valid = items.length > 0 && items.every((i) => i.available);
   const message = [
     "السلام عليكم، أود الاستفسار عن طلب:",
@@ -352,21 +338,29 @@ async function handle(request, env) {
       },
     });
   }
+  const source = env.CATALOG_SOURCE === "shopify" ? createShopifyCatalog(env) : null;
   if (path === "/api/cart/quote" && request.method === "POST")
-    return quote(request, env, url.origin);
+    return quote(request, env, url.origin, source);
   if (!["GET", "HEAD"].includes(request.method))
     return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
   if (path === "/health") {
     await env.DB.prepare("SELECT 1").first();
-    return json({ ok: true, database: "D1", revision });
+    return json({
+      ok: true,
+      database: "D1",
+      catalog: source ? "shopify" : "d1",
+      store: source ? env.SHOPIFY_STORE_DOMAIN : null,
+      revision,
+    });
   }
-  const cats = await categories(env);
+  const cats = source ? await source.categories() : await categories(env);
   const collections = Object.fromEntries(cats.map((c) => [c.handle, c]));
   for (const c of cats) collections[c.artwork_handle] ??= c;
   // Promotional artwork for departments absent from D1 opens the full catalog.
   for (const key of ["الهدايا-والهوايات", "الأدوات-والمعدات"])
     collections[key] ??= { url: "/collections/all" };
   const context = {
+    catalog_source: source ? "shopify" : "d1",
     settings,
     category_list: cats,
     collections,
@@ -404,7 +398,9 @@ async function handle(request, env) {
   let status = 200;
   const match = path.match(/^\/products\/(.+?)(\.js)?$/);
   if (match) {
-    const p = await product(env, match[1], cats);
+    const p = source
+      ? await source.product(match[1], url.searchParams.get("variant"))
+      : await product(env, match[1], cats);
     if (match[2]) return p ? json(p) : json({ error: "المنتج غير موجود" }, 404);
     if (p) {
       context.product = p;
@@ -413,7 +409,7 @@ async function handle(request, env) {
       content = render("indexes-product", context);
     }
   } else if (path === "/search/suggest.json") {
-    const list = await products(env, url, cats);
+    const list = source ? await source.list(url, cats) : await products(env, url, cats);
     const q = list.q;
     return json({
       resources: {
@@ -442,7 +438,9 @@ async function handle(request, env) {
     const category =
       key && key !== "all" ? cats.find((c) => c.handle === key || c.artwork_handle === key) : null;
     if (!key || key === "all" || category) {
-      const list = await products(env, url, cats, category, path === "/pages/offers");
+      const list = source
+        ? await source.list(url, cats, category, path === "/pages/offers")
+        : await products(env, url, cats, category, path === "/pages/offers");
       context.paginate = list.paginate;
       context.collections.all = { products: list.items };
       context.search = { terms: list.q };

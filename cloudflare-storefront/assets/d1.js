@@ -121,10 +121,11 @@
         .closest(".ix-quantity__control")
         .querySelector("[data-ix-qty-input]");
       input.value = Math.max(
-        1,
+        Number(input.min) || 1,
         Math.min(
           Number(input.max) || 99,
-          (Number(input.value) || 1) + (quantityButton.hasAttribute("data-ix-qty-plus") ? 1 : -1),
+          (Number(input.value) || Number(input.min) || 1) +
+            (quantityButton.hasAttribute("data-ix-qty-plus") ? 1 : -1) * (Number(input.step) || 1),
         ),
       );
       input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -137,6 +138,21 @@
         : navigator.clipboard.writeText(url).then(() => status("تم نسخ رابط المنتج."))
       ).catch(() => status("تعذر مشاركة الرابط. يمكنك نسخه من شريط العنوان."));
     }
+  });
+  document.addEventListener("change", (event) => {
+    const select = event.target.closest("[data-ix-variant-select]");
+    if (!select) return;
+    const option = select.selectedOptions[0];
+    const input = select.closest("[data-ix-product]").querySelector("[data-ix-qty-input]");
+    input.min = option.dataset.quantityMin || "1";
+    input.max = option.dataset.quantityMax || "99";
+    input.step = option.dataset.quantityStep || "1";
+    input.value = input.min;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    const thumb = [
+      ...select.closest("[data-ix-product]").querySelectorAll("[data-ix-gallery-thumb]"),
+    ].find((node) => node.dataset.mediaId === option.dataset.mediaId);
+    thumb?.click();
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;

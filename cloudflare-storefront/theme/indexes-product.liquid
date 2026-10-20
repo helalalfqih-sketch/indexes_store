@@ -144,6 +144,7 @@
               type="button"
               class="ix-gallery__thumb{% if ix_media_active %} is-active{% endif %}"
               data-ix-gallery-thumb
+              data-media-id="{{ media.id }}"
               data-index="{{ forloop.index0 }}"
               data-media-type="{{ media.media_type }}"
               aria-label="{% if media.media_type == 'video' or media.media_type == 'external_video' %}عرض فيديو{% elsif media.media_type == 'model' %}عرض نموذج ثلاثي الأبعاد{% else %}عرض الصورة{% endif %} {{ forloop.index }}"
@@ -197,6 +198,10 @@
                 data-compare-formatted="{{ item.compare_at_price | money_with_currency | strip_html | escape }}"
                 data-title="{{ item.title | escape }}"
                 data-available="{{ item.available }}"
+                data-quantity-min="{{ item.quantity_rule.min | default: 1 }}"
+                data-quantity-max="{{ item.quantity_rule.max | default: 99 }}"
+                data-quantity-step="{{ item.quantity_rule.step | default: 1 }}"
+                data-media-id="{{ item.featured_media.id }}"
                 {% if item.id == variant.id %}selected{% endif %}
               >
                 {{ item.title }} — {% if item.price > 0 %}{{ item.price | money_with_currency }}{% else %}استفسر عن السعر{% endif %}
@@ -213,7 +218,7 @@
           <span>الكمية</span>
           <span class="ix-quantity__control">
             <button type="button" data-ix-qty-minus aria-label="تقليل الكمية">−</button>
-            <input data-ix-qty-input max="{{ product.stock }}" type="number" name="quantity" value="1" min="1" inputmode="numeric" aria-label="الكمية">
+            <input data-ix-qty-input max="{{ variant.quantity_rule.max | default: product.stock | default: 99 }}" type="number" name="quantity" value="{{ variant.quantity_rule.min | default: 1 }}" min="{{ variant.quantity_rule.min | default: 1 }}" step="{{ variant.quantity_rule.step | default: 1 }}" inputmode="numeric" aria-label="الكمية">
             <button type="button" data-ix-qty-plus aria-label="زيادة الكمية">+</button>
           </span>
         </label>

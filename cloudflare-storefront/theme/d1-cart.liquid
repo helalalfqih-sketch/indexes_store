@@ -4,6 +4,7 @@
   <noscript><p class="ix-empty-state">فعّل JavaScript لعرض السلة المحفوظة على هذا الجهاز، أو <a href="https://wa.me/967771370740">تواصل عبر واتساب</a>.</p></noscript>
   <aside class="ix-cart-summary" data-d1-summary hidden>
     <h2>ملخص السلة</h2><dl data-d1-totals></dl>
+    {% if catalog_source == 'shopify' %}<p>نتحقق من السعر والتوفر الحاليين؛ تُؤكد الكمية النهائية مع المتجر قبل اعتماد الطلب.</p>{% endif %}
     <p>تكلفة التوصيل تُحدد عند التأكيد. تُعرض كل عملة على حدة دون تحويل.</p>
     <button class="ix-cart-update" type="button" data-d1-review>مراجعة الأسعار والتوفر</button>
     <a class="ix-cart-whatsapp" data-d1-whatsapp hidden target="_blank" rel="noopener noreferrer">{% render 'indexes-whatsapp-icon' %}<span>فتح الطلب في واتساب</span></a>

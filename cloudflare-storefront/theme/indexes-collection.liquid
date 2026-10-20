@@ -15,7 +15,7 @@
         <h1 class="ix-page__title">{{ collection.title | escape }}</h1>
         {% if collection.description != blank %}<p class="ix-page-subtitle">{{ collection.description | strip_html | truncate: 110 }}</p>{% endif %}
       </div>
-      <span class="ix-result-count">{{ paginate.items }} منتج</span>
+      <span class="ix-result-count">{% unless paginate.total_known %}عرض {% endunless %}{{ paginate.items }} منتج</span>
     </header>
 
     <form class="ix-collection-tools" method="get">
@@ -130,7 +130,7 @@
     {% if paginate.pages > 1 %}
       <nav class="ix-pagination" aria-label="صفحات المنتجات">
         {% if paginate.previous %}<a href="{{ paginate.previous.url }}">السابق</a>{% endif %}
-        <span>صفحة {{ paginate.current_page }} من {{ paginate.pages }}</span>
+        <span>صفحة {{ paginate.current_page }}{% if paginate.total_known %} من {{ paginate.pages }}{% endif %}</span>
         {% if paginate.next %}<a href="{{ paginate.next.url }}">التالي</a>{% endif %}
       </nav>
     {% endif %}

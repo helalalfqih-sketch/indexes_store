@@ -110,7 +110,7 @@
         {% for category in category_list %}
           <li class="ix-home-category-item" data-category-item data-category-title="{{ category.title | escape }}">
             <a class="ix-home-category-link" href="{{ category.url }}" aria-label="{{ category.title | escape }}" draggable="false">
-              {% render 'indexes-category-banner', category_handle: category.artwork_handle, category_title: category.title, banner_variant: 'card' %}
+              {% render 'indexes-category-banner', category_handle: category.artwork_handle, category_title: category.title, fallback_category_image: category.image, banner_variant: 'card' %}
               <span class="ix-d1-category-label">{{ category.title | escape }}</span>
             </a>
           </li>
