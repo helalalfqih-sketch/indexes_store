@@ -328,7 +328,7 @@ const pageInput = z
   .object({
     search: z.string().trim().max(120).optional(),
     categoryId: z.string().trim().max(255).optional(),
-    first: z.number().int().min(1).max(100).default(24),
+    first: z.number().int().min(1).max(100),
     after: z.string().nullable().optional(),
     sortBy: z.enum(["default", "price-high", "price-low", "best-selling", "newest"]).optional(),
     minPrice: z.number().nonnegative().optional(),

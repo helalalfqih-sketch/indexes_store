@@ -14,7 +14,7 @@ interface AuthContext {
   claims: { sub: string; email: string };
 }
 
-const branchInputSchema = z.object({
+const branchInputBase = z.object({
   tenantId: z.string().uuid(),
   name: z.string().min(1).max(200),
   slug: z
@@ -24,17 +24,25 @@ const branchInputSchema = z.object({
     .regex(/^[a-z0-9-]+$/),
   address: z.string().max(500).optional(),
   city: z.string().max(100).optional(),
-  country: z.string().max(100).default("Yemen"),
+  country: z.string().max(100),
   phone: z.string().max(50).optional(),
   email: z.string().email().max(255).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
-  isMainBranch: z.boolean().default(false),
-  isActive: z.boolean().default(true),
-  openingHours: z.record(z.string()).optional(),
+  isMainBranch: z.boolean(),
+  isActive: z.boolean(),
+  openingHours: z.record(z.string(), z.string()).optional(),
   managerName: z.string().max(200).optional(),
   managerPhone: z.string().max(50).optional(),
 });
+
+export const branchInputSchema = branchInputBase.extend({
+  country: branchInputBase.shape.country.default("Yemen"),
+  isMainBranch: branchInputBase.shape.isMainBranch.default(false),
+  isActive: branchInputBase.shape.isActive.default(true),
+});
+
+export const branchUpdateSchema = branchInputBase.partial();
 
 export const listBranches = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -88,7 +96,7 @@ export const updateBranch = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         tenantId: z.string().uuid(),
-        updates: branchInputSchema.partial(),
+        updates: branchUpdateSchema,
       })
       .parse(raw),
   )

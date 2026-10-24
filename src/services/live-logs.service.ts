@@ -1,7 +1,11 @@
 import { createMiddleware, createServerFn } from "@tanstack/react-start";
+import type { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  requireSupabaseAuth,
+  type SupabaseAuthContext,
+} from "@/integrations/supabase/auth-middleware";
 
 export type ErrorTypeCategory =
   | "Admin UI"
@@ -14,6 +18,8 @@ export type ErrorTypeCategory =
 
 export type ErrorLevel = "error" | "warn" | "fatal" | "info";
 export type ErrorStatus = "open" | "investigating" | "resolved";
+type SanitizedLogValue = string | number | boolean | null;
+type SanitizedLogContext = Record<string, SanitizedLogValue>;
 
 export interface SystemLiveLogEntry {
   id: string;
@@ -25,7 +31,7 @@ export interface SystemLiveLogEntry {
   cause: string;
   suggestedFix: string;
   stackTrace?: string | null;
-  context?: Record<string, any>;
+  context?: SanitizedLogContext;
   status: ErrorStatus;
   createdAt: string;
 }
@@ -39,6 +45,71 @@ export interface LiveLogsStats {
   supabaseDb: number;
   githubIntegration: number;
   serverFunction: number;
+}
+
+interface SystemLiveLogRow {
+  id: string;
+  tenant_id: string | null;
+  error_name: string;
+  error_type: string;
+  level: ErrorLevel;
+  location: string;
+  cause: string;
+  suggested_fix: string;
+  stack_trace: string | null;
+  context: unknown;
+  status: ErrorStatus;
+  created_at: string;
+}
+
+interface SystemLiveLogInsert {
+  id: string;
+  tenant_id: string | null;
+  error_name: string;
+  error_type: string;
+  level: ErrorLevel;
+  location: string;
+  cause: string;
+  suggested_fix: string;
+  stack_trace: string | null;
+  context: SanitizedLogContext;
+  status: ErrorStatus;
+  created_at: string;
+}
+
+type LiveLogMutationResult = { error: PostgrestError | null };
+type LiveLogSelectResult = {
+  data: SystemLiveLogRow[] | null;
+  error: PostgrestError | null;
+};
+
+interface LiveLogFilterQuery extends PromiseLike<LiveLogMutationResult> {
+  eq(column: string, value: unknown): LiveLogFilterQuery;
+  neq(column: string, value: unknown): LiveLogFilterQuery;
+}
+
+interface LiveLogTableQuery {
+  select(columns: string): {
+    order(
+      column: string,
+      options: { ascending: boolean },
+    ): {
+      limit(count: number): PromiseLike<LiveLogSelectResult>;
+    };
+  };
+  insert(value: SystemLiveLogInsert): PromiseLike<LiveLogMutationResult>;
+  update(value: Pick<SystemLiveLogInsert, "status">): {
+    eq(column: string, value: unknown): PromiseLike<LiveLogMutationResult>;
+  };
+  delete(): LiveLogFilterQuery;
+}
+
+function liveLogsTable(client: unknown): LiveLogTableQuery {
+  return (
+    client as {
+      from(table: "system_live_logs"): LiveLogTableQuery;
+    }
+  ).from("system_live_logs");
 }
 
 /**
@@ -142,7 +213,7 @@ function sanitizeLogText(value: unknown, maxLength: number): string {
     .slice(0, maxLength);
 }
 
-function sanitizeLogContext(value: unknown): Record<string, unknown> {
+function sanitizeLogContext(value: unknown): SanitizedLogContext {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const sanitized = Object.fromEntries(
     Object.entries(value as Record<string, unknown>)
@@ -151,9 +222,11 @@ function sanitizeLogContext(value: unknown): Record<string, unknown> {
         sanitizeLogText(key, 80),
         typeof item === "string"
           ? sanitizeLogText(item, 500)
-          : typeof item === "number" || typeof item === "boolean" || item == null
+          : typeof item === "number" || typeof item === "boolean"
             ? item
-            : sanitizeLogText(safeSerialize(item), 1_000),
+            : item == null
+              ? null
+              : sanitizeLogText(safeSerialize(item), 1_000),
       ]),
   );
   return JSON.stringify(sanitized).length <= 8_000 ? sanitized : {};
@@ -239,7 +312,7 @@ const liveLogsAuth = createMiddleware({ type: "function" }).client(async ({ next
   return next({ headers: token ? { Authorization: `Bearer ${token}` } : {} });
 });
 
-async function assertLiveLogsAdmin(context: any): Promise<void> {
+async function assertLiveLogsAdmin(context: SupabaseAuthContext): Promise<void> {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "admin",
@@ -274,7 +347,7 @@ export async function logServerError(opts: {
   location: string;
   cause: string;
   stackTrace?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }): Promise<void> {
   const level = opts.level || "error";
   if (level === "info") return;
@@ -309,7 +382,7 @@ export async function logServerError(opts: {
   try {
     const db = await getDbClient();
     if (!db) return;
-    const { error } = await (db as any).from("system_live_logs").insert({
+    const { error } = await liveLogsTable(db).insert({
       id: entry.id,
       error_name: entry.errorName,
       error_type: entry.errorType,
@@ -333,9 +406,9 @@ export async function logServerError(opts: {
  * Server-side helper: wrap a Supabase query and auto-log any real DB error.
  */
 export async function captureSupabaseQueryError<T>(
-  promise: Promise<{ data: T | null; error: any }>,
+  promise: Promise<{ data: T | null; error: PostgrestError | null }>,
   location: string,
-): Promise<{ data: T | null; error: any }> {
+): Promise<{ data: T | null; error: PostgrestError | null }> {
   const result = await promise;
   if (result.error) {
     const err = result.error;
@@ -378,8 +451,7 @@ export const listLiveLogsFn = createServerFn({ method: "GET" })
 
       try {
         const db = context.supabase;
-        let query = (db as any)
-          .from("system_live_logs")
+        const query = liveLogsTable(db)
           .select("*")
           .order("created_at", { ascending: false })
           .limit(data.limit || 100);
@@ -387,7 +459,7 @@ export const listLiveLogsFn = createServerFn({ method: "GET" })
         const { data: dbData, error } = await query;
 
         if (!error && dbData && dbData.length > 0) {
-          dbLogs = dbData.map((row: any) => ({
+          dbLogs = dbData.map((row) => ({
             id: row.id,
             tenantId: row.tenant_id,
             errorName: row.error_name,
@@ -405,7 +477,7 @@ export const listLiveLogsFn = createServerFn({ method: "GET" })
                 row.error_type,
               ),
             stackTrace: row.stack_trace,
-            context: row.context,
+            context: sanitizeLogContext(row.context),
             status: row.status,
             createdAt: row.created_at,
           }));
@@ -484,7 +556,7 @@ export const logLiveErrorFn = createServerFn({ method: "POST" })
       suggestedFix: z.string().max(2_000).optional(),
       stackTrace: z.string().max(8_000).optional(),
       context: z
-        .record(z.any())
+        .record(z.string(), z.any())
         .refine((value) => JSON.stringify(value).length <= 8_000, "Context is too large")
         .optional(),
     }),
@@ -547,9 +619,9 @@ export const logLiveErrorFn = createServerFn({ method: "POST" })
         tenant_id: null,
         status: "open",
         created_at: nowIso,
-      };
+      } satisfies SystemLiveLogInsert;
 
-      const { error } = await (db as any).from("system_live_logs").insert(payload);
+      const { error } = await liveLogsTable(db).insert(payload);
       if (error && import.meta.env.DEV) console.warn("Live log persistence unavailable");
     } catch {
       if (import.meta.env.DEV) console.warn("Live log persistence unavailable");
@@ -573,10 +645,7 @@ export const updateLiveLogStatusFn = createServerFn({ method: "POST" })
     await assertLiveLogsAdmin(context);
     const db = await getDbClient();
     if (!db) throw new Error("Live log storage is unavailable");
-    const { error } = await (db as any)
-      .from("system_live_logs")
-      .update({ status: data.status })
-      .eq("id", data.id);
+    const { error } = await liveLogsTable(db).update({ status: data.status }).eq("id", data.id);
     if (error) throw new Error("Unable to update the live log");
 
     const memLog = inMemoryLiveLogs.find((l) => l.id === data.id);
@@ -600,7 +669,7 @@ export const clearLiveLogsFn = createServerFn({ method: "POST" })
     const db = await getDbClient();
     if (!db) throw new Error("Live log storage is unavailable");
 
-    let query = (db as any).from("system_live_logs").delete();
+    let query = liveLogsTable(db).delete();
     if (data.clearMode === "resolved_only") {
       query = query.eq("status", "resolved");
     } else {

@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, type ToolCallback } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import { inspectQa, fullStoreAudit } from "./store-qa.server";
@@ -44,6 +44,13 @@ const annotations = {
   idempotentHint: true,
   openWorldHint: false,
 };
+
+// The MCP SDK's Zod 4 compatibility conditional widens a generic ZodObject
+// callback to Record<string, unknown>. The exact schema is still registered
+// and performs runtime validation before the callback is invoked.
+const asValidatedToolCallback = <Schema extends z.ZodObject>(
+  callback: (input: z.infer<Schema>) => unknown,
+): ToolCallback<Schema> => callback as unknown as ToolCallback<Schema>;
 const securitySchemes = [{ type: "oauth2", scopes: ["store.read"] }];
 const developmentSecuritySchemes = [{ type: "oauth2", scopes: ["store.develop"] }];
 const writeAnnotations = {
@@ -155,29 +162,29 @@ function createServer(
         "Private, tenant-bound Store administration plus TikTok account management and guarded source development. Commerce data remains read-only. TikTok reads include linked-account profile/video inspection and own-video search. TikTok writes include OAuth linking, token refresh/profile sync, confirmed draft upload/direct post, and confirmed local disconnect; provider tokens are never exposed. Reverse-image search prefers server-side SerpApi Google Lens and falls back to Apify when configured; provider tokens are never returned. Source writes are restricted to agent/* branches and draft pull requests; direct main writes, merge, deploy, migrations, shell execution, and secret reads are forbidden.",
     },
   );
-  const tool = <T extends z.ZodRawShape>(
+  const tool = <Schema extends z.ZodObject>(
     name: string,
     title: string,
     description: string,
-    inputSchema: z.ZodObject<T>,
-    read: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>,
+    inputSchema: Schema,
+    read: (input: z.infer<Schema>) => Promise<Record<string, unknown>>,
   ) =>
-    server.registerTool(
+    server.registerTool<z.ZodType, Schema>(
       name,
       { title, description, inputSchema, annotations, _meta: { securitySchemes } },
-      (input) => safeRead(() => read(input)),
+      asValidatedToolCallback<Schema>((input) => safeRead(() => read(input))),
     );
 
-  const scopedTikTokTool = <T extends z.ZodRawShape>(
+  const scopedTikTokTool = <Schema extends z.ZodObject>(
     required: "tiktok.read" | "tiktok.manage" | "tiktok.publish",
     name: string,
     title: string,
     description: string,
-    inputSchema: z.ZodObject<T>,
+    inputSchema: Schema,
     toolAnnotations: typeof annotations,
-    run: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>,
+    run: (input: z.infer<Schema>) => Promise<Record<string, unknown>>,
   ) =>
-    server.registerTool(
+    server.registerTool<z.ZodType, Schema>(
       name,
       {
         title,
@@ -186,17 +193,17 @@ function createServer(
         annotations: toolAnnotations,
         _meta: { securitySchemes: [{ type: "oauth2", scopes: ["store.read", required] }] },
       },
-      (input) => {
+      asValidatedToolCallback<Schema>((input) => {
         if (!scopes.includes(required)) return insufficientScope(required, scopes);
         return safeRead(() => run(input));
-      },
+      }),
     );
 
-  const testTool = <T extends z.ZodRawShape>(name: string, title: string, description: string, inputSchema: z.ZodObject<T>, run: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>) =>
-    server.registerTool(name, {title,description,inputSchema,annotations:writeAnnotations,_meta:{securitySchemes:[{type:"oauth2",scopes:["store.read","store.test"]}]}}, input => {
+  const testTool = <Schema extends z.ZodObject>(name: string, title: string, description: string, inputSchema: Schema, run: (input: z.infer<Schema>) => Promise<Record<string, unknown>>) =>
+    server.registerTool<z.ZodType, Schema>(name, {title,description,inputSchema,annotations:writeAnnotations,_meta:{securitySchemes:[{type:"oauth2",scopes:["store.read","store.test"]}]}}, asValidatedToolCallback<Schema>(input => {
       if (!scopes.includes("store.test")) return insufficientScope("store.test", scopes);
       return safeRead(()=>run(input));
-    });
+    }));
   const qaSchema = z.object({url:z.string().url().default("https://indexes-store.vercel.app/"),device:z.enum(["desktop","mobile"]).default("desktop")}).strict();
   for (const [name,mode] of [["inspect_ui_tree","tree"],["inspect_product_grid","products"],["inspect_filter_state","filters"]] as const) {
     tool(name,name,"V3 foundation: one isolated page/viewport. Reports missing instrumentation and unimplemented checks explicitly; never infers full-store coverage.",qaSchema,({url,device})=>qa.inspect(url,device,mode));
@@ -220,8 +227,8 @@ function createServer(
       inputSchema: z
         .object({
           image_url: z.string().url().max(2048).refine((value) => value.startsWith("https://"), {
-            message: "Only public HTTPS image URLs are allowed",
-          }),
+              message: "Only public HTTPS image URLs are allowed",
+            }),
           limit: z.number().int().min(1).max(50).default(20),
         })
         .strict(),
@@ -497,14 +504,14 @@ function createServer(
     return safeRead(action);
   };
 
-  const developmentRead = <T extends z.ZodRawShape>(
+  const developmentRead = <Schema extends z.ZodObject>(
     name: string,
     title: string,
     description: string,
-    inputSchema: z.ZodObject<T>,
-    read: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>,
+    inputSchema: Schema,
+    read: (input: z.infer<Schema>) => Promise<Record<string, unknown>>,
   ) =>
-    server.registerTool(
+    server.registerTool<z.ZodType, Schema>(
       name,
       {
         title,
@@ -513,17 +520,17 @@ function createServer(
         annotations,
         _meta: { securitySchemes: developmentSecuritySchemes },
       },
-      (input) => requireDevelopmentScope(() => read(input)),
+      asValidatedToolCallback<Schema>((input) => requireDevelopmentScope(() => read(input))),
     );
 
-  const developmentWrite = <T extends z.ZodRawShape>(
+  const developmentWrite = <Schema extends z.ZodObject>(
     name: string,
     title: string,
     description: string,
-    inputSchema: z.ZodObject<T>,
-    write: (input: z.infer<z.ZodObject<T>>) => Promise<Record<string, unknown>>,
+    inputSchema: Schema,
+    write: (input: z.infer<Schema>) => Promise<Record<string, unknown>>,
   ) =>
-    server.registerTool(
+    server.registerTool<z.ZodType, Schema>(
       name,
       {
         title,
@@ -532,7 +539,7 @@ function createServer(
         annotations: writeAnnotations,
         _meta: { securitySchemes: developmentSecuritySchemes },
       },
-      (input) => requireDevelopmentScope(() => write(input)),
+      asValidatedToolCallback<Schema>((input) => requireDevelopmentScope(() => write(input))),
     );
 
   tool(

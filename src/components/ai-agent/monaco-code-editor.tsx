@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
-import Editor, { OnMount } from "@monaco-editor/react";
+import Editor, { loader, type OnMount } from "@monaco-editor/react";
 import { Code2, Play, Save, Check, Copy, RefreshCw, FileCode } from "lucide-react";
 import { toast } from "sonner";
+
+// @monaco-editor/loader otherwise fetches 0.55.1. Keep the browser runtime on
+// the same reviewed release that is pinned in package.json.
+loader.config({ paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.57.0/min/vs" } });
 
 interface MonacoCodeEditorProps {
   filePath?: string;
@@ -89,7 +93,11 @@ export function MonacoCodeEditor({
             onClick={handleCopy}
             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 text-zinc-300 hover:text-white text-[11px] transition"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
             {copied ? "تم النسخ" : "نسخ"}
           </button>
 
