@@ -32,7 +32,7 @@
       "permanent": true
     },
     {
-      "source": "/:path*",
+      "source": "/:path((?!api(?:/|$)|\\.well-known(?:/|$)|assets(?:/|$)|_build(?:/|$)|_serverFn(?:/|$)|~oauth(?:/|$)|mcp-authorize(?:/|$)|mcp-store-authorize(?:/|$)|auth(?:/|$)).*)",
       "destination": "https://indexesstore.com/:path*",
       "permanent": true
     }
