@@ -33,14 +33,18 @@ export const storeProfileSchema = z.object({
   business_type: optionalText(60),
   phone: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
-    z.string().trim().regex(/^\+?[0-9]{7,15}$/, "رقم هاتف غير صالح").optional(),
+    z
+      .string()
+      .trim()
+      .regex(/^\+?[0-9]{7,15}$/, "رقم هاتف غير صالح")
+      .optional(),
   ),
   email: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.string().trim().email("بريد غير صالح").max(200).optional(),
   ),
-  social_links: z.record(z.string().max(500)).default({}),
-  branding: z.record(z.unknown()).default({}),
+  social_links: z.record(z.string(), z.string().max(500)).default({}),
+  branding: z.record(z.string(), z.unknown()).default({}),
 });
 export type StoreProfileInput = z.infer<typeof storeProfileSchema>;
 
@@ -61,7 +65,7 @@ export type StoreSettingKey = z.infer<typeof storeSettingKeySchema>;
  * Setting values are structured JSON objects. SECURITY: never store secrets
  * (API tokens, private keys) in these settings — they are member-readable.
  */
-export const storeSettingValueSchema = z.record(z.unknown());
+export const storeSettingValueSchema = z.record(z.string(), z.unknown());
 
 export const upsertStoreSettingSchema = z.object({
   key: storeSettingKeySchema,
