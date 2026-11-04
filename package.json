@@ -28,7 +28,10 @@
     "deploy:cf": "npm run build:cf && wrangler deploy",
     "build:cf": "vite build",
     "preview:cf": "vite preview",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "build:storefront": "node cloudflare-storefront/scripts/build.mjs",
+    "test:storefront": "npm run build:storefront && node --test cloudflare-storefront/tests/*.test.mjs",
+    "deploy:storefront": "npm run build:storefront && wrangler deploy --config cloudflare-storefront/wrangler.jsonc"
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.11",
@@ -108,7 +111,8 @@
     "zod": "^3.24.2",
     "zustand": "^5.0.14",
     "@sparticuz/chromium": "152.0.0",
-    "playwright-core": "1.62.0"
+    "playwright-core": "1.62.0",
+    "liquidjs": "10.30.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
@@ -138,6 +142,7 @@
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.16",
     "vitest": "^4.1.10",
-    "wrangler": "4.149.0"
+    "wrangler": "4.149.0",
+    "esbuild": "0.28.2"
   }
 }

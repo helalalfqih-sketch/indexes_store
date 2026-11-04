@@ -1,0 +1,3 @@
+{{ 'indexes-predictive-search.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'indexes-predictive-search.js' | asset_url }}" defer></script>
+<script type="application/json" id="ix-search-labels">{"all":{{ 'indexes_ux.all_results' | t | json }},"empty":{{ 'indexes_ux.no_results' | t | json }},"error":{{ 'indexes_ux.search_failed' | t | json }},"loading":{{ 'indexes_ux.search_loading' | t | json }}}</script>

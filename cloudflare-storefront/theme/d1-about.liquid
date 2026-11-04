@@ -1,0 +1,6 @@
+<section class="ix-page ix-about-page">
+  <header class="ix-about-intro"><h1>التواصل ومعلومات الطلب</h1><p>اندكس ستور متجر لمنتجات المنزل والسيارات والإلكترونيات والعناية الشخصية، مع إمكانية الطلب والتأكيد عبر واتساب.</p></header>
+  <article class="ix-contact-card"><h2>معلومات التواصل</h2><p>{{ settings.ix_contact_address | escape }}</p><p><a dir="ltr" href="tel:{{ settings.ix_contact_phone }}">{{ settings.ix_contact_phone }}</a></p><a class="ix-product-whatsapp" href="https://wa.me/967771370740" target="_blank" rel="noopener noreferrer">{% render 'indexes-whatsapp-icon' %}تواصل عبر واتساب</a></article>
+  <section class="ix-service-panel" aria-label="تفاصيل الطلب">{% render 'indexes-service-details' %}</section>
+  <p class="ix-order-note">{{ 'indexes_audit.confirmation' | t }}</p>
+</section>

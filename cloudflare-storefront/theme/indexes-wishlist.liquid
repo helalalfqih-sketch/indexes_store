@@ -1,0 +1,17 @@
+<section class="ix-page ix-wishlist-page">
+  <div class="ix-page-title-row">
+    <div>
+      <h1 class="ix-page__title">المفضلة</h1>
+      <p class="ix-page-subtitle">العناصر المحفوظة على هذا الجهاز فقط.</p>
+    </div>
+  </div>
+
+  <div
+    class="ix-wishlist-grid"
+    data-ix-wishlist-list
+    data-currency="{{ cart.currency.iso_code | default: shop.currency | escape }}"
+  >
+    <p class="ix-empty-state">جارٍ تحميل المفضلة...</p>
+  </div>
+</section>
+

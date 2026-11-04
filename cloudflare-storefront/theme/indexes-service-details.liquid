@@ -1,0 +1,4 @@
+
+<details><summary>{{ 'indexes_ux.delivery' | t }}</summary><p>{{ 'indexes_ux.delivery_info' | t }}</p><a href="https://wa.me/{{ settings.ix_contact_phone | remove: '+' | remove: ' ' }}?text={{ 'indexes_ux.delivery_question' | t | url_encode }}">{{ 'indexes_ux.ask_whatsapp' | t }}</a></details>
+<details><summary>{{ 'indexes_ux.cod' | t }}</summary><p>{{ 'indexes_audit.confirmation' | t }}</p><a href="{{ routes.cart_url }}">{{ 'indexes_ux.view_cart' | t }}</a></details>
+<details><summary>{{ 'indexes_ux.contact' | t }}</summary><p>{{ settings.ix_contact_address | escape }}</p><a dir="ltr" href="tel:{{ settings.ix_contact_phone | escape }}">{{ settings.ix_contact_phone | escape }}</a><a href="https://wa.me/{{ settings.ix_contact_phone | remove: '+' | remove: ' ' }}">{{ 'indexes_ux.ask_whatsapp' | t }}</a></details>

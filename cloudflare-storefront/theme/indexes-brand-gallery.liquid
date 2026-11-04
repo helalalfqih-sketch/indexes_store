@@ -1,0 +1,40 @@
+
+{{ 'indexes-brand-gallery.css' | asset_url | stylesheet_tag }}
+<section class="ix-brand-page" dir="rtl">
+  <header class="ix-brand-page__intro">
+    <a class="ix-brand-back" href="{{ routes.root_url }}">{{ section.settings.back_label | escape }}</a>
+    <h1>{{ section.settings.title | escape }}</h1>
+    <p>{{ section.settings.description | escape }}</p>
+    <nav class="ix-brand-jumps" aria-label="{{ section.settings.title | escape }}">
+      <a href="#brand-core">{{ section.settings.core_heading | escape }}</a>
+      <a href="#brand-pack">{{ section.settings.pack_heading | escape }}</a>
+      <a href="#brand-applications">{{ section.settings.applications_heading | escape }}</a>
+    </nav>
+  </header>
+  {% assign groups = 'core,pack,applications' | split: ',' %}
+  {% for group in groups %}
+    {% case group %}
+      {% when 'core' %}{% assign group_heading = section.settings.core_heading %}
+      {% when 'pack' %}{% assign group_heading = section.settings.pack_heading %}
+      {% when 'applications' %}{% assign group_heading = section.settings.applications_heading %}
+    {% endcase %}
+    <section class="ix-brand-group" id="brand-{{ group }}" aria-labelledby="brand-heading-{{ group }}">
+      <h2 id="brand-heading-{{ group }}">{{ group_heading | escape }}</h2>
+      <div class="ix-brand-grid">
+        {% for block in section.blocks %}
+          {% if block.settings.group == group and block.settings.image != blank %}
+            <figure class="ix-brand-asset" {{ block.shopify_attributes }}>
+              <a href="{{ block.settings.image | image_url: width: 2000 }}" target="_blank" rel="noopener">
+                {{ block.settings.image | image_url: width: 900 | image_tag: loading: 'lazy', widths: '320,480,640,900', sizes: '(max-width: 749px) 100vw, (max-width: 1100px) 50vw, 33vw', alt: block.settings.title }}
+                <span class="visually-hidden">{{ block.settings.title | escape }}</span>
+              </a>
+              <figcaption>{{ block.settings.title | escape }}</figcaption>
+            </figure>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+  <p class="ix-brand-note">{{ section.settings.note | escape }}</p>
+</section>
+

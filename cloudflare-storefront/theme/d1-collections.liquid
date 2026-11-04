@@ -1,0 +1,11 @@
+<section class="ix-page ix-collections-page" aria-labelledby="ix-collections-title">
+  <div class="ix-page-title-row ix-catalog-heading"><div><h1 class="ix-page__title" id="ix-collections-title">الأقسام الرئيسية</h1><p class="ix-page-subtitle">استعرض مجموعات المتجر المتاحة.</p></div></div>
+  <div class="ix-collection-grid">
+    {% for category in category_list %}
+    <a class="ix-collection-card ix-collection-card--banner" href="{{ category.url }}">
+      {% render 'indexes-category-banner', category_handle: category.artwork_handle, category_title: category.title, fallback_category_image: category.image, banner_variant: 'card' %}
+      <span class="ix-collection-card__content"><strong>{{ category.title | escape }}</strong>{% if category.products_count_known %}<small>{{ category.products_count }} منتج</small>{% endif %}</span>
+    </a>
+    {% else %}<p class="ix-empty-state">لا توجد أقسام متاحة حاليًا.</p>{% endfor %}
+  </div>
+</section>
