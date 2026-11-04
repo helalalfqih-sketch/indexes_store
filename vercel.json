@@ -32,7 +32,7 @@
       "permanent": true
     },
     {
-      "source": "/:path*",
+      "source": "/:path((?!api/catalog/shopify[.]csv/?$).*)",
       "destination": "https://indexesstore.com/:path*",
       "permanent": true
     }
