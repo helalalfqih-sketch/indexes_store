@@ -101,7 +101,7 @@ export async function diagnoseShopifyCatalog() {
 
   try {
     const result = await storefront<{ products: { nodes: Array<{ id: string }> } }>(
-      `query CatalogHealth { products(first: 1) { nodes { id } } }`,
+      `query CatalogHealth { products(first: 1) { nodes { ${PRODUCT_FIELDS} } } }`,
     );
     return {
       healthy: true,
@@ -153,7 +153,7 @@ const PRODUCT_FIELDS = `
   collections(first: 1) { nodes { handle } }
   variants(first: 20) {
     nodes {
-      id sku barcode availableForSale quantityAvailable
+      id sku barcode availableForSale
       price { amount currencyCode }
       compareAtPrice { amount currencyCode }
     }
