@@ -42,7 +42,10 @@ export default defineConfig({
   ...(isCloudflare ? { nitro: false } : {}),
   vite: {
     // Browser CI must exercise the same asset paths as the Vercel deployment.
-    base: process.env.VERCEL || process.env.CI ? "/" : "/app/",
+    base: isCloudflare || process.env.VERCEL || process.env.CI ? "/" : "/app/",
+    define: {
+      "import.meta.env.INDEXES_CLOUDFLARE": JSON.stringify(isCloudflare),
+    },
     resolve: {
       dedupe: ["three"],
     },
