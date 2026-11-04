@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Bell, Heart, Menu, Search, ShoppingCart } from "lucide-react";
 import { categoriesQuery } from "@/lib/queries/catalog";
+import { useClientHydrated } from "@/hooks/use-client-hydrated";
 
 interface MobileReferenceHeaderProps {
   selectedCategory?: string;
@@ -29,7 +30,7 @@ export function MobileReferenceHeader({
   onOpenWishlist,
   onSelectCategory,
 }: MobileReferenceHeaderProps) {
-  const isBrowser = typeof window !== "undefined";
+  const isBrowser = useClientHydrated();
   const { data: categoryRows = [] } = useQuery({
     ...categoriesQuery(),
     enabled: isBrowser,

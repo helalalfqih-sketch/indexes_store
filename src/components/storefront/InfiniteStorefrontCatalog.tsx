@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useClientHydrated } from "@/hooks/use-client-hydrated";
 import { fetchCatalogPage } from "@/lib/actions/catalog-page.actions";
 import { normalizeCategorySlug } from "@/lib/actions/category.actions";
 import { INFINITE_CATALOG_QUERY_POLICY, catalogKeys } from "@/lib/queries/catalog";
@@ -71,7 +72,7 @@ export function InfiniteStorefrontCatalog({
   onSelectProduct,
 }: InfiniteStorefrontCatalogProps) {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const clientQueriesEnabled = typeof window !== "undefined";
+  const clientQueriesEnabled = useClientHydrated();
   const normalizedSearch = searchQuery.trim();
   const normalizedCategoryId =
     selectedCategoryId !== "all" ? normalizeCategorySlug(selectedCategoryId) : undefined;

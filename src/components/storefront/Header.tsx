@@ -30,6 +30,7 @@ import { STORE_INFO } from "./constants";
 import { LiteModeToggle } from "./LiteModeToggle";
 import { useQuery } from "@tanstack/react-query";
 import { categoriesQuery } from "@/lib/queries/catalog";
+import { useClientHydrated } from "@/hooks/use-client-hydrated";
 
 interface HeaderProps {
   searchQuery: string;
@@ -87,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isCartBouncing, setIsCartBouncing] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const prevCartCount = useRef(cartCount);
-  const clientQueriesEnabled = typeof window !== "undefined";
+  const clientQueriesEnabled = useClientHydrated();
   const { data: catalogCategories = [] } = useQuery({
     ...categoriesQuery(),
     enabled: clientQueriesEnabled,
