@@ -1,0 +1,61 @@
+name: Meta Catalog Events Regression
+
+on:
+  pull_request:
+    paths:
+      - "src/lib/analytics.ts"
+      - "src/lib/cart-store.ts"
+      - "src/routes/product.$slug.tsx"
+      - "tests/unit/meta-catalog-events.test.ts"
+      - ".github/workflows/meta-catalog-events-ci.yml"
+
+# Independent regression evidence only. The existing P0 security/audit gate
+# remains required and unchanged; success here is not release approval.
+permissions:
+  contents: read
+
+jobs:
+  meta-catalog-regression:
+    name: Meta product payload and cart regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: https://ci-placeholder.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: ci-placeholder-publishable-key
+      VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-publishable-key
+    steps:
+      - name: Checkout review code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run Meta, real cart hydration, and WhatsApp regression tests
+        run: >-
+          npx vitest run
+          tests/unit/meta-catalog-events.test.ts
+          tests/unit/cart-hydration.test.tsx
+          tests/unit/checkout-whatsapp.test.ts
+
+      - name: Lint modified code and tests
+        run: >-
+          npx eslint --max-warnings=0
+          src/lib/analytics.ts
+          src/lib/cart-store.ts
+          'src/routes/product.$slug.tsx'
+          tests/unit/meta-catalog-events.test.ts
+
+      - name: Build and generate route types
+        run: npm run build
+
+      - name: Typecheck repository
+        run: npm run typecheck
