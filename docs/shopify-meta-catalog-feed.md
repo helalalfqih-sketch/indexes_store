@@ -1,6 +1,9 @@
 # Shopify feed for Meta catalogs
 
-The public URL is `/api/catalog/shopify.csv` on the deployed store domain.
+The public URL is `https://indexes-store.vercel.app/api/catalog/shopify.csv`.
+This path is excluded from the legacy storefront redirect to `indexesstore.com`:
+Meta must receive CSV directly instead of following a redirect to Shopify's 404
+page. The remaining legacy storefront paths retain their permanent redirects.
 It uses the same configured Shopify Storefront connection as the storefront and
 admin product list (`CATALOG_SOURCE=shopify`, `SHOPIFY_STORE_DOMAIN`, and the
 server-side `SHOPIFY_STOREFRONT_ACCESS_TOKEN`). No Meta access token is required
