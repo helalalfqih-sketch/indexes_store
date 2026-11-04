@@ -1,0 +1,63 @@
+name: WPPConnect isolated preview
+on:
+  push:
+    branches: ['agent/wppconnect-preview-20261016']
+    paths: ['integrations/wppconnect-preview/**', '.github/workflows/wppconnect-preview.yml']
+  pull_request:
+    paths: ['integrations/wppconnect-preview/**', '.github/workflows/wppconnect-preview.yml']
+permissions:
+  contents: read
+concurrency:
+  group: wpp-preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  fixture-and-security-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Offline tests (synthetic account; no dependency installation)
+        working-directory: integrations/wppconnect-preview
+        run: |
+          mkdir -p reports
+          set -o pipefail
+          node --test tests/*.test.mjs | tee reports/local-tests.tap
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wpp-preview-fixture-results
+          path: integrations/wppconnect-preview/reports/*.tap
+  runtime-no-account:
+    needs: fixture-and-security-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fresh isolated test container; never pair a WhatsApp number
+        working-directory: integrations/wppconnect-preview
+        run: |
+          node prepare.mjs
+          docker compose up -d
+          docker image inspect wppconnect/wppconnect-server:2.10.55 --format '{{json .RepoDigests}}' > reports/image-digest.txt
+          npm run smoke:server
+      - name: Stop only this fresh ephemeral test container
+        if: always()
+        working-directory: integrations/wppconnect-preview
+        run: docker compose down
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wpp-preview-runtime-no-account
+          path: |
+            integrations/wppconnect-preview/reports/runtime-smoke.json
+            integrations/wppconnect-preview/reports/image-digest.txt
